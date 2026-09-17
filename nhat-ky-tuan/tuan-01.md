@@ -18,10 +18,10 @@
 | # | Nội dung công việc | Annotator | Reviewer | Hoàn thành | Ghi chú |
 |---|---|---|---|---|---|
 | 1 | Họp đầu tuần, thống nhất guideline và chia job Task #148 | Cả đội | — | ✅ 100% | Phân chia 4 job (mỗi job 25 frame) |
-| 2 | Job #1442 — 25 ảnh (frame 0–24), bbox phương tiện | @Khúc Việt Anh  | @Đặng Văn Huy | 🟡 25% | Stage: annotation, State: in progress |
-| 3 | Job #1443 — 25 ảnh (frame 25–49), bbox phương tiện | @Nguyễn Văn Hân  | @Khúc Việt Anh | 🟡 25%| Stage: annotation, State: in progress |
-| 4 | Job #1444 — 25 ảnh (frame 50–74), bbox phương tiện | @Nhữ Đình Chiến  | @Nguyễn Văn Hân  | 🟡 50% | Stage: annotation, State: in progress |
-| 5 | Job #1445 — 25 ảnh (frame 75–99), bbox phương tiện | @Vũ Bảo Khánh | @Nhữ Đình Chiến | 🟡 90% | Stage: annotation, State: in progress |
+| 2 | Job #1442 — 25 ảnh (frame 0–24), bbox phương tiện | @Khúc Việt Anh  | @Đặng Văn Huy | 🟡 90% | Stage: annotation, State: in progress |
+| 3 | Job #1443 — 25 ảnh (frame 25–49), bbox phương tiện | @Nguyễn Văn Hân  | @Khúc Việt Anh | 🟡 50%| Stage: annotation, State: in progress |
+| 4 | Job #1444 — 25 ảnh (frame 50–74), bbox phương tiện | @Nhữ Đình Chiến  | @Nguyễn Văn Hân  | 🟡 70% | Stage: annotation, State: in progress |
+| 5 | Job #1445 — 25 ảnh (frame 75–99), bbox phương tiện | @Vũ Bảo Khánh | @Khúc Việt Anh | 🟡 80% | Stage: validation, State: in progress |
 
 *Mức hoàn thành:* ✅ xong và đã qua review · 🟡 đang làm (ghi %) · ⛔ bị chặn (ghi lý do) · ⬜ chưa bắt đầu
 

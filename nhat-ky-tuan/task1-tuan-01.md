@@ -1,4 +1,4 @@
-# Nhật ký tuần 01 · 14/09 – 20/09/2026
+# Nhật ký tuần 01 — Task 1 · 14/09 – 20/09/2026
 
 **Lead tuần này:** @Đặng Văn Huy  
 **Dữ liệu / task CVAT:** Task #148 (`W1-BBOX-G4-T1`) — [CVAT Task 148](https://cvat.note.transformerlabs.ai/tasks/148)

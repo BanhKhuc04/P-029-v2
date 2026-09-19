@@ -12,6 +12,10 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
 | [P-001](#p-001) | Quy ước gán nhãn đường đi bộ: kẻ từng vạch sọc dọc hay chỉ kẻ các đường ngang giới hạn | Guideline chưa nói tới | LANE/CROSSWALK | ✅ Đã chốt | [QĐ-001](so-quyet-dinh.md#qđ-001) |
 | [P-002](#p-002) | Quy cách vẽ Polygon Drivable Area: gộp/tách làn và việc bao trùm vật thể trên đường | Guideline chưa nói tới | §4.1, §4.2 | ✅ Đã chốt | [QĐ-002](so-quyet-dinh.md#qđ-002) |
 | [P-003](#p-003) | Quy ước gán nhãn vạch xương cá (chevron): xử lý Drivable Area và class Polyline | Guideline chưa nói tới | §2, §4 | ✅ Đã chốt | [QĐ-003](so-quyet-dinh.md#qđ-003) |
+| [P-004](#p-004) | Chưa đồng nhất gán nhãn `area/alternative` giữa các job | Guideline mơ hồ | §2, §4.1 | 🗣️ Đang bàn | — |
+| [P-005](#p-005) | Ranh giới `road` vs `sidewalk` tại các đoạn hạ vỉa hè / lối xe ra vào (curb cut / ramp) | Guideline mơ hồ | §4 (road vs sidewalk) | 🗣️ Đang bàn | — |
+| [P-006](#p-006) | Phân định `vegetation` vs `terrain` tại thảm cỏ thấp xen kẽ gốc cây và bồn cây | Guideline mơ hồ | §4 (vegetation vs terrain) | 🗣️ Đang bàn | — |
+| [P-007](#p-007) | Phân loại `person` vs `rider` trong tình huống người đi bộ dắt xe hai bánh | Guideline mơ hồ | §4 (person vs rider) | 🗣️ Đang bàn | — |
 
 **Loại**
 
@@ -88,6 +92,73 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
     - *Cách 2.2 (Kẻ chi tiết từng vệt chéo):* Kẻ cả đường biên lẫn từng vệt sơn chéo bên trong.
 - **Xử lý tạm trong lúc chờ:** Gắn tag `UNCERTAIN_BOUNDARY` tại frame 0 (Job #1442); tạm thời không vẽ polygon đè lên vùng xương cá và chỉ kẻ đường biên ngoài.
 - **Kết quả:** ✅ [QĐ-003](so-quyet-dinh.md#qđ-003)
+
+## P-004
+
+**Chưa đồng nhất gán nhãn `area/alternative` giữa các job trong Task #148**
+
+- **Loại:** Guideline mơ hồ
+- **Mục guideline:** §2 — Taxonomy & §4.1 — Polygon (Drivable Area)
+- **Người phát hiện:** @Khúc Việt Anh · 18/09/2026
+- **Link CVAT:** https://cvat.note.transformerlabs.ai/tasks/148/jobs/1442?frame=15 — Job #1442 có 22 polygon `area/alternative`, Job #1445 có 18 polygon, trong khi Job #1443 và #1444 không gán frame nào.
+- **Mô tả:** Có sự không đồng nhất giữa các job: Job #1442 và #1445 vẽ polygon `area/alternative` cho làn đường đối diện / nhánh rẽ, còn Job #1443 và #1444 chỉ vẽ `area/drivable` mà bỏ qua phần đường đối diện.
+- **Các cách hiểu:**
+  1. *Cách 1:* Bắt buộc vẽ cả `area/alternative` cho toàn bộ phần đường xe có thể đi được nhưng thuộc chiều ngược lại hoặc vùng phụ.
+  2. *Cách 2:* Chỉ ưu tiên vẽ `area/drivable` của làn xe ego, bỏ qua `area/alternative` nếu không có ranh giới rõ ràng.
+- **Xử lý tạm trong lúc chờ:** Đang bàn trong buổi họp nghiệm thu Task #148.
+- **Kết quả:** 🗣️ Đang bàn
+
+## P-005
+
+**Ranh giới giữa `road` và `sidewalk` tại các đoạn hạ vỉa hè / lối xe ra vào (Curb Cut / Driveway Ramp)**
+
+- **Loại:** Guideline mơ hồ
+- **Mục guideline:** §4 — Các cặp class dễ nhầm (`road vs sidewalk`) & RULE 02
+- **Người phát hiện:** @Đặng Văn Huy · 19/09/2026
+- **Link CVAT:** https://cvat.note.transformerlabs.ai/tasks/202/jobs/1658?frame=12 — Đoạn vỉa hè vát dốc thoải hạ cốt xuống ngang mặt đường để xe máy leo lên vỉa hè hoặc lối rẽ vào ngõ.
+- **Mô tả:** Guideline quy định `road` là phần mặt đường dành cho phương tiện lưu thông, `sidewalk` là lối đi bộ/viền hè tách khỏi mặt đường. Tại các vị trí ram dốc vỉa hè (curb cut / driveway ramp):
+  - Bề mặt dốc thoải được đổ bê tông nối liền mặt đường, xe cơ giới có thể di chuyển lên được.
+  - Một số annotator vẽ phần ram dốc này thuộc `road` (vì xe chạy lên được), một số khác lại vẽ thuộc `sidewalk` (vì nằm trong ranh giới thẳng của vỉa hè).
+- **Các cách hiểu:**
+  1. *Cách 1 (Gán `sidewalk` theo tuyến vỉa hè):* Giữ nguyên ranh giới mép đường liên tục (đường viền bó vỉa thẳng); toàn bộ phần dốc nghiêng hạ cốt vẫn thuộc `sidewalk`. Ưu điểm: đảm bảo tính liên tục của vỉa hè hình học.
+  2. *Cách 2 (Gán `road` cho phần mặt dốc):* Phần dốc mà phương tiện có thể đi vào được gán nhãn `road`. Nhược điểm: ranh giới vỉa hè bị lõm nham nhở, khó thống nhất độ sâu dốc.
+- **Xử lý tạm trong lúc chờ:** Tạm thời gán là `sidewalk` theo đường thẳng mép bó vỉa; gắn cờ `UNCERTAIN_CLASS` tại Frame 12 Job #1658 để họp chốt.
+- **Kết quả:** 🗣️ Đang bàn
+
+## P-006
+
+**Phân định ranh giới giữa `vegetation` và `terrain` tại thảm cỏ thấp xen kẽ gốc cây và bồn hoa**
+
+- **Loại:** Guideline mơ hồ
+- **Mục guideline:** §4 — Các cặp class dễ nhầm (`vegetation vs terrain`) & §5 — Thao tác khuyến nghị trên CVAT
+- **Người phát hiện:** @Nhữ Đình Chiến · 19/09/2026
+- **Link CVAT:** https://cvat.note.transformerlabs.ai/tasks/202/jobs/1660?frame=62 — Dải phân cách trồng cỏ thấp bên dưới và các khóm cây bụi/tán lá thấp bên trên, xen lẫn các mảng đất trơ.
+- **Mô tả:** Guideline định nghĩa `vegetation` = cây/bụi/lá; `terrain` = đất/cỏ/bề mặt tự nhiên thấp không được xem là vegetation dạng cây/bụi.
+  - Khi dùng Brush vẽ vùng dải phân cách hoặc công viên ven đường, phần cỏ thấp mọc lan sát dưới tán cây rất khó tách bạch.
+  - Nếu cố gắng bóc tách từng mảng cỏ (`terrain`) ra khỏi tán cây (`vegetation`), annotator để lại hàng chục mẩu mask vụn li ti (fragmented masks) và bị chồng lấn (overlap) đè lên nhau, vi phạm RULE 01.
+  - Một số bạn tô gộp toàn bộ khu vực bồn cây xanh là `vegetation`, người khác lại bóc tách nhỏ lẻ.
+- **Các cách hiểu:**
+  1. *Cách 1 (Gộp theo khu vực chiếm ưu thế):* Với bồn cây có thảm cỏ và cây bụi đan xen phức tạp, gộp toàn bộ thành `vegetation`. Chỉ gán `terrain` khi là bãi đất trống phẳng hoặc thảm cỏ rộng không có cây bụi.
+  2. *Cách 2 (Bóc tách mặt đất phẳng và thân cây):* Phần cỏ mọc phẳng sát đất gán `terrain`, phần thân/tán cây nhô lên khỏi mặt đất gán `vegetation`, nhưng yêu cầu vẽ bằng Polygon biên mềm để tránh phát sinh mask vụn.
+- **Xử lý tạm trong lúc chờ:** Tạm gán theo Cách 2 nhưng ưu tiên làm mịn biên mask; các thành viên cần tự gom và dọn sạch mask vụn trước khi bàn giao.
+- **Kết quả:** 🗣️ Đang bàn
+
+## P-007
+
+**Phân loại `person` vs `rider` trong tình huống người đi bộ dắt xe hai bánh**
+
+- **Loại:** Guideline mơ hồ
+- **Mục guideline:** §4 — Các cặp class dễ nhầm (`person vs rider`, `motorcycle vs bicycle`)
+- **Người phát hiện:** @Khúc Việt Anh · 19/09/2026
+- **Link CVAT:** https://cvat.note.transformerlabs.ai/tasks/202/jobs/1659?frame=31 — Người đi bộ dắt bộ xe máy trên lòng đường.
+- **Mô tả:** Guideline quy định: `rider` = người đang cưỡi/điều khiển xe hai bánh hoặc phương tiện tương ứng; `person` = người đi bộ/đứng/ngồi không thuộc rider.
+  - Trong trường hợp người đang dắt bộ xe đạp hoặc xe máy: Chân người chạm đất bước đi (đặc trưng của `person`), nhưng tay đang cầm ghi-đông điều khiển phương tiện di chuyển.
+  - Hai annotator đang có cách hiểu trái ngược nhau: một người gán là `rider` (vì đang điều khiển xe), người kia gán là `person` (vì không ngồi cưỡi trên xe).
+- **Các cách hiểu:**
+  1. *Cách 1 (Gán `person`):* Tiêu chí phân biệt là tư thế cưỡi/ngồi trên phương tiện (mounted). Nếu người đi bộ chân bước trên mặt đất để đẩy/dắt xe thì tô pixel người là `person`, thân xe gán riêng là `motorcycle`/`bicycle`.
+  2. *Cách 2 (Gán `rider`):* Mọi hành vi tương tác vật lý trực tiếp để điều khiển chuyển động của xe (kể cả dắt bộ) đều tính là `rider`.
+- **Xử lý tạm trong lúc chờ:** Tạm thống nhất gán `person` cho người dắt xe, phương tiện gán `motorcycle`/`bicycle` riêng; gắn tag `UNCERTAIN_CLASS` tại Frame 31 Job #1659.
+- **Kết quả:** 🗣️ Đang bàn
 
 ---
 

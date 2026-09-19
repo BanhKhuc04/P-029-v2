@@ -5,15 +5,13 @@ Những chỗ gặp trong lúc gán nhãn mà **guideline chưa trả lời đư
 Ghi ngay khi gặp, kể cả lúc chưa biết xử lý thế nào. Một edge case không được ghi lại thì
 mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn lớn nhất của nhãn không nhất quán.
 
-> Các mục bên dưới là **ví dụ**, tên và link CVAT đều giả. Mẫu trống để copy nằm cuối file.
-
 ## Danh sách
 
 | Mã | Tóm tắt | Loại | Mục guideline | Trạng thái | Kết quả |
 |---|---|---|---|---|---|
-| [P-001](#p-001) | Quy ước gán nhãn đường đi bộ: kẻ từng vạch sọc dọc hay chỉ kẻ các đường ngang giới hạn | Guideline chưa nói tới | LANE/CROSSWALK | 🗣️ Đang bàn | — |
-| [P-002](#p-002) | Quy cách vẽ Polygon Drivable Area: gộp/tách làn và việc bao trùm vật thể trên đường | Guideline chưa nói tới | §4.1 | 🗣️ Đang bàn | — |
-| [P-003](#p-003) | Quy ước gán nhãn vạch xương cá (chevron): xử lý Drivable Area và class Polyline | Guideline chưa nói tới | §2, §4 | 🗣️ Đang bàn | — |
+| [P-001](#p-001) | Quy ước gán nhãn đường đi bộ: kẻ từng vạch sọc dọc hay chỉ kẻ các đường ngang giới hạn | Guideline chưa nói tới | LANE/CROSSWALK | ✅ Đã chốt | [QĐ-001](so-quyet-dinh.md#qđ-001) |
+| [P-002](#p-002) | Quy cách vẽ Polygon Drivable Area: gộp/tách làn và việc bao trùm vật thể trên đường | Guideline chưa nói tới | §4.1, §4.2 | ✅ Đã chốt | [QĐ-002](so-quyet-dinh.md#qđ-002) |
+| [P-003](#p-003) | Quy ước gán nhãn vạch xương cá (chevron): xử lý Drivable Area và class Polyline | Guideline chưa nói tới | §2, §4 | ✅ Đã chốt | [QĐ-003](so-quyet-dinh.md#qđ-003) |
 
 **Loại**
 
@@ -45,7 +43,7 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   1. *Cách 1 (như Frame 54):* Kẻ dọc theo từng vạch sọc trắng riêng lẻ. Ưu điểm: dữ liệu hình học chi tiết từng dải sơn. Nhược điểm: tốn nhiều công sức, thời gian gán nhãn tăng cao.
   2. *Cách 2 (như Frame 79):* Chỉ kẻ các đường ngang giới hạn biên vùng đường đi bộ (ranh giới trước/sau). Ưu điểm: nhanh, gọn gàng. Nhược điểm: không thể hiện cấu trúc các sọc trắng bên trong.
 - **Xử lý tạm trong lúc chờ:** Tạm giữ nguyên hiện trạng
-- **Kết quả:** 🗣️ Đang bàn
+- **Kết quả:** ✅ [QĐ-001](so-quyet-dinh.md#qđ-001)
 
 ## P-002
 
@@ -57,19 +55,18 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
 - **Link CVAT:**
   - https://cvat.note.transformerlabs.ai/tasks/148/jobs/1444?frame=58 — Đường nhiều làn cùng chiều và ngược chiều (phân tách bởi vạch `lane/double yellow`), có nhiều ô tô đang lưu thông và đỗ bên đường.
 - **Mô tả:** Khi gán nhãn vùng di chuyển (Drivable Area) bằng Polygon theo §4.1, tài liệu chưa quy định cụ thể các vấn đề thực tế:
-  1. *Phân chia Polygon theo làn đường:* Khi có nhiều làn xe (ví dụ 2 làn cùng chiều bên phải vạch vàng kép, và làn ngược chiều bên trái), nên vẽ 1 polygon bao trùm toàn bộ các làn cùng chiều, hay phải vẽ riêng từng làn? Giữa làn cùng chiều và làn ngược chiều xử lý nhãn thế nào?
+  1. *Phân chia Polygon theo làn đường:* Khi có nhiều làn xe, nên vẽ 1 polygon bao trùm toàn bộ các làn cùng chiều, hay phải vẽ riêng từng làn?
   2. *Polygon đường đi có được bao trùm các vật thể trên đường không:* Khi vẽ polygon vùng đường xe chạy (`area/drivable`), có được vẽ bao trùm xuyên qua các vật thể đang có trên mặt đường (ô tô, xe máy, người đi bộ...) hay phải "né" (khoét đường viền lượn vòng quanh vật thể)?
   3. *Sự khác biệt giữa Polygon vùng đường và Polyline vạch kẻ làn:* Cần làm rõ quy ước để tránh nhầm lẫn giữa việc vẽ Polygon mặt đường (cho phép bao trùm xe) và vẽ Polyline vạch sơn (bị xe che thì phải ngắt theo §4.2).
 - **Các cách hiểu:**
   - **Vấn đề 1 — Gộp hay tách làn:**
-    - *Cách 1.1 (Tách từng làn đơn lẻ):* Mỗi làn xe vẽ một polygon riêng biệt. (Nhược điểm: rất tốn công, không đúng bản chất vùng di chuyển tự do vì xe có thể chuyển làn; việc phân làn đã có Polyline lane marking đảm nhiệm).
+    - *Cách 1.1 (Tách từng làn đơn lẻ):* Mỗi làn xe vẽ một polygon riêng biệt. (Nhược điểm: rất tốn công, không đúng bản chất vùng di chuyển tự do vì xe có thể chuyển làn).
     - *Cách 1.2 (Theo chuẩn BDD100K - Đề xuất):* Gộp toàn bộ các làn cùng chiều mà xe ego có quyền đi thành 1 polygon mang nhãn `area/drivable`. Riêng phần đường ngược chiều (phía bên kia vạch `double yellow`) thì vẽ thành một polygon riêng mang nhãn `area/alternative`.
   - **Vấn đề 2 — Polygon có bao trùm các vật thể (ô tô, xe máy, người...) trên đường không:**
-    - *Cách 2.1 (Né / khoét quanh vật thể):* Vẽ polygon lượn viền quanh từng ô tô hoặc người trên đường. (Nhược điểm: polygon cực kỳ phức tạp, nhiều đỉnh thừa vi phạm §4.1, dễ bị lỗi tự cắt *self-intersection*, làm biến dạng hình học mặt đường).
-    - *Cách 2.2 (Bao trùm vật thể - Đề xuất theo chuẩn BDD100K):* **Được và nên bao trùm**. Polygon drivable bám sát biên thực tế của mặt đường (mép vỉa hè / curb), đi thẳng qua vị trí đáy/bánh xe của các phương tiện và người. Lý do: Mặt đường là lớp nền vật lý (*background*), các phương tiện/người là các đối tượng độc lập nằm đè lên trên (*foreground*) đã được gán Bounding Box riêng.
-  - **Lưu ý đối với Polyline vạch kẻ làn (§4.2):** Khác với Polygon, vạch kẻ làn (Polyline) **không được bao trùm / vẽ xuyên qua vật thể**. Nếu vạch sơn bị bánh xe/thân xe đè lên mất dấu thì phải ngắt polyline tại điểm bị che khuất và bắt đầu đoạn mới khi vạch sơn xuất hiện trở lại.
-- **Xử lý tạm trong lúc chờ:** Tạm dừng gán nhãn polygon drivable area ở các frame nhiều xe phức tạp; trao đổi nội bộ đội và tham vấn BTC/Mentor để chốt quy chuẩn chính thức.
-- **Kết quả:** 🗣️ Đang bàn.
+    - *Cách 2.1 (Né / khoét quanh vật thể):* Vẽ polygon lượn viền quanh từng ô tô hoặc người trên đường. (Nhược điểm: polygon cực kỳ phức tạp, nhiều đỉnh thừa, dễ lỗi self-intersection).
+    - *Cách 2.2 (Bao trùm vật thể - Đề xuất theo chuẩn BDD100K):* **Được và nên bao trùm**. Polygon drivable bám sát biên thực tế của mặt đường, đi thẳng qua vị trí đáy/bánh xe của các phương tiện và người.
+- **Xử lý tạm trong lúc chờ:** Thảo luận nội bộ đội và tham khảo quy chuẩn BDD100K.
+- **Kết quả:** ✅ [QĐ-002](so-quyet-dinh.md#qđ-002)
 
 ## P-003
 
@@ -80,17 +77,17 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
 - **Người phát hiện:** @Khúc Việt Anh · 17/09/2026
 - **Link CVAT:** https://cvat.note.transformerlabs.ai/tasks/148/jobs/1442?frame=0 — vạch xương cá (chevron/gore area) bên phải đường phân tách làn, có tag `UNCERTAIN_BOUNDARY`
 - **Mô tả:** Mặt đường cao tốc xuất hiện khu vực vạch xương cá (chevron marking / gore area / đảo mềm phân tách luồng xe) ở bên phải. Guideline hoàn toàn chưa có quy định cho cả 2 loại shape:
-  1. *Về Vùng di chuyển (Drivable Area – Polygon):* Vùng vạch xương cá này có được vẽ Polygon không? Nếu có thì gán nhãn `area/alternative` hay coi đây là vùng cấm đi vào (*non-drivable*) và không vẽ polygon?
-  2. *Về Vạch kẻ đường (Lane Marking – Polyline):* Taxonomy của guideline (§2) không có class `lane/chevron` hay `lane/gore`. Nếu phải gán nhãn vạch sơn thì dùng class nào (`lane/single other` hay `lane/single white`)? Quy cách vẽ là chỉ kẻ đường bao ranh giới hay phải kẻ chi tiết từng vệt sơn chéo bên trong?
+  1. *Về Vùng di chuyển (Drivable Area – Polygon):* Vùng vạch xương cá này có được vẽ Polygon không?
+  2. *Về Vạch kẻ đường (Lane Marking – Polyline):* Taxonomy của guideline (§2) không có class `lane/chevron` hay `lane/gore`. Quy cách vẽ là chỉ kẻ đường bao ranh giới hay phải kẻ chi tiết từng vệt sơn chéo bên trong?
 - **Các cách hiểu:**
   - **Vấn đề 1 — Drivable Area (Polygon):**
-    - *Cách 1.1 (Không vẽ Polygon - Đề xuất theo luật giao thông):* Vạch xương cá là vùng cấm phương tiện lưu thông/chèn vạch. Ranh giới `area/drivable` của làn xe dừng lại ở mép vạch sơn bao ngoài. Vùng xương cá được xem là non-drivable (bỏ trống).
-    - *Cách 1.2 (Vẽ Polygon `area/alternative`):* Về mặt vật lý đây là mặt đường phẳng, trong tình huống khẩn cấp xe vẫn có thể tấp vào nên vẽ polygon và gán nhãn `area/alternative`.
+    - *Cách 1.1 (Không vẽ Polygon - Đề xuất theo luật giao thông):* Vạch xương cá là vùng cấm phương tiện lưu thông/chèn vạch. Ranh giới `area/drivable` dừng lại ở mép ngoài vạch sơn bao ngoài (coi là non-drivable).
+    - *Cách 1.2 (Vẽ Polygon `area/alternative`):* Coi là vùng có thể tấp vào khi khẩn cấp.
   - **Vấn đề 2 — Lane Marking (Polyline):**
-    - *Cách 2.1 (Chỉ kẻ đường viền biên - Đề xuất):* Chỉ dùng Polyline kẻ đường biên ranh giới bao quanh vùng xương cá (dùng class `lane/single white` hoặc `lane/double white` tùy nét vạch). Bỏ qua các vệt sơn chéo bên trong để tiết kiệm thời gian và tránh rối mắt.
-    - *Cách 2.2 (Kẻ chi tiết từng vệt chéo):* Kẻ cả đường biên lẫn từng vệt sơn chéo bên trong bằng nhãn `lane/single other` (hoặc `lane/single white`). (Nhược điểm: tốn rất nhiều thời gian gán nhãn).
-- **Xử lý tạm trong lúc chờ:** Gắn tag `UNCERTAIN_BOUNDARY` tại frame 0 (Job #1442); tạm thời không vẽ polygon đè lên vùng xương cá và chỉ kẻ đường biên ngoài; đưa ra họp đội và hỏi Mentor/BTC để chốt quy ước chung.
-- **Kết quả:** 🗣️ Đang bàn
+    - *Cách 2.1 (Chỉ kẻ đường viền biên - Đề xuất):* Chỉ dùng Polyline kẻ đường biên ranh giới bao quanh vùng xương cá (dùng `lane/single white` hoặc `lane/double white`). Bỏ qua các vệt sơn chéo bên trong.
+    - *Cách 2.2 (Kẻ chi tiết từng vệt chéo):* Kẻ cả đường biên lẫn từng vệt sơn chéo bên trong.
+- **Xử lý tạm trong lúc chờ:** Gắn tag `UNCERTAIN_BOUNDARY` tại frame 0 (Job #1442); tạm thời không vẽ polygon đè lên vùng xương cá và chỉ kẻ đường biên ngoài.
+- **Kết quả:** ✅ [QĐ-003](so-quyet-dinh.md#qđ-003)
 
 ---
 

@@ -1,43 +1,48 @@
 # Nhật ký tuần 01 · 14/09 – 20/09/2026
 
-**Lead tuần này:** Đặng Văn Huy
-**Dữ liệu / task CVAT:** Task #148 (`W1-BBOX-G4-T1`) — Bounding Box ảnh giao thông (100 frames, 4 jobs)
+**Lead tuần này:** @Đặng Văn Huy  
+**Dữ liệu / task CVAT:** Task #148 (`W1-BBOX-G4-T1`) — [CVAT Task 148](https://cvat.note.transformerlabs.ai/tasks/148)
 
 ## Thành viên và phân công
 
 | Thành viên | Vị trí | Phân công tuần này |
 |---|---|---|
 | Đặng Văn Huy | Lead · Reviewer | Điều phối Task #148, phân chia job, theo dõi tiến độ, chốt edge case, review chất lượng gán nhãn |
-| Khúc Việt Anh  | Annotator | Gán nhãn Job #1442 |
-| Nguyễn Văn Hân  | Annotator | Gán nhãn Job #1443 |
-| Nhữ Đình Chiến  | Annotator | Gán nhãn Job #1444 |
-| Vũ Bảo Khánh | Annotator | Gán nhãn Job #1445 |
+| Khúc Việt Anh | Annotator | Gán nhãn Job #1442 (Frame 0–24) |
+| Nguyễn Văn Hân | Annotator | Gán nhãn Job #1443 (Frame 25–49) |
+| Nhữ Đình Chiến | Annotator | Gán nhãn Job #1444 (Frame 50–74) |
+| Vũ Bảo Khánh | Annotator | Gán nhãn Job #1445 (Frame 75–99) |
 
 ## Công việc
 
 | # | Nội dung công việc | Annotator | Reviewer | Hoàn thành | Ghi chú |
 |---|---|---|---|---|---|
 | 1 | Họp đầu tuần, thống nhất guideline và chia job Task #148 | Cả đội | — | ✅ 100% | Phân chia 4 job (mỗi job 25 frame) |
-| 2 | Job #1442 — 25 ảnh (frame 0–24), bbox phương tiện | @Khúc Việt Anh  | @Đặng Văn Huy | 🟡 90% | Stage: annotation, State: in progress |
-| 3 | Job #1443 — 25 ảnh (frame 25–49), bbox phương tiện | @Nguyễn Văn Hân  | @Khúc Việt Anh | 🟡 50%| Stage: annotation, State: in progress |
-| 4 | Job #1444 — 25 ảnh (frame 50–74), bbox phương tiện | @Nhữ Đình Chiến  | @Nguyễn Văn Hân  | 🟡 70% | Stage: annotation, State: in progress |
-| 5 | Job #1445 — 25 ảnh (frame 75–99), bbox phương tiện | @Vũ Bảo Khánh | @Khúc Việt Anh | 🟡 80% | Stage: validation, State: in progress |
+| 2 | Job #1442 — 25 ảnh (frame 0–24), bbox phương tiện | @Khúc Việt Anh | @Đặng Văn Huy | ✅ 100% | Đã gán 285 đối tượng, đang ở Stage: `acceptance` (Lead nghiệm thu) |
+| 3 | Job #1443 — 25 ảnh (frame 25–49), bbox phương tiện | @Nguyễn Văn Hân | @Khúc Việt Anh | ✅ 100% | Đã gán 246 đối tượng, Stage: `acceptance` (Lead nghiệm thu) |
+| 4 | Job #1444 — 25 ảnh (frame 50–74), bbox phương tiện | @Nhữ Đình Chiến | @Nguyễn Văn Hân | ✅ 100% | Đã gán 229 đối tượng, đang ở Stage: `acceptance` (Lead nghiệm thu) |
+| 5 | Job #1445 — 25 ảnh (frame 75–99), bbox phương tiện | @Vũ Bảo Khánh | @Khúc Việt Anh | ✅ 100% | Đã gán 299 đối tượng, Stage: `acceptance` (Lead nghiệm thu) |
 
 *Mức hoàn thành:* ✅ xong và đã qua review · 🟡 đang làm (ghi %) · ⛔ bị chặn (ghi lý do) · ⬜ chưa bắt đầu
 
-## Tổng kết (Cập nhật giữa tuần)
+## Tổng kết
 
-- **Tổng số ảnh:** 100 frame chia đều cho 4 job (25 ảnh / job).
-- **Tiến độ gán nhãn:** Cả 4 job đang ở trạng thái `in progress` (Stage: `annotation`), các thành viên đang tích cực tiến hành gán nhãn.
-- **Tỉ lệ qua review:** Chưa review nghiệm thu (chờ các job hoàn thành stage annotation).
-- **Edge case:** Đang gom các trường hợp khó (xe ở xa, xe bị che khuất, bóng phản chiếu trên kính lái) để chuẩn bị thảo luận và ghi nhận vào `problem-backlog.md` nếu cần.
+- **Đã gán:** 1.059 đối tượng / 100 ảnh (gồm 909 Bounding Box và 150 Polygon) — trung bình 10.6 đối tượng/ảnh:
+  - Job #1442 (Khúc Việt Anh): 285 đối tượng (234 bbox, 51 polygon)
+  - Job #1443 (Nguyễn Văn Hân): 246 đối tượng (221 bbox, 25 polygon)
+  - Job #1444 (Nhữ Đình Chiến): 229 đối tượng (202 bbox, 27 polygon)
+  - Job #1445 (Vũ Bảo Khánh): 299 đối tượng (252 bbox, 47 polygon)
+- **Qua review lần đầu:** Cả 4 job đã hoàn thành gán nhãn 100% và chuyển sang giai đoạn `acceptance` để Lead nghiệm thu lần cuối.
+- **Edge case mới / đã chốt:**
+  - Đã chốt: [P-001](../problem-backlog.md#p-001) thành [QĐ-001](../so-quyet-dinh.md#qđ-001), [P-002](../problem-backlog.md#p-002) thành [QĐ-002](../so-quyet-dinh.md#qđ-002), [P-003](../problem-backlog.md#p-003) thành [QĐ-003](../so-quyet-dinh.md#qđ-003).
+  - Vấn đề đang bàn: [P-004](../problem-backlog.md#p-004) (chưa đồng nhất gán nhãn `area/alternative`).
 
 ## Vướng mắc
 
-- Các phương tiện ở xa (kích thước nhỏ dưới ngưỡng quy định của guideline) cần thống nhất rõ có gán nhãn hay bỏ qua.
+- Chưa đồng nhất việc gán nhãn `area/alternative`: 2 job có gán (Job #1442 có 22 polygon, Job #1445 có 18 polygon), còn 2 job không gán frame nào ([P-004](../problem-backlog.md#p-004)).
 
-## Kế hoạch hoàn thiện tuần 02
+## Kế hoạch tuần sau
 
-- Hoàn thành gán nhãn 100% cho cả 4 job (#1442, #1443, #1444, #1445) trước hạn.
-- Reviewer tiến hành kiểm tra (Stage: validation), phản hồi các box sai lệch hoặc thiếu sót để annotator điều chỉnh.
-- Chốt lại số liệu tổng kết tuần, cập nhật backlog và sổ quyết định (nếu có phát sinh quy ước mới).
+- Lead hoàn tất nghiệm thu (`acceptance`) cho cả 4 job và chuyển trạng thái trên CVAT sang `completed`.
+- Họp thống nhất và chốt quyết định đối với [P-004](../problem-backlog.md#p-004) (`area/alternative`).
+- Export bản dataset cuối cùng sau khi hoàn tất toàn bộ task tuần 01.

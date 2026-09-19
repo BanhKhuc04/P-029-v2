@@ -7,7 +7,7 @@
 
 | Thành viên | Vị trí | Phân công tuần này |
 |---|---|---|
-| Khúc Việt Anh | Lead · Reviewer | Điều phối Task #202, phân chia job, theo dõi tiến độ, review |
+| Khúc Việt Anh | Lead · Reviewer | Điều phối Task #202, phân chia job, theo dõi tiến độ, chốt edge case, review chất lượng gán nhãn |
 | Đặng Văn Huy | Annotator | Gán nhãn Job #1658 (Frame 0–24) |
 | Nguyễn Văn Hân | Annotator | Gán nhãn Job #1659 (Frame 25–49) |
 | Nhữ Đình Chiến | Annotator | Gán nhãn Job #1660 (Frame 50–74) |

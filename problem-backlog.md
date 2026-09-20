@@ -12,10 +12,10 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
 | [P-001](#p-001) | Quy ước gán nhãn đường đi bộ: kẻ từng vạch sọc dọc hay chỉ kẻ các đường ngang giới hạn | Guideline chưa nói tới | LANE/CROSSWALK | ✅ Đã chốt | [QĐ-001](so-quyet-dinh.md#qđ-001) |
 | [P-002](#p-002) | Quy cách vẽ Polygon Drivable Area: gộp/tách làn và việc bao trùm vật thể trên đường | Guideline chưa nói tới | §4.1, §4.2 | ✅ Đã chốt | [QĐ-002](so-quyet-dinh.md#qđ-002) |
 | [P-003](#p-003) | Quy ước gán nhãn vạch xương cá (chevron): xử lý Drivable Area và class Polyline | Guideline chưa nói tới | §2, §4 | ✅ Đã chốt | [QĐ-003](so-quyet-dinh.md#qđ-003) |
-| [P-004](#p-004) | Chưa đồng nhất gán nhãn `area/alternative` giữa các job | Guideline mơ hồ | §2, §4.1 | 🗣️ Đang bàn | — |
-| [P-005](#p-005) | Ranh giới `road` vs `sidewalk` tại các đoạn hạ vỉa hè / lối xe ra vào (curb cut / ramp) | Guideline mơ hồ | §4 (road vs sidewalk) | 🗣️ Đang bàn | — |
-| [P-006](#p-006) | Phân định `vegetation` vs `terrain` tại thảm cỏ thấp xen kẽ gốc cây và bồn cây | Guideline mơ hồ | §4 (vegetation vs terrain) | 🗣️ Đang bàn | — |
-| [P-007](#p-007) | Phân loại `person` vs `rider` trong tình huống người đi bộ dắt xe hai bánh | Guideline mơ hồ | §4 (person vs rider) | 🗣️ Đang bàn | — |
+| [P-004](#p-004) | Chưa đồng nhất gán nhãn `area/alternative` giữa các job | Guideline mơ hồ | §2, §4.1 | ✅ Đã chốt | [QĐ-004](so-quyet-dinh.md#qđ-004) |
+| [P-005](#p-005) | Ranh giới `road` vs `sidewalk` tại các đoạn hạ vỉa hè / lối xe ra vào (curb cut / ramp) | Guideline mơ hồ | §4 (road vs sidewalk) | ✅ Đã chốt | [QĐ-005](so-quyet-dinh.md#qđ-005) |
+| [P-006](#p-006) | Phân định `vegetation` vs `terrain` tại thảm cỏ thấp xen kẽ gốc cây và bồn cây | Guideline mơ hồ | §4 (vegetation vs terrain) | ✅ Đã chốt | [QĐ-006](so-quyet-dinh.md#qđ-006) |
+| [P-007](#p-007) | Phân loại `person` vs `rider` trong tình huống người đi bộ dắt xe hai bánh | Guideline mơ hồ | §4 (person vs rider) | ✅ Đã chốt | [QĐ-007](so-quyet-dinh.md#qđ-007) |
 
 **Loại**
 
@@ -106,7 +106,7 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   1. *Cách 1:* Bắt buộc vẽ cả `area/alternative` cho toàn bộ phần đường xe có thể đi được nhưng thuộc chiều ngược lại hoặc vùng phụ.
   2. *Cách 2:* Chỉ ưu tiên vẽ `area/drivable` của làn xe ego, bỏ qua `area/alternative` nếu không có ranh giới rõ ràng.
 - **Xử lý tạm trong lúc chờ:** Đang bàn trong buổi họp nghiệm thu Task #148.
-- **Kết quả:** 🗣️ Đang bàn
+- **Kết quả:** ✅ [QĐ-004](so-quyet-dinh.md#qđ-004)
 
 ## P-005
 
@@ -123,7 +123,7 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   1. *Cách 1 (Gán `sidewalk` theo tuyến vỉa hè):* Giữ nguyên ranh giới mép đường liên tục (đường viền bó vỉa thẳng); toàn bộ phần dốc nghiêng hạ cốt vẫn thuộc `sidewalk`. Ưu điểm: đảm bảo tính liên tục của vỉa hè hình học.
   2. *Cách 2 (Gán `road` cho phần mặt dốc):* Phần dốc mà phương tiện có thể đi vào được gán nhãn `road`. Nhược điểm: ranh giới vỉa hè bị lõm nham nhở, khó thống nhất độ sâu dốc.
 - **Xử lý tạm trong lúc chờ:** Tạm thời gán là `sidewalk` theo đường thẳng mép bó vỉa; gắn cờ `UNCERTAIN_CLASS` tại Frame 12 Job #1658 để họp chốt.
-- **Kết quả:** 🗣️ Đang bàn
+- **Kết quả:** ✅ [QĐ-005](so-quyet-dinh.md#qđ-005)
 
 ## P-006
 
@@ -141,7 +141,7 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   1. *Cách 1 (Gộp theo khu vực chiếm ưu thế):* Với bồn cây có thảm cỏ và cây bụi đan xen phức tạp, gộp toàn bộ thành `vegetation`. Chỉ gán `terrain` khi là bãi đất trống phẳng hoặc thảm cỏ rộng không có cây bụi.
   2. *Cách 2 (Bóc tách mặt đất phẳng và thân cây):* Phần cỏ mọc phẳng sát đất gán `terrain`, phần thân/tán cây nhô lên khỏi mặt đất gán `vegetation`, nhưng yêu cầu vẽ bằng Polygon biên mềm để tránh phát sinh mask vụn.
 - **Xử lý tạm trong lúc chờ:** Tạm gán theo Cách 2 nhưng ưu tiên làm mịn biên mask; các thành viên cần tự gom và dọn sạch mask vụn trước khi bàn giao.
-- **Kết quả:** 🗣️ Đang bàn
+- **Kết quả:** ✅ [QĐ-006](so-quyet-dinh.md#qđ-006)
 
 ## P-007
 
@@ -158,7 +158,7 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   1. *Cách 1 (Gán `person`):* Tiêu chí phân biệt là tư thế cưỡi/ngồi trên phương tiện (mounted). Nếu người đi bộ chân bước trên mặt đất để đẩy/dắt xe thì tô pixel người là `person`, thân xe gán riêng là `motorcycle`/`bicycle`.
   2. *Cách 2 (Gán `rider`):* Mọi hành vi tương tác vật lý trực tiếp để điều khiển chuyển động của xe (kể cả dắt bộ) đều tính là `rider`.
 - **Xử lý tạm trong lúc chờ:** Tạm thống nhất gán `person` cho người dắt xe, phương tiện gán `motorcycle`/`bicycle` riêng; gắn tag `UNCERTAIN_CLASS` tại Frame 31 Job #1659.
-- **Kết quả:** 🗣️ Đang bàn
+- **Kết quả:** ✅ [QĐ-007](so-quyet-dinh.md#qđ-007)
 
 ---
 

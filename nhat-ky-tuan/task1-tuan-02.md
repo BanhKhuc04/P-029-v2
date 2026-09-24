@@ -37,11 +37,9 @@
   - Đã chốt: [P-001](../problem-backlog.md#p-001) thành [QĐ-001](../so-quyet-dinh.md#qđ-001), [P-002](../problem-backlog.md#p-002) thành [QĐ-002](../so-quyet-dinh.md#qđ-002), [P-003](../problem-backlog.md#p-003) thành [QĐ-003](../so-quyet-dinh.md#qđ-003), [P-004](../problem-backlog.md#p-004) thành [QĐ-004](../so-quyet-dinh.md#qđ-004).
 
 ## Vướng mắc
-
-- Đã giải quyết xong sự không đồng nhất về gán nhãn và open issue bằng quyết định [QĐ-004](../so-quyet-dinh.md#qđ-004).
+- Không có.
 
 ## Kế hoạch tuần sau
 
-- Lead hoàn tất nghiệm thu (`acceptance`) cho cả 4 job và chuyển trạng thái trên CVAT sang `completed`.
-- Rà soát các polygon bổ sung theo [QĐ-004](../so-quyet-dinh.md#qđ-004).
+- Lead hoàn tất nghiệm thu (`acceptance`) cho tất cả job và chuyển trạng thái trên CVAT sang `completed`.
 - Export bản dataset cuối cùng sau khi hoàn tất toàn bộ task tuần 02.

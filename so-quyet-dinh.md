@@ -18,6 +18,7 @@ cũ được gán theo cách cũ.
 | [QĐ-005](#qđ-005) | Ram dốc hạ cốt vỉa hè (Curb Cut / Driveway Ramp) gán nhãn `sidewalk` | 20/09/2026 | [P-005](problem-backlog.md#p-005) | Hiệu lực |
 | [QĐ-006](#qđ-006) | Phân định `vegetation` vs `terrain`: gộp bồn cây tán phủ dày, phân tầng nền cho dải cỏ lớn | 20/09/2026 | [P-006](problem-backlog.md#p-006) | Hiệu lực |
 | [QĐ-007](#qđ-007) | Người đi bộ dắt xe hai bánh gán nhãn `person`, xe gán class phương tiện riêng | 20/09/2026 | [P-007](problem-backlog.md#p-007) | Hiệu lực |
+| [QĐ-008](#qđ-008) | Quy ước hệ tọa độ local (X: dọc, Y: ngang, Z: cao) và hướng khi tạo 3D Cuboid | 01/10/2026 | [P-008](problem-backlog.md#p-008) | Hiệu lực |
 
 **Trạng thái:** Hiệu lực · Bị thay bởi QĐ-xxx · Huỷ (ghi lý do)
 
@@ -148,6 +149,30 @@ cũ được gán theo cách cũ.
   3. Nhãn `rider` chỉ áp dụng khi người đó đang ngồi/cưỡi trên xe (kể cả trường hợp dừng đèn đỏ chống chân).
 - **Việc phải làm theo:**
   - [x] Tháo tag `UNCERTAIN_CLASS` tại Frame 31 Job #1659 và xác nhận gán `person` cho người dắt xe (@Nguyễn Văn Hân)
+- **Trạng thái:** Hiệu lực
+
+## QĐ-008
+
+**Quy ước hệ tọa độ local (X: dọc, Y: ngang, Z: cao) và hướng khi tạo 3D Cuboid**
+
+- **Ngày:** 01/10/2026
+- **Người tham gia:** @Vũ Bảo Khánh (chốt theo giải đáp từ BTC), @Đặng Văn Huy, @Khúc Việt Anh, @Nguyễn Văn Hân, @Nhữ Đình Chiến
+- **Xuất phát từ:** [P-008](problem-backlog.md#p-008)
+- **Bối cảnh:** Khi thao tác trên CVAT-3D, hệ tọa độ X, Y, Z hiển thị trên scene là hệ tọa độ global của point cloud (hệ tọa độ gắn với thiết bị LiDAR/xe thu thập dữ liệu). Annotator dễ nhầm lẫn giữa trục global này với hướng local của cuboid cần vẽ, dẫn đến xoay sai trục chiều dài/ngang hoặc ngược hướng xe.
+- **Giải đáp & Hướng dẫn từ BTC:**
+  > *"trong phần label cuboid các bạn cần lưu ý: point cloud gốc có hệ tọa độ của LiDAR/xe dùng để thu thập dữ liệu. Các trục X, Y, Z các bạn thấy trên scene là hệ tọa độ global của point cloud trong CVAT, không phải hướng local của cuboid mà mình cần vẽ. (Và các bạn không cần label chiếc xe đang đi thu thập dữ liệu :D)*  
+  > *Khi vẽ cuboid cho từng ô tô, hãy đặt X local theo chiều dọc thân xe/hướng chính của xe, Y local theo chiều ngang xe, và Z local hướng lên trên theo chiều cao xe.*  
+  > *Để dễ quan sát hướng local của cuboid, các bạn bật “Cuboid Orientation” ở góc dưới bên phải màn hình. Dưới đây là một ví dụ minh họa."*
+- **Quyết định:**
+  1. Khi tạo 3D Cuboid cho phương tiện:
+     - **Trục X local:** Đặt dọc theo thân xe theo hướng tiến chính (mũi tên hướng / front heading của xe).
+     - **Trục Y local:** Đặt theo chiều ngang thân xe (width).
+     - **Trục Z local:** Hướng lên trên theo chiều cao xe (height).
+  2. Bắt buộc bật chế độ **“Cuboid Orientation”** (ở góc dưới bên phải màn hình làm việc CVAT-3D) để kiểm tra trực quan hướng của từng box trước khi lưu.
+  3. **Không** gán nhãn chiếc xe đang đi thu thập dữ liệu (ego vehicle).
+- **Việc phải làm theo:**
+  - [x] Phổ biến quy ước trục local và cách bật "Cuboid Orientation" cho toàn đội (@Vũ Bảo Khánh)
+  - [ ] Rà soát 100% yaw và hướng trục X local trong các job 3D Cuboid (@Cả đội)
 - **Trạng thái:** Hiệu lực
 
 ---

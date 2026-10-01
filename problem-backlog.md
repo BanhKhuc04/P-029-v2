@@ -16,6 +16,8 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
 | [P-005](#p-005) | Ranh giới `road` vs `sidewalk` tại các đoạn hạ vỉa hè / lối xe ra vào (curb cut / ramp) | Guideline mơ hồ | §4 (road vs sidewalk) | ✅ Đã chốt | [QĐ-005](so-quyet-dinh.md#qđ-005) |
 | [P-006](#p-006) | Phân định `vegetation` vs `terrain` tại thảm cỏ thấp xen kẽ gốc cây và bồn cây | Guideline mơ hồ | §4 (vegetation vs terrain) | ✅ Đã chốt | [QĐ-006](so-quyet-dinh.md#qđ-006) |
 | [P-007](#p-007) | Phân loại `person` vs `rider` trong tình huống người đi bộ dắt xe hai bánh | Guideline mơ hồ | §4 (person vs rider) | ✅ Đã chốt | [QĐ-007](so-quyet-dinh.md#qđ-007) |
+| [P-008](#p-008) | Quy ước hệ tọa độ local và hướng của 3D Cuboid (trục X, Y, Z local vs global) | Guideline chưa nói tới | §4.3 (Hướng / yaw) | ✅ Đã chốt | [QĐ-008](so-quyet-dinh.md#qđ-008) |
+| [P-009](#p-009) | Ngưỡng tối thiểu điểm LiDAR (Min points) để gán vật thể & giới hạn khoảng cách (Range cut-off) | Guideline chưa nói tới | §4.2, §4.4 | 🔴 Mở | Chờ thảo luận / Hỏi BTC |
 
 **Loại**
 
@@ -159,6 +161,49 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   2. *Cách 2 (Gán `rider`):* Mọi hành vi tương tác vật lý trực tiếp để điều khiển chuyển động của xe (kể cả dắt bộ) đều tính là `rider`.
 - **Xử lý tạm trong lúc chờ:** Tạm thống nhất gán `person` cho người dắt xe, phương tiện gán `motorcycle`/`bicycle` riêng; gắn tag `UNCERTAIN_CLASS` tại Frame 31 Job #1659.
 - **Kết quả:** ✅ [QĐ-007](so-quyet-dinh.md#qđ-007)
+
+## P-008
+
+**Quy ước hệ tọa độ local và hướng của 3D Cuboid: phân biệt trục local vs global và hướng xe**
+
+- **Loại:** Guideline chưa nói tới
+- **Mục guideline:** §4.3 — Hướng / yaw
+- **Người phát hiện:** @Vũ Bảo Khánh · 01/10/2026
+- **Link CVAT:** 3D Point Cloud Annotation (Task 3D Cuboid)
+- **Mô tả:** Guideline §4.3 chỉ nêu: *"Với phương tiện, đặt trục dài của cuboid theo hướng thân xe"*, chưa quy định cụ thể hệ tọa độ local của box và chiều vector hướng (yaw arrow) khi vẽ trên giao diện CVAT-3D:
+  - Point cloud gốc mang hệ tọa độ của thiết bị LiDAR/xe thu thập dữ liệu (đây là hệ tọa độ global của scene trong CVAT).
+  - Khi tạo 3D Cuboid cho từng ô tô/vật thể, annotator dễ nhầm lẫn giữa trục tọa độ global của scene với trục local của cuboid, dẫn đến đặt sai trục chiều dài/rộng hoặc xoay ngược hướng 180°.
+  - Chưa rõ có cần gán nhãn chiếc xe ego đang đi thu thập dữ liệu hay không.
+- **Phản hồi từ BTC:**
+  > *"trong phần label cuboid các bạn cần lưu ý: point cloud gốc có hệ tọa độ của LiDAR/xe dùng để thu thập dữ liệu. Các trục X, Y, Z các bạn thấy trên scene là hệ tọa độ global của point cloud trong CVAT, không phải hướng local của cuboid mà mình cần vẽ. (Và các bạn không cần label chiếc xe đang đi thu thập dữ liệu :D)*  
+  > *Khi vẽ cuboid cho từng ô tô, hãy đặt X local theo chiều dọc thân xe/hướng chính của xe, Y local theo chiều ngang xe, và Z local hướng lên trên theo chiều cao xe.*  
+  > *Để dễ quan sát hướng local của cuboid, các bạn bật “Cuboid Orientation” ở góc dưới bên phải màn hình. Dưới đây là một ví dụ minh họa."*
+- **Quy tắc chốt:**
+  1. **Trục X local:** Đặt theo chiều dọc thân xe / hướng chính tiến tới của xe (front).
+  2. **Trục Y local:** Đặt theo chiều ngang thân xe (width).
+  3. **Trục Z local:** Hướng lên trên theo chiều cao xe (height).
+  4. Bật chế độ **“Cuboid Orientation”** (góc dưới bên phải màn hình CVAT-3D) để kiểm tra trực quan hướng local của box.
+  5. **Không** gán nhãn chiếc xe đang đi thu thập dữ liệu (xe ego).
+- **Xử lý tạm trong lúc chờ:** Đã có câu trả lời chính thức từ BTC.
+- **Kết quả:** ✅ [QĐ-008](so-quyet-dinh.md#qđ-008)
+
+## P-009
+
+**Ngưỡng tối thiểu điểm LiDAR (Min points) để gán vật thể & giới hạn phạm vi khoảng cách (Range cut-off)**
+
+- **Loại:** Guideline chưa nói tới
+- **Mục guideline:** §4.2 — Kích thước & §4.4 — Khi vật thể bị che khuất hoặc point cloud thưa
+- **Người phát hiện:** @Vũ Bảo Khánh · 01/10/2026
+- **Link CVAT:** 3D Point Cloud Annotation (Task 3D Cuboid)
+- **Mô tả:** Guideline quy định: *"Khi vật thể bị che khuất hoặc point cloud thưa... không tạo cuboid chỉ dựa trên ảnh 2D nếu không có cơ sở 3D hợp lý trong point cloud"* và *"kiểm tra kỹ các cone xa vì point cloud thường thưa"*. Tuy nhiên tài liệu không đưa ra con số định lượng cụ thể:
+  1. Bao nhiêu điểm (points) LiDAR thì được coi là "đủ cơ sở 3D hợp lý" để tạo cuboid (ví dụ $\ge 3$ điểm hay $\ge 5$ điểm)?
+  2. Có giới hạn bán kính khoảng cách tối đa (range cut-off) tính từ tâm LiDAR hay không (ví dụ trong bán kính 50m, 70m hay toàn bộ tầm quét)?
+  - Thực tế: Có những vật thể ở rất xa (trên 60m) chỉ xuất hiện 1–2 điểm lác đác trong chùm LiDAR nhưng nhìn thấy lờ mờ trên ảnh camera. Người thì cố tạo box theo 2D, người lại bỏ qua dẫn đến tỷ lệ sót/thừa nhãn không đồng nhất giữa các thành viên.
+- **Các cách hiểu / Hướng đang cân nhắc:**
+  1. *Cách 1 (Ngưỡng điểm tối thiểu):* Chỉ tạo cuboid khi vật thể có tối thiểu $\ge 5$ điểm LiDAR rõ ràng và đối chiếu được hình khối qua camera. Cụm điểm $< 5$ điểm ở xa coi là nhiễu / không đủ độ tin cậy hình học 3D, bỏ qua.
+  2. *Cách 2 (Giới hạn khoảng cách kết hợp ngưỡng điểm):* Quy định bán kính tối đa là 50m. Trong bán kính 50m: vật thể có từ $\ge 3$ điểm và xác định được class qua camera thì gán; ngoài 50m thì bỏ qua nếu không rõ ràng.
+- **Xử lý tạm trong lúc chờ:** Ưu tiên gán các vật thể có chùm điểm LiDAR rõ khối ($\ge 5$ điểm) và đối chiếu được trên camera; các case nghi ngờ ở xa dưới 3 điểm gắn cờ/ghi lại frame để xin ý kiến BTC/mentor.
+- **Kết quả:** 🔴 Mở
 
 ---
 

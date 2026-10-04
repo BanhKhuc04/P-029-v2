@@ -18,6 +18,9 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
 | [P-007](#p-007) | Phân loại `person` vs `rider` trong tình huống người đi bộ dắt xe hai bánh | Guideline mơ hồ | §4 (person vs rider) | ✅ Đã chốt | [QĐ-007](so-quyet-dinh.md#qđ-007) |
 | [P-008](#p-008) | Quy ước hệ tọa độ local và hướng của 3D Cuboid (trục X, Y, Z local vs global) | Guideline chưa nói tới | §4.3 (Hướng / yaw) | ✅ Đã chốt | [QĐ-008](so-quyet-dinh.md#qđ-008) |
 | [P-009](#p-009) | Ngưỡng tối thiểu điểm LiDAR (Min points) để gán vật thể & giới hạn khoảng cách (Range cut-off) | Guideline chưa nói tới | §4.2, §4.4 | 🔴 Mở | Chờ thảo luận / Hỏi BTC |
+| [P-010](#p-010) | Khó phân biệt mặt đường trong 3D Point Cloud để căn đáy cuboid sát mặt đất (Ground Alignment) | Pain point công cụ | §4.2 (Vị trí / Z-grounding) | 🛠️ Làm tool | [Chi tiết](#p-010) |
+| [P-011](#p-011) | Thiếu pipeline Auto-QA tiền kiểm tra: lỗi 3D phát hiện muộn ở khâu review gây rework lớn | Pain point công cụ | §4 (Quy chuẩn 3D & QA) | 🛠️ Làm tool | [Chi tiết](#p-011) |
+| [P-012](#p-012) | Quá tải thị giác và sót/lặp kiểm tra khi frame có mật độ box dày đặc (Scene Clutter & Verification) | Pain point công cụ | §5 (Quy trình kiểm tra) | 🛠️ Làm tool | [Chi tiết](#p-012) |
 
 **Loại**
 
@@ -204,6 +207,87 @@ mỗi người sẽ tự xử lý theo một kiểu — và đó là nguồn l�
   2. *Cách 2 (Giới hạn khoảng cách kết hợp ngưỡng điểm):* Quy định bán kính tối đa là 50m. Trong bán kính 50m: vật thể có từ $\ge 3$ điểm và xác định được class qua camera thì gán; ngoài 50m thì bỏ qua nếu không rõ ràng.
 - **Xử lý tạm trong lúc chờ:** Ưu tiên gán các vật thể có chùm điểm LiDAR rõ khối ($\ge 5$ điểm) và đối chiếu được trên camera; các case nghi ngờ ở xa dưới 3 điểm gắn cờ/ghi lại frame để xin ý kiến BTC/mentor.
 - **Kết quả:** 🔴 Mở
+
+## P-010
+
+**Khó phân biệt mặt đường trong 3D Point Cloud để căn đáy cuboid sát mặt đất (Ground Surface Alignment / Object Grounding)**
+
+- **Loại:** Pain point công cụ
+- **Mục guideline:** §4.2 — Kích thước & Vị trí (Z-axis Grounding)
+- **Người phát hiện:** @Đặng Văn Huy · 04/10/2026
+- **Link CVAT:**
+  - https://cvat.note.transformerlabs.ai/jobs/4019?frame=12 — Xe ô tô và xe tải trên đoạn đường có độ dốc nhẹ, đáy box bị lơ lửng (floating) hoặc lún dưới mặt đường (submerged) do mật độ điểm mặt đường thưa và không có mặt phẳng tham chiếu.
+  - https://cvat.note.transformerlabs.ai/jobs/4021?frame=45 — Xe đỗ ở mép đường dốc nghiêng; annotator phải xoay 3D perspective nhiều góc để ước lượng đáy box bằng mắt thường.
+- **Mô tả & Bằng chứng thực tế (Evidence):**
+  - *Vấn đề thực tế:* Dữ liệu LiDAR 3D trên CVAT không có phân tách ground/non-ground plane, cũng không có lưới tham chiếu mặt đất. Tại các đoạn đường dốc, mấp mô hoặc ở cự ly xa (>25m), chùm tia LiDAR quét mặt đường rất thưa thớt hoặc bị tán xạ.
+  - *Khó khăn thao tác:* Annotator phải liên tục xoay camera 3D quanh đối tượng và chuyển sang các góc chiếu trực giao (Side/Front View) phóng to cực đại để ước lượng xem đáy cuboid đã chạm đất hay chưa. Việc căn chỉnh thủ công trục Z (tọa độ $z$ và chiều cao $h$) chiếm tới **35% - 40% tổng thời gian chỉnh 1 box**.
+  - *Hậu quả sai sót:* Căn chỉnh bằng mắt thường có độ dung sai lớn ($\pm 5 - 15\text{ cm}$). Khi Reviewer kiểm tra ở góc nhìn ngang, phát hiện hàng loạt box bị lỗi "floating" (bay trên không) hoặc "penetrating ground" (lún ngập dưới lòng đường). Đây là loại lỗi hình học phổ biến nhất, chiếm **~30% số ca reject/rework** giữa annotator và reviewer.
+- **Hướng đang cân nhắc (Đề xuất công cụ giải quyết):**
+  1. *Tool ước lượng mặt đường (Ground Plane Estimation):* Áp dụng thuật toán RANSAC mặt phẳng hoặc Patchwork++/CSF để lọc tập điểm ground points, hiển thị lưới tham chiếu hoặc tô màu riêng biệt cho điểm mặt đất trên giao diện 3D.
+  2. *Tool tự động "Snap-to-Ground" / Cảnh báo Z-Grounding:* Viết script tự động tính khoảng cách giữa mặt đáy cuboid ($z_{\min} = z - h/2$) với các điểm ground lân cận ($k$-nearest neighbors) trong bán kính đáy box; tự động snap đáy box sát mặt đường hoặc gắn cờ cảnh báo box bay lệch quá $\pm 5\text{ cm}$.
+- **Xử lý tạm trong lúc chờ:** Annotator chuyển sang Side View / Front View ở mức zoom lớn, lấy cụm điểm phản xạ thấp nhất của lốp xe làm mốc đáy; reviewer bắt buộc soi kỹ mặt cắt ngang từng phương tiện trước khi duyệt.
+- **Kết quả:** 🛠️ Làm tool (Đề xuất xây module kiểm tra Z-grounding & ước lượng mặt đường trong `source-tool/`)
+
+## P-011
+
+**Nhiều lỗi 3D (cuboid lơ lửng, ID đứt, thiếu attribute...) chỉ phát hiện ở khâu Review thủ công gây rework lớn; thiếu pipeline Auto-QA tiền kiểm tra**
+
+- **Loại:** Pain point công cụ
+- **Mục guideline:** §4 — Quy chuẩn gán nhãn 3D Cuboid & Quy trình QA/QC
+- **Người phát hiện:** @Vũ Bảo Khánh · 04/10/2026
+- **Link CVAT:**
+  - https://cvat.note.transformerlabs.ai/jobs/4020?frame=25 — Xe di chuyển qua các frame 20–30 bị đứt track ID giữa chừng (ID 12 biến mất ở frame 25 rồi xuất hiện lại với ID 18 ở frame 26); reviewer phải mở từng frame để đối soát và gán lại tracklet.
+  - https://cvat.note.transformerlabs.ai/jobs/4022?frame=60 — Box rỗng điểm LiDAR ở xa nhưng không có tag/comment giải trình, kèm theo thiếu attribute bắt buộc (`state`, `occlusion`).
+- **Mô tả & Bằng chứng thực tế (Evidence):**
+  - *Vấn đề thực tế:* Quy trình hiện tại phụ thuộc hoàn toàn vào việc Reviewer mở từng frame và kiểm tra thủ công bằng mắt trên CVAT. Trong khi đó, hầu hết các lỗi 3D nghiêm trọng đều tuân theo các quy tắc logic / hình học có thể quét tự động bằng code:
+    1. *Cuboid lơ lửng / lún đất:* Đáy box không khớp với cao độ mặt đường lân cận.
+    2. *Đứt gãy Track ID / Nhảy vị trí phi lý:* Tracklet ID bị ngắt quãng giữa các frame liền kề, hoặc đối tượng "dịch chuyển tức thời" (teleportation / velocity spike) với vận tốc phi thực tế.
+    3. *Kích thước dị thường (Dimension Anomaly):* Box có kích thước vi phạm ngưỡng vật lý của class (ví dụ: xe con dài 9m, người đi bộ cao 3m hoặc rộng 2.5m).
+    4. *Yaw jitter / Xoay ngược hướng:* Góc xoay yaw bị đảo 180° hoặc rung lắc đột ngột giữa các frame trong khi quỹ đạo xe đang thẳng.
+    5. *Box rỗng điểm (Empty Box):* Bounding box chứa 0 điểm hoặc $<3$ điểm LiDAR nhưng không có ghi chú/tag ngoại lệ.
+    6. *Thiếu thuộc tính bắt buộc (Missing Attributes):* Bỏ trống các trường `occluded`, `truncated`, `activity`.
+  - *Hậu quả & Đo lường:*
+    - Reviewer mất trung bình **3–5 phút cho mỗi frame** để rà soát thủ công toàn bộ các yếu tố trên. Một job 100 frame ngốn 5–8 giờ làm việc của reviewer.
+    - Việc phát hiện lỗi muộn ở khâu review thủ công gây lãng phí lớn: annotator phải làm lại (rework), tỷ lệ trả job chiếm **25% – 35% tổng thời lượng dự án**, làm chậm tiến độ giao nộp của toàn đội.
+- **Hướng đang cân nhắc (Đề xuất công cụ giải quyết — Pre-Review Auto-QA Pipeline):**
+  - Xây dựng một **Pipeline QA tự động chạy độc lập trước khi gửi review (Pre-review Automated QA Pipeline)** gồm 4 khối:
+    1. *Khối đọc dữ liệu (Data Ingestion):* Đọc file export nhãn (CVAT XML / OpenPCDet / JSON) kết hợp dữ liệu Point Cloud gốc (`.pcd` / `.bin`).
+    2. *Khối luật kiểm tra (Rule Engine):* Thực thi bộ luật kiểm tra tự động gồm:
+       - *Rule 1 (Dimensions):* Kiểm tra min/max chiều dài, rộng, cao theo bảng phân phối kích thước chuẩn của từng class taxonomy.
+       - *Rule 2 (Density):* Đếm điểm point cloud nằm trong box; cảnh báo box rỗng / box thưa dưới ngưỡng quy định.
+       - *Rule 3 (Grounding):* Phân tích khoảng cách cao độ Z đáy box so với mặt phẳng đất.
+       - *Rule 4 (Tracking Continuity):* Kiểm tra tính liên tục của Track ID qua chuỗi frame, vận tốc dịch chuyển ($\Delta d / \Delta t$), và độ biến thiên góc xoay ($\Delta \text{yaw}$).
+       - *Rule 5 (Attributes):* Kiểm tra tính đầy đủ của các thuộc tính bắt buộc.
+    3. *Khối lưu trữ & Tính điểm rủi ro (Data Store & Risk Scoring Engine):*
+       - Lưu toàn bộ kết quả kiểm tra vào kho dữ liệu có cấu trúc (SQLite / JSON log).
+       - Tính điểm rủi ro (Risk Score: Thấp / Trung bình / Cao) cho từng Job, từng Frame và từng Object dựa trên trọng số lỗi vi phạm.
+    4. *Khối xuất báo cáo (QA Dashboard & Priority Report):*
+       - Xuất báo cáo trực quan (HTML Dashboard / CSV summary) xếp hạng các frame có điểm rủi ro cao nhất (High Risk Frames).
+       - Reviewer và annotator mở trực tiếp danh sách cảnh báo này để ưu tiên kiểm tra và sửa ngay các frame đỏ/vàng, giảm thiểu 70% thời gian duyệt các frame sạch.
+- **Xử lý tạm trong lúc chờ:** Reviewer tự tạo checklist kiểm tra bằng mắt kết hợp filter CVAT; yêu cầu annotator tự rà soát Track ID qua thanh Timeline trước khi submit.
+- **Kết quả:** 🛠️ Làm tool (Đề xuất xây pipeline `qa-pre-review-pipeline` trong `source-tool/`)
+
+## P-012
+
+**Quá tải thị giác và sót/lặp kiểm tra khi frame có mật độ box dày đặc (Scene Clutter, Review Fatigue & Thiếu trạng thái xác minh từng box)**
+
+- **Loại:** Pain point công cụ
+- **Mục guideline:** §5 — Thao tác khuyến nghị trên CVAT & Quy trình kiểm tra chất lượng
+- **Người phát hiện:** @Khúc Việt Anh · 04/10/2026
+- **Link CVAT:**
+  - https://cvat.note.transformerlabs.ai/jobs/4022?frame=42 — Cảnh ngã tư đô thị mật độ cao với hơn 50 cuboids (hỗn hợp xe hơi, xe tải, xe máy, người đi bộ và dải cọc tiêu traffic cone); các box hiển thị chồng chéo trong không gian 3D.
+- **Mô tả & Bằng chứng thực tế (Evidence):**
+  - *Vấn đề thực tế:* Trong các cảnh giao thông phức tạp (ùn tắc, ngã tư), số lượng cuboid trên một frame rất lớn (từ 40 đến 80+ đối tượng). Mặc định CVAT hiển thị tất cả các bounding box dạng wireframe cùng lúc trên không gian 3D.
+  - *Hậu quả & Đo lường:*
+    - *Hiện tượng Clutter (Che khuất tầm nhìn):* Các box lớn phía trước che lấp hoàn toàn các box nhỏ (pedestrian, traffic cone, barrier) nằm ở phía sau hoặc xen kẽ giữa các làn.
+    - *Hiện tượng Cognitive Fatigue & Bỏ sót (Missed Objects):* Không có dấu hiệu phân biệt giữa box "đã được kiểm tra kỹ" và box "chưa kiểm tra", dẫn đến tỷ lệ bỏ sót lỗi hình khối/yaw ở các box khuất lên tới **15% – 20%**.
+    - *Lãng phí thời gian do kiểm tra trùng lặp (Redundant Re-checking):* Reviewer click kiểm tra đi kiểm tra lại một box nhiều lần vì không nhớ mình đã duyệt qua nó chưa. Ước tính mất thêm **25% – 30% thời gian review** cho mỗi frame đông đúc chỉ để định vị đối tượng.
+- **Hướng đang cân nhắc (Đề xuất công cụ giải quyết):**
+  1. *Cơ chế Verification State Tracking (Đánh dấu tiến độ review từng box):* Bổ sung thuộc tính tạm hoặc script đánh dấu trạng thái `status: verified` / `needs_fix`. Hộp đã kiểm tra được làm mờ (dim/lower opacity) hoặc chuyển màu xanh lá, giúp các box chưa duyệt nổi bật rõ trên màn hình.
+  2. *Chế độ Solo / Focus Inspector Mode:* Script hoặc tiện ích hỗ trợ phím tắt (Next / Prev Object) tự động cô lập (isolate) duy nhất 1 box và cụm điểm LiDAR của nó, đồng thời căn camera vào tâm box để annotator/reviewer duyệt tuần tự từ đầu đến cuối danh sách mà không bị phân tâm bởi các box khác.
+  3. *Bộ lọc theo cự ly / lớp (Depth Slicing & Class Grouping):* Cho phép ẩn/hiện box theo các lát cắt cự ly (ví dụ: $<20\text{m}$, $20–50\text{m}$, $>50\text{m}$) để kiểm tra từng tầng không gian một cách khoa học.
+- **Xử lý tạm trong lúc chờ:** Sử dụng bảng Object List bên phải CVAT để ẩn/hiện thủ công từng nhãn; tuy nhiên thao tác này tốn nhiều lượt click chuột và dễ gây nhầm lẫn.
+- **Kết quả:** 🛠️ Làm tool (Đề xuất phát triển tiện ích hỗ trợ review tuần tự và quản lý trạng thái kiểm tra)
 
 ---
 

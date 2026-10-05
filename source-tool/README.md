@@ -25,7 +25,7 @@ PointSnap 3D đọc job 3D cuboid qua REST API của CVAT, tìm 3 loại lỗi t
 |---|---|---|
 | Lơ lửng / lún | Khoảng cách đáy box tới mặt đất ước lượng cục bộ quanh box | > 10 cm / > 20 cm |
 | Sai kích thước | l, w, h so với khoảng thường gặp của class; độ lệch so với trung vị của track | Theo class; > max(10 cm, 5%) / > max(30 cm, 15%) |
-| Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai frame bên cạnh; track kết thúc rồi track cùng class bắt đầu ngay gần đó; đoạn dài chỉ có box nội suy | Xe: 1 m / 2 m; tách ID chỉ Cảnh báo |
+| Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai frame bên cạnh; track kết thúc rồi track cùng class bắt đầu ngay gần đó; đoạn dài chỉ có box nội suy (nếu kịp) | Xe: 1 m / 2 m; tách ID chỉ Cảnh báo |
 
 Ngưỡng nằm trong `config.yaml` và sẽ chốt lại trên dữ liệu. Chi tiết từng luật: [mục 4.1 của bản đề xuất](pointsnap-3d/de-xuat-de-tai.md#41--ba-bộ-phát-hiện).
 
@@ -106,10 +106,12 @@ Những chỗ tool **không** kiểm, annotator và reviewer vẫn phải tự s
 
 ## Người viết
 
-| Người | Phụ trách |
-|---|---|
-| @Vũ Bảo Khánh | Kiến trúc, `config.yaml`, CLI, `gate`, `diff`, bộ chèn lỗi giả |
-| @Nhữ Đình Chiến | Dựng CVAT, chuyển nuScenes → CVAT, adapter CVAT |
-| @Đặng Văn Huy | Ước lượng mặt đất, phát hiện lơ lửng / lún |
-| @Nguyễn Văn Hân | Phát hiện sai kích thước và đứt track, đánh giá precision / recall |
-| @Khúc Việt Anh | Báo cáo HTML/CSV, cấu hình cờ lỗi trên CVAT, tài liệu |
+| Người | Vai trò | Phụ trách |
+|---|---|---|
+| @Khúc Việt Anh | Code | Chuyển nuScenes → CVAT, adapter CVAT, CLI, `scan --flag`, `gate`, báo cáo HTML/CSV, bộ chèn lỗi giả, `diff` |
+| @Đặng Văn Huy | Code | Ước lượng mặt đất, 3 bộ phát hiện, tính precision / recall |
+| @Nhữ Đình Chiến | Tester | Dựng CVAT, cấu hình label spec, kiểm toàn quy trình trên CVAT |
+| @Nguyễn Văn Hân | Tester | Ca kiểm thử có đáp án, đặc tả lỗi chèn giả, chủ trì đánh giá |
+| @Vũ Bảo Khánh | Tester | Dùng thử như annotator, điều phối, tài liệu và video demo |
+
+Phân công chi tiết theo ngày: [mục 7 của bản đề xuất](pointsnap-3d/de-xuat-de-tai.md#7-kế-hoạch-triển-khai-15-tuần-có-cổng-kiểm-soát).

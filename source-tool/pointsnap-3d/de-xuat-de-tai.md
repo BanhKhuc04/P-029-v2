@@ -28,8 +28,9 @@
 |---|---|
 | Scope vào 2–3 lỗi dễ định lượng | Chỉ tập trung **3 loại lỗi**: **lơ lửng/lún đất**, **sai kích thước**, **đứt track**. Mỗi loại có định nghĩa định lượng và ngưỡng rõ ràng (mục 4.1) |
 | Làm tốt detect + cảnh báo trước | Toàn bộ 1,5 tuần dành cho **phát hiện và cảnh báo**: báo cáo, gắn cờ lỗi trên CVAT, cổng kiểm tra. Đo precision/recall riêng cho từng loại lỗi |
-| Rồi mới mở rộng sang auto-correction | Tự sửa chuyển sang [Hướng phát triển](#11-hướng-phát-triển). Trong 1,5 tuần chỉ có một phần mở rộng có điều kiện: `fix --z --dry-run` xuất kế hoạch sửa, **không ghi** vào CVAT (mục 4.5) |
+| Rồi mới mở rộng sang auto-correction | Tự sửa chuyển toàn bộ sang [Hướng phát triển](#11-hướng-phát-triển). Trong 1,5 tuần tool không sửa box nào |
 | — | Rút thời gian từ 3 tuần còn **1,5 tuần**. Các module làm song song ngay từ ngày 1 nhờ mô hình dữ liệu chung, không phải chờ CVAT (mục 3.4, mục 7) |
+| — | Nhóm chia **2 người code** (Khúc Việt Anh, Đặng Văn Huy) và **3 tester** (Vũ Bảo Khánh, Nhữ Đình Chiến, Nguyễn Văn Hân); phạm vi cắt gọn tương ứng (mục 1.1, mục 7.1) |
 
 ---
 
@@ -56,12 +57,12 @@ Reviewer hiện phải soi thủ công từng frame để tìm các lỗi này.
 - Báo cáo HTML/CSV có link mở thẳng frame; **gắn cờ lỗi lên box** để lọc ngay trong CVAT; cổng kiểm tra ĐẠT/KHÔNG ĐẠT trước khi nộp.
 - Công cụ đánh giá: so sánh phiên bản nhãn, bộ lỗi chèn giả, đo precision/recall theo từng loại lỗi.
 
-**Mở rộng có điều kiện (chỉ khi phần cam kết kịp tiến độ):**
-- `fix --z --dry-run`: xuất file CSV kế hoạch sửa Z cho box lơ lửng/lún, không ghi vào CVAT (cần ground đạt kiểm chứng ở G1).
-- Trang tổng quan so sánh với lần quét trước.
+**Làm nếu kịp:**
+- Luật "khoảng nội suy dài" (kiểu 3 của bộ phát hiện đứt track).
 
 **Ngoài phạm vi (1,5 tuần):**
-- Tự sửa có ghi vào CVAT (`fix --apply`, `fix --size`, `restore`) và gợi ý sửa đứt track — xem [Hướng phát triển](#11-hướng-phát-triển).
+- Mọi chức năng sửa: `fix --z` (kể cả bản `--dry-run` chỉ xuất kế hoạch), `fix --size`, `restore`, gợi ý sửa đứt track — xem [Hướng phát triển](#11-hướng-phát-triển).
+- Trang tổng quan so sánh giữa các lần quét.
 - Thêm luật phát hiện: ngược yaw 180°, box rỗng, chồng lấn, thiếu thuộc tính.
 - Cảnh báo sót đối tượng, tự sinh box (Pre-Box), detector 3D.
 - Sửa mã nguồn / giao diện CVAT; Issue, webhook.
@@ -220,7 +221,7 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 |---|---|
 | **Kiểu 1 — Nhảy vị trí** | Đổi tâm box về tọa độ toàn cục bằng vị trí xe thu. Với keyframe k có keyframe ở cả hai phía, tính độ lệch so với vị trí nội suy tuyến tính theo thời gian từ hai keyframe đó: `r_k = ‖p_k − p̂_k‖`. Một cú nhảy cũng làm lệch hai frame bên cạnh, nên chỉ báo frame có `r_k` lớn nhất trong mỗi cụm liên tiếp. Ngưỡng Cảnh báo / Lỗi: xe 1,0 / 2,0 m; xe đạp, xe máy 0,75 / 1,5 m; người 0,5 / 1,0 m. Ở hai đầu track chỉ kiểm tra thô bằng `v_max(class) × Δt`. Không có vị trí xe thu thì chỉ báo ở mức Cảnh báo |
 | **Kiểu 2 — Tách ID** | Track A kết thúc ở frame k và một track B **cùng class** bắt đầu trong khoảng k+1 đến k+3, vị trí đầu của B gần vị trí ngoại suy của A (xe < 2 m, người < 1 m) → nghi cùng một đối tượng bị tách thành hai ID |
-| **Kiểu 3 — Khoảng nội suy dài** | Track có ≥ N frame liên tiếp chỉ có box nội suy (mặc định N = 2, tức ≥ 1 giây), trong khi đối tượng dịch chuyển > 1 m trong đoạn đó → box nội suy dễ lệch khỏi đối tượng, nên thêm keyframe |
+| **Kiểu 3 — Khoảng nội suy dài** *(làm nếu kịp)* | Track có ≥ N frame liên tiếp chỉ có box nội suy (mặc định N = 2, tức ≥ 1 giây), trong khi đối tượng dịch chuyển > 1 m trong đoạn đó → box nội suy dễ lệch khỏi đối tượng, nên thêm keyframe |
 | **Chống báo động giả** | Bỏ qua đối tượng ở rìa tầm cảm biến; kiểu 2 và kiểu 3 chỉ ở mức Cảnh báo |
 
 ### 4.2. 📋 Báo cáo, cờ lỗi & cổng kiểm tra
@@ -249,10 +250,6 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 
 Thêm thuộc tính checkbox `reviewed` vào label spec và bộ lọc "chưa duyệt", để reviewer đi theo hàng đợi lỗi và đánh dấu box đã xem. Cổng kiểm tra có thể thêm tiêu chí "% box đã duyệt".
 
-### 4.5. 🛠️ Mở rộng có điều kiện: `fix --z --dry-run`
-
-Chỉ làm khi ground đạt kiểm chứng ở G1 và phần đánh giá kịp tiến độ ngày 12–13/10. Lệnh tính `z_tâm = z_ground + h/2` (giữ nguyên h, roll, pitch) cho các box có |Δz| ≤ 0,3 m và xuất **file CSV kế hoạch** (box nào, giá trị cũ/mới, lý do). **Không ghi gì vào CVAT.** Nhóm dùng CSV này để đo trước sai số Z sau khi sửa so với nhãn chuẩn, làm cơ sở cho giai đoạn tự sửa sau này.
-
 ---
 
 ## 5. KIẾN TRÚC, HIỆU NĂNG & CHI PHÍ
@@ -274,7 +271,7 @@ pointsnap/
 - **Mô hình dữ liệu cố định:** `Cuboid(center, dims, yaw, label, track_id, frame, attrs)`, **chốt trong ngày 05/10** để cả nhóm làm song song. Core chỉ nhận và trả các đối tượng này nên đổi nền tảng hay đổi bộ dữ liệu chỉ cần viết thêm adapter.
 - **Thư viện (mã nguồn mở):** numpy, scipy (KD-tree), Open3D hoặc pypcd4, `nuscenes-devkit`, `cvat-sdk` (ghim cùng phiên bản với server), jinja2, pyyaml, pytest.
 - **Chi phí:** hạ tầng bằng 0 (laptop CPU, phần mềm mã nguồn mở, dữ liệu công khai). Không cần GPU.
-- **Kiểm thử:** cảnh tổng hợp đã biết đáp án để khóa công thức; bộ lỗi chèn giả; vòng lặp ghi – đọc – so sánh cho adapter CVAT.
+- **Kiểm thử:** tester viết các ca kiểm thử có đáp án (ví dụ box đặt lệch Z một lượng biết trước) và người code khóa chúng bằng pytest; bộ lỗi chèn giả; vòng lặp ghi – đọc – so sánh cho adapter CVAT.
 - **Bảo mật:** token qua biến môi trường; không commit token và dữ liệu nuScenes lên repo.
 - **Dùng AI agent hỗ trợ viết code** (nếu ban tổ chức cho phép, sẽ ghi rõ trong báo cáo): viết test trước, code chỉ được nhận khi qua test; quy ước dùng chung trong `CONVENTIONS.md`; agent không tự chạy lệnh có ghi vào CVAT.
 
@@ -292,32 +289,34 @@ pointsnap/
 
 **Giả định:** 8 ngày làm việc (05–09/10 và 12–14/10); 15/10 là dự phòng và nộp.
 
+**Cách chia việc:** **2 người code** (Việt Anh, Huy) chỉ viết code. **3 tester** (Khánh, Chiến, Hân) nhận mọi việc còn lại: dựng môi trường, dữ liệu, kiểm thử, đánh giá, tài liệu. Mỗi phần code có tester kiểm ngay khi chạy được: Chiến kiểm phía CVAT (phần của Việt Anh), Hân kiểm thuật toán (phần của Huy), Khánh dùng thử như annotator thật.
+
 **Cách rút ngắn:** mô hình `Cuboid` và `config.yaml` chốt ngay ngày 05/10. Module ground và các bộ phát hiện chạy trên adapter nuScenes từ ngày đầu, song song với việc dựng CVAT; khi adapter CVAT xong thì chỉ cần nối vào.
 
 | Thời gian | Nội dung công việc | Cổng kiểm soát |
 |---|---|---|
-| **05–06/10** | **Chiến:** dựng CVAT; chuyển 1 cảnh sang PCD, tạo task 3D, nạp nhãn chuẩn dạng track; tạo task trống cho cảnh tự gán; spike (mục 10). **Khánh:** mô hình `Cuboid`, `config.yaml`, khung CLI, `CONVENTIONS.md`. **Hân:** adapter nuScenes; thống kê kích thước theo class; bộ phát hiện kích thước bản 1. **Huy:** module ground trên dữ liệu nuScenes. **Việt Anh:** template báo cáo HTML/CSV với dữ liệu mẫu; cấu hình `pointsnap_error`, `reviewed`; hướng dẫn tự gán nhãn | **G0 (06/10):** 1 cảnh hiển thị đúng trên CVAT với nhãn chuẩn; chốt hệ tọa độ và layout `points` |
-| **07–08/10** | **Chiến:** chuyển đủ 10 cảnh; adapter CVAT (đọc nhãn, point cloud, ghi cờ lỗi, bản chụp). **Huy:** kiểm chứng ground ~200 box; bộ phát hiện lơ lửng/lún. **Hân:** bộ phát hiện đứt track (3 kiểu). **Khánh:** `gate`, `diff`. **Việt Anh (07/10) và Khánh (08/10):** tự gán nhãn lại 1 cảnh | **G1 (08/10):** ground đạt hoặc không đạt ngưỡng kiểm chứng (quyết định luật lơ lửng/lún có mức Lỗi hay chỉ Cảnh báo); 3 bộ phát hiện chạy trên nhãn chuẩn 1 cảnh |
-| **09/10** | **Tích hợp end-to-end trên CVAT** (Chiến chủ trì): `scan --flag` → lọc box có cờ lỗi → `gate`. **Khánh:** bộ chèn lỗi giả. **Việt Anh:** nối báo cáo với dữ liệu thật, link mở frame. **Huy, Hân:** chạy 3 bộ phát hiện trên 5 cảnh tinh chỉnh, chỉnh ngưỡng bước đầu | **G2 (09/10):** demo được toàn bộ quy trình trên CVAT với 1 cảnh; 3 bộ phát hiện chạy trên toàn bộ bản mini |
-| **12–13/10** | **Đánh giá** (Hân chủ trì): chốt ngưỡng trên 5 cảnh tinh chỉnh, chạy kiểm tra trên 5 cảnh còn lại; đo mọi chỉ số ở mục 8. **Chiến:** so khớp kết quả hai adapter trên 2 cảnh. **Việt Anh:** đo thời gian review. Cả nhóm sửa lỗi. *Nếu kịp:* `fix --z --dry-run` (Khánh, Huy) | **G3 (13/10):** có số liệu cho mọi chỉ số ở mục 8; ngưỡng chốt trong `config.yaml` |
-| **14/10** | Đóng gói, README, hướng dẫn sử dụng trong `source-tool/`, video demo, báo cáo kết quả | — |
+| **05–06/10** | **Việt Anh:** mô hình `Cuboid`, `config.yaml`, khung CLI (chốt trong 05/10); script chuyển nuScenes → PCD, tạo task 3D, nạp nhãn chuẩn dạng track. **Huy:** adapter nuScenes; module ground. **Chiến:** dựng CVAT Docker, tải nuScenes; chạy script chuyển đổi và kiểm bằng mắt box hiển thị đúng; cấu hình `pointsnap_error`, `reviewed`; tạo task trống cho cảnh tự gán; các mục spike kiểm trên giao diện (mục 10). **Hân:** viết ca kiểm thử có đáp án; đặc tả bộ lỗi chèn giả (mục 8.1). **Khánh:** điều phối; hướng dẫn tự gán nhãn; mẫu báo cáo HTML và câu chữ thông báo lỗi; khoảng kích thước cho class ít mẫu | **G0 (06/10):** 1 cảnh hiển thị đúng trên CVAT với nhãn chuẩn; chốt hệ tọa độ và layout `points` |
+| **07–08/10** | **Việt Anh:** adapter CVAT (đọc nhãn, point cloud, ghi cờ lỗi, bản chụp); `gate`; báo cáo HTML/CSV theo mẫu của Khánh. **Huy:** kiểm chứng ground ~200 box; bộ phát hiện lơ lửng/lún; bộ phát hiện sai kích thước. **Chiến (07/10) và Khánh (08/10):** tự gán nhãn lại 1 cảnh. **Chiến (08/10):** kiểm ghi cờ lỗi: đúng box, lọc được trong canvas 3D. **Hân:** đối chiếu ground ước lượng bằng mắt; chạy ca kiểm thử cho bộ phát hiện lơ lửng/lún và kích thước | **G1 (08/10):** ground đạt hoặc không đạt ngưỡng kiểm chứng (quyết định luật lơ lửng/lún có mức Lỗi hay chỉ Cảnh báo); bộ phát hiện lơ lửng/lún và kích thước chạy trên nhãn chuẩn 1 cảnh |
+| **09/10** | **Việt Anh:** tích hợp end-to-end trên CVAT: `scan --flag` → lọc box có cờ lỗi → `gate`. **Huy:** bộ phát hiện đứt track (nhảy vị trí, tách ID). **Chiến:** kiểm thử toàn quy trình trên CVAT. **Hân:** kiểm ca đứt track. **Khánh:** dùng thử như annotator, góp ý báo cáo và câu chữ | **G2 (09/10):** demo được toàn bộ quy trình trên CVAT với 1 cảnh; 3 bộ phát hiện chạy trên toàn bộ bản mini |
+| **12–13/10** | **Đánh giá** (Hân chủ trì). **Việt Anh:** bộ chèn lỗi giả theo đặc tả của Hân; `diff`; sửa lỗi tester báo. **Huy:** script precision/recall; chốt ngưỡng trên 5 cảnh tinh chỉnh; sửa lỗi. **Hân, Chiến:** xem tay từng cảnh báo trên nhãn chuẩn sạch, cảnh tự gán và 5 cảnh kiểm tra đã chèn lỗi (đúng hay báo nhầm); điền bảng chỉ số mục 8; so khớp kết quả hai adapter trên 1 cảnh. **Khánh:** đo thời gian review; bắt đầu README và báo cáo kết quả | **G3 (13/10):** có số liệu cho mọi chỉ số ở mục 8; ngưỡng chốt trong `config.yaml` |
+| **14/10** | **Khánh** (chủ trì): README, hướng dẫn sử dụng, video demo, báo cáo kết quả, slide. **Việt Anh, Huy:** đóng gói, dọn code, hướng dẫn cài đặt. **Chiến, Hân:** làm lại toàn bộ quy trình từ đầu theo README trên một máy khác để kiểm tài liệu | — |
 | **15/10** | Dự phòng, nộp | — |
 
-**Đường găng:** chuyển đổi nuScenes → CVAT + spike → adapter CVAT → tích hợp 09/10. Chiến chỉ làm các việc này đến 09/10. Ground không còn nằm trên đường găng nhờ adapter nuScenes, nhưng kết quả kiểm chứng ground ở G1 quyết định mức của luật lơ lửng/lún.
+**Đường găng:** có hai chuỗi, mỗi người code một chuỗi. Việt Anh: script chuyển đổi → adapter CVAT → tích hợp 09/10. Huy: ground → lơ lửng/lún → kích thước → đứt track. Cả hai người code đều kín lịch, nên **người code không nhận việc gì ngoài code**.
 
-**Thứ tự cắt nếu trễ:** `fix --z --dry-run` → trang tổng quan → đo thời gian review → kiểu "khoảng nội suy dài" → so khớp hai adapter (giảm còn 1 cảnh). **Không cắt:** bộ phát hiện lơ lửng/lún, sai kích thước, nhảy vị trí và tách ID; báo cáo; `scan --flag`; `gate`; đánh giá trên bộ lỗi chèn giả.
+**Thứ tự cắt nếu trễ:** kiểu "khoảng nội suy dài" → đo thời gian review → so khớp hai adapter → `diff` trên cảnh tự gán (khi đó bỏ chỉ số recall trên lỗi thật). **Không cắt:** bộ phát hiện lơ lửng/lún, sai kích thước, nhảy vị trí và tách ID; báo cáo; `scan --flag`; `gate`; đánh giá trên bộ lỗi chèn giả.
 
 ### 7.1. Phân công
 
-| Thành viên | Phụ trách | Ước lượng (ngày công) |
-|---|---|---|
-| **Vũ Bảo Khánh** | Kiến trúc, mô hình `Cuboid`, `config.yaml`, khung CLI, `CONVENTIONS.md`; `gate`; `diff`; bộ chèn lỗi giả; tự gán nhãn lại (1 ngày); *(mở rộng)* `fix --z --dry-run` | ~6,5 |
-| **Nhữ Đình Chiến** | Dựng CVAT, **script chuyển đổi nuScenes → CVAT**, spike; **adapter CVAT** (đọc nhãn, point cloud, ghi cờ lỗi, bản chụp); chủ trì tích hợp; so khớp hai adapter | ~6 |
-| **Đặng Văn Huy** | **Module ground** và kiểm chứng ground; **bộ phát hiện lơ lửng/lún**; đánh giá loại lỗi này | ~5,5 |
-| **Nguyễn Văn Hân** | Adapter nuScenes; thống kê kích thước theo class; **bộ phát hiện sai kích thước** và **đứt track**; chủ trì đánh giá, tính precision/recall | ~6,5 |
-| **Khúc Việt Anh** | Báo cáo HTML/CSV và link mở frame; cấu hình `pointsnap_error`, bộ lọc và `reviewed`; điều phối và tự gán nhãn lại (1 ngày); đo thời gian review; README, video demo, báo cáo kết quả | ~6 |
+| Thành viên | Vai trò | Phụ trách | Ước lượng (ngày công) |
+|---|---|---|---|
+| **Khúc Việt Anh** | Code — phía CVAT | Mô hình `Cuboid`, `config.yaml`, khung CLI, `CONVENTIONS.md`; **script chuyển đổi nuScenes → CVAT**; **adapter CVAT** (đọc nhãn, point cloud, ghi cờ lỗi, bản chụp); `scan --flag`, `gate`; báo cáo HTML/CSV; tích hợp; bộ chèn lỗi giả; `diff` | ~8 |
+| **Đặng Văn Huy** | Code — thuật toán | Adapter nuScenes; **module ground** và kiểm chứng ground; thống kê kích thước theo class; **3 bộ phát hiện** (lơ lửng/lún, sai kích thước, đứt track); script precision/recall | ~8 |
+| **Nhữ Đình Chiến** | Tester — môi trường & CVAT | Dựng CVAT Docker, tải nuScenes, chạy và kiểm script chuyển đổi; cấu hình label spec (`pointsnap_error`, `reviewed`); các mục spike kiểm trên giao diện; kiểm adapter CVAT và toàn quy trình `scan --flag` → lọc → `gate`; tự gán nhãn lại (1 ngày); so khớp hai adapter | ~6 |
+| **Nguyễn Văn Hân** | Tester — thuật toán & đánh giá | Ca kiểm thử có đáp án; đặc tả bộ lỗi chèn giả; đối chiếu ground bằng mắt; kiểm từng bộ phát hiện; chủ trì đánh giá: xem tay từng cảnh báo, điền bảng chỉ số mục 8 | ~6,5 |
+| **Vũ Bảo Khánh** | Tester — người dùng & tài liệu | Điều phối, nghiệm thu các cổng G0–G3; mẫu báo cáo HTML và câu chữ thông báo lỗi; khoảng kích thước cho class ít mẫu; dùng thử như annotator; tự gán nhãn lại (1 ngày); đo thời gian review; README, video demo, báo cáo kết quả, slide | ~7 |
 
-Tổng khoảng **30 ngày công trên 40 ngày công thô** (5 người × 8 ngày), tức khoảng 75% tải. Phần dư dành cho **nâng chất lượng phát hiện** và dự phòng.
+Tổng khoảng **35 ngày công trên 40 ngày công thô** (5 người × 8 ngày). Hai người code **kín 100% lịch**: dự phòng duy nhất là ngày 15/10 và thứ tự cắt ở trên. Tester còn dư khoảng 4 ngày công, dùng để kiểm thử sâu hơn và hỗ trợ dữ liệu.
 
 ---
 
@@ -362,9 +361,10 @@ Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sá
 
 | Rủi ro | Biện pháp |
 |---|---|
-| **1,5 tuần quá gấp** | Mô hình `Cuboid` chốt ngày 05/10; ground và bộ phát hiện làm trên adapter nuScenes song song với việc dựng CVAT; tự sửa đã chuyển ra ngoài phạm vi; thứ tự cắt định trước (mục 7) |
+| **1,5 tuần quá gấp, chỉ có 2 người code** | Người code chỉ làm code; môi trường, dữ liệu, kiểm thử, đánh giá và tài liệu do 3 tester nhận. Mô hình `Cuboid` chốt ngày 05/10; ground và bộ phát hiện làm trên adapter nuScenes song song với việc dựng CVAT. Tự sửa đã chuyển ra ngoài phạm vi; thứ tự cắt định trước (mục 7); dùng AI agent hỗ trợ viết code (mục 5) |
+| **Một người code bị kẹt hoặc nghỉ** | Code đẩy lên repo hằng ngày, có test đi kèm; hai người code đọc chéo code của nhau mỗi ngày để có thể tiếp phần của nhau |
 | **Chuyển nuScenes vào CVAT chậm** (định dạng `.pcd.bin`, tọa độ toàn cục, thứ tự [w, l, h]) | Làm ngay Ngày 1 (cổng G0), bắt đầu với 1 cảnh; dùng hàm có sẵn của devkit; kiểm tra bằng mắt. Nếu trễ, phát triển và đánh giá vẫn tiếp tục trên adapter nuScenes; CVAT chỉ bắt buộc cho phần `--flag` và demo |
-| **Ground không ổn định** (dốc, bờ vỉa, bị che, LiDAR thưa) | Ground cục bộ quanh box; bỏ qua khi thiếu điểm; kiểm chứng bằng nhãn chuẩn ở G1. Nếu không đạt, luật lơ lửng/lún chỉ ở mức Cảnh báo và không làm `fix --z --dry-run`. Hai loại lỗi còn lại không phụ thuộc ground |
+| **Ground không ổn định** (dốc, bờ vỉa, bị che, LiDAR thưa) | Ground cục bộ quanh box; bỏ qua khi thiếu điểm; kiểm chứng bằng nhãn chuẩn ở G1. Nếu không đạt, luật lơ lửng/lún chỉ ở mức Cảnh báo. Hai loại lỗi còn lại không phụ thuộc ground |
 | **Nhãn chuẩn nuScenes không hoàn hảo** | Dùng dung sai khi so sánh; cảnh báo trên nhãn chuẩn được kiểm tra thủ công trước khi tính là báo động giả |
 | **Bộ lỗi thật nhỏ** | Chỉ dùng làm tham khảo; kết luận chính dựa trên bộ lỗi chèn giả nhiều mức độ |
 | **Luật đứt track báo nhầm** (rẽ gấp, phanh, bị che lâu, ra khỏi tầm) | Ngưỡng nhảy tính theo độ lệch so với nội suy, không dùng `v_max × Δt`; chỉ báo frame lệch lớn nhất trong cụm; bỏ qua rìa tầm cảm biến; tách ID và khoảng nội suy chỉ ở mức Cảnh báo |

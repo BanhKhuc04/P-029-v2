@@ -33,7 +33,7 @@ Thêm tool thì thêm một dòng vào bảng:
 
 | Tool | Giải quyết | Người viết | Trạng thái |
 |---|---|---|---|
-| *(chưa có)* |  |  |  |
+| [PointSnap 3D](pointsnap-3d/de-xuat-de-tai.md) | [P-010](../problem-backlog.md#p-010), [P-011](../problem-backlog.md#p-011) — phát hiện và cảnh báo sớm box lơ lửng/lún, sai kích thước, đứt track trên CVAT 3D | @Vũ Bảo Khánh, @Nhữ Đình Chiến, @Đặng Văn Huy, @Nguyễn Văn Hân, @Khúc Việt Anh | 🛠️ Đang làm (05/10 – 15/10/2026) — mới có bản đề xuất |
 
 ## Mẫu README cho từng tool
 

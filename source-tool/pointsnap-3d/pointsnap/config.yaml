@@ -1,0 +1,75 @@
+# Cấu hình mặc định của PointSnap 3D.
+#
+# Đơn vị: mét, giây, radian. Tỉ lệ ghi dạng thập phân (0.05 = 5%).
+# Ngưỡng là mặc định đề xuất ở mục 4.1 của de-xuat-de-tai.md, sẽ chốt ở việc B7.
+# Muốn đổi cho riêng mình: tạo file YAML chỉ chứa phần cần đổi, chạy `pointsnap --config <file> ...`.
+# Token CVAT KHÔNG ghi ở đây: đặt qua biến môi trường CVAT_TOKEN.
+
+cvat:
+  url: http://localhost:8080          # biến môi trường CVAT_URL ghi đè giá trị này
+  flag_attribute: pointsnap_error     # thuộc tính văn bản dùng để gắn cờ lỗi lên box
+
+floating:                             # lơ lửng / lún đất
+  classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
+  warning_m: 0.10
+  error_m: 0.20
+  ring_inner_m: 0.5                   # vành đai lấy điểm ground: từ mép footprint + 0.5 m
+  ring_outer_m: 1.5                   # ... tới mép footprint + 1.5 m
+  min_ground_points: 10               # ít hơn: ghi "thiếu bằng chứng" ở mức Thông tin
+
+size:
+  class_range:                        # kiểu 1: bất thường so với class
+    percentile_low: 1
+    percentile_high: 99
+    warning_margin: 0.05              # Cảnh báo nếu ngoài [p_low − 5%, p_high + 5%]
+    error_margin: 0.15                # Lỗi nếu ngoài [p_low − 15%, p_high + 15%]
+    min_instances: 20                 # class ít instance hơn thì dùng manual_ranges
+  manual_ranges:                      # tạm, Khánh chốt ở việc K3
+    bus:                  {length: [6.0, 18.5], width: [2.2, 3.2], height: [2.4, 4.5]}
+    trailer:              {length: [2.0, 18.0], width: [1.5, 3.2], height: [1.0, 4.5]}
+    construction_vehicle: {length: [2.5, 12.0], width: [1.5, 3.5], height: [1.8, 5.0]}
+  in_track:                           # kiểu 2: kích thước dao động trong cùng một track
+    min_keyframes: 3
+    excluded_classes: [pedestrian]    # tư thế thay đổi nên kích thước dao động là bình thường
+    warning_abs_m: 0.10               # Cảnh báo nếu lệch so với trung vị track > max(0.10 m, 5%)
+    warning_rel: 0.05
+    error_abs_m: 0.30                 # Lỗi nếu lệch > max(0.30 m, 15%)
+    error_rel: 0.15
+    suspect_id_rel: 0.30              # lệch hơn 30%: ghi chú "nghi nhầm ID"
+
+track:
+  keyframe_interval_s: 0.5
+  groups:                             # ngưỡng nhảy vị trí tính theo độ lệch so với vị trí nội suy
+    vehicle:
+      classes: [car, truck, bus, trailer, construction_vehicle]
+      jump_warning_m: 1.0
+      jump_error_m: 2.0
+      v_max_mps: 30.0                 # chỉ dùng ở hai đầu track
+      split_max_dist_m: 2.0
+    two_wheeler:
+      classes: [motorcycle, bicycle]
+      jump_warning_m: 0.75
+      jump_error_m: 1.5
+      v_max_mps: 10.0
+      split_max_dist_m: 1.5
+    pedestrian:
+      classes: [pedestrian]
+      jump_warning_m: 0.5
+      jump_error_m: 1.0
+      v_max_mps: 3.0
+      split_max_dist_m: 1.0
+    static:                           # vật đứng yên: dịch trong hệ toàn cục là sai
+      classes: [traffic_cone, barrier]
+      jump_warning_m: 0.3
+      jump_error_m: 0.6
+      v_max_mps: 0.5
+      split_max_dist_m: 0.5
+  split_max_gap_frames: 3             # track mới bắt đầu trong k+1..k+3 thì xét nghi tách ID
+  long_interpolation:                 # việc B5b, làm nếu kịp
+    enabled: false
+    min_frames: 2
+    min_motion_m: 1.0
+
+gate:
+  max_errors: 0
+  max_warnings: 10

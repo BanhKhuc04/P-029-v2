@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pointsnap"
+version = "0.1.0"
+description = "Phát hiện và cảnh báo sớm lỗi nhãn 3D cuboid trên CVAT"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+pointsnap = "pointsnap.cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["pointsnap*"]
+
+[tool.setuptools.package-data]
+pointsnap = ["config.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

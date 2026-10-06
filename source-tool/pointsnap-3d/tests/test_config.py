@@ -31,6 +31,17 @@ def test_env_overrides_url_and_provides_token():
     assert cfg.to_dict(redact=False)["cvat"]["token"] == "secret"
 
 
+def test_url_in_user_file_beats_env(tmp_path):
+    user = tmp_path / "staging.yaml"
+    user.write_text("cvat:\n  url: http://staging:8080\n", encoding="utf-8")
+    env = {"CVAT_URL": "http://from-env:9000"}
+    assert load_config(user, env=env).cvat.url == "http://staging:8080"
+    # file không ghi url thì vẫn dùng CVAT_URL
+    other = tmp_path / "gate.yaml"
+    other.write_text("gate:\n  max_warnings: 3\n", encoding="utf-8")
+    assert load_config(other, env=env).cvat.url == "http://from-env:9000"
+
+
 def test_user_file_overrides_only_given_keys(tmp_path):
     user = tmp_path / "my.yaml"
     user.write_text("floating:\n  error_m: 0.25\ngate:\n  max_warnings: 3\n", encoding="utf-8")

@@ -206,11 +206,7 @@ def _parse_cvat(r: _Reader, env: Mapping[str, str]) -> CvatConfig:
     if "token" in r.keys():
         raise ConfigError("Không ghi token CVAT trong file cấu hình; đặt biến môi trường CVAT_TOKEN")
     r.finish()
-    return CvatConfig(
-        url=env.get("CVAT_URL") or url,
-        flag_attribute=flag_attribute,
-        token=env.get("CVAT_TOKEN") or None,
-    )
+    return CvatConfig(url=url, flag_attribute=flag_attribute, token=env.get("CVAT_TOKEN") or None)
 
 
 def _parse_floating(r: _Reader) -> FloatingConfig:
@@ -359,8 +355,15 @@ def default_config_text() -> str:
 
 
 def load_config(path: str | Path | None = None, env: Mapping[str, str] | None = None) -> Config:
-    """Đọc cấu hình mặc định, trộn đè file `path` (nếu có) và biến môi trường."""
+    """Đọc cấu hình theo thứ tự ưu tiên tăng dần: mặc định → biến môi trường → file `path`.
+
+    `CVAT_URL` ghi đè URL mặc định, nhưng URL ghi rõ trong file `--config` được ưu tiên hơn,
+    vì file đó do người dùng chỉ định riêng cho lần chạy này.
+    """
+    env = os.environ if env is None else env
     data = _read_yaml(default_config_text(), "config.yaml mặc định")
+    if env.get("CVAT_URL"):
+        data = _deep_merge(data, {"cvat": {"url": env["CVAT_URL"]}})
     if path is not None:
         path = Path(path)
         try:

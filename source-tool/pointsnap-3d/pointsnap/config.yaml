@@ -6,7 +6,7 @@
 # Token CVAT KHÔNG ghi ở đây: đặt qua biến môi trường CVAT_TOKEN.
 
 cvat:
-  url: http://localhost:8080          # biến môi trường CVAT_URL ghi đè giá trị này
+  url: http://localhost:8080          # CVAT_URL ghi đè giá trị này; url trong file --config lại ưu tiên hơn CVAT_URL
   flag_attribute: pointsnap_error     # thuộc tính văn bản dùng để gắn cờ lỗi lên box
 
 floating:                             # lơ lửng / lún đất

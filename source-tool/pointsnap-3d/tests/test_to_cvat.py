@@ -5,6 +5,7 @@ import pytest
 
 import fake_nuscenes
 from pointsnap.adapters.nuscenes import NuScenesReader
+from pointsnap.core.geometry import LIDAR_TO_EGO_ROT, rotate_points_z90
 from pointsnap.core.model import Cuboid
 from pointsnap.core.serialize import load_cuboids
 from pointsnap.datasets.nuscenes.to_cvat import (
@@ -16,6 +17,7 @@ from pointsnap.datasets.nuscenes.to_cvat import (
     upload_scene,
 )
 from pointsnap.datasets.pcd import read_pcd
+
 
 LABEL_IDS = {name: index + 100 for index, name in enumerate(TASK_CLASSES)}
 
@@ -73,11 +75,15 @@ def test_export_scene_writes_pcd_manifest_ground_truth_and_zip(tmp_path):
 
     assert (export.num_frames, export.num_boxes) == (3, 4)
     pcd0 = export.directory / "pointcloud" / "000000.pcd"
-    assert read_pcd(pcd0).tolist() == fake_nuscenes.FRAME0_POINTS[:, :4].tolist()
+    expected_pts0 = rotate_points_z90(fake_nuscenes.FRAME0_POINTS)[:, :4]
+    assert read_pcd(pcd0).tolist() == expected_pts0.tolist()
 
     manifest = json.loads(export.manifest.read_text(encoding="utf-8"))
+    assert manifest["coordinate_system"] == "ego"
+    assert manifest["transform"] == LIDAR_TO_EGO_ROT.tolist()
     assert [f["file"] for f in manifest["frames"]] == ["000000.pcd", "000001.pcd", "000002.pcd"]
     assert [f["sample_token"] for f in manifest["frames"]] == ["smp0", "smp1", "smp2"]
+
     assert manifest["frames"][2]["sensor_to_world"][0][3] == pytest.approx(10.0)
 
     cuboids, meta = load_cuboids(export.ground_truth)

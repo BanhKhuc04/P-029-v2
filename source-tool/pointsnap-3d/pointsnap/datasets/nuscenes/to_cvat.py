@@ -17,6 +17,12 @@ from typing import Any, Iterable, Mapping
 from pointsnap.adapters.cvat.client import CvatClient
 from pointsnap.adapters.cvat.shapes import cuboid_to_points
 from pointsnap.adapters.nuscenes.reader import NuScenesReader
+from pointsnap.core.geometry import (
+    LIDAR_TO_EGO_ROT,
+    rotate_cuboid_to_ego,
+    rotate_points_z90,
+    rotate_pose_to_ego,
+)
 from pointsnap.core.model import Cuboid, group_by_track
 from pointsnap.core.serialize import load_cuboids, save_cuboids
 from pointsnap.datasets.pcd import write_pcd
@@ -53,7 +59,11 @@ class SceneExport:
 
 
 def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> SceneExport:
-    """Ghi dữ liệu của cảnh vào `out_dir/<scene>/`."""
+    """Ghi dữ liệu của cảnh vào `out_dir/<scene>/`.
+
+    Dữ liệu được xoay sang hệ xe thu (x hướng trước, y sang trái, z hướng lên, QĐ-008)
+    để hiển thị đúng trên canvas 3D của CVAT.
+    """
     directory = Path(out_dir) / scene
     pointcloud_dir = directory / "pointcloud"
     pointcloud_dir.mkdir(parents=True, exist_ok=True)
@@ -62,13 +72,15 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> Sce
     frames = []
     for ref in refs:
         filename = f"{ref.frame:06d}.pcd"  # CVAT sắp frame theo tên file
-        write_pcd(pointcloud_dir / filename, reader.load_points(ref))
+        points_ego = rotate_points_z90(reader.load_points(ref))
+        write_pcd(pointcloud_dir / filename, points_ego)
+        sensor_to_world_ego = rotate_pose_to_ego(ref.sensor_to_world)
         frames.append({
             "frame": ref.frame,
             "file": filename,
             "sample_token": ref.sample_token,
             "timestamp": ref.timestamp,
-            "sensor_to_world": ref.sensor_to_world.tolist(),
+            "sensor_to_world": sensor_to_world_ego.tolist(),
         })
 
     manifest = directory / "manifest.json"
@@ -77,12 +89,18 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> Sce
         "dataroot": str(reader.dataroot),
         "version": reader.version,
         "num_frames": len(refs),
+        "coordinate_system": "ego",
+        "transform": LIDAR_TO_EGO_ROT.tolist(),
         "frames": frames,
     }, ensure_ascii=False, indent=1), encoding="utf-8")
 
-    cuboids = reader.annotations(scene)
+    cuboids = [rotate_cuboid_to_ego(c) for c in reader.annotations(scene)]
     ground_truth = directory / "ground_truth.json"
-    save_cuboids(ground_truth, cuboids, meta={"scene": scene, "source": "nuscenes", "num_frames": len(refs)})
+    save_cuboids(
+        ground_truth,
+        cuboids,
+        meta={"scene": scene, "source": "nuscenes", "coordinate_system": "ego", "num_frames": len(refs)},
+    )
 
     archive = directory / f"{scene}.zip"
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_STORED) as zf:
@@ -90,6 +108,7 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> Sce
             zf.write(pointcloud_dir / frame["file"], arcname=frame["file"])
 
     return SceneExport(scene, directory, archive, manifest, ground_truth, len(refs), len(cuboids))
+
 
 
 def _shape(cuboid: Cuboid, outside: bool) -> dict[str, Any]:

@@ -45,7 +45,9 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 - [x] `GET /api/tasks/<id>/data/meta`: `frames[].name` theo đúng thứ tự frame (`000000.pcd`, …) → dùng để khớp với `manifest.json`.
 - [x] Link mở thẳng một frame: `<url>/tasks/<task>/jobs/<job>?frame=<n>` (route `/tasks/:tid/jobs/:jid`, tham số `frame` trong `cvat-ui`).
 - [ ] Trục lên của canvas 3D là +z, box nhìn đúng trên point cloud thật (kiểm bằng mắt ở G0).
-- [x] Ghi thuộc tính `pointsnap_error` qua API (`PATCH /api/jobs/<id>/annotations?action=update`), bảo toàn hình học 100%, lọc được trong canvas 3D (A4).
+- [x] Ghi / gỡ thuộc tính `pointsnap_error` qua API (`PATCH /api/jobs/<id>/annotations?action=update`), hình học box không đổi (`tests/test_live_cvat.py`, A4). CVAT xử lý `update` bằng cách **xóa rồi tạo lại** shape/track được gửi, nên phải gửi nguyên track với đủ keyframe lấy từ `GET`; không dựa vào id shape để so trước/sau.
+- [x] Mỗi lần `scan --flag` đồng bộ cờ: box hết lỗi được gỡ cờ cũ; cờ chỉ ghi vào box khớp đúng id (không gắn cả frame khi finding thiếu id).
+- [ ] Lọc box có cờ trong canvas 3D (kiểm bằng mắt ở G1).
 - [ ] Phiên bản CVAT của BTC (`cvat.note.transformerlabs.ai`) có cùng định dạng `points`.
 
 ## 3. nuScenes v1.0-mini

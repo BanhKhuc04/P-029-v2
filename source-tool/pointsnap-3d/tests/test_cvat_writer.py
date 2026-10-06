@@ -190,8 +190,8 @@ def test_flag_and_clear_job_errors_preserves_geometry(tmp_path):
     )
 
     snap_file = tmp_path / "before_flag.json"
-    flagged = flag_job_errors(client, job, [f1, f2], snapshot_path=snap_file)
-    assert flagged == 2
+    summary = flag_job_errors(client, job, [f1, f2], snapshot_path=snap_file)
+    assert (summary.flagged, summary.cleared, summary.unmatched) == (2, 0, 0)
     assert snap_file.is_file()
 
     # Đọc lại annotations sau khi ghi cờ
@@ -253,3 +253,67 @@ def test_verify_geometry_detects_shifts():
     c4 = c1.replace(yaw=0.02)
     with pytest.raises(ValueError, match="Yaw của box .* bị thay đổi"):
         verify_geometry_preserved([c1], [c4], tolerance=1e-4)
+
+
+def _job(labels, raw):
+    return JobData(url="http://cvat:8080", task_id=10, job_id=1, start_frame=0, stop_frame=3,
+                   labels=labels, cuboids=annotations_to_cuboids(raw, labels))
+
+
+def _flags(raw, labels):
+    return {(c.track_id, c.source_id): c.attrs.get("pointsnap_error") or None
+            for c in annotations_to_cuboids(raw, labels)}
+
+
+def test_finding_without_box_id_does_not_flag_whole_frame():
+    labels = labels_from_api(API_LABELS)
+    raw = copy.deepcopy(RAW_ANNOTATIONS)
+    raw["shapes"].append({"id": 6, "type": "cuboid", "label_id": 12, "frame": 1, "points": pts(12.0),
+                          "occluded": False, "outside": False, "attributes": []})
+    no_id = Finding(error_type=ErrorType.SIZE, rule="size.class_range", severity=Severity.ERROR,
+                    frame=1, label="pedestrian", message="Không rõ box")
+
+    patch, summary = build_error_patch(raw, labels, build_findings_map([no_id]))
+
+    assert patch == {}
+    assert (summary.flagged, summary.unmatched) == (0, 1)
+
+
+def test_rescan_clears_flags_of_fixed_boxes():
+    labels = labels_from_api(API_LABELS)
+    session = MockSession(RAW_ANNOTATIONS)
+    client = CvatClient("http://cvat:8080", "secret", session=session)
+    ped = Finding(error_type=ErrorType.FLOATING, rule="floating", severity=Severity.ERROR,
+                  frame=1, label="pedestrian", source_id=5, message="Lơ lửng 22 cm")
+    car = Finding(error_type=ErrorType.SIZE, rule="size.in_track", severity=Severity.WARNING,
+                  frame=2, label="car", track_id=31, source_id=65, message="Lệch kích thước")
+
+    flag_job_errors(client, _job(labels, session.raw_annos), [ped, car])
+    # Lần quét sau: người đi bộ đã được sửa, chỉ còn lỗi của xe.
+    summary = flag_job_errors(client, _job(labels, session.raw_annos), [car])
+
+    assert (summary.flagged, summary.cleared) == (0, 1)
+    flags = _flags(session.raw_annos, labels)
+    assert flags[(None, 5)] is None
+    assert flags[(31, 65)] == "[Cảnh báo] Lệch kích thước"
+    verify_geometry_preserved(annotations_to_cuboids(RAW_ANNOTATIONS, labels),
+                              annotations_to_cuboids(session.raw_annos, labels))
+
+    # Job sạch: không còn finding nào thì gỡ hết cờ.
+    summary = flag_job_errors(client, _job(labels, session.raw_annos), [])
+    assert (summary.flagged, summary.cleared) == (0, 1)
+    assert not any(_flags(session.raw_annos, labels).values())
+
+
+def test_keep_existing_flags_when_clear_stale_disabled():
+    labels = labels_from_api(API_LABELS)
+    session = MockSession(RAW_ANNOTATIONS)
+    client = CvatClient("http://cvat:8080", "secret", session=session)
+    ped = Finding(error_type=ErrorType.FLOATING, rule="floating", severity=Severity.ERROR,
+                  frame=1, label="pedestrian", source_id=5, message="Lơ lửng 22 cm")
+
+    flag_job_errors(client, _job(labels, session.raw_annos), [ped])
+    summary = flag_job_errors(client, _job(labels, session.raw_annos), [], clear_stale=False)
+
+    assert (summary.flagged, summary.cleared) == (0, 0)
+    assert _flags(session.raw_annos, labels)[(None, 5)] == "[Lỗi] Lơ lửng 22 cm"

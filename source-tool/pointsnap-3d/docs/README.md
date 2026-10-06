@@ -1,13 +1,10 @@
-# Tài liệu của tester
+# Báo cáo và đánh giá
 
-Các file dưới đây do tester viết; người code dùng chúng để viết test và nối vào tool.
+Tài liệu do nhóm báo cáo và test viết (Khánh, Chiến, Hân). Ca kiểm thử có đáp án do người làm sản phẩm viết thẳng thành test trong `tests/`.
 Tạo file đúng tên để link trong [`giao-viec/`](../giao-viec/) mở được.
 
 | File | Nội dung | Người viết | Hạn |
 |---|---|---|---|
-| `mau-bao-cao.md` | K2 — bố cục báo cáo HTML, câu chữ từng loại thông báo lỗi | Vũ Bảo Khánh | 06/10 |
-| `kich-thuoc-class-it-mau.md` | K3 — khoảng dài / rộng / cao cho `bus`, `trailer`, `construction_vehicle`, có nguồn | Vũ Bảo Khánh | 06/10 |
-| `ca-kiem-thu.md` | H1 — ca kiểm thử có đáp án cho 3 bộ phát hiện | Nguyễn Văn Hân | 06/10 |
-| `dac-ta-loi-chen.md` | H2 — đặc tả bộ lỗi chèn giả | Nguyễn Văn Hân | 06/10 |
-| `kiem-tra-ground.md` | H3 — các chỗ mặt đất ước lượng sai khi xem bằng mắt | Nguyễn Văn Hân | 07/10 |
-| `danh-gia.md` | H5, C9 — bảng chỉ số đánh giá cuối cùng | Nguyễn Văn Hân (chủ trì) | 12h 09/10 |
+| `bao-cao-ket-qua.md` | R1, R2 — báo cáo kết quả: bối cảnh, vấn đề, giải pháp, cách đánh giá, số liệu, hạn chế | Vũ Bảo Khánh (Hân viết phần kết quả đánh giá) | Khung 08/10 · bản cuối 09/10 |
+| `danh-gia.md` | T2 — bảng chỉ số đánh giá theo mục 8.2 của bản đề xuất | Nguyễn Văn Hân (chủ trì), Nhữ Đình Chiến | 12h 09/10 |
+| `loi-khi-test.md` | T1 — lỗi gặp khi test quy trình trên CVAT theo README | Nhữ Đình Chiến | Sáng 09/10 |

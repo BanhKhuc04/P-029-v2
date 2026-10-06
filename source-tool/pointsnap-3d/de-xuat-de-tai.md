@@ -30,7 +30,7 @@
 | Làm tốt detect + cảnh báo trước | Toàn bộ 4 ngày dành cho **phát hiện và cảnh báo**: báo cáo, gắn cờ lỗi trên CVAT, cổng kiểm tra. Đo precision/recall riêng cho từng loại lỗi |
 | Rồi mới mở rộng sang auto-correction | Tự sửa chuyển toàn bộ sang [Hướng phát triển](#11-hướng-phát-triển). Trong 4 ngày tool không sửa box nào |
 | — | Rút thời gian từ 3 tuần còn **4 ngày (06/10 – 09/10)**. Các module làm song song ngay từ ngày 1 nhờ mô hình dữ liệu chung, không phải chờ CVAT; cắt bộ lỗi thật, lệnh `diff` và phép đo thời gian review (mục 1.1, mục 7) |
-| — | Nhóm chia **2 người code** (Khúc Việt Anh, Đặng Văn Huy) và **3 tester** (Vũ Bảo Khánh, Nhữ Đình Chiến, Nguyễn Văn Hân); phạm vi cắt gọn tương ứng (mục 1.1, mục 7.1) |
+| — | **Việt Anh và Huy làm toàn bộ sản phẩm**; **Khánh, Chiến, Hân viết báo cáo, và test khi sản phẩm xong**; phạm vi cắt gọn tương ứng (mục 1.1, mục 7.1) |
 
 ---
 
@@ -269,7 +269,7 @@ pointsnap/
 - **Mô hình dữ liệu cố định:** `Cuboid(center, dims, yaw, label, track_id, frame, attrs)`, **đã chốt ngày 05/10** để cả nhóm làm song song. Core chỉ nhận và trả các đối tượng này nên đổi nền tảng hay đổi bộ dữ liệu chỉ cần viết thêm adapter.
 - **Thư viện (mã nguồn mở):** numpy, scipy (KD-tree), Open3D hoặc pypcd4, `cvat-sdk` (ghim cùng phiên bản với server), jinja2, pyyaml, pytest.
 - **Chi phí:** hạ tầng bằng 0 (laptop CPU, phần mềm mã nguồn mở, dữ liệu công khai). Không cần GPU.
-- **Kiểm thử:** tester viết các ca kiểm thử có đáp án (ví dụ box đặt lệch Z một lượng biết trước) và người code khóa chúng bằng pytest; bộ lỗi chèn giả; vòng lặp ghi – đọc – so sánh cho adapter CVAT.
+- **Kiểm thử:** người làm sản phẩm viết các ca kiểm thử có đáp án (ví dụ box đặt lệch Z một lượng biết trước) bằng pytest; bộ lỗi chèn giả; vòng lặp ghi – đọc – so sánh cho adapter CVAT. Khi sản phẩm xong, nhóm test chạy lại quy trình theo README và xem tay cảnh báo.
 - **Bảo mật:** token qua biến môi trường; không commit token và dữ liệu nuScenes lên repo.
 - **Dùng AI agent hỗ trợ viết code** (nếu ban tổ chức cho phép, sẽ ghi rõ trong báo cáo): viết test trước, code chỉ được nhận khi qua test; quy ước dùng chung trong `CONVENTIONS.md`; agent không tự chạy lệnh có ghi vào CVAT.
 
@@ -287,7 +287,7 @@ pointsnap/
 
 **Giả định:** 4 ngày làm việc, 06/10 – 09/10; nộp cuối ngày 09/10. Không có ngày dự phòng, nên ngày nào cũng có cổng nghiệm thu và thứ tự cắt đã định trước. Khung dự án (A1) đã xong ngày 05/10.
 
-**Cách chia việc:** **2 người code** (Việt Anh, Huy) chỉ viết code. **3 tester** (Khánh, Chiến, Hân) nhận mọi việc còn lại: dựng môi trường, dữ liệu, kiểm thử, đánh giá, tài liệu. Chiến kiểm phía CVAT (phần của Việt Anh), Hân kiểm thuật toán (phần của Huy), Khánh điều phối, dùng thử như annotator và làm hồ sơ nộp.
+**Cách chia việc:** **Việt Anh và Huy làm toàn bộ sản phẩm**: môi trường, dữ liệu, code và tự kiểm bằng test có đáp án. Việt Anh lo phía CVAT (chuyển dữ liệu, adapter, cờ lỗi, báo cáo HTML/CSV, `gate`, lỗi chèn giả); Huy lo thuật toán (ground, 3 bộ phát hiện, đánh giá). **Khánh, Chiến, Hân viết báo cáo, và test khi sản phẩm xong** (sau cổng G2): test quy trình trên CVAT theo README, xem tay cảnh báo, điền bảng chỉ số, hoàn thiện báo cáo, slide, video.
 
 **Cách rút ngắn:** ground và các bộ phát hiện chạy trên adapter nuScenes ngay từ đầu, song song với việc dựng CVAT. CVAT chỉ dùng cho demo trên 1–2 cảnh; đánh giá chạy thẳng trên dữ liệu nuScenes của cả 10 cảnh.
 
@@ -295,12 +295,12 @@ Giao việc chi tiết từng ngày: [`giao-viec/`](giao-viec/).
 
 | Ngày | Nội dung công việc | Cổng kiểm soát |
 |---|---|---|
-| **06/10** | **Việt Anh:** đọc nuScenes (B1); chuyển 1 cảnh sang CVAT: `.pcd`, task 3D, nạp nhãn chuẩn dạng track (A2). **Huy:** module ground, test trên point cloud giả (B2). **Chiến:** dựng CVAT, tải nuScenes, label spec (`pointsnap_error`, `reviewed`), spike trên giao diện, kiểm 1 cảnh trên CVAT. **Hân:** ca kiểm thử có đáp án; đặc tả bộ lỗi chèn giả. **Khánh:** điều phối; mẫu báo cáo HTML và câu chữ; khoảng kích thước class ít mẫu | **G0 (tối 06/10, muộn nhất 10h 07/10):** 1 cảnh hiển thị đúng trên CVAT với nhãn chuẩn; chốt hệ tọa độ |
-| **07/10** | **Việt Anh:** adapter CVAT đọc nhãn (A3); ghi / xóa cờ lỗi + bản chụp (A4). **Huy:** kiểm chứng ground ~200 box; phát hiện lơ lửng/lún (B3) và sai kích thước (B4). **Chiến:** kiểm A3, A4 trên CVAT. **Hân:** đối chiếu ground bằng mắt; chạy ca kiểm thử cho B3, B4. **Khánh:** điều phối; khung README và kịch bản video demo | **G1 (07/10):** ground đạt / không đạt kiểm chứng; lơ lửng/lún và kích thước chạy trên 1 cảnh; ghi được cờ lỗi lên CVAT |
-| **08/10** | **Việt Anh:** `scan` (HTML/CSV) + `gate` (A5); tích hợp end-to-end (A6); bộ chèn lỗi giả (A7). **Huy:** phát hiện đứt track: nhảy vị trí, tách ID (B5); script precision/recall (B6). **Chiến:** kiểm toàn quy trình trên CVAT. **Hân:** kiểm B5; lập bảng đánh giá. **Khánh:** dùng thử như annotator, góp ý báo cáo và câu chữ | **G2 (08/10):** demo trọn quy trình trên CVAT với 1 cảnh; 3 bộ phát hiện chạy trên cả bản mini; có bộ lỗi chèn giả |
-| **09/10** | **Sáng — đánh giá** (Hân chủ trì): **Huy** chốt ngưỡng trên 5 cảnh tinh chỉnh (B7); chạy trên 5 cảnh kiểm tra đã chèn lỗi; **Hân, Chiến** xem tay các cảnh báo không khớp lỗi chèn nào, điền bảng chỉ số; **Việt Anh** sửa lỗi, đo hiệu năng. **Chiều — hồ sơ nộp:** **Khánh** README, video demo, báo cáo kết quả, slide; **Việt Anh** đóng gói (A9); **Chiến, Hân** làm lại quy trình theo README trên máy khác | **G3 (12h 09/10):** có số liệu cho mọi chỉ số ở mục 8. **Nộp cuối ngày 09/10** |
+| **06/10** | **Việt Anh:** tải nuScenes, dựng CVAT (E1); đọc nuScenes (B1); chuyển 1 cảnh sang CVAT: `.pcd`, task 3D, nạp nhãn chuẩn dạng track, tự kiểm bằng mắt (A2). **Huy:** tải nuScenes; review B1; module ground trên point cloud giả (B2) | **G0 (tối 06/10, muộn nhất 10h 07/10):** 1 cảnh hiển thị đúng trên CVAT với nhãn chuẩn; chốt hệ tọa độ |
+| **07/10** | **Việt Anh:** adapter CVAT đọc nhãn, xác minh trục / yaw / `outside` / link frame trên CVAT thật (A3); ghi / xóa cờ lỗi + bản chụp (A4). **Huy:** kiểm chứng ground ~200 box (B2); phát hiện lơ lửng/lún (B3) và sai kích thước (B4). **Khánh:** khung báo cáo kết quả và slide | **G1 (07/10):** ground đạt / không đạt kiểm chứng; lơ lửng/lún và kích thước chạy trên 1 cảnh; ghi được cờ lỗi lên CVAT |
+| **08/10** | **Việt Anh:** `scan` (HTML/CSV) + `gate` (A5); tích hợp end-to-end (A6); bộ chèn lỗi giả (A7); README cài đặt cho người test (A9). **Huy:** phát hiện đứt track: nhảy vị trí, tách ID (B5); script precision/recall (B6). **Khánh:** xong khung báo cáo | **G2 (08/10): sản phẩm xong**: trọn quy trình trên CVAT với 1 cảnh; 3 bộ phát hiện chạy trên cả bản mini; báo nhóm bắt đầu test |
+| **09/10** | **Sáng — test:** **Huy** chốt ngưỡng, chạy đánh giá trên 5 cảnh kiểm tra (B7); **Việt Anh** sửa lỗi người test báo, đo hiệu năng; **Chiến** test quy trình trên CVAT theo README; **Hân** (chủ trì) **và Chiến** xem tay cảnh báo, điền bảng chỉ số. **Chiều — hồ sơ nộp:** **Khánh** hoàn thiện báo cáo, slide; **Chiến** quay video demo; **Hân** viết phần kết quả đánh giá; **Việt Anh, Huy** merge PR cuối | **G3 (12h 09/10):** test xong, có số liệu cho mọi chỉ số ở mục 8. **Nộp cuối ngày 09/10** |
 
-**Đường găng:** Việt Anh: đọc nuScenes → chuyển sang CVAT → adapter CVAT → tích hợp 08/10. Huy: ground → lơ lửng/lún → kích thước → đứt track. Người code không nhận việc gì ngoài code.
+**Đường găng:** Việt Anh: tải dữ liệu + dựng CVAT → chuyển sang CVAT → adapter CVAT → tích hợp 08/10. Huy: ground → lơ lửng/lún → kích thước → đứt track. Cả hai cùng nằm trên đường găng của G2, và người test chỉ bắt đầu được khi G2 đạt.
 
 **Thứ tự cắt nếu trễ:** luật tách ID → kiểu 1 của sai kích thước (so với class) → báo cáo HTML (chỉ giữ CSV) → chia 5 / 5 cảnh (khi đó chỉnh ngưỡng và báo cáo trên cùng 10 cảnh, ghi rõ hạn chế). **Không cắt:** phát hiện lơ lửng/lún, kích thước trong track, nhảy vị trí; `scan --flag`; `gate`; đánh giá trên bộ lỗi chèn giả.
 
@@ -308,13 +308,13 @@ Giao việc chi tiết từng ngày: [`giao-viec/`](giao-viec/).
 
 | Thành viên | Vai trò | Phụ trách | Ước lượng (ngày công) |
 |---|---|---|---|
-| **Khúc Việt Anh** | Code — phía CVAT | Đọc nuScenes (B1); chuyển nuScenes → CVAT (A2); adapter CVAT đọc nhãn và ghi cờ lỗi (A3, A4); `scan` + `gate` (A5); tích hợp (A6); bộ chèn lỗi giả (A7); đóng gói (A9) | ~4 |
-| **Đặng Văn Huy** | Code — thuật toán | Module ground + kiểm chứng (B2); 3 bộ phát hiện (B3–B5); script precision/recall (B6); chốt ngưỡng (B7) | ~4 |
-| **Nhữ Đình Chiến** | Tester — môi trường & CVAT | Dựng CVAT, tải nuScenes, label spec, spike trên giao diện; kiểm A2–A6 trên CVAT; xem tay cảnh báo; làm lại quy trình theo README | ~3,5 |
-| **Nguyễn Văn Hân** | Tester — thuật toán & đánh giá | Ca kiểm thử có đáp án; đặc tả lỗi chèn giả; đối chiếu ground; kiểm B3–B5; chủ trì đánh giá | ~3,5 |
-| **Vũ Bảo Khánh** | Tester — người dùng & tài liệu | Điều phối, nghiệm thu G0–G3; mẫu báo cáo và câu chữ; khoảng kích thước class ít mẫu; dùng thử như annotator; README, video demo, báo cáo kết quả, slide | ~3,5 |
+| **Khúc Việt Anh** | Sản phẩm — phía CVAT, môi trường | Tải dữ liệu, dựng CVAT (E1); đọc nuScenes (B1); chuyển nuScenes → CVAT (A2); adapter CVAT đọc nhãn và ghi cờ lỗi (A3, A4); `scan` + `gate` (A5); tích hợp (A6); bộ chèn lỗi giả (A7); README cài đặt (A9) | ~4 |
+| **Đặng Văn Huy** | Sản phẩm — thuật toán | Module ground + kiểm chứng (B2); 3 bộ phát hiện kèm test có đáp án (B3–B5); script precision/recall (B6); chốt ngưỡng, chạy đánh giá (B7) | ~4 |
+| **Vũ Bảo Khánh** | Báo cáo | Khung báo cáo và slide (07–08/10); hoàn thiện báo cáo, slide bằng số liệu; nhật ký tuần; nộp | ~2 |
+| **Nhữ Đình Chiến** | Test (khi xong sản phẩm) | Test quy trình trên CVAT theo README; cùng Hân xem tay cảnh báo; quay video demo | ~1 |
+| **Nguyễn Văn Hân** | Test (khi xong sản phẩm) | Chủ trì xem tay cảnh báo, điền bảng chỉ số; viết phần kết quả đánh giá trong báo cáo | ~1 |
 
-Tổng khoảng **18,5 ngày công trên 20 ngày công thô** (5 người × 4 ngày). Hai người code **kín 100% lịch và không có ngày dự phòng**: trễ ở đâu thì cắt ngay theo thứ tự ở trên, không dời cổng.
+Hai người làm sản phẩm **kín 100% lịch và không có ngày dự phòng**: trễ ở đâu thì cắt ngay theo thứ tự ở trên, không dời cổng. Người test chỉ có nửa ngày 09/10, nên README cài đặt (A9) phải sẵn sàng từ tối 08/10.
 
 ---
 
@@ -357,8 +357,8 @@ Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sá
 
 | Rủi ro | Biện pháp |
 |---|---|
-| **4 ngày quá gấp, chỉ có 2 người code** | Phạm vi đã cắt còn phần lõi (mục 1.1). Người code chỉ làm code; môi trường, dữ liệu, kiểm thử, đánh giá và tài liệu do 3 tester nhận. Ground và bộ phát hiện làm trên adapter nuScenes song song với việc dựng CVAT; CVAT chỉ cần cho demo 1–2 cảnh. Mỗi ngày có cổng nghiệm thu; trễ thì cắt ngay theo thứ tự ở mục 7. Dùng AI agent hỗ trợ viết code (mục 5) |
-| **Một người code bị kẹt hoặc nghỉ** | Code đẩy lên repo hằng ngày, có test đi kèm; hai người code đọc chéo code của nhau mỗi ngày để có thể tiếp phần của nhau |
+| **4 ngày quá gấp, chỉ 2 người làm sản phẩm** | Phạm vi đã cắt còn phần lõi (mục 1.1). Ground và bộ phát hiện làm trên adapter nuScenes song song với việc dựng CVAT; CVAT chỉ cần cho demo 1–2 cảnh. Trong lúc làm, tự kiểm bằng test có đáp án; nhóm test vào cuộc ngay khi G2 đạt. Mỗi ngày có cổng nghiệm thu; trễ thì cắt ngay theo thứ tự ở mục 7. Dùng AI agent hỗ trợ viết code (mục 5) |
+| **Một người làm sản phẩm bị kẹt hoặc nghỉ** | Code đẩy lên repo hằng ngày qua Pull Request, có test đi kèm; hai người review code của nhau nên có thể tiếp phần của nhau |
 | **Chuyển nuScenes vào CVAT chậm** (định dạng `.pcd.bin`, tọa độ toàn cục, thứ tự [w, l, h]) | Làm ngay Ngày 1 (cổng G0), bắt đầu với 1 cảnh; kiểm tra bằng mắt. Nếu trễ, phát triển và đánh giá vẫn tiếp tục trên adapter nuScenes; CVAT chỉ bắt buộc cho phần `--flag` và demo |
 | **Ground không ổn định** (dốc, bờ vỉa, bị che, LiDAR thưa) | Ground cục bộ quanh box; bỏ qua khi thiếu điểm; kiểm chứng bằng nhãn chuẩn ở G1. Nếu không đạt, luật lơ lửng/lún chỉ ở mức Cảnh báo. Hai loại lỗi còn lại không phụ thuộc ground |
 | **Nhãn chuẩn nuScenes không hoàn hảo** | Dùng dung sai khi so sánh; cảnh báo trên nhãn chuẩn được kiểm tra thủ công trước khi tính là báo động giả |

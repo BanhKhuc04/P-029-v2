@@ -58,8 +58,11 @@ def run(args: argparse.Namespace, config: Config) -> int:
     if args.flag:
         print("Đang gắn cờ thuộc tính 'pointsnap_error' lên các box bị lỗi trên CVAT...")
         try:
-            flagged = flag_job_errors(client, job, findings)
-            print(f"-> Đã gắn cờ lỗi lên {flagged} box trên CVAT.")
+            summary = flag_job_errors(client, job, findings)
+            print(f"-> Đã gắn cờ lỗi lên {summary.flagged} box, gỡ cờ cũ ở {summary.cleared} box trên CVAT.")
+            if summary.unmatched:
+                print(f"   Cảnh báo: {summary.unmatched} finding không khớp box nào trên CVAT, không gắn được cờ.",
+                      file=sys.stderr)
         except Exception as exc:
             print(f"Lỗi khi gắn cờ lỗi lên CVAT: {exc}", file=sys.stderr)
             return 3

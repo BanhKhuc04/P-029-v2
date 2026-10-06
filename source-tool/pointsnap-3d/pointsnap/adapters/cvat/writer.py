@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import copy
 import math
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from pointsnap.adapters.cvat.client import CvatClient
 from pointsnap.adapters.cvat.reader import JobData, LabelInfo
@@ -83,104 +84,114 @@ def _update_shape_attributes(
     return True
 
 
-def build_findings_map(findings: Iterable[Finding]) -> dict[tuple[int | None, int | None, int], str]:
+FindingKey = tuple[int | None, int | None, int]
+
+_KEEP = object()  # giá trị trả về của `value_for`: không đụng tới cờ của box này
+
+
+@dataclass(frozen=True)
+class FlagSummary:
+    """Kết quả một lần đồng bộ cờ lỗi lên CVAT."""
+
+    flagged: int  # số box được ghi cờ mới hoặc đổi nội dung cờ
+    cleared: int  # số box được xóa cờ cũ (box đã hết lỗi)
+    unmatched: int  # số khóa finding không khớp box nào trên CVAT (không ghi được cờ)
+
+
+def build_findings_map(findings: Iterable[Finding]) -> dict[FindingKey, str]:
     """Gom các finding theo khóa `(track_id, source_id, frame)`.
 
     Nếu 1 box có nhiều finding, ghép các câu thông báo bằng `; `.
     """
-    grouped: dict[tuple[int | None, int | None, int], list[str]] = {}
+    grouped: dict[FindingKey, list[str]] = {}
     for f in findings:
-        key = (f.track_id, f.source_id, f.frame)
+        msgs = grouped.setdefault((f.track_id, f.source_id, f.frame), [])
         msg = format_finding_message(f)
-        if key not in grouped:
-            grouped[key] = []
-        if msg not in grouped[key]:
-            grouped[key].append(msg)
+        if msg not in msgs:
+            msgs.append(msg)
     return {k: "; ".join(msgs) for k, msgs in grouped.items()}
+
+
+def _plan_flag_updates(
+    raw_annotations: dict[str, Any],
+    labels: Mapping[int, LabelInfo],
+    flag_attribute: str,
+    value_for: Callable[[int | None, int | None, int], Any],
+) -> tuple[dict[str, Any], int, int]:
+    """Duyệt mọi box cuboid, đặt cờ theo `value_for(track_id, shape_id, frame)`.
+
+    `value_for` trả về chuỗi (ghi cờ), `None` (xóa cờ) hoặc `_KEEP` (giữ nguyên).
+    Chỉ đưa vào patch những shape/track thực sự đổi; hình học giữ nguyên vì dùng đúng dữ liệu gốc.
+    Trả về `(patch, số box ghi cờ, số box xóa cờ)`.
+    """
+    patch: dict[str, Any] = {}
+    flagged = cleared = 0
+
+    def apply(shape: dict[str, Any], spec_id: int, value: Any) -> bool:
+        nonlocal flagged, cleared
+        if value is _KEEP or not _update_shape_attributes(shape, spec_id, value):
+            return False
+        if value:
+            flagged += 1
+        else:
+            cleared += 1
+        return True
+
+    def spec_of(label_id: Any) -> int | None:
+        info = labels.get(label_id)
+        return info.attribute_ids.get(flag_attribute) if info else None
+
+    for raw_shape in raw_annotations.get("shapes", []):
+        spec_id = spec_of(raw_shape.get("label_id"))
+        if raw_shape.get("type") != "cuboid" or spec_id is None:
+            continue
+        shape = copy.deepcopy(raw_shape)
+        if apply(shape, spec_id, value_for(None, shape.get("id"), shape.get("frame"))):
+            patch.setdefault("shapes", []).append(shape)
+
+    for raw_track in raw_annotations.get("tracks", []):
+        spec_id = spec_of(raw_track.get("label_id"))
+        if spec_id is None:
+            continue
+        track = copy.deepcopy(raw_track)
+        changed = False
+        for shape in track.get("shapes", []):
+            if shape.get("type") == "cuboid":
+                changed |= apply(shape, spec_id, value_for(track.get("id"), shape.get("id"), shape.get("frame")))
+        if changed:
+            patch.setdefault("tracks", []).append(track)
+
+    return patch, flagged, cleared
 
 
 def build_error_patch(
     raw_annotations: dict[str, Any],
     labels: Mapping[int, LabelInfo],
-    findings_map: Mapping[tuple[int | None, int | None, int], str],
+    findings_map: Mapping[FindingKey, str],
     flag_attribute: str = DEFAULT_FLAG_ATTR,
-) -> tuple[dict[str, Any], int]:
-    """Tạo payload PATCH `action=update` cho CVAT.
+    clear_stale: bool = True,
+) -> tuple[dict[str, Any], FlagSummary]:
+    """Tạo payload PATCH `action=update` để cờ trên CVAT khớp đúng với `findings_map`.
 
-    Chỉ đưa vào patch những shapes và tracks thực sự có thay đổi.
-    Mọi hình học (points, center, rotation, ngoài...) được giữ nguyên 100%.
-    Trả về `(patch_data, số box được cập nhật)`.
+    Khớp box theo đúng id: box lẻ bằng `(None, id shape, frame)`; keyframe của track bằng
+    `(id track, id keyframe, frame)` hoặc `(id track, None, frame)`. Không có khớp "mọi box trong frame".
+    Với `clear_stale=True`, box không còn finding nào thì xóa cờ cũ (lần quét sau tự gỡ cờ).
     """
-    modified_shapes: list[dict[str, Any]] = []
-    modified_tracks: list[dict[str, Any]] = []
-    modified_count = 0
+    used: set[FindingKey] = set()
 
-    # 1. Quét box lẻ (shapes)
-    for raw_shape in raw_annotations.get("shapes", []):
-        if raw_shape.get("type") != "cuboid":
-            continue
-        shape_id = raw_shape.get("id")
-        frame = raw_shape.get("frame")
-        label_id = raw_shape.get("label_id")
-        label_info = labels.get(label_id)
-        if not label_info:
-            continue
-        spec_id = label_info.attribute_ids.get(flag_attribute)
-        if spec_id is None:
-            continue
+    def value_for(track_id: int | None, shape_id: int | None, frame: int) -> Any:
+        keys = [(track_id, shape_id, frame)]
+        if track_id is not None:
+            keys.append((track_id, None, frame))
+        for key in keys:
+            if key in findings_map:
+                used.add(key)
+                return findings_map[key]
+        return None if clear_stale else _KEEP
 
-        # Tìm finding khớp: theo (None, shape_id, frame) hoặc (None, shape_id, None) hoặc (None, None, frame)
-        matched_err = findings_map.get((None, shape_id, frame))
-        if matched_err is None and shape_id is not None:
-            matched_err = findings_map.get((None, shape_id, None))  # type: ignore[arg-type]
-        if matched_err is None:
-            matched_err = findings_map.get((None, None, frame))
-
-        if matched_err is not None:
-            shape_copy = copy.deepcopy(raw_shape)
-            if _update_shape_attributes(shape_copy, spec_id, matched_err):
-                modified_shapes.append(shape_copy)
-                modified_count += 1
-
-    # 2. Quét track (tracks)
-    for raw_track in raw_annotations.get("tracks", []):
-        track_id = raw_track.get("id")
-        label_id = raw_track.get("label_id")
-        label_info = labels.get(label_id)
-        if not label_info:
-            continue
-        spec_id = label_info.attribute_ids.get(flag_attribute)
-        if spec_id is None:
-            continue
-
-        track_modified = False
-        track_copy = copy.deepcopy(raw_track)
-        for shape in track_copy.get("shapes", []):
-            if shape.get("type") != "cuboid":
-                continue
-            shape_id = shape.get("id")
-            frame = shape.get("frame")
-
-            # Khớp finding theo (track_id, shape_id, frame) hoặc (track_id, None, frame)
-            matched_err = findings_map.get((track_id, shape_id, frame))
-            if matched_err is None:
-                matched_err = findings_map.get((track_id, None, frame))
-
-            if matched_err is not None:
-                if _update_shape_attributes(shape, spec_id, matched_err):
-                    track_modified = True
-                    modified_count += 1
-
-        if track_modified:
-            modified_tracks.append(track_copy)
-
-    patch_data: dict[str, Any] = {}
-    if modified_shapes:
-        patch_data["shapes"] = modified_shapes
-    if modified_tracks:
-        patch_data["tracks"] = modified_tracks
-
-    return patch_data, modified_count
+    patch, flagged, cleared = _plan_flag_updates(raw_annotations, labels, flag_attribute, value_for)
+    unmatched = len(set(findings_map) - used)
+    return patch, FlagSummary(flagged=flagged, cleared=cleared, unmatched=unmatched)
 
 
 def flag_job_errors(
@@ -189,27 +200,22 @@ def flag_job_errors(
     findings: Iterable[Finding],
     snapshot_path: str | Path | None = None,
     flag_attribute: str = DEFAULT_FLAG_ATTR,
-) -> int:
-    """Ghi cờ lỗi `pointsnap_error` lên các box trong job trên CVAT.
+    clear_stale: bool = True,
+) -> FlagSummary:
+    """Đồng bộ cờ lỗi `pointsnap_error` trên CVAT với danh sách finding.
 
     - Nếu `snapshot_path` được cung cấp: lưu bản chụp JSON trước khi ghi.
-    - Trả về số lượng box được gắn cờ.
+    - Không có finding nào vẫn chạy, để xóa cờ cũ khi `clear_stale=True`.
     """
     if snapshot_path:
         save_snapshot(job, snapshot_path)
 
-    findings_list = list(findings)
-    if not findings_list:
-        return 0
-
-    findings_map = build_findings_map(findings_list)
+    findings_map = build_findings_map(findings)
     raw_annos = client.get_job_annotations(job.job_id)
-    patch_data, count = build_error_patch(raw_annos, job.labels, findings_map, flag_attribute)
-
-    if count > 0:
+    patch_data, summary = build_error_patch(raw_annos, job.labels, findings_map, flag_attribute, clear_stale)
+    if patch_data:
         client.patch_job_annotations(job.job_id, patch_data, action="update")
-
-    return count
+    return summary
 
 
 def clear_job_errors(
@@ -230,65 +236,16 @@ def clear_job_errors(
     if snapshot_path:
         save_snapshot(job, snapshot_path)
 
+    def value_for(tid: int | None, _shape_id: int | None, f: int) -> Any:
+        if (track_id is not None and tid != track_id) or (frame is not None and f != frame):
+            return _KEEP
+        return None
+
     raw_annos = client.get_job_annotations(job.job_id)
-    modified_shapes: list[dict[str, Any]] = []
-    modified_tracks: list[dict[str, Any]] = []
-    cleared_count = 0
-
-    # 1. Box lẻ
-    if track_id is None:
-        for raw_shape in raw_annos.get("shapes", []):
-            if raw_shape.get("type") != "cuboid":
-                continue
-            if frame is not None and raw_shape.get("frame") != frame:
-                continue
-            label_info = job.labels.get(raw_shape.get("label_id"))
-            if not label_info:
-                continue
-            spec_id = label_info.attribute_ids.get(flag_attribute)
-            if spec_id is None:
-                continue
-
-            shape_copy = copy.deepcopy(raw_shape)
-            if _update_shape_attributes(shape_copy, spec_id, None):
-                modified_shapes.append(shape_copy)
-                cleared_count += 1
-
-    # 2. Tracks
-    for raw_track in raw_annos.get("tracks", []):
-        curr_track_id = raw_track.get("id")
-        if track_id is not None and curr_track_id != track_id:
-            continue
-        label_info = job.labels.get(raw_track.get("label_id"))
-        if not label_info:
-            continue
-        spec_id = label_info.attribute_ids.get(flag_attribute)
-        if spec_id is None:
-            continue
-
-        track_modified = False
-        track_copy = copy.deepcopy(raw_track)
-        for shape in track_copy.get("shapes", []):
-            if shape.get("type") != "cuboid":
-                continue
-            if frame is not None and shape.get("frame") != frame:
-                continue
-            if _update_shape_attributes(shape, spec_id, None):
-                track_modified = True
-                cleared_count += 1
-
-        if track_modified:
-            modified_tracks.append(track_copy)
-
-    if cleared_count > 0:
-        patch_data: dict[str, Any] = {}
-        if modified_shapes:
-            patch_data["shapes"] = modified_shapes
-        if modified_tracks:
-            patch_data["tracks"] = modified_tracks
+    patch_data, _, cleared = _plan_flag_updates(raw_annos, job.labels, flag_attribute, value_for)
+    if patch_data:
         client.patch_job_annotations(job.job_id, patch_data, action="update")
-
-    return cleared_count
+    return cleared
 
 
 def verify_geometry_preserved(

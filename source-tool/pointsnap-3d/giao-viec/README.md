@@ -15,6 +15,6 @@ Mở file của **hôm nay**, tìm tên mình, làm hết các ô ☐ trong ph�
 - 15 phút đầu ngày họp nhanh (Khánh chủ trì): hôm qua xong gì, hôm nay làm gì, đang kẹt gì.
 - **Không có ngày dự phòng.** Kẹt quá 1 giờ thì báo ngay trong nhóm; trễ thì cắt theo thứ tự đã định, không dời cổng.
 - Xong hay bị kẹt việc nào thì cập nhật cột **Trạng thái** trong [`TASKS.md`](../TASKS.md).
-- Code: mỗi việc một branch + Pull Request; người code còn lại review, tester kiểm rồi mới merge. Tài liệu commit thẳng `main`.
+- Mọi thay đổi (code và tài liệu) làm trên branch riêng rồi mở Pull Request; **không push thẳng lên `main`**. Code: người code còn lại review, tester kiểm rồi mới merge.
 - Tài liệu của tester (ca kiểm thử, đặc tả, mẫu báo cáo, bảng đánh giá) để trong [`docs/`](../docs/).
 - Tiêu chí xong chi tiết của từng mã việc (B1, C3, …): xem [`TASKS.md`](../TASKS.md).

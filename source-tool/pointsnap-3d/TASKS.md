@@ -9,7 +9,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 
 1. **Mỗi việc code một branch**, đặt tên theo mã việc: `feat/A3-cvat-reader`, `fix/B3-floating-ring`.
 2. **Xong việc code thì mở Pull Request.** Người code còn lại đọc code; tester phụ trách chạy ca kiểm thử. Có ✅ của cả hai mới merge vào `main`.
-3. **Tài liệu** (README, TASKS, giao việc, nhật ký, `docs/`) được commit thẳng lên `main`.
+3. **Tài liệu** (README, TASKS, giao việc, nhật ký, `docs/`) cũng làm trên branch riêng (`docs/...`) và mở Pull Request. **Không ai push thẳng lên `main`.**
 4. **Họp nhanh 15 phút đầu mỗi ngày:** hôm qua xong gì, hôm nay làm gì, đang kẹt gì. Kẹt quá 1 giờ thì báo ngay trong nhóm.
 5. **Không có ngày dự phòng:** trễ thì cắt theo thứ tự ở [mục 7 của đề xuất](de-xuat-de-tai.md#7-kế-hoạch-triển-khai-4-ngày-có-cổng-kiểm-soát), không dời cổng.
 6. **Tiêu chí xong chung cho mọi việc code:**

@@ -15,6 +15,9 @@ from typing import Any
 import requests
 
 
+ACCEPT = "application/vnd.cvat+json; version=2.0"
+
+
 class CvatError(RuntimeError):
     """CVAT trả lỗi hoặc không phản hồi như mong đợi."""
 
@@ -33,7 +36,8 @@ class CvatClient:
         self.url = url.rstrip("/")
         self.timeout = timeout
         self.session = session or requests.Session()
-        self.session.headers.update({"Authorization": f"{auth_scheme} {token}", "Accept": "application/json"})
+        # CVAT chỉ trả JSON với media type riêng (CVATAPIRenderer); "application/json" bị từ chối với HTTP 406.
+        self.session.headers.update({"Authorization": f"{auth_scheme} {token}", "Accept": ACCEPT})
 
     def _request(self, method: str, path: str, *, expected: tuple[int, ...] = (200,), **kwargs: Any) -> Any:
         url = path if path.startswith("http") else f"{self.url}/api/{path.lstrip('/')}"

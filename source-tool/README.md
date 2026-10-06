@@ -2,7 +2,7 @@
 
 **Giải quyết:** [P-010](../problem-backlog.md#p-010) — khó căn đáy cuboid sát mặt đất, box lơ lửng / lún · [P-011](../problem-backlog.md#p-011) — lỗi 3D chỉ phát hiện ở khâu review thủ công, gây rework lớn
 
-> **Trạng thái:** 🛠️ Đang làm (05/10 – 15/10/2026). Hiện mới có [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md), chưa có source code.
+> **Trạng thái:** 🛠️ Đang làm (06/10 – 09/10/2026). Đã có khung dự án; xem [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md), [bảng phân việc](pointsnap-3d/TASKS.md) và [giao việc theo ngày](pointsnap-3d/giao-viec/).
 > Lệnh trong mục "Cài đặt và chạy" là **dự kiến**; mục "Đã thử trên" sẽ điền khi có số đo thật.
 
 ## Pain point
@@ -90,7 +90,6 @@ Gán nhãn xong
 | Báo động giả trên nhãn chuẩn | ≤ 2 Cảnh báo / 100 box | — |
 | Sai số ước lượng mặt đất (~200 box chuẩn) | Trung vị < 5 cm | — |
 | Thời gian chạy `scan` | < 2 phút / cảnh | — |
-| Thời gian review có / không có tool | Tham khảo | — |
 
 ## Giới hạn
 

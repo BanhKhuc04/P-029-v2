@@ -108,3 +108,15 @@ def test_http_errors_and_connection_errors_become_cvat_error():
     offline = CvatClient("http://localhost:8080", "t", session=Offline({}))
     with pytest.raises(CvatError, match="Không kết nối được"):
         offline.server_version()
+
+
+def test_patch_job_annotations():
+    c = client({("PATCH", "jobs/7/annotations"): FakeResponse(200, {"shapes": [], "tracks": []})})
+    payload = {"shapes": [{"id": 1, "attributes": [{"spec_id": 10, "value": "err"}]}]}
+    res = c.patch_job_annotations(7, payload, action="update")
+    assert res == {"shapes": [], "tracks": []}
+    method, path, kwargs = c.session.calls[0]
+    assert method == "PATCH"
+    assert "jobs/7/annotations" in path
+    assert kwargs["params"] == {"action": "update"}
+    assert kwargs["json"] == payload

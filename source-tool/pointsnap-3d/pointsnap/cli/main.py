@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 from pointsnap import __version__
-from pointsnap.cli import nuscenes_cmd
+from pointsnap.cli import gate_cmd, nuscenes_cmd, scan_cmd
 from pointsnap.core.config import ConfigError, load_config
 
 EXIT_OK = 0
@@ -21,7 +21,7 @@ EXIT_GATE_FAILED = 1
 EXIT_RUNTIME_ERROR = 3
 
 # Lệnh đã khai báo nhưng chưa viết, kèm mã việc trong TASKS.md.
-_NOT_IMPLEMENTED = {"scan": "A5", "gate": "A5", "diff": "A8"}
+_NOT_IMPLEMENTED = {"diff": "A8"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -90,6 +90,10 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
     if args.command == "nuscenes":
         return nuscenes_cmd.run(args, config)
+    if args.command == "scan":
+        return scan_cmd.run(args, config)
+    if args.command == "gate":
+        return gate_cmd.run(args, config)
 
     task = _NOT_IMPLEMENTED[args.command]
     print(f"Lệnh '{args.command}' chưa có (việc {task} trong TASKS.md).", file=sys.stderr)

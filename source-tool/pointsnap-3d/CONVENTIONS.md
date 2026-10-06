@@ -45,7 +45,7 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 - [x] `GET /api/tasks/<id>/data/meta`: `frames[].name` theo đúng thứ tự frame (`000000.pcd`, …) → dùng để khớp với `manifest.json`.
 - [x] Link mở thẳng một frame: `<url>/tasks/<task>/jobs/<job>?frame=<n>` (route `/tasks/:tid/jobs/:jid`, tham số `frame` trong `cvat-ui`).
 - [ ] Trục lên của canvas 3D là +z, box nhìn đúng trên point cloud thật (kiểm bằng mắt ở G0).
-- [ ] Ghi thuộc tính `pointsnap_error` qua API rồi lọc được trong canvas 3D (A4).
+- [x] Ghi thuộc tính `pointsnap_error` qua API (`PATCH /api/jobs/<id>/annotations?action=update`), bảo toàn hình học 100%, lọc được trong canvas 3D (A4).
 - [ ] Phiên bản CVAT của BTC (`cvat.note.transformerlabs.ai`) có cùng định dạng `points`.
 
 ## 3. nuScenes v1.0-mini

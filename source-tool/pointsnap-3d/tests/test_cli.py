@@ -29,8 +29,8 @@ def test_bad_config_file_returns_runtime_error(tmp_path, capsys):
 
 
 def test_unimplemented_command_points_to_task(capsys):
-    assert main(["scan", "--job", "12"]) == EXIT_RUNTIME_ERROR
-    assert "A5" in capsys.readouterr().err
+    assert main(["diff", "a.json", "b.json"]) == EXIT_RUNTIME_ERROR
+    assert "A8" in capsys.readouterr().err
 
 
 def test_missing_required_argument_is_usage_error():

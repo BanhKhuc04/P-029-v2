@@ -32,7 +32,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | Mã | Việc | Hạn | Cần trước | Tiêu chí xong | Trạng thái |
 |---|---|---|---|---|---|
 | **A1** | Khung dự án: package `pointsnap`, mô hình dữ liệu, hình học, cấu hình, CLI, `CONVENTIONS.md` | 05/10 | — | `pip install -e .`; `pointsnap --help`; test xanh | ✅ [PR #1](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/1) |
-| **B1** | Đọc nuScenes: keyframe, point cloud `LIDAR_TOP`, pose xe thu, nhãn chuẩn → `Cuboid` trong hệ LiDAR (làm thay Huy) | 06/10 | A1 | Số box mỗi frame khớp với nuScenes; box chuẩn nằm trên các điểm của đối tượng | 🟡 |
+| **B1** | Đọc nuScenes: keyframe, point cloud `LIDAR_TOP`, pose xe thu, nhãn chuẩn → `Cuboid` trong hệ LiDAR (làm thay Huy) | 06/10 | A1 | Số box mỗi frame khớp với nuScenes; box chuẩn nằm trên các điểm của đối tượng | 🔍 chờ Huy review; chờ dữ liệu thật để kiểm |
 | **A2** | Chuyển 1 cảnh nuScenes → CVAT: ghi `.pcd`, tạo task 3D, nạp nhãn chuẩn dạng track | 06/10 | B1, C1, C2 | Chiến xác nhận cảnh hiển thị đúng vị trí, kích thước, hướng (G0) | ⬜ |
 | **A3** | Adapter CVAT đọc nhãn (shape, track, keyframe, `outside`); point cloud lấy từ thư mục nuScenes theo ánh xạ frame ↔ `sample_token` | 07/10 | A2 | Đọc lại nhãn đã nạp ở A2, so với nhãn gốc: lệch tâm < 1 mm, lệch yaw < 0,001 rad | ⬜ |
 | **A4** | Lưu bản chụp JSON; ghi / xóa thuộc tính `pointsnap_error` theo id (PATCH) | 07/10 | A3 | Ghi rồi đọc lại khớp; hình học box không đổi; Chiến lọc được box có cờ (G1) | ⬜ |

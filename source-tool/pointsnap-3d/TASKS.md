@@ -50,7 +50,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 |---|---|---|---|---|---|
 | **B2** | Module ground: lưới min-Z + RANSAC, mặt phẳng cục bộ trong vành đai quanh box; kiểm chứng trên ~200 box chuẩn và xem bằng mắt vài cảnh | Sáng 07/10 | A1, B1; dữ liệu nuScenes trên máy Huy | Point cloud giả: sai số < 2 cm; nuScenes: có trung vị, p90, ghi các chỗ ground sai | 🟡 |
 | **B3** | Phát hiện lơ lửng / lún, kèm test có đáp án (vd nâng đáy box 25 cm → Lỗi ~25 cm) | 07/10 | B2 | Test xanh; ghi "thiếu bằng chứng" khi vành đai ít điểm | 🟡 |
-| **B4** | Thống kê kích thước theo class (tự chốt khoảng cho `bus`, `trailer`, `construction_vehicle`) + phát hiện sai kích thước, kèm test có đáp án | 07/10 | B1 | Test xanh; không báo người đi bộ ở kiểu trong track | ⬜ |
+| **B4** | Thống kê kích thước theo class (tự chốt khoảng cho `bus`, `trailer`, `construction_vehicle`) + phát hiện sai kích thước, kèm test có đáp án | 07/10 | B1 | Test xanh; không báo người đi bộ ở kiểu trong track | 🟡 |
 | **B5** | Phát hiện đứt track: nhảy vị trí, tách ID, kèm test có đáp án | 08/10 | B1 | Test xanh; chỉ báo frame lệch lớn nhất trong cụm | ⬜ |
 | **B6** | Script precision / recall theo loại lỗi và mức độ | 08/10 | A7 | Ra bảng chỉ số mục 8 từ log lỗi chèn + kết quả quét | ⬜ |
 | **B7** | Chốt ngưỡng trên 5 cảnh tinh chỉnh; chạy đánh giá trên 5 cảnh kiểm tra | Sáng 09/10 | B6 | Ngưỡng ghi vào `config.yaml`; bảng số liệu gửi người test | ⬜ |

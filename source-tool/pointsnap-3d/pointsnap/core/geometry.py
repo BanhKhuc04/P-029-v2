@@ -107,17 +107,16 @@ def _clip_convex(subject: np.ndarray, clip: np.ndarray) -> np.ndarray:
         if not candidates:
             break
         prev = candidates[-1]
+        side_prev = _cross(a, b, prev)
         for cur in candidates:
-            cur_in, prev_in = _cross(a, b, cur) >= 0.0, _cross(a, b, prev) >= 0.0
-            if cur_in != prev_in:
-                edge, seg = b - a, cur - prev
-                t = (edge[0] * (a[1] - prev[1]) - edge[1] * (a[0] - prev[0])) / (
-                    edge[0] * seg[1] - edge[1] * seg[0]
-                )
-                output.append(prev + t * seg)
-            if cur_in:
+            side_cur = _cross(a, b, cur)
+            if (side_cur >= 0.0) != (side_prev >= 0.0):
+                # Hai đầu nằm hai phía của cạnh nên side_prev − side_cur luôn khác 0.
+                t = side_prev / (side_prev - side_cur)
+                output.append(prev + t * (cur - prev))
+            if side_cur >= 0.0:
                 output.append(cur)
-            prev = cur
+            prev, side_prev = cur, side_cur
     return np.array(output).reshape(-1, 2)
 
 

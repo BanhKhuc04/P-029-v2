@@ -107,6 +107,9 @@ def test_bev_iou():
     # hình vuông quay 90° trùng với chính nó
     sq = box(dims=(2.0, 2.0, 1.0))
     assert bev_iou(sq, sq.replace(yaw=math.pi / 2)) == pytest.approx(1.0)
+    # chạm cạnh và cạnh trùng phương: không chia cho 0
+    assert bev_iou(a, a.replace(center=(2.0, 0.0, 0.0))) == pytest.approx(0.0)
+    assert bev_iou(a, a.replace(center=(0.0, 0.5, 0.0))) == pytest.approx(1 / 3)
     # hình vuông quay 45°: giao là bát giác đều, diện tích 8(√2 − 1)
     expected_inter = 8 * (math.sqrt(2) - 1)
     assert bev_iou(sq, sq.replace(yaw=math.pi / 4)) == pytest.approx(expected_inter / (8 - expected_inter))

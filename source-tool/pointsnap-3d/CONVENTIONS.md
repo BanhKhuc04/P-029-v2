@@ -38,12 +38,14 @@ Ghi ngược lại: `points = [*center, rx, ry, yaw, *dims, 0, 0, 0, 0, 0, 0, 0]
 - Mỗi đối tượng nuScenes là một track. Trong CVAT một track kéo dài tới cuối job cho tới khi gặp keyframe `outside`, nên: sau frame cuối của track thêm một keyframe `outside`; khi track khuyết frame ở giữa thì thêm `outside` ngay sau frame có mặt cuối cùng.
 - Bản xuất ghi kèm `manifest.json` (frame ↔ file ↔ `sample_token` ↔ `sensor_to_world`), `ground_truth.json` (nhãn chuẩn) và sau khi tải lên là `cvat_task.json` (id task, id job).
 
-⬜ Cần xác minh trên CVAT chạy thật (việc C4, A3):
-- [ ] Trục lên của canvas 3D là +z; đơn vị trên canvas là mét như trong file point cloud.
-- [ ] Đặt một box tại điểm đã biết, đọc lại qua API ra đúng các số trên.
-- [ ] Track qua API trả về những frame nào: chỉ keyframe nhập tay hay cả frame nội suy; cờ `outside` nằm ở đâu.
-- [ ] Ghi thuộc tính `pointsnap_error` qua API rồi lọc được trong canvas 3D.
-- [ ] Định dạng link mở thẳng một frame (dự kiến `<url>/jobs/<job>?frame=<n>`, giống link trong `problem-backlog.md`).
+Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuScenes giả; `tests/test_live_cvat.py`):
+- [x] Gửi box qua API rồi đọc lại: tâm, kích thước, yaw khớp tuyệt đối (lệch 0 mm, 0 rad).
+- [x] API chỉ nhận `Accept: application/vnd.cvat+json`; gửi `application/json` bị HTTP 406.
+- [x] `GET /api/jobs/<id>/annotations`: mỗi track chỉ chứa **keyframe nhập tay**; mỗi keyframe có `id`, `frame`, `outside`, `points`, `attributes`. Keyframe `outside=true` nằm ở frame đầu tiên đối tượng vắng mặt.
+- [x] `GET /api/tasks/<id>/data/meta`: `frames[].name` theo đúng thứ tự frame (`000000.pcd`, …) → dùng để khớp với `manifest.json`.
+- [x] Link mở thẳng một frame: `<url>/tasks/<task>/jobs/<job>?frame=<n>` (route `/tasks/:tid/jobs/:jid`, tham số `frame` trong `cvat-ui`).
+- [ ] Trục lên của canvas 3D là +z, box nhìn đúng trên point cloud thật (kiểm bằng mắt ở G0).
+- [ ] Ghi thuộc tính `pointsnap_error` qua API rồi lọc được trong canvas 3D (A4).
 - [ ] Phiên bản CVAT của BTC (`cvat.note.transformerlabs.ai`) có cùng định dạng `points`.
 
 ## 3. nuScenes v1.0-mini

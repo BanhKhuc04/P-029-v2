@@ -105,6 +105,24 @@ class CvatClient:
     def task_jobs(self, task_id: int) -> list[dict[str, Any]]:
         return self._get_all("jobs", {"task_id": task_id})
 
+    def get_task(self, task_id: int) -> dict[str, Any]:
+        return self._request("GET", f"tasks/{task_id}")
+
+    def get_task_data_meta(self, task_id: int) -> dict[str, Any]:
+        """Danh sách frame của task (`frames[].name`) theo đúng thứ tự frame."""
+        return self._request("GET", f"tasks/{task_id}/data/meta")
+
+    def delete_task(self, task_id: int) -> None:
+        self._request("DELETE", f"tasks/{task_id}", expected=(204,))
+
+    # --- Job -------------------------------------------------------------------------------------
+
+    def get_job(self, job_id: int) -> dict[str, Any]:
+        return self._request("GET", f"jobs/{job_id}")
+
+    def get_job_annotations(self, job_id: int) -> dict[str, Any]:
+        return self._request("GET", f"jobs/{job_id}/annotations")
+
     # --- Annotation ------------------------------------------------------------------------------
 
     def get_task_annotations(self, task_id: int) -> dict[str, Any]:

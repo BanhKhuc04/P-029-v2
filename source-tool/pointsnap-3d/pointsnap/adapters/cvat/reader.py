@@ -17,10 +17,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+import numpy as np
+
 from pointsnap.adapters.cvat.client import CvatClient
 from pointsnap.adapters.cvat.shapes import PITCH_ATTR, ROLL_ATTR, points_to_geometry
 from pointsnap.adapters.nuscenes.reader import NuScenesReader, SampleRef
 from pointsnap.core.model import Cuboid, FrameData
+
 
 
 @dataclass(frozen=True)
@@ -123,7 +126,18 @@ class ManifestFrames:
     def frame_data(self, frame: int, with_points: bool = True) -> FrameData:
         ref = self._refs[frame]
         data = self.reader.frame_data(ref, with_points=with_points)
+        transform = self.manifest.get("transform")
+        if transform is not None:
+            mat = np.asarray(transform, dtype=np.float64)
+            points = data.points.copy()
+            if len(points) > 0:
+                points[:, :3] = points[:, :3] @ mat.T
+            rot4 = np.eye(4, dtype=np.float64)
+            rot4[:3, :3] = mat
+            sensor_to_world = data.sensor_to_world @ rot4.T
+            return FrameData(frame, points, sensor_to_world, data.timestamp, data.source_ref)
         return FrameData(frame, data.points, data.sensor_to_world, data.timestamp, data.source_ref)
+
 
 
 @dataclass

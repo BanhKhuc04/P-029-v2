@@ -9,7 +9,9 @@ from pointsnap.adapters.cvat.reader import (
     labels_from_api,
 )
 from pointsnap.adapters.nuscenes import NuScenesReader
+from pointsnap.core.geometry import rotate_points_z90
 from pointsnap.datasets.nuscenes.to_cvat import export_scene
+
 
 # Dạng dữ liệu giống hệt CVAT 2.77.1 trả về (đã đối chiếu với task thử trên CVAT local).
 API_LABELS = [
@@ -89,6 +91,7 @@ def test_manifest_frames_map_cvat_frames_to_nuscenes_points(tmp_path):
         frames.check_matches(["000001.pcd", "000000.pcd", "000002.pcd"])
 
     frame0 = frames.frame_data(0)
-    np.testing.assert_array_equal(frame0.points, fake_nuscenes.FRAME0_POINTS)
+    np.testing.assert_array_equal(frame0.points, rotate_points_z90(fake_nuscenes.FRAME0_POINTS))
     assert (frame0.frame, frame0.source_ref) == (0, "smp0")
     assert frames.frame_data(2, with_points=False).sensor_to_world[0, 3] == pytest.approx(10.0)
+

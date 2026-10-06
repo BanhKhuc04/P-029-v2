@@ -72,5 +72,11 @@ def test_finding_sort_puts_errors_first():
     assert [f.severity for f in sorted(items, key=Finding.sort_key)] == [
         Severity.ERROR, Severity.WARNING, Severity.INFO,
     ]
+    # track_id = 0 là một track thật, phải xếp sau box không có track (-1)
+    by_track = [
+        Finding(ErrorType.TRACK, "track.jump", Severity.ERROR, 3, "car", "x", track_id=0),
+        Finding(ErrorType.TRACK, "track.jump", Severity.ERROR, 3, "car", "x", track_id=None),
+    ]
+    assert [f.track_id for f in sorted(by_track, key=Finding.sort_key)] == [None, 0]
     assert Severity.WARNING.label_vi == "Cảnh báo"
     assert ErrorType.TRACK.label_vi == "Đứt track"

@@ -151,7 +151,8 @@ class Finding:
     details: Mapping[str, Any] = field(default_factory=dict, compare=False, hash=False)
 
     def sort_key(self) -> tuple:
-        return (self.severity.rank, self.error_type.value, self.frame, self.track_id or -1, self.rule)
+        track = self.track_id if self.track_id is not None else -1
+        return (self.severity.rank, self.error_type.value, self.frame, track, self.rule)
 
 
 def group_by_track(cuboids: Iterable[Cuboid]) -> dict[int, list[Cuboid]]:

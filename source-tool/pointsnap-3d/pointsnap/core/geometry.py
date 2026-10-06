@@ -7,7 +7,7 @@ Box chỉ có yaw: roll và pitch được coi bằng 0.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 
@@ -75,6 +75,37 @@ def footprint_ring_mask(points: np.ndarray, cuboid: Cuboid, inner: float, outer:
     in_outer = np.all(local <= half + outer, axis=1)
     in_inner = np.all(local <= half + inner, axis=1)
     return in_outer & ~in_inner
+
+
+def quaternion_to_matrix(quaternion: Sequence[float]) -> np.ndarray:
+    """Quaternion [w, x, y, z] (thứ tự của nuScenes) → ma trận quay 3x3. Tự chuẩn hóa độ dài."""
+    w, x, y, z = (float(v) for v in quaternion)
+    norm = math.sqrt(w * w + x * x + y * y + z * z)
+    if norm == 0.0:
+        raise ValueError("Quaternion có độ dài 0")
+    w, x, y, z = w / norm, x / norm, y / norm, z / norm
+    return np.array([
+        [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+        [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+        [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
+    ])
+
+
+def pose_matrix(translation: Sequence[float], rotation: Sequence[float]) -> np.ndarray:
+    """Ma trận đồng nhất 4x4 từ vị trí (x, y, z) và quaternion [w, x, y, z]."""
+    matrix = np.eye(4)
+    matrix[:3, :3] = quaternion_to_matrix(rotation)
+    matrix[:3, 3] = [float(v) for v in translation]
+    return matrix
+
+
+def invert_pose(matrix: np.ndarray) -> np.ndarray:
+    """Nghịch đảo ma trận pose 4x4 (quay + dịch), không dùng nghịch đảo tổng quát."""
+    rot_t = np.asarray(matrix)[:3, :3].T
+    inverse = np.eye(4)
+    inverse[:3, :3] = rot_t
+    inverse[:3, 3] = -rot_t @ np.asarray(matrix)[:3, 3]
+    return inverse
 
 
 def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:

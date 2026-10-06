@@ -8,9 +8,12 @@ from pointsnap.core.geometry import (
     corners,
     footprint,
     footprint_ring_mask,
+    invert_pose,
     normalize_angle,
     points_in_cuboid,
     polygon_area,
+    pose_matrix,
+    quaternion_to_matrix,
     to_box_frame,
     transform_points,
 )
@@ -99,6 +102,18 @@ def test_area_and_iou_are_stable_at_large_coordinates():
         near_b = far_b.replace(center=(1.0, 0.5, 0.0))
         assert polygon_area(footprint(far_a)) == pytest.approx(8.0, abs=1e-8)
         assert bev_iou(far_a, far_b) == pytest.approx(bev_iou(near_a, near_b), abs=1e-8)
+
+
+def test_quaternion_and_pose_helpers():
+    # Quay 90° quanh z: [cos 45°, 0, 0, sin 45°]
+    q = [math.cos(math.pi / 4), 0.0, 0.0, math.sin(math.pi / 4)]
+    np.testing.assert_allclose(quaternion_to_matrix(q), [[0, -1, 0], [1, 0, 0], [0, 0, 1]], atol=1e-12)
+    np.testing.assert_allclose(quaternion_to_matrix([2.0, 0, 0, 0]), np.eye(3))  # tự chuẩn hóa
+    with pytest.raises(ValueError):
+        quaternion_to_matrix([0, 0, 0, 0])
+    pose = pose_matrix([1.0, 2.0, 3.0], q)
+    np.testing.assert_allclose(transform_points(np.array([[1.0, 0.0, 0.0]]), pose), [[1.0, 3.0, 3.0]], atol=1e-12)
+    np.testing.assert_allclose(invert_pose(pose) @ pose, np.eye(4), atol=1e-12)
 
 
 def test_transform_points():

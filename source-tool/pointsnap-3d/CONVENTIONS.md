@@ -42,15 +42,20 @@ Ghi ngược lại: `points = [*center, rx, ry, yaw, *dims, 0, 0, 0, 0, 0, 0, 0]
 
 ## 3. nuScenes v1.0-mini
 
-⬜ Theo tài liệu nuScenes; xác minh khi làm B1 và A2:
+Đã cài đặt trong `pointsnap/adapters/nuscenes/reader.py` (B1) và kiểm bằng bộ dữ liệu giả có đáp án tính tay (`tests/fake_nuscenes.py`).
+⬜ Còn phải xác minh trên dữ liệu thật: box chuẩn nằm đúng trên các điểm của đối tượng (C3).
 
 | Mục | Giá trị |
 |---|---|
 | Nhãn `sample_annotation` | `translation` = tâm box, **hệ toàn cục**; `size` = **[width, length, height]**; `rotation` = quaternion **[w, x, y, z]**, hệ toàn cục |
 | Đổi nhãn về hệ LiDAR | toàn cục → xe thu (`ego_pose` của `sample_data` LIDAR_TOP) → cảm biến (`calibrated_sensor`) |
 | Point cloud `.pcd.bin` | `float32`, 5 giá trị mỗi điểm: x, y, z, intensity, ring index. Không phải PCD chuẩn, phải chuyển đổi |
-| Tần số keyframe | 2 Hz, cách nhau ≈ 0,5 giây |
-| Class | Ánh xạ category nuScenes (ví dụ `vehicle.car`, `human.pedestrian.adult`) sang 10 class của task: `car`, `truck`, `bus`, `trailer`, `construction_vehicle`, `pedestrian`, `motorcycle`, `bicycle`, `traffic_cone`, `barrier`. Bảng ánh xạ chốt ở B1 |
+| Tần số keyframe | 2 Hz, cách nhau ≈ 0,5 giây. Chỉ dùng keyframe của `LIDAR_TOP`, bỏ sweep |
+| Thứ tự frame | Đi theo chuỗi `first_sample_token` → `next` của cảnh; frame đánh số từ 0 |
+| Track id | Số thứ tự của `instance` trong bảng `instance.json`: cố định giữa các lần chạy và giữa các cảnh |
+| Class | Ánh xạ category nuScenes sang 10 class của task theo bảng chuẩn của bài toán detection nuScenes (`CATEGORY_TO_LABEL` trong `reader.py`). Category khác (động vật, xe cấp cứu, xe đẩy, xe lăn, vật cản rời, giá để xe…) bị bỏ qua |
+| Box không có điểm | Bỏ box có `num_lidar_pts` < 1 (tham số `min_lidar_points`): người gán không thấy box đó trên point cloud. Vì vậy một track có thể khuyết vài frame ở giữa |
+| Box nghiêng | Box nuScenes chỉ quay quanh trục z toàn cục; đổi sang hệ LiDAR có thể nghiêng nhẹ. Core giữ yaw, ghi góc nghiêng vào `attrs["tilt_rad"]` |
 
 ## 4. Mã luật và mức
 

@@ -2,8 +2,7 @@
 
 **Giải quyết:** [P-010](../problem-backlog.md#p-010) — khó căn đáy cuboid sát mặt đất, box lơ lửng / lún · [P-011](../problem-backlog.md#p-011) — lỗi 3D chỉ phát hiện ở khâu review thủ công, gây rework lớn
 
-> **Trạng thái:** 🛠️ Đang làm (06/10 – 09/10/2026). Đã có khung dự án; xem [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md), [bảng phân việc](pointsnap-3d/TASKS.md) và [giao việc theo ngày](pointsnap-3d/giao-viec/).
-> Lệnh trong mục "Cài đặt và chạy" là **dự kiến**; mục "Đã thử trên" sẽ điền khi có số đo thật.
+> **Trạng thái:** ✅ Đã hoàn thành trọn bộ sản phẩm và tích hợp end-to-end (G2). Xem [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md), [bảng phân việc](pointsnap-3d/TASKS.md) và [giao việc theo ngày](pointsnap-3d/giao-viec/).
 
 ## Pain point
 
@@ -36,25 +35,36 @@ Tool **chỉ ghi thuộc tính cờ lỗi**: không đổi vị trí, kích thư
 **Chuẩn bị trên CVAT:** thêm vào label spec thuộc tính văn bản `pointsnap_error` và checkbox `reviewed`. Tạo access token trong CVAT.
 
 ```bash
-# Cài (dự kiến)
+# 1. Khởi tạo môi trường ảo và cài đặt package
 cd source-tool/pointsnap-3d
+python -m venv .venv
+
+# Kích hoạt môi trường:
+# Trên Windows (cmd / PowerShell):
+.venv\Scripts\activate
+# Trên Linux / macOS:
+source .venv/bin/activate
+
+# Cài đặt dạng editable:
 pip install -e .
 
-# Cấu hình: URL và token qua biến môi trường, không commit token
-export CVAT_URL=http://localhost:8080
-export CVAT_TOKEN=<token của bạn>
+# 2. Cấu hình biến môi trường
+# Tạo file .env trong thư mục source-tool/pointsnap-3d/ (hoặc export biến môi trường):
+# CVAT_URL=http://localhost:8080
+# CVAT_TOKEN=<personal_access_token>
+# NUSCENES_ROOT=D:/Vin_uni/data/sets/nuscenes
 
-# Quét job, xuất báo cáo HTML/CSV
+# 3. Quét job và xuất báo cáo HTML/CSV (mặc định lưu vào thư mục out/)
 pointsnap scan --job 12
 
-# Quét và gắn cờ lỗi lên box trong CVAT (chỉ chạy khi không ai đang mở job)
+# 4. Quét và gắn cờ lỗi 'pointsnap_error' trực tiếp lên canvas 3D CVAT
 pointsnap scan --job 12 --flag
 
-# Cổng trước khi nộp: exit code 0 = ĐẠT, 1 = KHÔNG ĐẠT
+# 5. Cổng kiểm soát chất lượng trước khi nộp (Exit code 0: ĐẠT, 1: KHÔNG ĐẠT)
 pointsnap gate --job 12
 ```
 
-Trên Windows PowerShell, đặt biến môi trường bằng `$env:CVAT_URL = "http://localhost:8080"`.
+Trên Windows PowerShell, có thể đặt biến môi trường tạm thời bằng `$env:CVAT_URL = "http://localhost:8080"` và `$env:CVAT_TOKEN = "..."`. Hoặc sử dụng file `.env` được tool tự động nạp.
 
 **Quy trình dùng hằng ngày:**
 

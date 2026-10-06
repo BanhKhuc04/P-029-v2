@@ -88,6 +88,19 @@ def test_footprint_is_counter_clockwise_and_has_box_area():
     assert polygon_area(footprint(box(), margin=0.5)) == pytest.approx(5.0 * 3.0)
 
 
+def test_area_and_iou_are_stable_at_large_coordinates():
+    # Tọa độ cỡ 10^6 m (như UTM): công thức shoelace không dời gốc sai tới ~4e-4 m².
+    rng = np.random.default_rng(0)
+    for _ in range(200):
+        x, y, yaw = rng.uniform(-1e6, 1e6), rng.uniform(-1e6, 1e6), rng.uniform(-math.pi, math.pi)
+        far_a = box(center=(x, y, 0.0), yaw=yaw)
+        far_b = box(center=(x + 1.0, y + 0.5, 0.0), yaw=yaw + 0.5)
+        near_a = far_a.replace(center=(0.0, 0.0, 0.0))
+        near_b = far_b.replace(center=(1.0, 0.5, 0.0))
+        assert polygon_area(footprint(far_a)) == pytest.approx(8.0, abs=1e-8)
+        assert bev_iou(far_a, far_b) == pytest.approx(bev_iou(near_a, near_b), abs=1e-8)
+
+
 def test_transform_points():
     m = np.eye(4)
     m[:3, :3] = [[0, -1, 0], [1, 0, 0], [0, 0, 1]]  # quay 90° quanh z

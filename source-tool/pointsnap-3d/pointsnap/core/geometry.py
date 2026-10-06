@@ -87,10 +87,15 @@ def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
 
 
 def polygon_area(polygon: np.ndarray) -> float:
-    """Diện tích đa giác 2D (công thức shoelace), không phụ thuộc chiều đi."""
+    """Diện tích đa giác 2D (công thức shoelace), không phụ thuộc chiều đi.
+
+    Dời đa giác về gần gốc tọa độ trước khi tính để không mất độ chính xác khi tọa độ lớn
+    (ví dụ hệ toàn cục, hàng nghìn mét).
+    """
     if len(polygon) < 3:
         return 0.0
-    x, y = polygon[:, 0], polygon[:, 1]
+    rel = polygon - polygon[0]
+    x, y = rel[:, 0], rel[:, 1]
     return 0.5 * abs(float(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
 
 
@@ -99,7 +104,11 @@ def _cross(o: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
 
 
 def _clip_convex(subject: np.ndarray, clip: np.ndarray) -> np.ndarray:
-    """Cắt đa giác `subject` bằng đa giác lồi `clip` (ngược chiều kim đồng hồ), Sutherland–Hodgman."""
+    """Cắt đa giác `subject` bằng đa giác `clip`, thuật toán Sutherland–Hodgman.
+
+    Điều kiện: `clip` phải lồi và đi ngược chiều kim đồng hồ. Trong tool chỉ dùng cho footprint
+    hình chữ nhật, nên luôn thỏa.
+    """
     output = [p for p in subject]
     for i in range(len(clip)):
         a, b = clip[i], clip[(i + 1) % len(clip)]
@@ -122,7 +131,9 @@ def _clip_convex(subject: np.ndarray, clip: np.ndarray) -> np.ndarray:
 
 def bev_iou(a: Cuboid, b: Cuboid) -> float:
     """IoU của hai box nhìn từ trên xuống (BEV)."""
-    fa, fb = footprint(a), footprint(b)
+    # Tính quanh tâm box `a` để phép cắt không mất độ chính xác khi tọa độ lớn.
+    origin = np.asarray(a.center[:2])
+    fa, fb = footprint(a) - origin, footprint(b) - origin
     inter = polygon_area(_clip_convex(fa, fb))
     union = polygon_area(fa) + polygon_area(fb) - inter
     return inter / union if union > 0.0 else 0.0

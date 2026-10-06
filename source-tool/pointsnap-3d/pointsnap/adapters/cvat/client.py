@@ -131,3 +131,15 @@ class CvatClient:
     def put_task_annotations(self, task_id: int, data: dict[str, Any]) -> dict[str, Any]:
         """Thay toàn bộ annotation của task (chỉ dùng khi nạp nhãn chuẩn vào task mới)."""
         return self._request("PUT", f"tasks/{task_id}/annotations", json=data)
+
+    def patch_job_annotations(
+        self, job_id: int, data: dict[str, Any], action: str = "update"
+    ) -> dict[str, Any]:
+        """Cập nhật một phần annotations của job qua endpoint PATCH /api/jobs/<id>/annotations?action=<action>."""
+        return self._request(
+            "PATCH",
+            f"jobs/{job_id}/annotations",
+            params={"action": action},
+            json=data,
+            expected=(200,),
+        )

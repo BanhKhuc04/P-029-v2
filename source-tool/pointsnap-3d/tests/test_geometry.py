@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from pointsnap.core.geometry import (
+    LIDAR_TO_EGO_ROT,
     bev_iou,
     corners,
     footprint,
@@ -14,6 +15,9 @@ from pointsnap.core.geometry import (
     polygon_area,
     pose_matrix,
     quaternion_to_matrix,
+    rotate_cuboid_to_ego,
+    rotate_points_z90,
+    rotate_pose_to_ego,
     to_box_frame,
     transform_points,
 )
@@ -22,6 +26,7 @@ from pointsnap.core.model import Cuboid
 
 def box(center=(0.0, 0.0, 0.0), dims=(4.0, 2.0, 1.5), yaw=0.0, **kw):
     return Cuboid(center=center, dims=dims, yaw=yaw, label="car", frame=0, **kw)
+
 
 
 @pytest.mark.parametrize(
@@ -141,3 +146,31 @@ def test_bev_iou():
     # hình vuông quay 45°: giao là bát giác đều, diện tích 8(√2 − 1)
     expected_inter = 8 * (math.sqrt(2) - 1)
     assert bev_iou(sq, sq.replace(yaw=math.pi / 4)) == pytest.approx(expected_inter / (8 - expected_inter))
+
+
+def test_rotate_to_ego():
+    # Điểm: (x=1, y=2, z=3) -> (x=2, y=-1, z=3)
+    pts = np.array([[1.0, 2.0, 3.0, 10.0]], dtype=np.float32)
+    rotated = rotate_points_z90(pts)
+    np.testing.assert_allclose(rotated, [[2.0, -1.0, 3.0, 10.0]])
+
+    # Box: tâm (1, 2, 3), yaw pi/2 -> tâm (2, -1, 3), yaw 0
+    b = box(center=(1.0, 2.0, 3.0), dims=(4.0, 2.0, 1.5), yaw=math.pi / 2)
+    b_ego = rotate_cuboid_to_ego(b)
+    assert b_ego.center == (2.0, -1.0, 3.0)
+    assert b_ego.yaw == pytest.approx(0.0)
+    assert b_ego.dims == (4.0, 2.0, 1.5)
+
+    # Điểm trong box giữ nguyên sau khi cả hai cùng quay
+    inside = np.array([[1.0, 2.0, 3.0], [1.0, 2.0 + 1.5, 3.0]], dtype=np.float32)
+    mask_orig = points_in_cuboid(inside, b)
+    mask_ego = points_in_cuboid(rotate_points_z90(inside), b_ego)
+    np.testing.assert_array_equal(mask_orig, mask_ego)
+
+    # Pose: quay 90° quanh z thì sensor_to_world @ rot4.T giữ nguyên tọa độ world của điểm
+    pose = pose_matrix([10.0, 20.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+    ego_pose = rotate_pose_to_ego(pose)
+    p_world_orig = transform_points(inside, pose)
+    p_world_ego = transform_points(rotate_points_z90(inside), ego_pose)
+    np.testing.assert_allclose(p_world_orig, p_world_ego, atol=1e-12)
+

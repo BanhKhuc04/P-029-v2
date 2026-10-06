@@ -10,7 +10,7 @@ Ký hiệu: ✅ đã xác minh · ⬜ chưa xác minh (ghi việc sẽ xác minh
 |---|---|
 | Đơn vị | Mét, giây, radian |
 | Hệ trục | Tay phải, **z hướng lên** |
-| Box nằm trong hệ nào | Hệ tọa độ point cloud của chính frame đó (hệ LiDAR). Muốn so giữa các frame (luật đứt track) thì đổi sang hệ toàn cục bằng `FrameData.sensor_to_world` |
+| Box nằm trong hệ nào | Hệ tọa độ point cloud của chính frame đó. Khi xuất sang CVAT (`to-cvat`, việc A2), point cloud và box được xoay 90° quanh trục z sang hệ **xe thu** (x hướng trước, y sang trái, z hướng lên, [QĐ-008](../../so-quyet-dinh.md#qđ-008)) để xe thu và dòng xe chạy dọc trục +x của canvas 3D (mũi tên đỏ) và camera perspective nhìn thẳng dọc đường |
 | `Cuboid.center` | Tâm hình học của box |
 | `Cuboid.dims` | `(length, width, height)`. **length nằm dọc trục x local của box** (hướng đầu xe, [QĐ-008](../../so-quyet-dinh.md#qđ-008)), width theo y local, height theo z |
 | `Cuboid.yaw` | Góc quay quanh trục z, đi từ trục +x của hệ point cloud tới trục x local của box, ngược chiều kim đồng hồ nhìn từ trên xuống. Luôn chuẩn hóa về [-π, π) |

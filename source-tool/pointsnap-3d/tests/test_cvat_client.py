@@ -47,6 +47,7 @@ def test_sets_auth_header_and_base_url():
     c = client({})
     assert c.url == "http://cvat.local:8080"
     assert c.session.headers["Authorization"] == "Bearer secret"
+    assert c.session.headers["Accept"].startswith("application/vnd.cvat+json")  # application/json → HTTP 406
     legacy = CvatClient("http://x", "abc", auth_scheme="Token", session=FakeSession({}))
     assert legacy.session.headers["Authorization"] == "Token abc"
 

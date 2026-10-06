@@ -168,3 +168,47 @@ def bev_iou(a: Cuboid, b: Cuboid) -> float:
     inter = polygon_area(_clip_convex(fa, fb))
     union = polygon_area(fa) + polygon_area(fb) - inter
     return inter / union if union > 0.0 else 0.0
+
+
+LIDAR_TO_EGO_ROT = np.array([
+    [0.0, 1.0, 0.0],
+    [-1.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0],
+], dtype=np.float64)
+"""Ma trận quay từ hệ cảm biến nuScenes LIDAR_TOP (x phải, y trước, z lên) sang hệ xe thu (x trước, y trái, z lên, QĐ-008)."""
+
+
+def rotate_points_z90(points: np.ndarray) -> np.ndarray:
+    """Đổi điểm (N, ≥3) từ hệ LiDAR (y trước, x phải) sang hệ xe thu (x trước, y trái, z lên).
+
+    x_new = y_old, y_new = -x_old, z_new = z_old. Cột từ thứ 4 trở đi (intensity...) giữ nguyên.
+    """
+    pts = np.asarray(points)
+    if pts.ndim != 2 or pts.shape[1] < 3:
+        raise ValueError(f"points phải có shape (N, ≥3), nhận {pts.shape}")
+    out = pts.copy()
+    out[:, 0] = pts[:, 1]
+    out[:, 1] = -pts[:, 0]
+    out[:, 2] = pts[:, 2]
+    return out
+
+
+def rotate_cuboid_to_ego(cuboid: Cuboid) -> Cuboid:
+    """Đổi Cuboid từ hệ LiDAR sang hệ xe thu: quay 90° quanh trục z.
+
+    Tâm (cx, cy, cz) -> (cy, -cx, cz).
+    Yaw -> normalize_angle(yaw - pi / 2).
+    Kích thước (l, w, h) giữ nguyên vì l vẫn theo hướng xe (+x mới) và w theo bề ngang (+y mới).
+    """
+    cx, cy, cz = cuboid.center
+    new_center = (cy, -cx, cz)
+    new_yaw = normalize_angle(cuboid.yaw - math.pi / 2.0)
+    return cuboid.replace(center=new_center, yaw=new_yaw)
+
+
+def rotate_pose_to_ego(sensor_to_world: np.ndarray) -> np.ndarray:
+    """Đổi ma trận sensor_to_world (4x4) sang ego_to_world khi hệ local của sensor được quay sang hệ xe thu."""
+    rot4 = np.eye(4, dtype=np.float64)
+    rot4[:3, :3] = LIDAR_TO_EGO_ROT
+    return np.asarray(sensor_to_world, dtype=np.float64) @ rot4.T
+

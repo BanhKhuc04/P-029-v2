@@ -10,7 +10,7 @@ Ký hiệu: ✅ đã xác minh · ⬜ chưa xác minh (ghi việc sẽ xác minh
 |---|---|
 | Đơn vị | Mét, giây, radian |
 | Hệ trục | Tay phải, **z hướng lên** |
-| Box nằm trong hệ nào | Hệ tọa độ point cloud của chính frame đó (hệ LiDAR). Muốn so giữa các frame (luật đứt track) thì đổi sang hệ toàn cục bằng `FrameData.sensor_to_world` |
+| Box nằm trong hệ nào | Hệ tọa độ point cloud của chính frame đó. Khi xuất sang CVAT (`to-cvat`, việc A2), point cloud và box được xoay 90° quanh trục z sang hệ **xe thu** (x hướng trước, y sang trái, z hướng lên, [QĐ-008](../../so-quyet-dinh.md#qđ-008)) để xe thu và dòng xe chạy dọc trục +x của canvas 3D (mũi tên đỏ) và camera perspective nhìn thẳng dọc đường |
 | `Cuboid.center` | Tâm hình học của box |
 | `Cuboid.dims` | `(length, width, height)`. **length nằm dọc trục x local của box** (hướng đầu xe, [QĐ-008](../../so-quyet-dinh.md#qđ-008)), width theo y local, height theo z |
 | `Cuboid.yaw` | Góc quay quanh trục z, đi từ trục +x của hệ point cloud tới trục x local của box, ngược chiều kim đồng hồ nhìn từ trên xuống. Luôn chuẩn hóa về [-π, π) |
@@ -29,15 +29,23 @@ Ký hiệu: ✅ đã xác minh · ⬜ chưa xác minh (ghi việc sẽ xác minh
 | `rx, ry, rz` | Góc Euler (radian), thứ tự XYZ mặc định của three.js | `cuboid.ts` (`rotation.set(x, y, z)`) |
 | `sx, sy, sz` | Kích thước đầy đủ theo trục x, y, z local | `canvas3dView.ts` (`setScale(points[6], points[7], points[8])`) |
 
-**Ánh xạ sang core:** `Cuboid(center=(px, py, pz), dims=(sx, sy, sz), yaw=rz)`, giữ `rx, ry` trong `attrs`.
-Ghi ngược lại: `points = [*center, rx, ry, yaw, *dims, 0, 0, 0, 0, 0, 0, 0]`.
+**Ánh xạ sang core:** `Cuboid(center=(px, py, pz), dims=(sx, sy, sz), yaw=rz)`, giữ `rx, ry` trong `attrs` (`cvat_rx`, `cvat_ry`).
+Ghi ngược lại: `points = [*center, rx, ry, yaw, *dims, 0, 0, 0, 0, 0, 0, 0]` (`adapters/cvat/shapes.py`).
 
-⬜ Cần xác minh trên CVAT chạy thật (việc C4, A3):
-- [ ] Trục lên của canvas 3D là +z; đơn vị trên canvas là mét như trong file point cloud.
-- [ ] Đặt một box tại điểm đã biết, đọc lại qua API ra đúng các số trên.
-- [ ] Track qua API trả về những frame nào: chỉ keyframe nhập tay hay cả frame nội suy; cờ `outside` nằm ở đâu.
-- [ ] Ghi thuộc tính `pointsnap_error` qua API rồi lọc được trong canvas 3D.
-- [ ] Định dạng link mở thẳng một frame (dự kiến `<url>/jobs/<job>?frame=<n>`, giống link trong `problem-backlog.md`).
+**Task do `pointsnap nuscenes to-cvat --upload` tạo** (`datasets/nuscenes/to_cvat.py`):
+- 10 label kiểu `cuboid`; mỗi label có thuộc tính `pointsnap_error` (text) và `reviewed` (checkbox), cả hai `mutable` (giá trị riêng từng frame).
+- Dữ liệu tải lên là một file zip các `.pcd` tên `000000.pcd`, `000001.pcd`, …; CVAT sắp frame theo tên (`sorting_method=lexicographical`), nên frame CVAT = frame trong `manifest.json`.
+- Mỗi đối tượng nuScenes là một track. Trong CVAT một track kéo dài tới cuối job cho tới khi gặp keyframe `outside`, nên: sau frame cuối của track thêm một keyframe `outside`; khi track khuyết frame ở giữa thì thêm `outside` ngay sau frame có mặt cuối cùng.
+- Bản xuất ghi kèm `manifest.json` (frame ↔ file ↔ `sample_token` ↔ `sensor_to_world`), `ground_truth.json` (nhãn chuẩn) và sau khi tải lên là `cvat_task.json` (id task, id job).
+
+Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuScenes giả; `tests/test_live_cvat.py`):
+- [x] Gửi box qua API rồi đọc lại: tâm, kích thước, yaw khớp tuyệt đối (lệch 0 mm, 0 rad).
+- [x] API chỉ nhận `Accept: application/vnd.cvat+json`; gửi `application/json` bị HTTP 406.
+- [x] `GET /api/jobs/<id>/annotations`: mỗi track chỉ chứa **keyframe nhập tay**; mỗi keyframe có `id`, `frame`, `outside`, `points`, `attributes`. Keyframe `outside=true` nằm ở frame đầu tiên đối tượng vắng mặt.
+- [x] `GET /api/tasks/<id>/data/meta`: `frames[].name` theo đúng thứ tự frame (`000000.pcd`, …) → dùng để khớp với `manifest.json`.
+- [x] Link mở thẳng một frame: `<url>/tasks/<task>/jobs/<job>?frame=<n>` (route `/tasks/:tid/jobs/:jid`, tham số `frame` trong `cvat-ui`).
+- [ ] Trục lên của canvas 3D là +z, box nhìn đúng trên point cloud thật (kiểm bằng mắt ở G0).
+- [ ] Ghi thuộc tính `pointsnap_error` qua API rồi lọc được trong canvas 3D (A4).
 - [ ] Phiên bản CVAT của BTC (`cvat.note.transformerlabs.ai`) có cùng định dạng `points`.
 
 ## 3. nuScenes v1.0-mini
@@ -76,4 +84,6 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - Ngưỡng nằm trong `pointsnap/config.yaml`. Muốn thử ngưỡng khác: tạo file chỉ chứa phần cần đổi, chạy `pointsnap --config <file> ...`. Khóa gõ sai bị báo lỗi ngay.
 - Token CVAT chỉ đặt qua biến môi trường `CVAT_TOKEN`; ghi token trong file cấu hình sẽ bị từ chối.
 - Thứ tự ưu tiên của URL CVAT, từ thấp tới cao: `config.yaml` mặc định → biến môi trường `CVAT_URL` → file `--config`.
+- `CVAT_AUTH_SCHEME`: `Bearer` (mặc định, dùng cho Personal Access Token tạo trong giao diện CVAT) hoặc `Token` (token cũ lấy từ `/api/auth/login`).
+- `NUSCENES_ROOT`: thư mục dữ liệu nuScenes, dùng làm mặc định cho `--dataroot`.
 - Không commit dữ liệu nuScenes, file `.pcd`, báo cáo hay bản chụp nhãn (đã có trong `.gitignore`).

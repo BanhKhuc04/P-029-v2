@@ -37,3 +37,50 @@ def test_missing_required_argument_is_usage_error():
     with pytest.raises(SystemExit) as exc:
         main(["scan"])
     assert exc.value.code == 2
+
+
+def test_nuscenes_scenes_and_export(tmp_path, capsys):
+    import fake_nuscenes
+
+    root = fake_nuscenes.build(tmp_path / "nuscenes")
+    assert main(["nuscenes", "--dataroot", str(root), "scenes"]) == EXIT_OK
+    assert "scene-0001\t3 frame" in capsys.readouterr().out
+
+    out = tmp_path / "export"
+    assert main(["nuscenes", "--dataroot", str(root), "to-cvat", "--scene", "scene-0001", "--out", str(out)]) == EXIT_OK
+    assert "3 frame, 4 box" in capsys.readouterr().out
+    assert (out / "scene-0001" / "scene-0001.zip").is_file()
+
+
+def test_nuscenes_errors_are_reported(tmp_path, capsys, monkeypatch):
+    import fake_nuscenes
+
+    monkeypatch.delenv("NUSCENES_ROOT", raising=False)
+    monkeypatch.delenv("CVAT_TOKEN", raising=False)
+    assert main(["nuscenes", "scenes"]) == EXIT_RUNTIME_ERROR
+    assert "NUSCENES_ROOT" in capsys.readouterr().err
+
+    root = fake_nuscenes.build(tmp_path / "nuscenes")
+    args = ["nuscenes", "--dataroot", str(root), "to-cvat", "--out", str(tmp_path / "o")]
+    assert main(args + ["--scene", "scene-9999"]) == EXIT_RUNTIME_ERROR
+    assert "Không có cảnh 'scene-9999'" in capsys.readouterr().err
+    assert main(args + ["--scene", "scene-0001", "--upload"]) == EXIT_RUNTIME_ERROR
+    assert "CVAT_TOKEN" in capsys.readouterr().err
+
+
+def test_load_dotenv_sets_missing_vars_only(tmp_path, monkeypatch):
+    from pointsnap.cli.main import load_dotenv
+
+    env_file = tmp_path / ".env"
+    env_file.write_text('# bí mật\nCVAT_TOKEN="abc123"\nNUSCENES_ROOT=D:/data/nuscenes\nCVAT_URL=http://from-file\n\nbad line\n',
+                        encoding="utf-8")
+    monkeypatch.delenv("CVAT_TOKEN", raising=False)
+    monkeypatch.delenv("NUSCENES_ROOT", raising=False)
+    monkeypatch.setenv("CVAT_URL", "http://already-set")
+    load_dotenv(env_file)
+    import os
+
+    assert os.environ["CVAT_TOKEN"] == "abc123"
+    assert os.environ["NUSCENES_ROOT"] == "D:/data/nuscenes"
+    assert os.environ["CVAT_URL"] == "http://already-set"  # không ghi đè
+    load_dotenv(tmp_path / "missing.env")  # không có file thì bỏ qua

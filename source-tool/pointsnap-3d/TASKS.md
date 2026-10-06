@@ -34,10 +34,10 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | Mã | Việc | Hạn | Cần trước | Tiêu chí xong | Trạng thái |
 |---|---|---|---|---|---|
 | **A1** | Khung dự án: package `pointsnap`, mô hình dữ liệu, hình học, cấu hình, CLI, `CONVENTIONS.md` | 05/10 | — | `pip install -e .`; `pointsnap --help`; test xanh | ✅ [PR #1](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/1) |
-| **B1** | Đọc nuScenes: keyframe, point cloud `LIDAR_TOP`, pose xe thu, nhãn chuẩn → `Cuboid` trong hệ LiDAR | 06/10 | A1 | Test trên bộ dữ liệu giả xanh; số box mỗi frame khớp nuScenes thật | 🔍 [PR #2](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/2) |
-| **E1** | Môi trường: tải nuScenes v1.0-mini (~4 GB); dựng CVAT Docker local, tạo admin và access token | 06/10 | — | Mở được `localhost:8080`; thư mục dữ liệu đủ `samples/`, `v1.0-mini/` | ⬜ |
-| **A2** | Chuyển 1 cảnh nuScenes → CVAT: `.pcd`, task 3D có sẵn thuộc tính `pointsnap_error` và `reviewed`, nạp nhãn chuẩn dạng track; tự kiểm bằng mắt | 06/10 | B1, E1 | Box xe, người, xe đạp hiển thị đúng vị trí, kích thước, hướng (G0) | 🟡 |
-| **A3** | Adapter CVAT đọc nhãn (shape, track, keyframe, `outside`); point cloud từ thư mục nuScenes theo ánh xạ frame ↔ `sample_token`. Xác minh trên CVAT thật: trục, yaw, `outside`, link mở frame → ghi `CONVENTIONS.md` | 07/10 | A2 | Đọc lại nhãn đã nạp, so với nhãn gốc: lệch tâm < 1 mm, lệch yaw < 0,001 rad | ⬜ |
+| **B1** | Đọc nuScenes: keyframe, point cloud `LIDAR_TOP`, pose xe thu, nhãn chuẩn → `Cuboid` trong hệ LiDAR | 06/10 | A1 | Test trên bộ dữ liệu giả xanh; số box mỗi frame khớp nuScenes thật | ✅ [PR #2](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/2) |
+| **E1** | Môi trường: tải nuScenes v1.0-mini (~4 GB); dựng CVAT Docker local, tạo admin và access token | 06/10 | — | Mở được `localhost:8080`; thư mục dữ liệu đủ `samples/`, `v1.0-mini/` | ✅ |
+| **A2** | Chuyển 1 cảnh nuScenes → CVAT: `.pcd`, task 3D có sẵn thuộc tính `pointsnap_error` và `reviewed`, nạp nhãn chuẩn dạng track; tự kiểm bằng mắt | 06/10 | B1, E1 | Box xe, người, xe đạp hiển thị đúng vị trí, kích thước, hướng (G0) | ✅ (G0 đạt) |
+| **A3** | Adapter CVAT đọc nhãn (shape, track, keyframe, `outside`); point cloud từ thư mục nuScenes theo ánh xạ frame ↔ `sample_token`. Xác minh trên CVAT thật: trục, yaw, `outside`, link mở frame → ghi `CONVENTIONS.md` | 07/10 | A2 | Đọc lại nhãn đã nạp, so với nhãn gốc: lệch tâm < 1 mm, lệch yaw < 0,001 rad | ✅ (làm sớm) |
 | **A4** | Lưu bản chụp JSON; ghi / xóa thuộc tính `pointsnap_error` theo id (PATCH) | 07/10 | A3 | Ghi rồi đọc lại khớp; hình học box không đổi; lọc được box có cờ trong màn 3D (G1) | ⬜ |
 | **A5** | `scan` (báo cáo HTML/CSV, link mở frame) và `gate` (exit code 0/1) | 08/10 | A3 | Báo cáo mở được, link đúng frame; `gate` trả đúng mã trên job có lỗi và job sạch | ⬜ |
 | **A6** | Tích hợp end-to-end trên CVAT | 08/10 | A4, A5, B3–B5 | Demo G2 | ⬜ |

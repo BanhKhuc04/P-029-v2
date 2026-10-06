@@ -24,7 +24,7 @@ size:
     warning_margin: 0.05              # Cảnh báo nếu ngoài [p_low − 5%, p_high + 5%]
     error_margin: 0.15                # Lỗi nếu ngoài [p_low − 15%, p_high + 15%]
     min_instances: 20                 # class ít instance hơn thì dùng manual_ranges
-  manual_ranges:                      # tạm, Khánh chốt ở việc K3
+  manual_ranges:                      # chốt ở việc B7 (Khánh & Huy thống nhất từ 5 cảnh tinh chỉnh)
     bus:                  {length: [6.0, 18.5], width: [2.2, 3.2], height: [2.4, 4.5]}
     trailer:              {length: [2.0, 18.0], width: [1.5, 3.2], height: [1.0, 4.5]}
     construction_vehicle: {length: [2.5, 12.0], width: [1.5, 3.5], height: [1.8, 5.0]}

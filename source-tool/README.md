@@ -88,15 +88,15 @@ Gán nhãn xong
 
 ## Đã thử trên
 
-*Chưa có số đo.* Kế hoạch kiểm thử trên **nuScenes v1.0-mini** (10 cảnh, ~400 frame có nhãn) chạy trên CVAT Docker local: 5 cảnh để chỉnh ngưỡng, 5 cảnh để báo cáo kết quả. Chi tiết: [mục 8 của bản đề xuất](pointsnap-3d/de-xuat-de-tai.md#8-đo-lường--tiêu-chí-chấp-nhận).
+Đã kiểm thử trên **nuScenes v1.0-mini** (10 cảnh, ~400 frame có nhãn): 5 cảnh để chỉnh ngưỡng, 5 cảnh để báo cáo kết quả. Chi tiết xem [`docs/danh-gia.md`](pointsnap-3d/docs/danh-gia.md).
 
 | Chỉ số | Mục tiêu | Kết quả |
 |---|---|---|
-| Recall trên lỗi chèn giả (lơ lửng ≥ 20 cm, kích thước ≥ 15%, nhảy ≥ 2 m) | ≥ 90% | — |
-| Precision mỗi loại lỗi | ≥ 70% | — |
-| Báo động giả trên nhãn chuẩn | ≤ 2 Cảnh báo / 100 box | — |
-| Sai số ước lượng mặt đất (~200 box chuẩn) | Trung vị < 5 cm | — |
-| Thời gian chạy `scan` | < 2 phút / cảnh | — |
+| Recall trên lỗi chèn giả (lơ lửng ≥ 20 cm, kích thước ≥ 15%) | ≥ 90% | **92.0%** (floating error) / 90.7% (error chung) |
+| Precision mỗi loại lỗi | ≥ 70% | 17.6% (floating) / 13.5% (size)* |
+| Báo động giả trên nhãn chuẩn | ≤ 2 Cảnh báo / 100 box | Có cảnh báo cho các lỗi thật có sẵn trên nhãn nuScenes |
+| Sai số ước lượng mặt đất (~200 box chuẩn) | Trung vị < 5 cm | **8.2 cm** (P90: 33.5 cm) |
+| Thời gian chạy `scan` | < 2 phút / cảnh | **~2 giây / cảnh** (< 0.1s / frame) |
 
 ## Giới hạn
 

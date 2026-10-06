@@ -11,7 +11,7 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Protocol
 
 import numpy as np
 
@@ -104,6 +104,12 @@ class FrameData:
     source_ref: str | None = None
 
 
+class FrameSource(Protocol):
+    """Nguồn point cloud và pose theo frame (ví dụ `ManifestFrames` của adapter CVAT, `NuScenesFrames`)."""
+
+    def frame_data(self, frame: int, with_points: bool = True) -> FrameData: ...
+
+
 class Severity(Enum):
     ERROR = "error"
     WARNING = "warning"
@@ -162,6 +168,25 @@ def group_by_track(cuboids: Iterable[Cuboid]) -> dict[int, list[Cuboid]]:
         if cuboid.track_id is not None:
             tracks[cuboid.track_id].append(cuboid)
     return {tid: sorted(boxes, key=lambda c: c.frame) for tid, boxes in sorted(tracks.items())}
+
+
+def add_outside_markers(cuboids: Iterable[Cuboid], num_frames: int) -> list[Cuboid]:
+    """Thêm keyframe `outside` cho track giống cách nạp lên CVAT (`build_tracks` của A2).
+
+    Sau frame có mặt cuối cùng của mỗi đoạn (track hết hoặc khuyết frame ở giữa) thêm một box `outside` ở frame kế
+    tiếp, trừ khi đó đã là frame cuối. Dùng khi quét thẳng nhãn nuScenes để kết quả giống khi quét trên CVAT.
+    """
+    cuboids = list(cuboids)
+    result: list[Cuboid] = []
+    loose = [c for c in cuboids if c.track_id is None]
+    for boxes in group_by_track(cuboids).values():
+        present = [b for b in boxes if not b.outside]
+        for index, box in enumerate(present):
+            result.append(box)
+            next_frame = present[index + 1].frame if index + 1 < len(present) else num_frames
+            if box.frame + 1 < next_frame:
+                result.append(box.replace(frame=box.frame + 1, outside=True, source_id=None))
+    return result + loose
 
 
 def group_by_frame(cuboids: Iterable[Cuboid]) -> dict[int, list[Cuboid]]:

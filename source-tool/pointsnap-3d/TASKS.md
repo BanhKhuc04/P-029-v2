@@ -40,7 +40,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **A3** | Adapter CVAT đọc nhãn (shape, track, keyframe, `outside`); point cloud từ thư mục nuScenes theo ánh xạ frame ↔ `sample_token`. Xác minh trên CVAT thật: trục, yaw, `outside`, link mở frame → ghi `CONVENTIONS.md` | 07/10 | A2 | Đọc lại nhãn đã nạp, so với nhãn gốc: lệch tâm < 1 mm, lệch yaw < 0,001 rad | ✅ (làm sớm) |
 | **A4** | Lưu bản chụp JSON; ghi / xóa thuộc tính `pointsnap_error` theo id (PATCH) | 07/10 | A3 | Ghi rồi đọc lại khớp; hình học box không đổi; lọc được box có cờ trong màn 3D (G1) | ✅ |
 | **A5** | `scan` (báo cáo HTML/CSV, link mở frame) và `gate` (exit code 0/1) | 08/10 | A3 | Báo cáo mở được, link đúng frame; `gate` trả đúng mã trên job có lỗi và job sạch | ✅ |
-| **A6** | Tích hợp end-to-end trên CVAT | 08/10 | A4, A5, B3–B5 | Demo G2 | ✅ |
+| **A6** | Tích hợp end-to-end trên CVAT | 08/10 | A4, A5, B3–B5 | Demo G2 | 🟡 Code xong, `scan`/`gate` đọc point cloud theo `manifest.json`; ⛔ chưa chạy lại trên CVAT thật (máy mất Docker, 06/10) |
 | **A7** | Bộ chèn lỗi giả theo mục 8.1 của đề xuất, kèm file log lỗi đã chèn | 08/10 | B1 | Chèn đúng loại, đúng mức; log khớp với nhãn sau khi chèn | ✅ |
 | **A9** | README cài đặt và hướng dẫn chạy cho người test; đóng gói | 08/10 | A6 | Người khác cài và chạy được theo README (G2) | ✅ |
 
@@ -48,12 +48,12 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 
 | Mã | Việc | Hạn | Cần trước | Tiêu chí xong | Trạng thái |
 |---|---|---|---|---|---|
-| **B2** | Module ground: lưới min-Z + RANSAC, mặt phẳng cục bộ trong vành đai quanh box; kiểm chứng trên ~200 box chuẩn và xem bằng mắt vài cảnh | Sáng 07/10 | A1, B1; dữ liệu nuScenes trên máy Huy | Point cloud giả: sai số < 2 cm; nuScenes: có trung vị, p90, ghi các chỗ ground sai | 🟡 |
-| **B3** | Phát hiện lơ lửng / lún, kèm test có đáp án (vd nâng đáy box 25 cm → Lỗi ~25 cm) | 07/10 | B2 | Test xanh; ghi "thiếu bằng chứng" khi vành đai ít điểm | ⬜ |
-| **B4** | Thống kê kích thước theo class (tự chốt khoảng cho `bus`, `trailer`, `construction_vehicle`) + phát hiện sai kích thước, kèm test có đáp án | 07/10 | B1 | Test xanh; không báo người đi bộ ở kiểu trong track | ⬜ |
-| **B5** | Phát hiện đứt track: nhảy vị trí, tách ID, kèm test có đáp án | 08/10 | B1 | Test xanh; chỉ báo frame lệch lớn nhất trong cụm | ⬜ |
-| **B6** | Script precision / recall theo loại lỗi và mức độ | 08/10 | A7 | Ra bảng chỉ số mục 8 từ log lỗi chèn + kết quả quét | ⬜ |
-| **B7** | Chốt ngưỡng trên 5 cảnh tinh chỉnh; chạy đánh giá trên 5 cảnh kiểm tra | Sáng 09/10 | B6 | Ngưỡng ghi vào `config.yaml`; bảng số liệu gửi người test | ⬜ |
+| **B2** | Module ground: lưới min-Z + RANSAC, mặt phẳng cục bộ trong vành đai quanh box; kiểm chứng trên ~200 box chuẩn và xem bằng mắt vài cảnh | Sáng 07/10 | A1, B1; dữ liệu nuScenes trên máy Huy | Point cloud giả: sai số < 2 cm; nuScenes: có trung vị, p90, ghi các chỗ ground sai | ✅ Không đạt tiêu chí tuyệt đối (trung vị 7,9 cm); đổi luật sang so với track: [kiểm chứng](docs/kiem-chung-ground.md) |
+| **B3** | Phát hiện lơ lửng / lún, kèm test có đáp án (vd nâng đáy box 25 cm → Lỗi ~25 cm) | 07/10 | B2 | Test xanh; ghi "thiếu bằng chứng" khi vành đai ít điểm | 🔍 Việt Anh viết (`core/floating.py`), chờ Huy review |
+| **B4** | Thống kê kích thước theo class (tự chốt khoảng cho `bus`, `trailer`, `construction_vehicle`) + phát hiện sai kích thước, kèm test có đáp án | 07/10 | B1 | Test xanh; không báo người đi bộ ở kiểu trong track | 🔍 Việt Anh viết (`core/size.py`), chờ Huy review |
+| **B5** | Phát hiện đứt track: nhảy vị trí, tách ID, kèm test có đáp án | 08/10 | B1 | Test xanh; chỉ báo frame lệch lớn nhất trong cụm | 🔍 Việt Anh viết (`core/track.py`, có cả khoảng nội suy B5b), chờ Huy review |
+| **B6** | Script precision / recall theo loại lỗi và mức độ | 08/10 | A7 | Ra bảng chỉ số mục 8 từ log lỗi chèn + kết quả quét | 🔍 `pointsnap eval`, [kết quả](docs/ket-qua-danh-gia-tu-dong.md) |
+| **B7** | Chốt ngưỡng trên 5 cảnh tinh chỉnh; chạy đánh giá trên 5 cảnh kiểm tra | Sáng 09/10 | B6 | Ngưỡng ghi vào `config.yaml`; bảng số liệu gửi người test | 🟡 Đã chốt sơ bộ trên 5 cảnh tinh chỉnh (lơ lửng 12/22 cm, biên kích thước 10%/25%); Huy xem lại sáng 09/10 |
 
 ## Khánh, Chiến, Hân — báo cáo và test (khi sản phẩm xong)
 

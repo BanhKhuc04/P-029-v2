@@ -69,17 +69,26 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 
 ## 4. Mã luật và mức
 
-| `rule` | Loại lỗi | Ý nghĩa |
-|---|---|---|
-| `floating` | Lơ lửng / lún | Khoảng cách đáy box tới mặt đất cục bộ vượt ngưỡng |
-| `floating.no_evidence` | Lơ lửng / lún | Vành đai quanh box có quá ít điểm ground; mức Thông tin |
-| `size.class_range` | Sai kích thước | l, w hoặc h nằm ngoài khoảng thường gặp của class |
-| `size.in_track` | Sai kích thước | Kích thước một keyframe lệch so với trung vị của track |
-| `track.jump` | Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai keyframe lân cận |
-| `track.split_id` | Đứt track | Track kết thúc rồi một track cùng class bắt đầu ngay gần đó |
-| `track.long_interpolation` | Đứt track | Đoạn dài chỉ có box nội suy trong khi đối tượng di chuyển (B5b) |
+| `rule` | Loại lỗi | Ý nghĩa | `value` |
+|---|---|---|---|
+| `floating` | Lơ lửng / lún | Khoảng cách đáy box tới mặt đất sát box lệch so với các frame khác của track (box lẻ: so trực tiếp) | Độ lệch so với trung vị track (m, có dấu); box lẻ: `d` |
+| `floating.no_evidence` | Lơ lửng / lún | Vành đai quanh box có quá ít điểm mặt đất; mức Thông tin, gộp một mục mỗi track, không gắn cờ | Số box |
+| `size.class_range` | Sai kích thước | l, w hoặc h nằm ngoài khoảng thường gặp của class | Kích thước (m) |
+| `size.in_track` | Sai kích thước | Kích thước một keyframe lệch so với trung vị của track | Độ lệch tương đối |
+| `track.jump` | Đứt track | Tâm box lệch khỏi vị trí nội suy (đầu / cuối đoạn: ngoại suy) từ các keyframe lân cận | Độ lệch (m) |
+| `track.split_id` | Đứt track | Track kết thúc rồi một track cùng class bắt đầu ngay gần đó; gắn vào box đầu của track mới | Khoảng cách (m) |
+| `track.long_interpolation` | Đứt track | ≥ 2 frame liền chỉ có box nội suy trong khi đối tượng dịch > 1 m; gắn vào keyframe trước khoảng trống | Số frame nội suy |
 
 Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu thông báo luôn có số đo cụ thể, ví dụ *"Đáy box cách mặt đất 22 cm"*.
+`scan --flag` và `gate` chỉ tính mục Lỗi / Cảnh báo; mục Thông tin chỉ nằm trong báo cáo.
+
+**Point cloud cho job CVAT:** `scan` / `gate` đọc point cloud từ thư mục nuScenes theo `manifest.json` của bản xuất
+`to-cvat`. Bản xuất được tìm theo id task (file `cvat_task.json` cạnh `manifest.json`) trong `POINTSNAP_EXPORT_DIR`
+rồi `data/cvat`; hoặc chỉ thẳng bằng `--manifest`. Không tìm được thì bỏ luật lơ lửng / lún và luật đứt track chỉ
+báo mức Cảnh báo (không có pose xe thu).
+
+**Quét không qua CVAT:** `pointsnap nuscenes scan --scene <cảnh>` quét thẳng nhãn chuẩn trong hệ LiDAR, thêm keyframe
+`outside` giống khi nạp lên CVAT (`model.add_outside_markers`), nên kết quả khớp với khi quét trên CVAT.
 
 ## 5. Cấu hình và bí mật
 
@@ -87,5 +96,6 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - Token CVAT chỉ đặt qua biến môi trường `CVAT_TOKEN`; ghi token trong file cấu hình sẽ bị từ chối.
 - Thứ tự ưu tiên của URL CVAT, từ thấp tới cao: `config.yaml` mặc định → biến môi trường `CVAT_URL` → file `--config`.
 - `CVAT_AUTH_SCHEME`: `Bearer` (mặc định, dùng cho Personal Access Token tạo trong giao diện CVAT) hoặc `Token` (token cũ lấy từ `/api/auth/login`).
-- `NUSCENES_ROOT`: thư mục dữ liệu nuScenes, dùng làm mặc định cho `--dataroot`.
+- `NUSCENES_ROOT`: thư mục dữ liệu nuScenes, dùng làm mặc định cho `--dataroot` và ghi đè `dataroot` trong `manifest.json` (khi chuyển máy).
+- `POINTSNAP_EXPORT_DIR`: thư mục chứa các bản xuất `to-cvat` (nhiều thư mục cách nhau bởi `;` trên Windows, `:` trên Linux).
 - Không commit dữ liệu nuScenes, file `.pcd`, báo cáo hay bản chụp nhãn (đã có trong `.gitignore`).

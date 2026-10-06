@@ -94,12 +94,12 @@ class MockLiveSession:
 
 
 def test_full_end_to_end_workflow(tmp_path, monkeypatch):
-    # Dựng một task có 1 xe bus dị thường (dài 22m > 18.5m) và 1 xe car chuẩn
+    # Dựng một task có 1 xe bus dị thường (dài 25 m, vượt biên Lỗi 18.5 m × 1.25) và 1 xe car chuẩn
     raw_annos = {
         "version": 0,
         "tags": [],
         "shapes": [
-            {"id": 50, "type": "cuboid", "label_id": 2, "frame": 0, "points": pts(0, l=22.0, w=2.8, h=3.2),
+            {"id": 50, "type": "cuboid", "label_id": 2, "frame": 0, "points": pts(0, l=25.0, w=2.8, h=3.2),
              "attributes": []},
             {"id": 51, "type": "cuboid", "label_id": 1, "frame": 1, "points": pts(5.0, l=4.5, w=2.0, h=1.6),
              "attributes": []},
@@ -131,7 +131,7 @@ def test_full_end_to_end_workflow(tmp_path, monkeypatch):
     # Xe bus (id 50) phải được gắn cờ lỗi pointsnap_error
     bus_box = [c for c in job_flagged.cuboids if c.source_id == 50][0]
     assert "pointsnap_error" in bus_box.attrs
-    assert "vượt quá ngưỡng tối đa" in bus_box.attrs["pointsnap_error"]
+    assert "lớn hơn khoảng thường gặp" in bus_box.attrs["pointsnap_error"]
 
     # Xe car (id 51) không có cờ lỗi
     car_box = [c for c in job_flagged.cuboids if c.source_id == 51][0]

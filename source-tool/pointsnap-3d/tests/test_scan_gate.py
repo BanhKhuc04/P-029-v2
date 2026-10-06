@@ -90,7 +90,7 @@ def test_check_size_manual_ranges():
     # Bus quá dài (25.0 m > 18.5 m)
     bad_bus = Cuboid(center=(0, 0, 0), dims=(25.0, 2.8, 3.2), yaw=0.0, label="bus", frame=0, track_id=1)
     # Bus chuẩn (11.0 m)
-    good_bus = Cuboid(center=(0, 0, 0), dims=(11.0, 2.8, 3.2), yaw=0.0, label="bus", frame=1, track_id=1)
+    good_bus = Cuboid(center=(0, 0, 0), dims=(11.0, 2.8, 3.2), yaw=0.0, label="bus", frame=1, track_id=2)
 
     job = JobData(
         url="http://cvat:8080",
@@ -224,4 +224,4 @@ def test_cli_scan_and_gate_commands(tmp_path, monkeypatch):
     patched_json = server.patch_calls[0][1]
     assert "shapes" in patched_json
     assert patched_json["shapes"][0]["attributes"][0]["spec_id"] == 10
-    assert "vượt quá ngưỡng tối đa" in patched_json["shapes"][0]["attributes"][0]["value"]
+    assert "lớn hơn khoảng thường gặp" in patched_json["shapes"][0]["attributes"][0]["value"]

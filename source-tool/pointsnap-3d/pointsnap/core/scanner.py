@@ -19,10 +19,9 @@ from pointsnap.core.model import (
     Finding,
     FrameSource,
     Severity,
-    group_by_frame,
     group_by_track,
 )
-from pointsnap.detectors.floating import detect_floating
+from pointsnap.detectors.floating import detect_floating_scene
 from pointsnap.detectors.size import detect_size
 from pointsnap.detectors.track import detect_track_errors
 
@@ -142,15 +141,10 @@ def check_size_in_track(job: JobData, config: Config, frames: FrameSource | None
 
 
 def check_floating(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
-    """Lơ lửng / lún (B3, `detectors.floating`). Cần point cloud: không có `frames` thì không chạy."""
+    """Lơ lửng / lún (B3, `detectors.floating`), so với các frame khác của track. Cần point cloud."""
     if frames is None:
         return []
-    classes = set(config.floating.classes)
-    findings: list[Finding] = []
-    for frame, boxes in group_by_frame(c for c in job.cuboids if not c.outside).items():
-        if any(b.label in classes for b in boxes):
-            findings.extend(detect_floating(boxes, frames.frame_data(frame).points, config.floating))
-    return findings
+    return detect_floating_scene(job.cuboids, frames, config.floating)
 
 
 def check_size(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:

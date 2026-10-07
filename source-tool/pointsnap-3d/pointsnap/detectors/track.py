@@ -2,11 +2,11 @@
 
 Ba kiểu phát hiện:
 1. Kiểu 1 (`track.jump`): Nhảy vị trí bất thường.
-   - Track được cắt thành các đoạn tại keyframe `outside` (đối tượng vắng mặt): không nội suy qua đoạn vắng.
-   - Box giữa đoạn: lệch so với vị trí nội suy tuyến tính theo thời gian từ 2 keyframe lân cận. Box ở đầu / cuối
-     đoạn: so với vị trí ngoại suy từ 2 keyframe kế tiếp, ngưỡng nhân `END_FACTOR`.
+   - Xét mọi keyframe có mặt theo thời gian, nội suy cả qua đoạn đối tượng tạm vắng (`outside`).
+   - Box giữa track: lệch so với vị trí nội suy tuyến tính theo thời gian từ 2 keyframe lân cận. Box ở đầu / cuối
+     track: so với vị trí ngoại suy từ 2 keyframe kế tiếp, ngưỡng nhân `END_FACTOR`.
    - Một cú nhảy làm lệch cả box kề bên, nên với mỗi cụm vượt ngưỡng chỉ báo box mà khi bỏ đi các box còn lại khớp
-     nhất. Đoạn chỉ có 2 box: kiểm thô tốc độ > `v_max_mps`.
+     nhất. Track chỉ có 2 box: kiểm thô tốc độ > `v_max_mps`.
    - Ngưỡng theo nhóm class: vehicle (1.0/2.0 m), two_wheeler (0.75/1.5 m), pedestrian (0.5/1.0 m), static (0.3/0.6 m).
    - Nếu không có sensor_to_world, chỉ báo ở mức Cảnh báo.
 2. Kiểu 2 (`track.split_id`): Nghi ngờ tách ID khi track A kết thúc (trước frame cuối) và track B cùng class bắt
@@ -178,10 +178,10 @@ def detect_track_jumps_for_track(
     if grp is None:
         return []
 
+    # Vị trí liên tục theo thời gian kể cả khi đối tượng tạm vắng (keyframe `outside`), nên nội suy qua đoạn vắng:
+    # bắt được cú nhảy ngay sát đoạn vắng mà không tăng báo nhầm (đo trên 5 cảnh kiểm tra).
     findings: list[Finding] = []
-    for segment in _segments(track_boxes):
-        if len(segment) < 2:
-            continue
+    for segment in [sorted(active, key=lambda b: b.frame)]:
         centers, has_world = _get_world_centers(segment, sensor_to_world_by_frame)
         times = np.array([_time(b.frame, config, timestamps_by_frame) for b in segment])
         findings.extend(_segment_jumps(segment, grp, centers[:, :2], times, has_world))

@@ -188,6 +188,10 @@ class NuScenesReader:
             source_ref=ref.sample_token,
         )
 
+    def frames(self, scene: str) -> NuScenesFrames:
+        """Nguồn point cloud + pose theo số frame của cảnh, dùng cho bộ quét (`FrameSource`)."""
+        return NuScenesFrames(self, scene)
+
     # --- Nhãn chuẩn ------------------------------------------------------------------------------
 
     def category_of(self, annotation: dict[str, Any]) -> str:
@@ -233,3 +237,18 @@ class NuScenesReader:
                 "tilt_rad": math.acos(max(-1.0, min(1.0, rotation[2, 2]))),
             },
         )
+
+
+class NuScenesFrames:
+    """`FrameSource` cho một cảnh nuScenes: frame → point cloud LiDAR và pose, hệ LiDAR như `annotations`."""
+
+    def __init__(self, reader: NuScenesReader, scene: str) -> None:
+        self.reader = reader
+        self.refs = {ref.frame: ref for ref in reader.samples(scene)}
+
+    @property
+    def num_frames(self) -> int:
+        return len(self.refs)
+
+    def frame_data(self, frame: int, with_points: bool = True) -> FrameData:
+        return self.reader.frame_data(self.refs[frame], with_points=with_points)

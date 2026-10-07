@@ -131,7 +131,7 @@ def test_full_end_to_end_workflow(tmp_path, monkeypatch):
     # Xe bus (id 50) phải được gắn cờ lỗi pointsnap_error
     bus_box = [c for c in job_flagged.cuboids if c.source_id == 50][0]
     assert "pointsnap_error" in bus_box.attrs
-    assert "vượt quá ngưỡng tối đa" in bus_box.attrs["pointsnap_error"]
+    assert "lớn bất thường so với class bus" in bus_box.attrs["pointsnap_error"]
 
     # Xe car (id 51) không có cờ lỗi
     car_box = [c for c in job_flagged.cuboids if c.source_id == 51][0]

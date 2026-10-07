@@ -89,8 +89,30 @@ def test_export_scene_writes_pcd_manifest_ground_truth_and_zip(tmp_path):
     cuboids, meta = load_cuboids(export.ground_truth)
     assert meta["num_frames"] == 3 and len(cuboids) == 4
 
+    # Ảnh CAM_FRONT có trong bảng nhưng chưa có file trên đĩa: bỏ qua, không lỗi
+    assert export.num_images == 0 and manifest["frames"][0]["images"] == {}
     with zipfile.ZipFile(export.archive) as zf:
-        assert sorted(zf.namelist()) == ["000000.pcd", "000001.pcd", "000002.pcd"]
+        assert sorted(zf.namelist()) == ["pointcloud/000000.pcd", "pointcloud/000001.pcd", "pointcloud/000002.pcd"]
+
+
+def test_export_scene_adds_camera_images_as_cvat_context_images(tmp_path):
+    root = fake_nuscenes.build(tmp_path / "nuscenes")
+    image = root / "samples" / "CAM_FRONT" / "f0.jpg"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(b"\xff\xd8 fake jpg")
+    reader = NuScenesReader(root)
+    assert reader.camera_images(reader.samples("scene-0001")[0]) == {"CAM_FRONT": image}
+
+    export = export_scene(reader, "scene-0001", tmp_path / "out")
+    manifest = json.loads(export.manifest.read_text(encoding="utf-8"))
+    assert export.num_images == 1
+    assert manifest["frames"][0]["images"] == {"CAM_FRONT": "samples/CAM_FRONT/f0.jpg"}
+    with zipfile.ZipFile(export.archive) as zf:
+        assert zf.read("related_images/000000_pcd/CAM_FRONT.jpg") == image.read_bytes()
+
+    no_images = export_scene(reader, "scene-0001", tmp_path / "plain", with_images=False)
+    with zipfile.ZipFile(no_images.archive) as zf:
+        assert not any(name.startswith("related_images/") for name in zf.namelist())
 
 
 class FakeClient:

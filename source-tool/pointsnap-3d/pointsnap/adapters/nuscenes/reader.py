@@ -120,6 +120,23 @@ class NuScenesReader:
         return result
 
     @cached_property
+    def _cameras_by_sample(self) -> dict[str, dict[str, str]]:
+        """`sample_token` → {kênh camera → đường dẫn tương đối của ảnh keyframe}, kênh sắp theo tên."""
+        sensors = self._table("sensor")
+        calibrations = self._table("calibrated_sensor")
+        result: dict[str, dict[str, str]] = defaultdict(dict)
+        for record in self._table("sample_data").values():
+            sensor = sensors[calibrations[record["calibrated_sensor_token"]]["sensor_token"]]
+            if record["is_key_frame"] and sensor.get("modality") == "camera":
+                result[record["sample_token"]][sensor["channel"]] = record["filename"]
+        return {token: dict(sorted(cams.items())) for token, cams in result.items()}
+
+    def camera_images(self, ref: SampleRef) -> dict[str, Path]:
+        """Ảnh camera chụp cùng keyframe với point cloud: {kênh, ví dụ `CAM_FRONT` → đường dẫn file}."""
+        return {channel: self.dataroot / filename
+                for channel, filename in self._cameras_by_sample.get(ref.sample_token, {}).items()}
+
+    @cached_property
     def _annotations_by_sample(self) -> dict[str, list[dict[str, Any]]]:
         result: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for record in self._table("sample_annotation").values():

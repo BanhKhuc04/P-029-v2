@@ -36,6 +36,7 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     to_cvat.add_argument("--out", type=Path, default=Path("data/cvat"), help="thư mục ghi bản xuất (mặc định: data/cvat)")
     to_cvat.add_argument("--upload", action="store_true", help="tạo task 3D trên CVAT và nạp nhãn chuẩn")
     to_cvat.add_argument("--task-name", help="tên task trên CVAT (mặc định: PointSnap <cảnh>)")
+    to_cvat.add_argument("--no-images", action="store_true", help="không kèm ảnh camera làm ảnh ngữ cảnh trên CVAT")
 
     scan = actions.add_parser("scan", help="quét thẳng nhãn chuẩn của một cảnh, không cần CVAT (HTML/CSV)")
     scan.add_argument("--scene", required=True, help="tên cảnh, ví dụ scene-0061")
@@ -59,8 +60,9 @@ def run(args: argparse.Namespace, config: Config) -> int:
         if args.nuscenes_command == "scan":
             return _scan(reader, args, config)
 
-        export = export_scene(reader, args.scene, args.out)
-        print(f"Đã xuất {export.num_frames} frame, {export.num_boxes} box nhãn chuẩn → {export.directory}")
+        export = export_scene(reader, args.scene, args.out, with_images=not args.no_images)
+        print(f"Đã xuất {export.num_frames} frame, {export.num_boxes} box nhãn chuẩn, {export.num_images} ảnh camera "
+              f"→ {export.directory}")
         if not args.upload:
             print("Chưa tải lên CVAT. Thêm --upload để tạo task.")
             return 0

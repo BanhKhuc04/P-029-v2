@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -55,6 +56,17 @@ class ReviewRequest(BaseModel):
 class StartScanRequest(BaseModel):
     job_id: int
     flag: bool = False
+
+
+def _same_cvat(a: str, b: str) -> bool:
+    """Hai URL CVAT cùng một máy chủ (coi localhost và 127.0.0.1 là một, bỏ `/` cuối)."""
+
+    def norm(url: str) -> str:
+        parts = urlsplit(url.strip())
+        host = "localhost" if parts.hostname in ("127.0.0.1", "::1") else (parts.hostname or "")
+        return f"{parts.scheme}://{host}:{parts.port or ''}{parts.path.rstrip('/')}"
+
+    return norm(a) == norm(b)
 
 
 def create_app(home_dir: Path | str | None = None) -> FastAPI:
@@ -285,6 +297,36 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             }
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.get("/api/extension/jobs/{job_id}")
+    def extension_job(job_id: int, cvat_url: str = "") -> dict[str, Any]:
+        """Cho extension trên trang CVAT (A15): dự án ứng với CVAT đang mở, lần quét mới nhất của job.
+
+        `run` là lần quét xong gần nhất (kèm findings, reviews); `active` là lần đang chờ hoặc đang chạy.
+        """
+        projects = pm.list_projects()
+        if cvat_url:
+            projects = [p for p in projects if _same_cvat(p.get("cvat_url", ""), cvat_url)]
+        runs = [
+            r for p in projects for r in runner.list_runs(p["slug"])
+            if r.get("job_id") == job_id
+        ]
+        runs.sort(key=lambda r: r.get("started_at") or "", reverse=True)
+        active = next((r for r in runs if r.get("status") in ("queued", "running")), None)
+        done = next((r for r in runs if r.get("status") == "done"), None)
+        run = None
+        if done:
+            slug = done["project_slug"]
+            run = runner.get_run(slug, done["run_id"], include_findings=True)
+            run["reviews"] = load_reviews(pm._project_dir(slug) / "runs" / done["run_id"])
+        project = projects[0] if projects else None
+        if run:
+            project = next(p for p in projects if p["slug"] == run["project_slug"])
+        return {
+            "project": {"slug": project["slug"], "name": project["name"]} if project else None,
+            "run": run,
+            "active": active,
+        }
 
     @application.get("/api/projects/{slug}/scans/{run_id}/report.html")
     def get_html_report(slug: str, run_id: str) -> FileResponse:

@@ -64,7 +64,8 @@ pointsnap ui
 
 *Duyệt nhiều lỗi mà không mở lại CVAT:*
 - **Kiểm tra đúng / báo nhầm ngay trên PointSnap:** ở màn Kết quả, khung **Duyệt nhanh** hiện point cloud quanh box (nhìn từ trên và nhìn ngang, mặt đất ở dưới). Phím `J` / `K` chuyển mục sau / trước, `1` = đúng là lỗi, `2` = báo nhầm. Kết luận lưu vào `reviews.json` của lần quét và tính luôn precision xem tay.
-- **Sửa hàng loạt trong CVAT (chỉ tải job một lần):** bấm **Gắn cờ lên CVAT**, mở job trên CVAT, đặt bộ lọc `pointsnap_error` *is not empty*, rồi **bấm chuột phải** vào nút Trước hoặc Sau trên thanh điều khiển frame và chọn kiểu nhảy **theo bộ lọc**. Mỗi lần bấm Sau, CVAT nhảy tới frame kế tiếp có box bị gắn cờ; nội dung lỗi nằm trong thuộc tính `pointsnap_error` của box.
+- **Sửa hàng loạt trong CVAT bằng extension (khuyên dùng):** cài [extension PointSnap cho CVAT](pointsnap-3d/extension/README.md) (Chrome / Edge, Load unpacked, khoảng 1 phút). Mở job là extension tự lọc box có cờ; phím `.` / `,` chuyển tới frame có lỗi kế tiếp / trước, không tải lại trang; rê chuột vào box thấy nội dung lỗi và gợi ý sửa. Kết quả thử: [docs/thu-extension.md](pointsnap-3d/docs/thu-extension.md).
+- **Sửa hàng loạt trong CVAT không cần extension (chỉ tải job một lần):** bấm **Gắn cờ lên CVAT**, mở job trên CVAT, đặt bộ lọc `pointsnap_error` *is not empty*, rồi **bấm chuột phải** vào nút Trước hoặc Sau trên thanh điều khiển frame và chọn kiểu nhảy **theo bộ lọc**. Mỗi lần bấm Sau, CVAT nhảy tới frame kế tiếp có box bị gắn cờ; nội dung lỗi nằm trong thuộc tính `pointsnap_error` của box.
 
 ### 2. Dùng dòng lệnh (Nâng cao cho CI/CD và Script)
 

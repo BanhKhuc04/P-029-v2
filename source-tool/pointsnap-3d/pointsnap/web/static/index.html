@@ -11,6 +11,19 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <!-- Màn chào (A14): hiện một lần mỗi phiên trình duyệt -->
+  <div id="splash" class="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title" hidden>
+    <div class="splash-inner">
+      <div id="splash-logo" class="splash-logo"><svg width="120" height="120" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="overflow: visible"><path d="M3 38 H16 M32 38 H45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"></path><path d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="24" cy="38" r="4.2" fill="#4C9AFF"></circle></svg></div>
+      <div>
+        <h1 id="splash-title" class="splash-title">PointSnap <span>3D</span></h1>
+        <p class="splash-sub">Kiểm soát chất lượng nhãn 3D trên CVAT</p>
+      </div>
+      <button id="splash-start" class="splash-btn">Bắt đầu</button>
+      <div id="splash-status" class="splash-status" aria-live="polite"></div>
+      <div class="splash-version">Phiên bản 0.1.0</div>
+    </div>
+  </div>
   <div id="app-container">
     <!-- Thanh trên cùng (Topbar Navy) -->
     <header class="topbar">
@@ -234,12 +247,32 @@
 
               <!-- Cột phải: Bảng chi tiết phát hiện (Right Detail Drawer) -->
               <aside class="detail-drawer-panel" aria-label="Chi tiết phát hiện">
+                <div class="quick-nav">
+                  <span class="quick-nav-title">Duyệt nhanh</span>
+                  <div class="quick-nav-buttons">
+                    <button id="btn-quick-prev" class="quick-nav-btn" aria-label="Mục trước (phím K)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M7.5 2.5 L4 6 L7.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+                    <span id="quick-nav-counter" class="mono quick-nav-counter">0 / 0</span>
+                    <button id="btn-quick-next" class="quick-nav-btn" aria-label="Mục sau (phím J)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5 L8 6 L4.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+                  </div>
+                </div>
                 <div class="detail-drawer-header">
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <span id="detail-sev-badge" class="pill-badge error">Lỗi</span>
                     <span id="detail-rule-code" class="mono" style="font-size: 12px; color: var(--text-2);">rule</span>
                   </div>
                   <h2 id="detail-title-text" style="margin: 0; font-size: 16px; font-weight: 600;">Tiêu đề lỗi</h2>
+                </div>
+
+                <div class="quick-preview">
+                  <figure class="quick-preview-fig">
+                    <canvas id="preview-canvas-top" class="preview-canvas" role="img" aria-label="Point cloud nhìn từ trên quanh box"></canvas>
+                    <figcaption>Nhìn từ trên</figcaption>
+                  </figure>
+                  <figure class="quick-preview-fig">
+                    <canvas id="preview-canvas-side" class="preview-canvas" role="img" aria-label="Point cloud nhìn ngang, mặt đất ở dưới"></canvas>
+                    <figcaption>Nhìn ngang</figcaption>
+                  </figure>
+                  <div id="preview-status" class="preview-status" aria-live="polite"></div>
                 </div>
 
                 <dl class="detail-drawer-meta-dl">
@@ -269,11 +302,23 @@
                 </div>
 
                 <div class="detail-drawer-actions">
-                  <a id="detail-btn-cvat-link" href="#" target="_blank" class="btn btn-primary" style="width: 100%;">
-                    Mở đúng box trong CVAT
+                  <div class="detail-field-label">Kết luận của người xem</div>
+                  <div class="review-buttons" role="group" aria-label="Kết luận">
+                    <button id="btn-review-ok" class="btn review-btn" aria-pressed="false">Đúng là lỗi</button>
+                    <button id="btn-review-fp" class="btn review-btn" aria-pressed="false">Báo nhầm</button>
+                  </div>
+                  <a id="detail-btn-cvat-link" href="#" target="pointsnap-cvat" rel="noopener" class="btn btn-secondary" style="width: 100%;">
+                    Mở trong CVAT để sửa
                   </a>
                   <div class="detail-hint-note">
-                    Link chỉ đúng với lần quét mới nhất. Sửa box xong hãy quét lại.
+                    Phím tắt: <span class="mono">J</span> / <span class="mono">K</span> mục sau / trước ·
+                    <span class="mono">1</span> đúng · <span class="mono">2</span> báo nhầm.
+                    <span id="review-progress-text"></span>
+                  </div>
+                  <div class="detail-hint-note">
+                    Link CVAT chỉ đúng với lần quét mới nhất và luôn mở vào cùng một tab. Sửa nhiều box: bấm
+                    "Gắn cờ lên CVAT" rồi trong CVAT lọc <span class="mono">pointsnap_error</span> và chuyển nút
+                    Trước / Sau sang chế độ lọc (xem README).
                   </div>
                 </div>
               </aside>

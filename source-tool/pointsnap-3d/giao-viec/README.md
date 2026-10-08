@@ -9,6 +9,7 @@ Mở file của **hôm nay**, tìm tên mình, làm hết các ô ☐ trong ph�
 | Thứ Tư 07/10 | **G1**: kiểm chứng ground; phát hiện lơ lửng/lún và kích thước chạy được; ghi được cờ lỗi lên CVAT | [07/10](2026-10-07.md) |
 | Thứ Năm 08/10 | **G2**: **sản phẩm xong**, báo nhóm bắt đầu test | [08/10](2026-10-08.md) |
 | Thứ Sáu 09/10 | **G3** (12h): test xong, có số liệu · **Nộp** cuối ngày | [09/10](2026-10-09.md) |
+| Từ 07/10 | **Review và test** (Khánh, Hân, Chiến): T1 cài và chạy theo README, T2 xem tay cảnh báo, R1 báo cáo | [review-test](review-test.md) |
 
 **Quy tắc chung**
 

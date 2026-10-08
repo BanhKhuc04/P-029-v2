@@ -84,8 +84,10 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 ## 5. Cấu hình và bí mật
 
 - Ngưỡng nằm trong `pointsnap/config.yaml`. Muốn thử ngưỡng khác: tạo file chỉ chứa phần cần đổi, chạy `pointsnap --config <file> ...`. Khóa gõ sai bị báo lỗi ngay.
-- Token CVAT chỉ đặt qua biến môi trường `CVAT_TOKEN`; ghi token trong file cấu hình sẽ bị từ chối.
-- Thứ tự ưu tiên của URL CVAT, từ thấp tới cao: `config.yaml` mặc định → biến môi trường `CVAT_URL` → file `--config`.
+- Bật / tắt luật (`rules:`): cho phép tắt/bật từng luật (`floating`, `size_class_range`, `size_in_track`, `track_jump`, `track_split_id`, `track_long_interpolation`). Bộ quét bỏ qua detector khi toàn bộ luật của nó bị tắt và lọc bỏ finding bị vô hiệu hóa khỏi kết quả.
+- Cấu hình dự án (A11): lưu trữ tại `~/.pointsnap/projects/<slug>/` (`project.json`, `secret.json`, `guideline.yaml`, `runs/`).
+- Token CVAT: lưu riêng trong `secret.json` hoặc biến môi trường `CVAT_TOKEN`; không ghi token trong file cấu hình hay `guideline.yaml`. API không bao giờ trả token ra ngoài.
+- Thứ tự ưu tiên của URL CVAT, từ thấp tới cao: `config.yaml` mặc định → biến môi trường `CVAT_URL` → file `--config`. Trong giao diện Web, URL cấu hình ở dự án (`project.json`) luôn có độ ưu tiên cao nhất cho dự án đó.
 - `CVAT_AUTH_SCHEME`: `Bearer` (mặc định, dùng cho Personal Access Token tạo trong giao diện CVAT) hoặc `Token` (token cũ lấy từ `/api/auth/login`).
 - `NUSCENES_ROOT`: thư mục dữ liệu nuScenes, dùng làm mặc định cho `--dataroot`.
 - Không commit dữ liệu nuScenes, file `.pcd`, báo cáo hay bản chụp nhãn (đã có trong `.gitignore`).

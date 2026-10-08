@@ -30,6 +30,16 @@ class CvatConfig:
 
 
 @dataclass(frozen=True)
+class RulesConfig:
+    floating: bool = True
+    size_class_range: bool = True
+    size_in_track: bool = True
+    track_jump: bool = True
+    track_split_id: bool = True
+    track_long_interpolation: bool = True
+
+
+@dataclass(frozen=True)
 class FloatingConfig:
     classes: tuple[str, ...]
     warning_m: float
@@ -117,6 +127,7 @@ class Config:
     size: SizeConfig
     track: TrackConfig
     gate: GateConfig
+    rules: RulesConfig = dataclasses.field(default_factory=RulesConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -214,6 +225,19 @@ def _parse_cvat(r: _Reader, env: Mapping[str, str]) -> CvatConfig:
         raise ConfigError("Không ghi token CVAT trong file cấu hình; đặt biến môi trường CVAT_TOKEN")
     r.finish()
     return CvatConfig(url=url, flag_attribute=flag_attribute, token=env.get("CVAT_TOKEN") or None)
+
+
+def _parse_rules(r: _Reader) -> RulesConfig:
+    cfg = RulesConfig(
+        floating=r.boolean("floating"),
+        size_class_range=r.boolean("size_class_range"),
+        size_in_track=r.boolean("size_in_track"),
+        track_jump=r.boolean("track_jump"),
+        track_split_id=r.boolean("track_split_id"),
+        track_long_interpolation=r.boolean("track_long_interpolation"),
+    )
+    r.finish()
+    return cfg
 
 
 def _parse_floating(r: _Reader) -> FloatingConfig:
@@ -364,12 +388,15 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
     """Kiểm tra dict cấu hình đầy đủ và trả về `Config`."""
     env = os.environ if env is None else env
     r = _Reader(data, "config")
+    cvat = _parse_cvat(r.section("cvat"), env)
+    rules = _parse_rules(r.section("rules")) if "rules" in r.keys() else RulesConfig()
     cfg = Config(
-        cvat=_parse_cvat(r.section("cvat"), env),
+        cvat=cvat,
         floating=_parse_floating(r.section("floating")),
         size=_parse_size(r.section("size")),
         track=_parse_track(r.section("track")),
         gate=_parse_gate(r.section("gate")),
+        rules=rules,
     )
     r.finish()
     return cfg

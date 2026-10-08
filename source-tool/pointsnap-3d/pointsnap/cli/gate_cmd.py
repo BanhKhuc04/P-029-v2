@@ -9,6 +9,7 @@ from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.reader import load_job
 from pointsnap.cli.common import frames_for_job
 from pointsnap.core.config import Config
+from pointsnap.core.gate import gate_verdict
 from pointsnap.core.model import Severity
 from pointsnap.core.scanner import scan_cuboids
 
@@ -44,18 +45,9 @@ def run(args: argparse.Namespace, config: Config) -> int:
     max_err = config.gate.max_errors
     max_warn = config.gate.max_warnings
 
-    failed = False
-    reasons = []
+    passed, reasons = gate_verdict(findings, config.gate)
 
-    if num_errors > max_err:
-        failed = True
-        reasons.append(f"Số lỗi ({num_errors}) vượt quá ngưỡng cho phép ({max_err})")
-
-    if num_warnings > max_warn:
-        failed = True
-        reasons.append(f"Số cảnh báo ({num_warnings}) vượt quá ngưỡng cho phép ({max_warn})")
-
-    if failed:
+    if not passed:
         print(f"❌ [KHÔNG ĐẠT] Cổng kiểm tra Job #{args.job} không đạt yêu cầu!")
         for r in reasons:
             print(f"   • {r}")

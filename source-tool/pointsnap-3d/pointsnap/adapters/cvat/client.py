@@ -66,6 +66,10 @@ class CvatClient:
 
     # --- Task ------------------------------------------------------------------------------------
 
+    def get_tasks(self, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        """Lấy toàn bộ danh sách task trên CVAT."""
+        return self._get_all("tasks", params or {})
+
     def create_task(self, name: str, labels: list[dict[str, Any]]) -> dict[str, Any]:
         return self._request("POST", "tasks", json={"name": name, "labels": labels}, expected=(201,))
 

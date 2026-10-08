@@ -702,3 +702,13 @@ def test_finding_to_dict_cvat_link():
     )
     d_plain = finding_to_dict(f_plain, cvat_url="http://cvat:8080", task_id=10, job_id=20)
     assert d_plain["cvat_link"] == "http://cvat:8080/tasks/10/jobs/20?frame=0"
+
+
+# --- Test 15 (A13): GET / trả về 200 và chứa 'PointSnap 3D' ---
+
+def test_index_page_returns_pointsnap_3d(client: TestClient):
+    """GET / phải trả về mã HTTP 200 và chứa tiêu đề nhận diện 'PointSnap 3D'."""
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "PointSnap 3D" in res.text
+

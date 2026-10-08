@@ -9,25 +9,40 @@ cvat:
   url: http://localhost:8080          # CVAT_URL ghi đè giá trị này; url trong file --config lại ưu tiên hơn CVAT_URL
   flag_attribute: pointsnap_error     # thuộc tính văn bản dùng để gắn cờ lỗi lên box
 
-floating:                             # lơ lửng / lún đất
+floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
-  warning_m: 0.10
-  error_m: 0.20
-  ring_inner_m: 0.5                   # vành đai lấy điểm ground: từ mép footprint + 0.5 m
-  ring_outer_m: 1.5                   # ... tới mép footprint + 1.5 m
-  min_ground_points: 10               # ít hơn: ghi "thiếu bằng chứng" ở mức Thông tin
+  warning_m: 0.12                     # |d − trung vị d của các box khác trong track| > 12 cm: Cảnh báo (B7)
+  error_m: 0.22                       # > 22 cm: Lỗi, nếu |d| tuyệt đối cũng > error_min_abs_m
+  error_min_abs_m: 0.15
+  single_warning_m: 0.15              # box lẻ / track ít box có bằng chứng: so |d| tuyệt đối
+  single_error_m: 0.30
+  min_track_boxes: 2                  # cần ít nhất 2 box khác cùng track có bằng chứng mới so theo track
+  ring_inner_m: 0.1                   # vành đai lấy điểm ground: từ mép footprint + 0.1 m
+  ring_outer_m: 0.8                   # ... tới mép footprint + 0.8 m
+  min_ground_points: 15               # ít hơn: ghi "thiếu bằng chứng" ở mức Thông tin
 
 size:
   class_range:                        # kiểu 1: bất thường so với class
     percentile_low: 1
     percentile_high: 99
-    warning_margin: 0.05              # Cảnh báo nếu ngoài [p_low − 5%, p_high + 5%]
-    error_margin: 0.15                # Lỗi nếu ngoài [p_low − 15%, p_high + 15%]
+    warning_margin: 0.10              # Cảnh báo nếu ngoài [p_low − 10%, p_high + 10%] (B7: thống kê từ 5 cảnh còn hẹp)
+    error_margin: 0.25                # Lỗi nếu ngoài [p_low − 25%, p_high + 25%]
     min_instances: 20                 # class ít instance hơn thì dùng manual_ranges
-  manual_ranges:                      # chốt ở việc B7 (Khánh & Huy thống nhất từ 5 cảnh tinh chỉnh)
+    # [p_low, p_high] theo class, tính trên trung vị kích thước của từng đối tượng. Sinh bằng scripts/build_size_stats.py
+    # từ 5 cảnh tinh chỉnh (scene-0061, 0553, 0757, 0916, 1094); chỉ class có >= min_instances đối tượng.
+    stats:
+      barrier:      {length: [0.40, 0.76], width: [1.73, 3.36], height: [0.90, 1.35]}  # 75 đối tượng, 1637 box
+      car:          {length: [3.90, 5.79], width: [1.58, 2.41], height: [1.39, 2.41]}  # 124 đối tượng, 2490 box
+      pedestrian:   {length: [0.48, 1.10], width: [0.50, 0.98], height: [1.28, 2.00]}  # 151 đối tượng, 2824 box
+      traffic_cone: {length: [0.35, 0.69], width: [0.36, 0.96], height: [0.55, 1.33]}  # 72 đối tượng, 578 box
+  manual_ranges:                      # class ít mẫu (< min_instances): bus, trailer, construction_vehicle chốt ở B7
+                                      # (Khánh & Huy); truck, motorcycle, bicycle thêm ở A10
     bus:                  {length: [6.0, 18.5], width: [2.2, 3.2], height: [2.4, 4.5]}
     trailer:              {length: [2.0, 18.0], width: [1.5, 3.2], height: [1.0, 4.5]}
     construction_vehicle: {length: [2.5, 12.0], width: [1.5, 3.5], height: [1.8, 5.0]}
+    truck:                {length: [4.5, 12.5], width: [1.8, 3.2], height: [1.9, 4.3]}
+    motorcycle:           {length: [1.5, 2.6],  width: [0.55, 1.2], height: [1.0, 2.0]}
+    bicycle:              {length: [1.2, 2.1],  width: [0.4, 0.95], height: [0.8, 2.0]}
   in_track:                           # kiểu 2: kích thước dao động trong cùng một track
     min_keyframes: 3
     excluded_classes: [pedestrian]    # tư thế thay đổi nên kích thước dao động là bình thường
@@ -65,8 +80,8 @@ track:
       v_max_mps: 0.5
       split_max_dist_m: 0.5
   split_max_gap_frames: 3             # track mới bắt đầu trong k+1..k+3 thì xét nghi tách ID
-  long_interpolation:                 # việc B5b, làm nếu kịp
-    enabled: false
+  long_interpolation:                 # việc B5b: ≥ min_frames frame liền chỉ có box nội suy
+    enabled: true
     min_frames: 2
     min_motion_m: 1.0
 

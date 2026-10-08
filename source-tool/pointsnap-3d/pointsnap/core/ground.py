@@ -256,6 +256,73 @@ def estimate_ground_for_box(
     )
 
 
+def ring_ground_for_box(
+    points: np.ndarray,
+    cuboid: Cuboid,
+    ring_inner_m: float = 0.1,
+    ring_outer_m: float = 0.8,
+    min_ground_points: int = 15,
+    band_m: float = 0.8,
+    cell_size: float = 0.4,
+    min_z_threshold: float = 0.08,
+) -> GroundEstimate:
+    """Ước lượng mặt đất sát box bằng trung vị các điểm thấp trong vành đai (bộ đo dùng cho luật B3).
+
+    Khác `estimate_ground_for_box` (RANSAC trên vành đai 0,5–1,5 m): vành đai hẹp sát footprint, chỉ lấy điểm
+    trong khoảng ±`band_m` quanh đáy box, lọc lưới min-Z rồi lấy trung vị z. Trên 10 cảnh nuScenes mini cách này
+    cho độ lệch so với trung vị track nhỏ hơn (p90 ~15 cm so với ~20 cm), xem docs/kiem-chung-ground.md.
+    `points` nên đã bỏ điểm thuộc các box khác (`OtherBoxPoints`), nếu không thân xe bên cạnh bị tính là đất.
+    """
+    pts = np.asarray(points, dtype=np.float64)[:, :3]
+    reach = max(cuboid.dims[:2]) / 2.0 + ring_outer_m + 0.1
+    near = pts[(np.abs(pts[:, 0] - cuboid.center[0]) <= reach) & (np.abs(pts[:, 1] - cuboid.center[1]) <= reach)]
+    if len(near) == 0:
+        return GroundEstimate(status="no_evidence")
+    ring = near[footprint_ring_mask(near, cuboid, inner=ring_inner_m, outer=ring_outer_m)]
+    ring = ring[np.abs(ring[:, 2] - cuboid.bottom_z) <= band_m]
+    if len(ring) < min_ground_points:
+        return GroundEstimate(status="no_evidence", num_ground_points=len(ring))
+    ground = ring[filter_min_z_grid(ring, cell_size=cell_size, height_threshold=min_z_threshold)]
+    if len(ground) < min_ground_points:
+        return GroundEstimate(status="no_evidence", num_ground_points=len(ground))
+    ground_z = float(np.median(ground[:, 2]))
+    return GroundEstimate(
+        ground_z=ground_z,
+        distance=cuboid.bottom_z - ground_z,
+        num_ground_points=len(ground),
+        num_inliers=len(ground),
+        status="ok",
+    )
+
+
+class OtherBoxPoints:
+    """Point cloud của một frame, cho phép lấy nhanh các điểm không thuộc box nào khác ngoài một box cho trước.
+
+    Điểm nằm trong một box (nới `margin` mét) là điểm của đối tượng, không phải mặt đất. Điểm trong chính box
+    đang xét vẫn giữ: box bị lún thì mặt đất thật nằm trong box, không được bỏ.
+    """
+
+    def __init__(self, points: np.ndarray, cuboids: Sequence[Cuboid], margin: float = 0.15) -> None:
+        from pointsnap.core.geometry import points_in_cuboid
+
+        self.points = np.asarray(points, dtype=np.float64)[:, :3]
+        self._count = np.zeros(len(self.points), dtype=np.int32)
+        self._inside: list[np.ndarray] = []
+        for cuboid in cuboids:
+            reach = max(cuboid.dims) / 2.0 + margin
+            idx = np.flatnonzero((np.abs(self.points[:, 0] - cuboid.center[0]) <= reach)
+                                 & (np.abs(self.points[:, 1] - cuboid.center[1]) <= reach))
+            idx = idx[points_in_cuboid(self.points[idx], cuboid, margin=margin)] if len(idx) else idx
+            self._count[idx] += 1
+            self._inside.append(idx)
+
+    def without_others(self, index: int) -> np.ndarray:
+        """Các điểm không thuộc box nào ngoài box thứ `index` (theo thứ tự `cuboids` lúc tạo)."""
+        count = self._count.copy()
+        count[self._inside[index]] -= 1
+        return self.points[count == 0]
+
+
 def estimate_ground_for_frame(
     points: np.ndarray,
     cuboids: Sequence[Cuboid],

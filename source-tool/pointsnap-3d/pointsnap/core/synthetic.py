@@ -253,6 +253,19 @@ def inject_track_interpolation_gap(
     return res, injected
 
 
+# Kích thước (l, w, h) điển hình của một class khác, dùng cho lỗi "gán kích thước class khác" (mục 8.1).
+OTHER_CLASS_DIMS: dict[str, tuple[float, float, float]] = {
+    "car": (11.0, 2.9, 3.4),           # ô tô mang kích thước xe buýt
+    "truck": (4.6, 1.9, 1.6),          # xe tải mang kích thước ô tô
+    "bus": (4.6, 1.9, 1.6),
+    "pedestrian": (1.8, 0.8, 1.3),     # người mang kích thước xe đạp
+    "bicycle": (0.7, 0.7, 1.75),       # xe đạp mang kích thước người
+    "motorcycle": (4.6, 1.9, 1.6),
+    "traffic_cone": (0.5, 2.5, 1.0),   # cọc tiêu mang kích thước rào chắn
+    "barrier": (0.4, 0.4, 0.7),        # rào chắn mang kích thước cọc tiêu
+}
+
+
 def save_injection_log(path: str | Path, errors: Sequence[InjectedError], meta: dict[str, Any] | None = None) -> None:
     """Lưu danh sách lỗi đã chèn ra file JSON để script đánh giá (B6) sử dụng."""
     payload = {
@@ -287,11 +300,13 @@ def inject_dataset(
     cuboids: Iterable[Cuboid],
     seed: int = 42,
     error_rate: float = 0.10,
+    offset: int = 0,
 ) -> tuple[list[Cuboid], list[InjectedError]]:
     """Tự động chèn lỗi có kiểm soát vào ~10% số track theo mục 8.1.
 
     Mỗi track được chọn chỉ mang ĐÚNG MỘT lỗi.
-    Phân bố đều qua các loại lỗi và các mức độ.
+    Phân bố đều qua các loại lỗi và các mức độ: track thứ i nhận kiểu lỗi thứ `(i + offset)` trong danh mục,
+    nên khi chèn nhiều vòng, tăng `offset` để cảnh ít track vẫn lần lượt nhận đủ mọi kiểu.
     """
     rng = random.Random(seed)
     cuboid_list = list(cuboids)
@@ -312,14 +327,15 @@ def inject_dataset(
     error_configs = [
         # (loại lỗi, tham số)
         ("floating", 0.05),
-        ("floating", 0.10),
+        ("floating", -0.10),
         ("floating", 0.20),
-        ("floating", 0.40),
+        ("floating", -0.40),
         ("size_in_track", 1.05),
         ("size_in_track", 1.15),
         ("size_in_track", 1.30),
         ("size_class_range", 0.6),
         ("size_class_range", 1.5),
+        ("size_class_range", "other_class"),
         ("track_jump", 0.5),
         ("track_jump", 1.0),
         ("track_jump", 2.0),
@@ -327,6 +343,11 @@ def inject_dataset(
         ("track_split_id", None),
         ("track_interpolation", 1),
         ("track_interpolation", 2),
+        ("track_interpolation", 3),
+        ("floating", -0.05),
+        ("floating", 0.10),
+        ("floating", -0.20),
+        ("floating", 0.40),
     ]
 
     modified_cuboids = list(cuboid_list)
@@ -337,13 +358,18 @@ def inject_dataset(
     for i, tid in enumerate(chosen_tids):
         active_boxes = [b for b in tracks[tid] if not b.outside]
         mid_box = active_boxes[len(active_boxes) // 2]
-        err_type, param = error_configs[i % len(error_configs)]
+        err_type, param = error_configs[(i + offset) % len(error_configs)]
 
         try:
             if err_type == "floating":
                 modified_cuboids, log = inject_floating(modified_cuboids, tid, mid_box.frame, float(param))
             elif err_type == "size_in_track":
                 modified_cuboids, log = inject_size_in_track(modified_cuboids, tid, mid_box.frame, float(param))
+            elif err_type == "size_class_range" and param == "other_class":
+                other = OTHER_CLASS_DIMS.get(mid_box.label)
+                if other is None:
+                    continue
+                modified_cuboids, log = inject_size_class_range(modified_cuboids, tid, override_dims=other)
             elif err_type == "size_class_range":
                 modified_cuboids, log = inject_size_class_range(modified_cuboids, tid, scale_factor=float(param))
             elif err_type == "track_jump":

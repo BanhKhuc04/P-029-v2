@@ -56,13 +56,17 @@ class SceneExport:
     ground_truth: Path
     num_frames: int
     num_boxes: int
+    num_images: int = 0
 
 
-def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> SceneExport:
+def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path, with_images: bool = True) -> SceneExport:
     """Ghi dữ liệu của cảnh vào `out_dir/<scene>/`.
 
     Dữ liệu được xoay sang hệ xe thu (x hướng trước, y sang trái, z hướng lên, QĐ-008)
     để hiển thị đúng trên canvas 3D của CVAT.
+
+    Với `with_images`, file zip kèm ảnh của các camera chụp cùng keyframe làm ảnh ngữ cảnh (context image) của CVAT:
+    `pointcloud/000000.pcd` và `related_images/000000_pcd/CAM_FRONT.jpg`, … Ảnh không có trên máy thì bỏ qua.
     """
     directory = Path(out_dir) / scene
     pointcloud_dir = directory / "pointcloud"
@@ -75,12 +79,17 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> Sce
         points_ego = rotate_points_z90(reader.load_points(ref))
         write_pcd(pointcloud_dir / filename, points_ego)
         sensor_to_world_ego = rotate_pose_to_ego(ref.sensor_to_world)
+        images = {}
+        if with_images:
+            images = {channel: path.relative_to(reader.dataroot).as_posix()
+                      for channel, path in reader.camera_images(ref).items() if path.is_file()}
         frames.append({
             "frame": ref.frame,
             "file": filename,
             "sample_token": ref.sample_token,
             "timestamp": ref.timestamp,
             "sensor_to_world": sensor_to_world_ego.tolist(),
+            "images": images,
         })
 
     manifest = directory / "manifest.json"
@@ -103,11 +112,16 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path) -> Sce
     )
 
     archive = directory / f"{scene}.zip"
+    num_images = 0
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_STORED) as zf:
         for frame in frames:
-            zf.write(pointcloud_dir / frame["file"], arcname=frame["file"])
+            zf.write(pointcloud_dir / frame["file"], arcname=f"pointcloud/{frame['file']}")
+            context_dir = f"related_images/{Path(frame['file']).stem}_pcd"
+            for channel, filename in frame["images"].items():
+                zf.write(reader.dataroot / filename, arcname=f"{context_dir}/{channel}{Path(filename).suffix}")
+                num_images += 1
 
-    return SceneExport(scene, directory, archive, manifest, ground_truth, len(refs), len(cuboids))
+    return SceneExport(scene, directory, archive, manifest, ground_truth, len(refs), len(cuboids), num_images)
 
 
 

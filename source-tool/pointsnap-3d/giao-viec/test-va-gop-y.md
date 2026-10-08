@@ -1,98 +1,231 @@
-# Test và góp ý phát triển — Khánh, Chiến, Hân (08/10 – 09/10)
+# Quy trình kiểm thử PointSnap 3D — Khánh, Chiến, Hân (08/10 – 09/10)
 
-Code đã xong và đã vào `main` (PR #18 – #23), gồm cả **giao diện web** (`pointsnap ui`). Từ giờ tới lúc nộp, phần
-test và báo cáo do Khánh, Chiến, Hân làm. Việt Anh và Huy chỉ sửa lỗi khi được báo.
+Code đã xong và đã vào `main` (PR #18 – #23), gồm cả **giao diện web** (`pointsnap ui`).
+**Ba người làm cùng một quy trình** dưới đây, mỗi người trên máy của mình, ghi kết quả vào file riêng. Sau đó Khánh
+tổng hợp lỗi để Việt Anh giao việc sửa cho Việt Anh và Huy.
 
-| Hạn | Việc |
-|---|---|
-| Tối 08/10 | Chiến cài xong môi trường; Khánh có khung báo cáo và slide (R1) |
-| **12h 09/10 (G3)** | Test xong: `docs/loi-khi-test.md`, `docs/danh-gia.md` đủ số liệu |
-| **16h 09/10** | Chốt **báo cáo góp ý phát triển** `docs/gop-y-phat-trien.md` |
-| Cuối ngày 09/10 | Báo cáo, slide, video, nhật ký; nộp |
+| Hạn | Việc | Ai |
+|---|---|---|
+| Tối 08/10 | Xong **Phần 1 — Cài đặt** (TC-01 – TC-04) | Cả 3 |
+| **10h 09/10** | Xong **Phần 2 — Kiểm thử**, đẩy file kết quả `docs/test/<tên>.md` | Cả 3 |
+| **11h 09/10** | Xong **Phần 4 — Tổng hợp lỗi** `docs/test/tong-hop-loi.md` | Khánh |
+| 11h – 12h 09/10 | Đọc tổng hợp, giao việc sửa cho Việt Anh và Huy (điền cột "Giao cho") | Việt Anh |
 
 **Quy tắc:**
-- Không sửa code.
-- Tài liệu làm trên branch riêng (`docs/test-<tên>`), mở PR, không push thẳng `main`.
-- Không gửi token CVAT cho ai, không chụp màn hình có token.
-- Kẹt ở đâu nhắn Việt Anh ngay, đừng đợi.
+- Không sửa code. Thấy lỗi thì ghi lại, kể cả lỗi nhỏ, kể cả chỗ README khó hiểu.
+- File kết quả làm trên branch riêng `docs/test-<tên>` (vd `docs/test-chien`), mở PR vào `main`; không push thẳng `main`.
+- Không gửi token CVAT cho ai, không chụp màn hình có token, không commit file `.env`.
+- Kẹt quá 30 phút ở một bước thì nhắn Việt Anh, ghi lỗi lại rồi làm tiếp bước khác.
 
-Hướng dẫn cài: [README](../../README.md). Các bước test bằng dòng lệnh (bản cũ): [`review-test.md`](review-test.md).
+---
 
-## Nhữ Đình Chiến — T1: test quy trình, video demo
+## Phần 1 — Hướng dẫn cài đặt (Windows)
 
-- [ ] **Cài trên máy mình** theo README: Docker Desktop + CVAT 2.77.0, Python 3.11, nuScenes v1.0-mini, `pip install -e .`.
-  Chỗ nào README thiếu hoặc sai thì ghi lại, đó cũng là lỗi.
-- [ ] **Tạo task**: `pointsnap nuscenes to-cvat --scene scene-0061 --out <thư mục>/cvat --upload`. Mở task trên CVAT,
-  phải thấy point cloud, box và ảnh 6 camera.
-- [ ] **Test giao diện web** (`pointsnap ui`, mở http://127.0.0.1:8765):
-  1. Tạo dự án; tab **Kết nối**: nhập URL CVAT, token, thư mục nuScenes, thư mục bản xuất → **Kiểm tra kết nối**.
-  2. Tab **Quét**: chọn task / job → quét (chưa gắn cờ). Thanh tiến độ chạy, giao diện không treo.
-  3. Tab **Kết quả**: kết luận `gate`, thẻ số Lỗi / Cảnh báo; lọc theo mức, loại lỗi, class, chữ; bấm **Mở CVAT** xem
-     có nhảy đúng frame; tải báo cáo HTML / CSV.
-  4. **Quét lại & Gắn cờ** → trong CVAT: F5, Filters → Attributes → `pointsnap_error` is not empty. Box có cờ có đúng là
-     box trong bảng không?
-  5. Sửa 3–5 box có cờ trong CVAT, Save → quét lại: cờ của box đã sửa phải mất, số lỗi giảm. Tab **Lịch sử** thấy lỗi
-     giảm dần.
-  6. Tab **Guideline**: tắt một luật (vd `track_jump`) → quét lại, lỗi loại đó phải biến mất; xóa một class trong khoảng
-     kích thước → lưu → tải lại trang, class phải mất; sửa YAML sai cú pháp → phải báo lỗi rõ, không lưu.
-  7. Tạo dự án thứ hai, xóa nó (phải gõ lại tên mới xóa được).
-- [ ] **So với dòng lệnh**: `pointsnap scan --job <id>` và `pointsnap gate --job <id>` cho cùng số Lỗi / Cảnh báo như
-  giao diện không?
-- [ ] Ghi mọi lỗi vào `docs/loi-khi-test.md`, mỗi lỗi một mục: bước làm, mong đợi, thực tế, ảnh, mức (Chặn / Nặng / Nhẹ).
-  Hạn 12h 09/10.
-- [ ] Xong T1 thì phụ Hân xem tay (phần kích thước và đứt track).
-- [ ] **Chiều 09/10 — video demo 3–5 phút** bằng giao diện web: tạo dự án → quét → xem kết quả, mở CVAT xem ảnh camera
-  → gắn cờ → sửa box → quét lại, cờ mất → `gate` ĐẠT / KHÔNG ĐẠT → tab Lịch sử.
+Cần khoảng 15 GB ổ trống, RAM ≥ 8 GB. Bản đầy đủ trong [README](../../README.md); chỗ nào hai bản khác nhau thì ghi lỗi.
 
-## Nguyễn Văn Hân — T2: xem tay cảnh báo, điền bảng chỉ số (chủ trì)
+### 1.1. Phần mềm
 
-- [ ] Quét job scene-0061 bằng giao diện (máy Chiến hoặc máy Việt Anh). Tải `report.csv` của lần quét để làm bảng.
-- [ ] **Xem tay 50 mục**: khoảng 20 lơ lửng / lún, 15 kích thước, 15 đứt track; ưu tiên mức Lỗi. Mỗi mục:
-  - Bấm **Mở CVAT**, nhìn point cloud và ảnh camera.
-  - Ghi **Đúng** (nhãn thật sự sai) / **Báo nhầm** / **Không chắc**, kèm một câu lý do (vd "đáy box nằm trên bờ vỉa").
-  - Chia việc: Hân làm lơ lửng / lún; Chiến làm kích thước và đứt track sau khi xong T1.
-- [ ] Tính **precision xem tay** cho từng loại lỗi = Đúng / (Đúng + Báo nhầm).
-- [ ] Điền `docs/danh-gia.md` đủ các chỉ số mục 8.2 của [bản đề xuất](../de-xuat-de-tai.md). Ghi rõ:
-  - số nào lấy từ đánh giá tự động (`docs/ket-qua-danh-gia-tu-dong.md`);
-  - số nào do nhóm xem tay, kèm số mục đã xem.
+- **Git**: https://git-scm.com
+- **Python 3.11** (đúng bản 3.11): https://www.python.org/downloads/ — khi cài tích "Add python.exe to PATH".
+- **Docker Desktop**: https://www.docker.com/products/docker-desktop/ — cài xong mở Docker Desktop, chờ báo
+  "Engine running".
 
-  Hạn 12h 09/10 (G3).
-- [ ] Ghi các kiểu báo nhầm / bỏ sót hay gặp vào mục 3 của báo cáo góp ý.
+### 1.2. CVAT chạy trên máy (Docker)
 
-## Vũ Bảo Khánh — báo cáo, slide, tổng hợp góp ý
+Mở PowerShell:
 
-- [ ] **R1 (tối 08/10)**: khung `docs/bao-cao-ket-qua.md` và slide.
-  - Nội dung: bối cảnh, vấn đề, giải pháp, cách đánh giá (lấy từ bản đề xuất); để trống số liệu.
-  - Chụp giao diện có sẵn ở `docs/screenshots/`.
-- [ ] **Đọc README như người mới**: đánh dấu câu khó hiểu, thiếu bước; ghi vào mục 2 của báo cáo góp ý.
-- [ ] **Tổng hợp báo cáo góp ý phát triển** (mẫu bên dưới) từ phần của cả ba người. Hạn 16h 09/10.
-  Đưa mục 5 (Top 3) vào phần Hướng phát triển của báo cáo kết quả.
-- [ ] **Chiều 09/10**:
-  - Điền số liệu của Hân vào báo cáo và slide.
-  - Chốt nhật ký tuần 04: đổi A2b, A10, A11 thành ✅.
-  - Nộp cuối ngày.
+```powershell
+git clone https://github.com/cvat-ai/cvat D:\Work\cvat
+cd D:\Work\cvat
+$env:CVAT_VERSION = "v2.77.0"
+docker compose up -d
+```
 
-## Báo cáo góp ý phát triển — `docs/gop-y-phat-trien.md` (bắt buộc)
+Lần đầu tải image mất 10 – 20 phút. Nếu lỗi mạng khi tải image thì chạy lại `docker compose up -d`.
+Tạo tài khoản admin (nhập tên, email, mật khẩu theo lời nhắc):
 
-Mỗi người viết phần mình đã test, Khánh gộp lại. Viết cụ thể, có ví dụ (job, frame, track id, ảnh).
+```powershell
+docker exec -it cvat_server bash -ic "python3 ~/manage.py createsuperuser"
+```
+
+Mở http://localhost:8080, đăng nhập. Tạo **Access token**: bấm tên tài khoản (góc phải trên) → Profile / Settings →
+Access tokens → tạo token mới, chép lại (chỉ hiện một lần).
+
+### 1.3. Dữ liệu nuScenes v1.0-mini (~4 GB)
+
+1. Đăng ký tài khoản tại https://www.nuscenes.org/nuscenes#download, tải bản **Mini** (`v1.0-mini.tgz`).
+2. Giải nén vào một thư mục, ví dụ `D:\data\nuscenes`. Bên trong phải có `samples\`, `sweeps\`, `maps\`, `v1.0-mini\`.
+
+### 1.4. Cài tool PointSnap 3D
+
+```powershell
+git clone https://github.com/AI20K-Build-Phase-Cohort-4A/P-029 D:\Work\P-029
+cd D:\Work\P-029\source-tool\pointsnap-3d
+py -3.11 -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[dev]"
+```
+
+Tạo file `.env` trong `source-tool\pointsnap-3d\` (thay giá trị của mình):
+
+```
+CVAT_TOKEN=<token vừa tạo>
+NUSCENES_ROOT=D:/data/nuscenes
+POINTSNAP_EXPORT_DIR=D:/data/cvat
+```
+
+Từ đây mọi lệnh `pointsnap` chạy trong thư mục `source-tool\pointsnap-3d` với venv đã bật (`.venv\Scripts\activate`).
+
+### 1.5. Kiểm tra cài đặt
+
+| Mã | Làm | Mong đợi |
+|---|---|---|
+| **TC-01** | `python -m pytest -q` | Dòng cuối `... passed`, không có `failed` |
+| **TC-02** | `pointsnap --help` | Hiện danh sách lệnh, có `scan`, `gate`, `nuscenes`, `ui` |
+| **TC-03** | `pointsnap nuscenes to-cvat --scene scene-0061 --out D:/data/cvat --upload` | Báo tạo task; trong CVAT (Tasks) có task mới |
+| **TC-04** | Mở task vừa tạo → mở job | Thấy point cloud, box, và ảnh 6 camera bên cạnh |
+
+---
+
+## Phần 2 — Hướng dẫn kiểm thử
+
+Cả 3 người làm **đủ mọi ca** theo thứ tự. Mỗi ca ghi **Đạt / Lỗi / Không làm được** vào file kết quả (Phần 3).
+Ca nào Lỗi thì ghi một mục lỗi, kèm ảnh chụp.
+
+### 2.1. Giao diện web
+
+Chạy `pointsnap ui` → trình duyệt tự mở http://127.0.0.1:8765 (không mở thì tự gõ địa chỉ này).
+
+| Mã | Làm | Mong đợi |
+|---|---|---|
+| **TC-10** | `pointsnap ui` | Trình duyệt mở giao diện PointSnap 3D, tiếng Việt |
+| **TC-11** | **+ Tạo dự án mới**: đặt tên, nhập URL `http://localhost:8080`, token, thư mục nuScenes, thư mục bản xuất `D:/data/cvat` | Dự án hiện ở danh sách bên trái, có nhãn "Có Token" |
+| **TC-12** | Tab **Kết nối** → **Kiểm tra kết nối** | Báo kết nối được, hiện phiên bản CVAT (v2.77.0) |
+| **TC-13** | Tab **Kết nối**: sửa token thành chuỗi sai → lưu → kiểm tra kết nối. Sau đó nhập lại token đúng | Báo lỗi dễ hiểu (không treo, không lộ token); nhập lại đúng thì kết nối lại được |
+| **TC-14** | Tab **Quét**: chọn task scene-0061 và job, **không** tích "Gắn cờ" → **Bắt đầu quét ngay** | Có thanh tiến độ, giao diện không treo; xong tự chuyển sang Kết quả |
+| **TC-15** | Tab **Kết quả & Gate** | Có kết luận ĐẠT / KHÔNG ĐẠT kèm lý do; thẻ số Lỗi, Cảnh báo, Thông tin, Tổng số box |
+| **TC-16** | Lọc theo mức độ, loại lỗi, class; gõ chữ vào ô tìm kiếm | Bảng lọc đúng, số "Hiển thị x / y" thay đổi theo |
+| **TC-17** | Bấm **Mở CVAT** ở 3 dòng khác nhau | Mở đúng job và đúng frame ghi trong dòng đó |
+| **TC-18** | **Tải báo cáo HTML** và **Tải file CSV** | Mở được cả hai file; số mục khớp với bảng |
+| **TC-19** | **Quét lại & Gắn cờ lên CVAT** → sang CVAT, F5, Filters → Attributes → `pointsnap_error` → is not empty | Chỉ box có Lỗi / Cảnh báo được lọc ra; nội dung cờ khớp với bảng |
+| **TC-20** | Trong CVAT sửa 3 box có cờ (kéo đáy chạm đất, chỉnh kích thước), **Save** → quay lại giao diện, quét lại có gắn cờ | Cờ của box đã sửa mất (hoặc đổi mức), số lỗi giảm |
+| **TC-21** | Tab **Lịch sử** | Thấy các lần quét theo thời gian, biểu đồ số lỗi; bấm một lần quét cũ mở được kết quả |
+| **TC-22** | Tab **Guideline**: tắt luật `track_jump` → lưu → quét lại | Không còn mục `track.jump` trong kết quả |
+| **TC-23** | Tab **Guideline**: thêm một class mới vào khoảng kích thước, xóa class `bicycle` → lưu → tải lại trang (F5) | Class mới còn, `bicycle` đã mất |
+| **TC-24** | Tab **Guideline** → phần YAML: gõ sai cú pháp (vd xóa dấu `:`) → lưu | Báo lỗi rõ ràng, **không** lưu |
+| **TC-25** | Tab **Guideline**: đổi ngưỡng gate (vd cho phép 100 lỗi, 100 cảnh báo) → quét lại | Kết luận đổi sang ĐẠT |
+| **TC-26** | Tạo dự án thứ hai với thư mục nuScenes **sai** → quét cùng job | Vẫn quét được, có thông báo thiếu point cloud và bỏ qua luật lơ lửng / lún |
+| **TC-27** | Xóa dự án thứ hai (nút **Xóa dự án**) | Phải gõ lại tên mới xóa được; dự án thứ nhất không bị ảnh hưởng |
+
+### 2.2. Dòng lệnh (CLI)
+
+Đóng giao diện (Ctrl+C), chạy trong `source-tool\pointsnap-3d`. `<id>` là số job của task scene-0061.
+
+| Mã | Làm | Mong đợi |
+|---|---|---|
+| **TC-30** | `pointsnap scan --job <id>` | Tạo báo cáo trong `out\`; số Lỗi / Cảnh báo **giống** lần quét ở giao diện (cùng guideline mặc định) |
+| **TC-31** | `pointsnap scan --job <id> --flag` | Gắn cờ như TC-19 |
+| **TC-32** | `pointsnap gate --job <id>`, rồi `echo $LASTEXITCODE` | In ĐẠT / KHÔNG ĐẠT kèm lý do; mã thoát 0 khi đạt, 1 khi không đạt |
+
+### 2.3. Xem tay cảnh báo (độ chính xác thật của tool)
+
+Dùng kết quả quét job scene-0061 với guideline mặc định. Mỗi người xem **20 mục mức Lỗi / Cảnh báo** của một loại
+lỗi (lọc ở tab Kết quả theo loại lỗi, lấy từ trên xuống):
+
+| Người | Loại lỗi |
+|---|---|
+| Khánh | Lơ lửng / lún (`floating`) |
+| Chiến | Đứt track (`track.*`) |
+| Hân | Kích thước (`size.*`); nếu ít hơn 20 mục thì lấy thêm lơ lửng / lún từ mục thứ 21 trở đi |
+
+Mỗi mục: bấm **Mở CVAT**, nhìn point cloud và ảnh camera, kết luận:
+- **Đúng**: nhãn thật sự sai như tool báo.
+- **Báo nhầm**: nhãn đúng, tool báo sai.
+- **Không chắc**: không đủ thông tin để kết luận.
+
+Ghi kèm một câu lý do (vd "đáy box nằm trên bờ vỉa, mặt đường thấp hơn").
+
+---
+
+## Phần 3 — Mẫu file kết quả của từng người
+
+Mỗi người tạo `source-tool/pointsnap-3d/docs/test/<tên>.md` (`khanh.md`, `chien.md`, `han.md`), chép mẫu này:
 
 ```markdown
-# Góp ý phát triển PointSnap 3D (sau test 09/10)
+# Kết quả kiểm thử — <Họ tên> (<ngày>)
 
-## 1. Lỗi gặp khi test
-| # | Ở đâu (giao diện / CLI / README) | Bước làm | Mong đợi | Thực tế | Mức (Chặn / Nặng / Nhẹ) | Người ghi |
+Máy: Windows <phiên bản>, RAM <x> GB · Python <x> · Docker Desktop <x> · CVAT v2.77.0 · commit main: <7 ký tự đầu>
+Thời gian cài đặt (Phần 1): <x> phút
 
-## 2. Chỗ khó dùng
-Giao diện, README, thông báo lỗi khó hiểu; mỗi ý: chỗ nào, vì sao khó, nên sửa thế nào.
+## Kết quả từng ca
+| Mã | Kết quả (Đạt / Lỗi / Không làm được) | Mã lỗi | Ghi chú |
+|---|---|---|---|
+| TC-01 | | | |
+| ... (đủ TC-01 – TC-04, TC-10 – TC-27, TC-30 – TC-32) | | | |
 
-## 3. Báo nhầm / bỏ sót hay gặp
-| Loại lỗi | Ví dụ (job, frame, track) | Tool báo gì | Thực tế thế nào | Vì sao tool sai (đoán) |
+## Lỗi
+### <TÊN>-01: <tiêu đề ngắn>
+- Ca: TC-xx · Nhóm: Cài đặt / README · Giao diện web · CLI · Tích hợp CVAT · Thuật toán
+- Mức: Chặn (không làm tiếp được) / Nặng (sai kết quả) / Nhẹ (khó dùng, hiển thị)
+- Bước làm: 1. ... 2. ...
+- Mong đợi: ...
+- Thực tế: ... (kèm thông báo lỗi nguyên văn, ảnh chụp)
 
-## 4. Đề xuất tính năng
-| Vấn đề | Đề xuất | Lợi ích cho annotator / reviewer | Ưu tiên (Cao / TB / Thấp) |
+## Xem tay cảnh báo
+| # | Frame | Track | Class | Quy tắc | Mức | Kết luận (Đúng / Báo nhầm / Không chắc) | Lý do |
+|---|---|---|---|---|---|---|---|
 
-## 5. Top 3 việc nên làm tiếp sau khi nộp
-1. ... — lý do
-2. ...
-3. ...
+Precision xem tay = Đúng / (Đúng + Báo nhầm) = ...
+
+## Góp ý phát triển
+- Chỗ khó dùng: ...
+- Đề xuất tính năng (vấn đề → đề xuất → lợi ích → ưu tiên Cao / TB / Thấp): ...
 ```
+
+Mã lỗi dùng tên viết tắt: `KHANH-01`, `CHIEN-01`, `HAN-01`, …
+
+---
+
+## Phần 4 — Tổng hợp lỗi (Khánh, hạn 11h 09/10)
+
+Khánh gộp 3 file kết quả thành `source-tool/pointsnap-3d/docs/test/tong-hop-loi.md`:
+- Lỗi trùng nhau (nhiều người gặp) gộp thành một dòng, ghi đủ người gặp.
+- Sắp xếp theo mức: Chặn → Nặng → Nhẹ.
+- **Không điền** cột "Giao cho" và "Hạn": Việt Anh điền khi giao việc.
+
+```markdown
+# Tổng hợp lỗi kiểm thử PointSnap 3D (09/10)
+
+## 1. Tổng quan
+| Người | Số ca Đạt / Lỗi / Không làm được | Thời gian cài đặt |
+|---|---|---|
+
+Ca lỗi ở cả 3 máy: ... · Ca chỉ lỗi ở một máy: ...
+
+## 2. Danh sách lỗi
+| Mã | Mô tả ngắn | Nhóm | Mức | Ca | Gặp bởi | Mã gốc | Đề xuất sửa | Giao cho | Hạn |
+|---|---|---|---|---|---|---|---|---|---|
+| L01 | | | | | Khánh, Hân | KHANH-02, HAN-01 | | | |
+
+## 3. Độ chính xác xem tay
+| Loại lỗi | Số mục | Đúng | Báo nhầm | Không chắc | Precision |
+|---|---|---|---|---|---|
+
+Các kiểu báo nhầm hay gặp: ...
+
+## 4. Góp ý phát triển (gộp từ 3 người)
+| Đề xuất | Lợi ích | Ưu tiên | Ai đề xuất |
+|---|---|---|---|
+
+Top 3 việc nên làm tiếp: 1. ... 2. ... 3. ...
+```
+
+Gợi ý chia việc khi điền "Giao cho":
+- Nhóm **Thuật toán** (báo nhầm, bỏ sót, ngưỡng): Huy.
+- Nhóm **Giao diện web**, **CLI**, **Tích hợp CVAT**, **Cài đặt / README**: Việt Anh.
+
+## Sau khi tổng hợp
+
+- Hân dùng bảng mục 3 để điền độ chính xác xem tay vào `docs/danh-gia.md`. Hạn 12h 09/10 (G3).
+- Khánh đưa mục 4 vào phần Hướng phát triển của báo cáo kết quả. Chiều 09/10 hoàn thiện báo cáo và slide.
+- Chiến quay video demo 3 – 5 phút bằng giao diện web, theo đúng TC-11 → TC-21.

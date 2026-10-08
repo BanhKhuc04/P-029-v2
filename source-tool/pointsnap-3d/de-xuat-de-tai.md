@@ -12,11 +12,13 @@
   - Nguyễn Văn Hân
   - Nhữ Đình Chiến
   - Khúc Việt Anh
-- **Thời gian thực hiện:** **4 ngày (06/10/2026 – 09/10/2026)**
+- **Thời gian thực hiện:**
+  - **Giai đoạn 1 (06/10 – 09/10/2026, 4 ngày):** phát hiện + cảnh báo trên CVAT, công cụ đánh giá, giao diện web. **Đã xong.**
+  - **Giai đoạn 2 (10/10 – 11/10/2026, gia hạn đến cuối tuần):** extension cho CVAT, giảm báo nhầm, sửa lỗi từ đợt test.
 - **Dữ liệu:** **nuScenes v1.0-mini** (bộ dữ liệu công khai) — xem [mục 2.1](#21-dữ-liệu-nuscenes-v10-mini)
-- **Môi trường triển khai & kiểm chứng:** CVAT Docker chạy local (`localhost:8080`)
+- **Môi trường triển khai & kiểm chứng:** CVAT 2.77 Docker chạy local (`localhost:8080`)
 - **Liên kết backlog nội bộ:** [P-010](../../problem-backlog.md#p-010), [P-011](../../problem-backlog.md#p-011)
-- **Trạng thái:** Đã được mentor duyệt hướng đề tài (05/10/2026). Tài liệu đã điều chỉnh theo góp ý và rút kế hoạch còn 4 ngày — xem [mục 0](#0-góp-ý-của-mentor--điều-chỉnh)
+- **Trạng thái:** Mentor đã duyệt hướng đề tài (05/10/2026). **Bản 2 (08/10/2026):** cập nhật theo kết quả giai đoạn 1 và thêm phương án extension cho CVAT ([mục 4.6](#46-extension-pointsnap-cho-cvat-giai-đoạn-2)). Bản 1 xem lịch sử git của file này.
 
 ---
 
@@ -24,13 +26,13 @@
 
 > *"Đề tài này ổn em nhé, pain point rất thực tế và bám sát đúng công việc annotation 3D các em vừa làm. Metric cũng khá rõ. Anh gợi ý nhóm scope trước vào 2–3 lỗi dễ định lượng như box lơ lửng/lún đất, sai kích thước và đứt track; làm tốt phần detect + cảnh báo trước rồi hãy mở rộng sang auto-correction."* — Mentor, 05/10/2026
 
-| Góp ý | Điều chỉnh trong tài liệu |
+| Góp ý | Điều chỉnh |
 |---|---|
-| Scope vào 2–3 lỗi dễ định lượng | Chỉ tập trung **3 loại lỗi**: **lơ lửng/lún đất**, **sai kích thước**, **đứt track**. Mỗi loại có định nghĩa định lượng và ngưỡng rõ ràng (mục 4.1) |
-| Làm tốt detect + cảnh báo trước | Toàn bộ 4 ngày dành cho **phát hiện và cảnh báo**: báo cáo, gắn cờ lỗi trên CVAT, cổng kiểm tra. Đo precision/recall riêng cho từng loại lỗi |
-| Rồi mới mở rộng sang auto-correction | Tự sửa chuyển toàn bộ sang [Hướng phát triển](#11-hướng-phát-triển). Trong 4 ngày tool không sửa box nào |
-| — | Rút thời gian từ 3 tuần còn **4 ngày (06/10 – 09/10)**. Các module làm song song ngay từ ngày 1 nhờ mô hình dữ liệu chung, không phải chờ CVAT; cắt bộ lỗi thật, lệnh `diff` và phép đo thời gian review (mục 1.1, mục 7) |
-| — | **Việt Anh và Huy làm toàn bộ sản phẩm**; **Khánh, Chiến, Hân viết báo cáo, và test khi sản phẩm xong**; phạm vi cắt gọn tương ứng (mục 1.1, mục 7.1) |
+| Scope vào 2–3 lỗi dễ định lượng | Chỉ tập trung **3 loại lỗi**: **lơ lửng/lún đất**, **sai kích thước**, **đứt track**, mỗi loại có định nghĩa định lượng và ngưỡng rõ ràng (mục 4.1) |
+| Làm tốt detect + cảnh báo trước | Cả hai giai đoạn chỉ làm **phát hiện và cảnh báo**: báo cáo, gắn cờ lỗi trên CVAT, cổng kiểm tra, giao diện duyệt lỗi, extension. Đo precision/recall riêng cho từng loại lỗi |
+| Rồi mới mở rộng sang auto-correction | Tự sửa vẫn nằm ở [Hướng phát triển](#11-hướng-phát-triển), làm theo lộ trình 4 bước: hoàn thiện phát hiện → gợi ý sửa → sửa một chạm có người duyệt → tự sửa khi độ tin cậy cao. Đến hết giai đoạn 2, tool không sửa box nào |
+| — | Giai đoạn 1 rút còn **4 ngày**; **Việt Anh và Huy làm sản phẩm**, **Khánh, Chiến, Hân viết báo cáo và test** (mục 7) |
+| — | **08/10:** gia hạn đến cuối tuần → thêm giai đoạn 2 (10–11/10): extension cho CVAT để annotator **duyệt lỗi ngay trong CVAT, không tải lại trang**, giảm báo nhầm, sửa lỗi người test báo |
 
 ---
 
@@ -44,36 +46,39 @@ Trong quá trình gán nhãn 3D Cuboid trên CVAT, nhóm nhận thấy phần l�
 
 Reviewer hiện phải soi thủ công từng frame để tìm các lỗi này.
 
-🎯 **Mục tiêu:** PointSnap 3D **phát hiện và cảnh báo sớm** ba loại lỗi trên trước khi nộp, chỉ ra chính xác box nào sai, ở frame nào, sai bao nhiêu, ngay trong CVAT.
+🎯 **Mục tiêu:** PointSnap 3D **phát hiện và cảnh báo sớm** ba loại lỗi trên trước khi nộp, chỉ ra chính xác box nào sai, ở frame nào, sai bao nhiêu, và **đưa annotator tới đúng chỗ đó trong CVAT nhanh nhất có thể**.
 
-**Nguyên tắc xuyên suốt:** *tool đề xuất, con người quyết định.* Tool chỉ ghi một thuộc tính cờ lỗi. Tool không thay đổi vị trí, kích thước hay class của box nào và **không bao giờ tự tạo box mới**.
+**Nguyên tắc xuyên suốt:** *tool đề xuất, con người quyết định.* Tool chỉ ghi một thuộc tính cờ lỗi. Tool không thay đổi vị trí, kích thước hay class của box nào và **không bao giờ tự tạo box mới**. Extension (giai đoạn 2) chỉ đọc giao diện CVAT và bấm hộ các nút sẵn có (bộ lọc, chuyển frame), không sửa box.
 
 ### 1.1. Phạm vi
 
-**Cam kết (4 ngày):**
-- Chuyển 1–2 cảnh nuScenes v1.0-mini vào CVAT (point cloud + nhãn chuẩn) làm môi trường demo. Đánh giá chạy trên cả 10 cảnh bằng cách đọc thẳng dữ liệu nuScenes.
-- Module ước lượng mặt đất (ground) cục bộ.
-- Bộ phát hiện cho **3 loại lỗi**: lơ lửng/lún, sai kích thước, đứt track.
-- Báo cáo HTML/CSV có link mở thẳng frame; **gắn cờ lỗi lên box** để lọc ngay trong CVAT; cổng kiểm tra ĐẠT/KHÔNG ĐẠT trước khi nộp.
-- Công cụ đánh giá: bộ lỗi chèn giả, đo precision/recall theo từng loại lỗi.
+**Giai đoạn 1 — đã giao (06–09/10):**
+- Chuyển cảnh nuScenes vào CVAT (point cloud, nhãn chuẩn dạng track, **ảnh 6 camera** làm ảnh ngữ cảnh) làm môi trường demo; đánh giá chạy trên cả 10 cảnh bằng cách đọc thẳng nuScenes.
+- Module ước lượng mặt đất cục bộ; **3 bộ phát hiện**: lơ lửng/lún, sai kích thước (theo class, trong track), đứt track (nhảy vị trí, tách ID, **khoảng nội suy dài**).
+- Báo cáo HTML/CSV, **gắn cờ lỗi lên box** để lọc trong CVAT, cổng kiểm tra ĐẠT/KHÔNG ĐẠT; link "Mở CVAT" trỏ thẳng tới đúng box.
+- Công cụ đánh giá: bộ lỗi chèn giả, `pointsnap eval` đo precision/recall theo loại lỗi và mức độ.
+- **Giao diện web local** (`pointsnap ui`, chỉ chạy trên máy người dùng): dự án + **guideline riêng** từng dự án (bật/tắt luật, ngưỡng, khoảng kích thước, tiêu chí gate), quét nền, kết quả, lịch sử; **duyệt nhanh**: xem point cloud quanh box, J/K chuyển mục, ghi kết luận Đúng / Báo nhầm và tính precision xem tay.
+- CI chạy `pytest` cho mọi PR.
 
-**Ngoài phạm vi (4 ngày):**
-- Mọi chức năng sửa: `fix --z` (kể cả bản `--dry-run` chỉ xuất kế hoạch), `fix --size`, `restore`, gợi ý sửa đứt track — xem [Hướng phát triển](#11-hướng-phát-triển).
-- Trang tổng quan so sánh giữa các lần quét.
-- Bộ "lỗi thật" (nhóm tự gán nhãn lại một cảnh để so với nhãn chuẩn), lệnh `diff`, phép đo thời gian review có / không có tool.
-- Luật "khoảng nội suy dài" (kiểu 3 của bộ phát hiện đứt track).
-- Đọc point cloud qua API của CVAT: tool đọc point cloud từ thư mục nuScenes trên máy.
-- Thêm luật phát hiện: ngược yaw 180°, box rỗng, chồng lấn, thiếu thuộc tính.
-- Cảnh báo sót đối tượng, tự sinh box (Pre-Box), detector 3D.
-- Sửa mã nguồn / giao diện CVAT; Issue, webhook.
+**Giai đoạn 2 — cam kết (10–11/10):**
+- **Extension "PointSnap cho CVAT"** (Chrome / Edge): tự bật bộ lọc box có cờ, hiện thông báo lỗi khi chọn box, chuyển giữa các lỗi không tải lại trang (mục 4.6).
+- Giảm báo nhầm lơ lửng/lún và nâng phát hiện nhảy 4 m để đạt chỉ tiêu mục 8.
+- Sửa các lỗi trong bảng tổng hợp của đợt test (`docs/test/tong-hop-loi.md`).
+
+**Ngoài phạm vi (cả hai giai đoạn):**
+- Mọi chức năng sửa box: gợi ý sửa, `fix --z`, `fix --size`, `restore`, áp dụng hàng loạt — xem [Hướng phát triển](#11-hướng-phát-triển).
+- Sửa mã nguồn hay build lại CVAT; đọc / ghi trạng thái nội bộ của trang CVAT; Issue (CVAT chỉ có cho job 2D), webhook.
+- Bộ "lỗi thật" (tự gán nhãn lại một cảnh), lệnh `diff`, phép đo thời gian review có / không có tool ở quy mô đội.
+- Đọc point cloud qua API của CVAT (tool đọc từ thư mục nuScenes trên máy).
+- Thêm luật: ngược yaw 180°, box rỗng, chồng lấn, thiếu thuộc tính; cảnh báo sót đối tượng; Pre-Box, detector 3D.
 - Tự động duyệt hay tự động nộp job; thay thế reviewer.
-- Server, cơ sở dữ liệu hay web app riêng.
+- Server dùng chung, đăng nhập nhiều người, cơ sở dữ liệu: giao diện web chỉ chạy local, lưu file trong `~/.pointsnap`.
 
 ---
 
 ## 2. VẤN ĐỀ THỰC TẾ & DỮ LIỆU
 
-Các số liệu dưới đây là **quan sát nội bộ / ước lượng** từ kinh nghiệm gán nhãn 3D cuboid của nhóm. Trong 4 ngày nhóm không đo lại các số này; kết quả của tool được đánh giá trên bộ lỗi chèn giả (mục 8).
+Các số liệu dưới đây là **quan sát nội bộ / ước lượng** từ kinh nghiệm gán nhãn 3D cuboid của nhóm. Nhóm chưa đo lại các số này; kết quả của tool được đánh giá trên bộ lỗi chèn giả (mục 8).
 
 | Lỗi | Thực tế thao tác trên CVAT | Thời gian & thao tác lãng phí (quan sát nội bộ) |
 |---|---|---|
@@ -81,28 +86,29 @@ Các số liệu dưới đây là **quan sát nội bộ / ước lượng** t�
 | **Sai kích thước** ([P-011](../../problem-backlog.md#p-011)) | Chỉnh l, w, h thủ công từng frame; dễ lệch giữa các frame của cùng một xe | Reviewer phải so kích thước bằng mắt qua nhiều frame |
 | **Đứt track** ([P-011](../../problem-backlog.md#p-011)) | Reviewer tự lướt từng frame để thấy track nhảy, tách ID, hoặc box nội suy lệch khỏi đối tượng | ~3–5 phút/frame cho review thủ công nói chung. Rework chiếm ~25–35% thời lượng của đội |
 
+**Vấn đề phát sinh khi dùng thử (giai đoạn 1):** biết lỗi rồi vẫn tốn thời gian **đi tới** lỗi. Mỗi lần bấm link "Mở CVAT", CVAT tải lại cả job 3D (vài giây); job scene-0061 có 43 mục Lỗi / Cảnh báo. Đây là lý do của extension ở giai đoạn 2.
+
 ### 2.1. Dữ liệu: nuScenes v1.0-mini
 
 | Mục | Nội dung |
 |---|---|
 | **Nguồn** | [nuscenes.org/nuscenes](https://www.nuscenes.org/nuscenes) (mục Download), bản dự phòng trên [AWS Open Data](https://registry.opendata.aws/motional-nuscenes/) |
 | **Quy mô** | 10 cảnh × ~20 giây, ~4 GB. Chỉ keyframe (2 Hz) có nhãn → khoảng 400 frame có nhãn, trung bình ~45 box mỗi frame |
-| **Nội dung dùng** | Point cloud `LIDAR_TOP` (32 tia), nhãn 3D cuboid có ID track (`instance`), số điểm LiDAR trong box, vị trí xe thu (ego pose) từng frame |
-| **Giấy phép** | Miễn phí cho mục đích phi thương mại (học tập, nghiên cứu). Nhóm sẽ đọc lại [điều khoản](https://www.nuscenes.org/terms-of-use) trước khi dùng |
+| **Nội dung dùng** | Point cloud `LIDAR_TOP` (32 tia), ảnh 6 camera, nhãn 3D cuboid có ID track (`instance`), vị trí xe thu (ego pose) từng frame |
+| **Giấy phép** | Miễn phí cho mục đích phi thương mại (học tập, nghiên cứu); [điều khoản](https://www.nuscenes.org/terms-of-use) |
 | **Công cụ đọc** | Tự đọc các bảng JSON và file `.pcd.bin` (không cần `nuscenes-devkit`) |
 
 **Cách dùng dữ liệu trong dự án:**
 
-1. **Môi trường thử nghiệm:** chuyển các keyframe sang `.pcd`, tạo task 3D trên CVAT local, nạp nhãn chuẩn qua API.
-2. **Đáp án (ground truth):** nhãn chuẩn nuScenes dùng để kiểm chứng module ground, thống kê kích thước theo class, và làm đáp án khi đánh giá.
-3. **Chia tập:** **5 cảnh tinh chỉnh** (thống kê và chỉnh ngưỡng) và **5 cảnh kiểm tra** (chỉ dùng để báo cáo kết quả).
-4. **Bộ "lỗi chèn giả":** cố ý làm hỏng nhãn chuẩn theo đúng 3 loại lỗi, với nhiều mức độ (mục 8.1). Đây là cơ sở chính để đánh giá.
+1. **Môi trường thử nghiệm:** chuyển keyframe sang `.pcd`, tạo task 3D trên CVAT local kèm ảnh 6 camera, nạp nhãn chuẩn qua API (`pointsnap nuscenes to-cvat --upload`). Nhãn chuẩn đóng vai "bài annotator đã gán xong".
+2. **Đáp án (ground truth):** nhãn chuẩn dùng để kiểm chứng module ground, thống kê kích thước theo class, và làm đáp án khi đánh giá.
+3. **Chia tập:** **5 cảnh tinh chỉnh** (scene-0061, 0553, 0757, 0916, 1094: thống kê, chỉnh ngưỡng) và **5 cảnh kiểm tra** (scene-0103, 0655, 0796, 1077, 1100: chỉ để báo cáo).
+4. **Bộ "lỗi chèn giả":** cố ý làm hỏng nhãn chuẩn theo đúng 3 loại lỗi, nhiều mức độ (mục 8.1).
 
-**Đặc điểm cần lưu ý:**
-- Nhãn nuScenes lưu theo **tọa độ toàn cục**; phải đổi về tọa độ LiDAR từng frame.
-- Kích thước box nuScenes theo thứ tự **[w, l, h]**; phải chốt khi ánh xạ sang CVAT.
-- File `.pcd.bin` của nuScenes có 5 giá trị mỗi điểm và **không phải PCD chuẩn**; phải chuyển đổi.
-- LiDAR 32 tia khá thưa ở xa; ground ở xa ít điểm hơn.
+**Đặc điểm cần lưu ý (đã xử lý, ghi trong `CONVENTIONS.md`):**
+- Nhãn nuScenes lưu theo tọa độ toàn cục; đổi về tọa độ LiDAR từng frame. `ego_pose` luôn có z = 0 nên không so độ cao giữa các frame trong hệ toàn cục.
+- Kích thước box nuScenes theo thứ tự [w, l, h]; file `.pcd.bin` có 5 giá trị mỗi điểm, không phải PCD chuẩn.
+- LiDAR 32 tia thưa ở xa: chỉ khoảng **1/4 số box** có đủ điểm mặt đất để kết luận lơ lửng/lún.
 - Keyframe cách nhau 0,5 giây; các ngưỡng theo thời gian tính trên khoảng này.
 
 ---
@@ -113,140 +119,226 @@ Các số liệu dưới đây là **quan sát nội bộ / ước lượng** t�
 
 Tool chỉ ghi **một thuộc tính văn bản `pointsnap_error`**, không chạm vào hình học của box.
 
-- Trước khi ghi cờ, lưu **bản chụp toàn bộ nhãn** của job (JSON) để có thể khôi phục.
-- **Cập nhật từng phần theo id** (PATCH `action=update`), không ghi đè toàn bộ.
-- CVAT không khóa job khi có người đang mở, nên **chỉ chạy `--flag` trên job không có ai đang mở**. Sau khi tool ghi, người dùng tải lại trang (F5).
+- Mỗi lần quét lưu **bản chụp toàn bộ nhãn** của job (JSON).
+- **Cập nhật theo id** (PATCH `action=update`). CVAT xử lý `update` bằng cách xóa rồi tạo lại shape/track được gửi, nên tool gửi nguyên track với đủ keyframe và **gắn cờ luôn dựa trên một lần quét mới** (không dùng id của lần quét cũ).
+- CVAT không khóa job khi có người đang mở: **chỉ gắn cờ khi không ai đang sửa job đó**; người đang mở job phải tải lại trang (F5) sau khi gắn cờ.
+- Kết luận xem tay (Đúng / Báo nhầm) lưu trong thư mục lần quét của PointSnap (`reviews.json`), **không ghi lên CVAT**.
 
 ### 3.2. Shape hay Track
 
-Nhãn nuScenes có ID track nên được nạp dưới dạng **track** trên CVAT. Task chỉ chứa keyframe nuScenes (2 Hz), nên nhãn chuẩn có keyframe ở mọi frame. Trong CVAT, frame nằm giữa hai keyframe nhập tay (khi không có cờ `outside`) được **nội suy** chứ không mất box. Luật đứt track xét trên chuỗi keyframe và cờ `outside`; cách API trả về hai thứ này được xác minh ở spike (mục 10).
+Nhãn nuScenes có ID track nên được nạp dưới dạng **track** trên CVAT. API chỉ trả về **keyframe nhập tay**; frame giữa hai keyframe được CVAT nội suy. Keyframe `outside=true` nằm ở frame đầu tiên đối tượng vắng mặt. Luật đứt track xét trên chuỗi keyframe và cờ `outside`.
 
 ### 3.3. Hệ tọa độ và quy ước hình học
 
-Phải **xác minh ở Ngày 1** và ghi vào `CONVENTIONS.md`:
-- Trục "lên", đơn vị, gốc tọa độ của CVAT và của LiDAR nuScenes.
-- Layout `points` của cuboid 3D qua API; `position` có phải tâm hình học không; yaw tính bằng radian trong [-π, π].
-- Ánh xạ kích thước [w, l, h] và quaternion của nuScenes sang CVAT.
+Đã xác minh trên CVAT 2.77 thật và ghi vào `CONVENTIONS.md`: trục lên +z, đơn vị mét, layout `points` của cuboid, yaw radian trong [-π, π), ánh xạ [w, l, h] và quaternion của nuScenes sang CVAT, định dạng link mở thẳng frame và đối tượng (`?frame=<n>&type=track&serverID=<id>`).
 
 ### 3.4. Nguồn dữ liệu & hai adapter
 
 Core chỉ làm việc với mô hình dữ liệu chung `Cuboid` và point cloud, qua hai adapter:
 
-- **Adapter CVAT** (đường chính): đọc nhãn qua API, ghi cờ lỗi. Point cloud đọc từ thư mục nuScenes trên máy theo ánh xạ frame ↔ `sample_token`; đọc point cloud qua API của CVAT để dành cho [Hướng phát triển](#11-hướng-phát-triển).
-- **Adapter nuScenes**: đọc thẳng thư mục nuScenes (các bảng JSON và file `.pcd.bin`). Dùng để **phát triển song song từ ngày 1** (không phải chờ CVAT) và để chạy đánh giá nhanh.
-
-Có ánh xạ frame ↔ file ↔ `sample_token` ↔ vị trí xe thu.
+- **Adapter CVAT** (đường chính): đọc nhãn qua API, ghi cờ lỗi. Point cloud đọc từ thư mục nuScenes theo `manifest.json` của bản xuất (ánh xạ frame CVAT ↔ file ↔ `sample_token` ↔ vị trí xe thu).
+- **Adapter nuScenes**: đọc thẳng thư mục nuScenes; dùng để phát triển song song và chạy đánh giá nhanh trên cả 10 cảnh.
 
 ---
 
 ## 4. GIẢI PHÁP
 
-Tool được xây dựng theo kiến trúc **Python Engine kết nối CVAT REST API**. Lõi thuật toán tách biệt với phần giao tiếp CVAT, để về sau có thể chạy độc lập hoặc tích hợp vào giao diện CVAT.
+Tool gồm **lõi Python** (thuật toán, không phụ thuộc CVAT), **adapter CVAT** (REST API), **giao diện web local** và, ở giai đoạn 2, **extension trình duyệt** chạy trên trang CVAT.
 
 ```mermaid
 flowchart TD
-  NUS["nuScenes v1.0-mini"] -->|"script chuyển đổi"| API
-  NUS -->|"đọc trực tiếp: phát triển, đánh giá"| ANU
+  NUS["nuScenes v1.0-mini"] -->|"nuscenes to-cvat: .pcd + ảnh camera + nhãn"| API
+  NUS -->|"đọc trực tiếp: đánh giá"| ANU
 
-  subgraph CVAT_Local["CVAT Docker local (localhost:8080)"]
+  subgraph CVAT_Local["CVAT 2.77 (localhost:8080)"]
     API["REST API"]
-    UI["Giao diện 3D: lọc box có cờ lỗi"]
+    UI3D["Màn hình 3D của CVAT"]
   end
 
-  subgraph PS["PointSnap 3D"]
+  subgraph PS["PointSnap 3D (máy người dùng)"]
     ACV["Adapter CVAT"]
     ANU["Adapter nuScenes"]
     M["Cuboid + point cloud"]
-    GR["Module Ground"]
-    D1["Phát hiện lơ lửng / lún"]
-    D2["Phát hiện sai kích thước"]
-    D3["Phát hiện đứt track"]
-    REP["Báo cáo HTML/CSV + cờ lỗi + cổng kiểm tra"]
+    GR["Module mặt đất"]
+    D1["Lơ lửng / lún"]
+    D2["Sai kích thước"]
+    D3["Đứt track"]
+    OUT["Kết quả: báo cáo HTML/CSV, cờ lỗi, cổng kiểm tra"]
+    WEB["Giao diện web: dự án, guideline, quét, duyệt nhanh, lịch sử"]
     EV["Đánh giá: lỗi chèn giả, precision/recall"]
   end
+
+  EXT["Extension PointSnap cho CVAT (giai đoạn 2)"]
 
   API <--> ACV
   ACV --> M
   ANU --> M
-  M --> GR
-  GR --> D1
+  M --> GR --> D1
   M --> D2
   M --> D3
-  D1 --> REP
-  D2 --> REP
-  D3 --> REP
-  REP -->|"cờ pointsnap_error"| API
-  API -.-> UI
-  REP --> EV
+  D1 --> OUT
+  D2 --> OUT
+  D3 --> OUT
+  OUT -->|"cờ pointsnap_error"| API
+  OUT --> WEB
+  OUT --> EV
+  EXT -->|"đọc cờ, bấm bộ lọc, chuyển frame"| UI3D
+  EXT -.->|"danh sách lỗi (tùy chọn)"| WEB
 ```
 
 **Quy trình sử dụng:**
 
 ```
-Annotator gán nhãn
-  → pointsnap scan --job <id> --flag   (báo cáo + gắn cờ lỗi lên box)
-  → Mở CVAT, bật bộ lọc box có cờ lỗi, sửa theo chỉ dẫn
-  → pointsnap scan lại → pointsnap gate --job <id>   (ĐẠT / KHÔNG ĐẠT)
-  → Nộp
+Annotator gán nhãn trên CVAT
+  → PointSnap: Quét job (giao diện web) → xem lỗi, duyệt nhanh, ghi Đúng / Báo nhầm
+  → Bấm "Gắn cờ lên CVAT"
+  → Mở job trên CVAT: extension tự lọc box có cờ, hiện thông báo lỗi, "Lỗi tiếp theo" nhảy frame
+  → Sửa box, Save
+  → Quét lại → Cổng kiểm soát ĐẠT → Nộp
 ```
+
+Dòng lệnh vẫn dùng được cho tự động hóa: `pointsnap scan --job <id> [--flag]`, `pointsnap gate --job <id>`, `pointsnap eval`.
 
 ### 4.1. 🔍 Ba bộ phát hiện
 
-Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu hình được** trong `config.yaml`, và **hai mức**: **Lỗi** (gần như chắc chắn sai) và **Cảnh báo** (nên kiểm tra). Trường hợp thiếu dữ liệu để kết luận được ghi ở mức **Thông tin**. Ngưỡng dưới đây là mặc định đề xuất, sẽ chốt lại trên 5 cảnh tinh chỉnh.
+Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu hình được** trong guideline của từng dự án (mặc định ở `pointsnap/config.yaml`), và **hai mức**: **Lỗi** (gần như chắc chắn sai) và **Cảnh báo** (nên kiểm tra). Thiếu dữ liệu để kết luận thì ghi mức **Thông tin**. Ngưỡng dưới đây là bản đã chốt trên 5 cảnh tinh chỉnh (B7, A10).
 
 #### a) Lơ lửng / lún đất
 
 | Thành phần | Nội dung |
 |---|---|
-| **Đại lượng đo** | `d = z_đáy_box − z_ground_cục_bộ` (cm). d > 0 là lơ lửng, d < 0 là lún |
-| **Cách đo ground** | Tách ground mỗi frame bằng lưới min-Z + RANSAC cục bộ; với mỗi box, lấy điểm ground trong **vành đai** quanh footprint (mở rộng 0,5–1,5 m, loại vùng trong box) và fit mặt phẳng cục bộ. Không dùng điểm dưới gầm xe vì LiDAR không nhìn thấy |
-| **Ngưỡng mặc định** | Cảnh báo: \|d\| > 10 cm · Lỗi: \|d\| > 20 cm |
-| **Áp dụng cho** | Class tiếp đất: ô tô, xe tải, xe buýt, người, xe đạp, xe máy |
-| **Chống báo động giả** | Bỏ qua khi vành đai có quá ít điểm ground (bị che), ghi "thiếu bằng chứng" ở mức Thông tin |
-| **Kiểm chứng ground** | So đáy ~200 box chuẩn nuScenes với ground ước lượng: yêu cầu sai số trung vị < 5 cm, 90% box < 10 cm (cổng G1) |
+| **Đại lượng đo** | `d = z_đáy_box − z_mặt_đất_cục_bộ`. d > 0 là lơ lửng, d < 0 là lún |
+| **Cách đo mặt đất** | Lấy điểm trong **vành đai 0,1–0,8 m** quanh footprint, bỏ điểm thuộc box khác, lọc điểm thấp theo lưới (min-Z), lấy **trung vị**. Không dùng điểm dưới gầm xe |
+| **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **12 cm** → Cảnh báo; > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
+| **Áp dụng cho** | Class tiếp đất: ô tô, xe tải, xe buýt, rơ-moóc, xe công trình, người, xe đạp, xe máy |
+| **Chống báo động giả** | Vành đai < 15 điểm mặt đất → "thiếu bằng chứng" (Thông tin), gộp một mục cho mỗi track |
+| **Kiểm chứng ground** | Tiêu chí tuyệt đối ban đầu (trung vị \|d\| < 5 cm, 90% < 10 cm) **không đạt** trên nhãn chuẩn (trung vị 7,9 cm, p90 22,2 cm) do LiDAR thưa và chính nhãn chuẩn; sau khi đổi sang so với track, độ lệch trên nhãn sạch còn trung vị 3,4 cm, p90 14,7 cm — `docs/kiem-chung-ground.md` |
 
 #### b) Sai kích thước
 
 | Thành phần | Nội dung |
 |---|---|
-| **Kiểu 1 — Bất thường theo class** | So l, w, h với khoảng [p1, p99] của class, thống kê từ nhãn chuẩn của 5 cảnh tinh chỉnh. Cảnh báo nếu ngoài [p1 − 5%, p99 + 5%]; Lỗi nếu ngoài [p1 − 15%, p99 + 15%]. Phần biên cộng thêm giúp box chuẩn không tự bị cảnh báo chỉ vì nằm ở đuôi phân phối |
-| **Kiểu 2 — Không ổn định trong track** | Với track vật rắn có ≥ 3 keyframe: độ lệch của mỗi keyframe so với **trung vị của track**. Cảnh báo nếu lệch > max(10 cm, 5%); Lỗi nếu > max(30 cm, 15%) |
-| **Class ít mẫu** | Class có dưới 20 instance trong tập tinh chỉnh dùng khoảng kích thước nhập tay trong `config.yaml` thay cho thống kê |
-| **Chống báo động giả** | Người đi bộ không xét kiểu 2 (tư thế thay đổi); lệch > 30% ghi chú "nghi nhầm ID" thay vì sai kích thước |
+| **Kiểu 1 — Bất thường theo class** | So l, w, h (trung vị của track) với khoảng [p1, p99] của class, thống kê từ 5 cảnh tinh chỉnh. Ngoài khoảng nới **10%** → Cảnh báo; nới **25%** → Lỗi |
+| **Kiểu 2 — Không ổn định trong track** | Track có ≥ 3 keyframe: lệch so với **trung vị của track** > max(10 cm, 5%) → Cảnh báo; > max(30 cm, 15%) → Lỗi |
+| **Class ít mẫu** | Class có < 20 đối tượng trong tập tinh chỉnh (bus, trailer, construction_vehicle, truck, motorcycle, bicycle) dùng khoảng nhập tay trong guideline |
+| **Chống báo động giả** | Người đi bộ không xét kiểu 2 (tư thế thay đổi); lệch > 30% ghi chú "nghi nhầm ID" |
 
 #### c) Đứt track
 
 | Thành phần | Nội dung |
 |---|---|
-| **Kiểu 1 — Nhảy vị trí** | Đổi tâm box về tọa độ toàn cục bằng vị trí xe thu. Với keyframe k có keyframe ở cả hai phía, tính độ lệch so với vị trí nội suy tuyến tính theo thời gian từ hai keyframe đó: `r_k = ‖p_k − p̂_k‖`. Một cú nhảy cũng làm lệch hai frame bên cạnh, nên chỉ báo frame có `r_k` lớn nhất trong mỗi cụm liên tiếp. Ngưỡng Cảnh báo / Lỗi: xe 1,0 / 2,0 m; xe đạp, xe máy 0,75 / 1,5 m; người 0,5 / 1,0 m. Ở hai đầu track chỉ kiểm tra thô bằng `v_max(class) × Δt`. Không có vị trí xe thu thì chỉ báo ở mức Cảnh báo |
-| **Kiểu 2 — Tách ID** | Track A kết thúc ở frame k và một track B **cùng class** bắt đầu trong khoảng k+1 đến k+3, vị trí đầu của B gần vị trí ngoại suy của A (xe < 2 m, người < 1 m) → nghi cùng một đối tượng bị tách thành hai ID |
-| **Kiểu 3 — Khoảng nội suy dài** *(ngoài phạm vi 4 ngày)* | Track có ≥ N frame liên tiếp chỉ có box nội suy (mặc định N = 2, tức ≥ 1 giây), trong khi đối tượng dịch chuyển > 1 m trong đoạn đó → box nội suy dễ lệch khỏi đối tượng, nên thêm keyframe |
-| **Chống báo động giả** | Bỏ qua đối tượng ở rìa tầm cảm biến; kiểu 2 và kiểu 3 chỉ ở mức Cảnh báo |
+| **Kiểu 1 — Nhảy vị trí** | Đổi tâm box về tọa độ toàn cục bằng vị trí xe thu. **Bỏ thử từng box**, nội suy vị trí từ các keyframe xung quanh (kể cả qua khoảng vắng mặt), đo độ lệch; ở hai đầu track ngoại suy với dung sai ×1,5. Chỉ báo frame lệch lớn nhất trong cụm. Ngưỡng Cảnh báo / Lỗi: xe 1,0 / 2,0 m; xe đạp, xe máy 0,75 / 1,5 m; người 0,5 / 1,0 m; vật đứng yên 0,3 / 0,6 m |
+| **Kiểu 2 — Tách ID** | Track A kết thúc ở frame k và track B **cùng class** bắt đầu trong k+1 … k+3, gần vị trí ngoại suy của A (xe < 2 m, người < 1 m); bỏ qua track kéo tới frame cuối của job |
+| **Kiểu 3 — Khoảng nội suy dài** | ≥ 2 frame liên tiếp chỉ có box nội suy trong khi đối tượng dịch chuyển > 1 m → nên thêm keyframe |
+| **Chống báo động giả** | Kiểu 2 và kiểu 3 chỉ ở mức Cảnh báo; không có vị trí xe thu thì nhảy vị trí chỉ báo Cảnh báo |
 
 ### 4.2. 📋 Báo cáo, cờ lỗi & cổng kiểm tra
 
-**`pointsnap scan --job <id>`**
-- Báo cáo **HTML**: chia ba mức Lỗi / Cảnh báo / Thông tin, nhóm theo track; mỗi dòng ghi số đo cụ thể, ví dụ *"Frame 12, ID 5: đáy box cách mặt đất 15 cm"*, kèm **link mở thẳng frame** trên CVAT.
-- **CSV** để thống kê. Mỗi lần quét tự lưu **bản chụp nhãn** (JSON).
-
-**`pointsnap scan --job <id> --flag`** — cảnh báo ngay trong CVAT
-- Ghi thuộc tính văn bản `pointsnap_error` lên box có lỗi, ví dụ *"LỖI: lơ lửng 22 cm"*; xóa cờ khi box hết lỗi ở lần quét sau.
-- Annotator bật **bộ lọc theo `pointsnap_error`** để chỉ thấy box lỗi trong màn hình 3D.
-
-**`pointsnap gate --job <id>`** — cổng trước khi nộp
-- Trả về **ĐẠT** (exit code 0) hoặc **KHÔNG ĐẠT** (exit code 1) kèm lý do.
-- Tiêu chí mặc định: 0 mục mức "Lỗi"; số "Cảnh báo" ≤ N (cấu hình được).
-
-**Hiệu năng:** numpy vector hóa, voxel downsample, KD-tree, cache ground theo frame. *Mục tiêu:* dưới 2 phút cho một cảnh; **sẽ đo thực tế**.
+- **Báo cáo HTML / CSV** cho mỗi lần quét: ba mức Lỗi / Cảnh báo / Thông tin; mỗi dòng ghi số đo cụ thể (ví dụ *"Đáy box cách mặt đất 15 cm; cao hơn 26 cm so với các frame khác của track"*) kèm link **mở đúng box** trên CVAT.
+- **Gắn cờ** `pointsnap_error` lên box có Lỗi / Cảnh báo (ví dụ *"[Lỗi] Đáy box cách mặt đất 15 cm…"*); tự gỡ cờ khi box hết lỗi ở lần quét sau.
+- **Cổng kiểm soát:** ĐẠT / KHÔNG ĐẠT kèm lý do. Mặc định: 0 mục Lỗi, ≤ 10 Cảnh báo; chỉnh được theo dự án. CLI trả exit code 0 / 1.
+- **Hiệu năng đo được:** quét job scene-0061 (39 frame, 3 333 box, có point cloud) ~3–4 giây trên laptop CPU.
 
 ### 4.3. 📏 Công cụ đánh giá
 
-- **Bộ chèn lỗi giả**: tạo lỗi có kiểm soát trên nhãn chuẩn (mục 8.1).
-- **Tính precision/recall theo từng loại lỗi và từng mức độ**, xuất bảng kết quả.
+- **Bộ chèn lỗi giả** (mục 8.1) và **`pointsnap eval --scenes tuning|test`**: ghép lỗi chèn với kết quả quét, ra bảng recall / precision theo loại lỗi và mức độ, báo nhầm trên nhãn sạch / 100 box.
+- **Xem tay** trong giao diện web (Duyệt nhanh): ghi Đúng / Báo nhầm cho từng mục, tự tính precision xem tay.
 
-### 4.4. 👁️ Đánh dấu "đã duyệt" (cấu hình, không code)
+### 4.4. Giao diện web (`pointsnap ui`)
 
-Thêm thuộc tính checkbox `reviewed` vào label spec và bộ lọc "chưa duyệt", để reviewer đi theo hàng đợi lỗi và đánh dấu box đã xem. Cổng kiểm tra có thể thêm tiêu chí "% box đã duyệt".
+Chạy trên máy người dùng (mặc định `127.0.0.1:8765`), không cần server chung.
+
+| Màn | Chức năng |
+|---|---|
+| **Màn chào** | Logo, nút Bắt đầu; logo động trong lúc tải dự án và kết nối CVAT |
+| **Dự án & Kết nối CVAT** | Mỗi dự án có URL CVAT, token (không bao giờ trả ra API), thư mục dữ liệu |
+| **Guideline** | Bật / tắt từng luật, ngưỡng, khoảng kích thước theo class (thêm / xóa class), tiêu chí gate; dạng biểu mẫu hoặc YAML, kiểm tra hợp lệ trước khi lưu |
+| **Quét job** | Chọn task / job từ CVAT, quét nền có tiến độ, tùy chọn gắn cờ |
+| **Kết quả** | Kết luận gate, thẻ số liệu, bảng lọc theo mức / loại / class; **Duyệt nhanh**: point cloud quanh box nhìn từ trên và nhìn ngang, J / K chuyển mục, phím 1 / 2 ghi Đúng / Báo nhầm |
+| **Lịch sử** | Các lần quét, biểu đồ số Lỗi / Cảnh báo giảm dần |
+
+Giao diện sáng / tối, tiếng Việt, phong cách phần mềm doanh nghiệp (thiết kế: xanh nước biển, IBM Plex, không biểu tượng màu mè).
+
+### 4.5. 👁️ Đánh dấu "đã duyệt" (cấu hình, không code)
+
+Có thể thêm thuộc tính checkbox `reviewed` vào label spec trên CVAT để reviewer đánh dấu box đã xem; cổng kiểm tra có thể thêm tiêu chí "% box đã duyệt".
+
+### 4.6. Extension PointSnap cho CVAT (giai đoạn 2)
+
+#### Vì sao cần
+
+- CVAT 3D **không có Issue** (danh sách lỗi có nút nhảy tới — chỉ có ở job 2D), và mỗi link mở box đều **tải lại cả job 3D**.
+- Cách hiện có không cần code (bộ lọc `pointsnap_error` + kiểu nhảy frame "theo bộ lọc" của CVAT) đúng nhưng **phải tự thao tác nhiều bước** mỗi lần mở job.
+- Extension làm hộ các bước đó, để annotator **ở yên trong CVAT** từ lúc mở job tới lúc sửa xong.
+
+#### Nguyên tắc thiết kế
+
+- **Không sửa mã nguồn CVAT, không đọc hay ghi trạng thái nội bộ của trang CVAT.** Extension chỉ **đọc những gì CVAT đang hiển thị** và **bấm hộ các nút sẵn có**, như người dùng tự bấm. Các nút được nhận diện bằng tên lớp ổn định mà bộ test tự động của chính CVAT dùng (`cvat-annotation-header-filters-button`, `cvat-filters-modal-*`, `cvat-player-frame-selector`, `cvat-objects-sidebar-*`).
+- **Dữ liệu lỗi đi đường chính thức:** PointSnap ghi cờ `pointsnap_error` lên box qua REST API (mục 4.2). Extension chỉ cần cờ trên box để hoạt động; danh sách lỗi chi tiết từ PointSnap là phần thêm.
+- **Không sửa box**, không gửi dữ liệu ra ngoài máy, không đọc token CVAT.
+- **Luôn có đường lui:** không tìm thấy nút cần bấm (CVAT khác phiên bản) thì extension báo rõ và hướng dẫn thao tác tay; vẫn có link "Mở đúng box" (tải lại trang).
+
+#### Chức năng
+
+| # | Chức năng | Cách làm | Cần PointSnap chạy? |
+|---|---|---|---|
+| E1 | **Nhận diện trang job**, hiện bảng nổi "PointSnap" (thu gọn được) cạnh khung 3D | URL `/tasks/<t>/jobs/<j>` | Không |
+| E2 | **Tự bật bộ lọc** chỉ hiện box có `pointsnap_error` | Bấm hộ: Filters → bộ lọc đã dùng gần đây → Áp dụng. Lần đầu chưa có: hướng dẫn tạo một lần (hoặc bấm hộ tạo nếu spike S2 đạt) | Không |
+| E3 | **Thông báo lỗi khi chọn box**: mức, nội dung, gợi ý sửa | Đọc thuộc tính `pointsnap_error` của đối tượng đang chọn ở khung bên phải của CVAT; gợi ý sửa theo luật (dùng chung bảng với PointSnap) | Không |
+| E4 | **Lỗi tiếp theo / trước** (nút và phím J / K), không tải lại trang | Bấm hộ nút Sau / Trước của CVAT ở kiểu nhảy "theo bộ lọc" | Không |
+| E5 | **Danh sách lỗi** của job (frame, class, mô tả, giá trị đo); bấm dòng → nhảy tới frame | Lấy lần quét mới nhất của job qua API PointSnap (`127.0.0.1:8765`); nhảy frame bằng cách gõ số vào ô chọn frame | Có |
+| E6 | **Quét lại / Gắn cờ** ngay từ bảng; ghi **Đúng / Báo nhầm** | Gọi API PointSnap; sau khi gắn cờ nhắc tải lại trang | Có |
+
+#### Luồng sử dụng
+
+```mermaid
+sequenceDiagram
+  participant A as Annotator
+  participant C as Trang CVAT
+  participant X as Extension
+  participant P as PointSnap (127.0.0.1:8765)
+  A->>P: Quét job, Gắn cờ lên CVAT
+  P->>C: REST API: ghi pointsnap_error lên box lỗi
+  A->>C: Mở job 3D
+  X->>C: Nhận diện trang job, hiện bảng PointSnap
+  X->>C: Bấm hộ bộ lọc "pointsnap_error is not empty"
+  X-->>P: (tùy chọn) lấy danh sách lỗi của job
+  A->>X: Bấm "Lỗi tiếp theo" / chọn dòng
+  X->>C: Chuyển frame (không tải lại trang)
+  A->>C: Chọn box
+  X->>C: Đọc pointsnap_error của box đang chọn
+  X->>A: Hiện thông báo lỗi + gợi ý sửa
+  A->>C: Sửa box, Save
+  A->>X: Quét lại
+  X->>P: Quét lại job, cập nhật danh sách
+```
+
+#### Kiến trúc
+
+```
+extension/                     # Manifest V3, Chrome / Edge
+  manifest.json                # quyền: storage; host: URL CVAT + http://127.0.0.1:8765
+  content.js                   # chạy trên trang CVAT: bảng nổi, đọc DOM, bấm hộ nút
+  panel.css                    # cùng bộ màu với PointSnap, sáng / tối
+  background.js                # service worker: gọi API PointSnap (không cần mở CORS cho web)
+  options.html / options.js    # cấu hình URL CVAT và URL PointSnap
+  README.md                    # cài: chrome://extensions → Developer mode → Load unpacked
+```
+
+#### Giới hạn đã biết
+
+- Bộ lọc hiện **mọi box có cờ** trong frame, không tách riêng một box; thường mỗi frame chỉ 1–2 box lỗi.
+- Phụ thuộc giao diện CVAT: nâng cấp lớn có thể phải sửa tên nút trong extension (đường lui ở trên).
+- Mỗi người cài extension một lần; dùng đầy đủ E5–E6 cần bật PointSnap trên máy.
+- Gắn cờ khi job đang mở thì trang CVAT phải tải lại để thấy cờ mới (giới hạn của CVAT, mục 3.1).
+
+#### Tiêu chí xong (đo trên CVAT 2.77 local, job scene-0061)
+
+- E2: bộ lọc tự bật trong ≤ 2 giây sau khi job tải xong.
+- E3: chọn 10 box có cờ → thông báo hiện đúng nội dung `pointsnap_error` cả 10 lần.
+- E4 / E5: đi hết các frame có lỗi **không lần nào tải lại trang**; thời gian đi hết 43 mục so với cách mở từng link (báo cáo cả hai số).
+- Tắt PointSnap: E1–E4 vẫn chạy; bật lại: E5–E6 chạy.
+- Không lỗi console trên trang CVAT; extension không gửi yêu cầu nào ngoài URL CVAT và PointSnap đã cấu hình.
 
 ---
 
@@ -254,102 +346,110 @@ Thêm thuộc tính checkbox `reviewed` vào label spec và bộ lọc "chưa du
 
 ```
 pointsnap/
-  core/               # thuần Python: mô hình Cuboid, hình học, ground, 3 bộ phát hiện. KHÔNG import CVAT
-  adapters/cvat/      # cvat-sdk / REST: đọc nhãn, đọc point cloud, ghi cờ lỗi, lưu bản chụp
-  adapters/nuscenes/  # đọc thẳng nuScenes (bảng JSON, .pcd.bin): phát triển song song, đánh giá
-  datasets/nuscenes/  # chuyển nuScenes → PCD + task CVAT; nạp nhãn chuẩn; chèn lỗi giả
-  eval/               # ghép lỗi chèn với kết quả quét, precision/recall theo loại lỗi
-  report/             # template HTML (jinja2), CSV
-  cli/                # pointsnap scan [--flag] | gate | eval
-  config.yaml         # ngưỡng theo class và theo loại lỗi, tiêu chí gate, URL; token qua biến môi trường
-  CONVENTIONS.md      # quy ước tọa độ, layout points đã chốt ở spike
-  tests/              # cảnh tổng hợp, bộ lỗi chèn giả
+  core/               # thuần Python: Cuboid, hình học, mặt đất, cấu hình, gate. KHÔNG import CVAT
+  detectors/          # 3 bộ phát hiện: floating.py, size.py, track.py
+  adapters/cvat/      # REST: đọc nhãn, ghi cờ lỗi, bản chụp, manifest point cloud
+  adapters/nuscenes/  # đọc thẳng nuScenes (bảng JSON, .pcd.bin, ảnh camera)
+  datasets/           # nuScenes → .pcd + task CVAT; chèn lỗi giả
+  eval/               # đánh giá trên lỗi chèn giả, chia cảnh tinh chỉnh / kiểm tra
+  report/             # báo cáo HTML, CSV
+  web/                # FastAPI + HTML/CSS/JS thuần: dự án, guideline, quét nền, duyệt nhanh
+  cli/                # pointsnap scan | gate | eval | nuscenes | ui
+  config.yaml         # ngưỡng mặc định; mỗi dự án có guideline riêng trong ~/.pointsnap
+extension/            # (giai đoạn 2) extension Chrome / Edge cho CVAT
+tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 ```
 
-- **Mô hình dữ liệu cố định:** `Cuboid(center, dims, yaw, label, track_id, frame, attrs)`, **đã chốt ngày 05/10** để cả nhóm làm song song. Core chỉ nhận và trả các đối tượng này nên đổi nền tảng hay đổi bộ dữ liệu chỉ cần viết thêm adapter.
-- **Thư viện (mã nguồn mở):** numpy, scipy (KD-tree), Open3D hoặc pypcd4, `cvat-sdk` (ghim cùng phiên bản với server), jinja2, pyyaml, pytest.
-- **Chi phí:** hạ tầng bằng 0 (laptop CPU, phần mềm mã nguồn mở, dữ liệu công khai). Không cần GPU.
-- **Kiểm thử:** người làm sản phẩm viết các ca kiểm thử có đáp án (ví dụ box đặt lệch Z một lượng biết trước) bằng pytest; bộ lỗi chèn giả; vòng lặp ghi – đọc – so sánh cho adapter CVAT. Khi sản phẩm xong, nhóm test chạy lại quy trình theo README và xem tay cảnh báo.
-- **Bảo mật:** token qua biến môi trường; không commit token và dữ liệu nuScenes lên repo.
-- **Dùng AI agent hỗ trợ viết code** (nếu ban tổ chức cho phép, sẽ ghi rõ trong báo cáo): viết test trước, code chỉ được nhận khi qua test; quy ước dùng chung trong `CONVENTIONS.md`; agent không tự chạy lệnh có ghi vào CVAT.
+- **Mô hình dữ liệu cố định:** `Cuboid(center, dims, yaw, label, frame, track_id, source_id, outside, attrs)`; core chỉ nhận và trả đối tượng này, đổi nền tảng chỉ cần viết thêm adapter.
+- **Thư viện:** numpy, pyyaml, requests, FastAPI, uvicorn; pytest, httpx khi phát triển. Extension: JavaScript thuần, không thư viện ngoài.
+- **Chi phí:** hạ tầng bằng 0 (laptop CPU, mã nguồn mở, dữ liệu công khai). Không cần GPU.
+- **Kiểm thử:** test có đáp án (box đặt lệch Z một lượng biết trước…), bộ lỗi chèn giả, vòng ghi – đọc – so sánh với CVAT; **CI GitHub Actions chạy `pytest` cho mọi PR**; nhóm test chạy quy trình kiểm thử chung (`giao-viec/test-va-gop-y.md`).
+- **Bảo mật:** token CVAT qua `.env` hoặc lưu riêng từng dự án, API không trả token; giao diện chỉ nghe `127.0.0.1`, không mở CORS; không commit token, dữ liệu nuScenes.
+- **Dùng AI agent hỗ trợ viết code** (ghi rõ trong báo cáo): mọi thay đổi qua branch + Pull Request có review, test đi kèm; agent không tự chạy lệnh ghi vào CVAT ngoài phạm vi việc được giao.
 
 ---
 
 ## 6. MÔI TRƯỜNG TRIỂN KHAI & MỞ RỘNG
 
-**Giai đoạn hiện tại (CVAT Docker local + nuScenes v1.0-mini):** không phụ thuộc dữ liệu nội bộ, có nhãn chuẩn làm đáp án, người khác tái lập lại được kết quả.
+**Hiện tại (CVAT Docker local + nuScenes v1.0-mini):** không phụ thuộc dữ liệu nội bộ, có nhãn chuẩn làm đáp án, người khác tái lập được (README + quy trình kiểm thử).
 
-**Khi chuyển sang CVAT và dữ liệu thật của tổ chức:** kiểm tra quyền token, phiên bản CVAT, chính sách dữ liệu; chạy `--readonly` trước (chỉ `scan`, `gate`); thống kê lại ngưỡng kích thước theo class trên dữ liệu thật.
+**Khi chuyển sang CVAT và dữ liệu thật của tổ chức:** chỉ cần URL + token; chạy quét không gắn cờ trước; thống kê lại khoảng kích thước theo class trên dữ liệu thật và lưu vào guideline của dự án. Extension dùng được với mọi CVAT cùng phiên bản giao diện, không cần quyền quản trị server. Giới hạn hiện tại: point cloud đọc từ thư mục nuScenes trên máy (đọc qua API CVAT nằm ở hướng phát triển).
 
 ---
 
-## 7. KẾ HOẠCH TRIỂN KHAI 4 NGÀY (CÓ CỔNG KIỂM SOÁT)
+## 7. KẾ HOẠCH TRIỂN KHAI
 
-**Giả định:** 4 ngày làm việc, 06/10 – 09/10; nộp cuối ngày 09/10. Không có ngày dự phòng, nên ngày nào cũng có cổng nghiệm thu và thứ tự cắt đã định trước. Khung dự án (A1) đã xong ngày 05/10.
+### 7.1. Giai đoạn 1 (06–09/10) — kết quả
 
-**Cách chia việc:** **Việt Anh và Huy làm toàn bộ sản phẩm**: môi trường, dữ liệu, code và tự kiểm bằng test có đáp án. Việt Anh lo phía CVAT (chuyển dữ liệu, adapter, cờ lỗi, báo cáo HTML/CSV, `gate`, lỗi chèn giả); Huy lo thuật toán (ground, 3 bộ phát hiện, đánh giá). **Khánh, Chiến, Hân viết báo cáo, và test khi sản phẩm xong** (sau cổng G2): test quy trình trên CVAT theo README, xem tay cảnh báo, điền bảng chỉ số, hoàn thiện báo cáo, slide, video.
-
-**Cách rút ngắn:** ground và các bộ phát hiện chạy trên adapter nuScenes ngay từ đầu, song song với việc dựng CVAT. CVAT chỉ dùng cho demo trên 1–2 cảnh; đánh giá chạy thẳng trên dữ liệu nuScenes của cả 10 cảnh.
-
-Giao việc chi tiết từng ngày: [`giao-viec/`](giao-viec/).
-
-| Ngày | Nội dung công việc | Cổng kiểm soát |
+| Cổng | Điều kiện | Kết quả |
 |---|---|---|
-| **06/10** | **Việt Anh:** tải nuScenes, dựng CVAT (E1); đọc nuScenes (B1); chuyển 1 cảnh sang CVAT: `.pcd`, task 3D, nạp nhãn chuẩn dạng track, tự kiểm bằng mắt (A2). **Huy:** tải nuScenes; review B1; module ground trên point cloud giả (B2) | **G0 (tối 06/10, muộn nhất 10h 07/10):** 1 cảnh hiển thị đúng trên CVAT với nhãn chuẩn; chốt hệ tọa độ |
-| **07/10** | **Việt Anh:** adapter CVAT đọc nhãn, xác minh trục / yaw / `outside` / link frame trên CVAT thật (A3); ghi / xóa cờ lỗi + bản chụp (A4). **Huy:** kiểm chứng ground ~200 box (B2); phát hiện lơ lửng/lún (B3) và sai kích thước (B4). **Khánh:** khung báo cáo kết quả và slide | **G1 (07/10):** ground đạt / không đạt kiểm chứng; lơ lửng/lún và kích thước chạy trên 1 cảnh; ghi được cờ lỗi lên CVAT |
-| **08/10** | **Việt Anh:** `scan` (HTML/CSV) + `gate` (A5); tích hợp end-to-end (A6); bộ chèn lỗi giả (A7); README cài đặt cho người test (A9). **Huy:** phát hiện đứt track: nhảy vị trí, tách ID (B5); script precision/recall (B6). **Khánh:** xong khung báo cáo | **G2 (08/10): sản phẩm xong**: trọn quy trình trên CVAT với 1 cảnh; 3 bộ phát hiện chạy trên cả bản mini; báo nhóm bắt đầu test |
-| **09/10** | **Sáng — test:** **Huy** chốt ngưỡng, chạy đánh giá trên 5 cảnh kiểm tra (B7); **Việt Anh** sửa lỗi người test báo, đo hiệu năng; **Chiến** test quy trình trên CVAT theo README; **Hân** (chủ trì) **và Chiến** xem tay cảnh báo, điền bảng chỉ số. **Chiều — hồ sơ nộp:** **Khánh** hoàn thiện báo cáo, slide; **Chiến** quay video demo; **Hân** viết phần kết quả đánh giá; **Việt Anh, Huy** merge PR cuối | **G3 (12h 09/10):** test xong, có số liệu cho mọi chỉ số ở mục 8. **Nộp cuối ngày 09/10** |
+| **G0** (06/10) | 1 cảnh nuScenes hiển thị đúng trên CVAT với nhãn chuẩn; chốt hệ tọa độ | ✅ Đạt 06/10 |
+| **G1** (07/10) | Kết quả kiểm chứng ground; lơ lửng/lún và kích thước chạy; ghi được cờ lỗi | ✅ Đạt 06/10. Ground không đạt tiêu chí tuyệt đối → đổi sang so với track (mục 4.1a) |
+| **G2** (08/10) | Trọn quy trình quét → gắn cờ → lọc trong CVAT → gate; 3 bộ phát hiện chạy trên cả bản mini; có lỗi chèn giả và đánh giá | ✅ Đạt 07/10 (PR #18–#21) |
+| **Thêm** | Ảnh 6 camera (A2b), giảm báo nhầm (A10), giao diện web + guideline theo dự án (A11, A13), link mở đúng box (A11b), màn chào + duyệt nhanh (A14), CI | ✅ PR #19, #21, #23, #26–#29 |
+| **G3** | Test xong theo quy trình chung, có bảng tổng hợp lỗi và số liệu xem tay | ⏳ Đang thực hiện (Khánh, Chiến, Hân) |
 
-**Đường găng:** Việt Anh: tải dữ liệu + dựng CVAT → chuyển sang CVAT → adapter CVAT → tích hợp 08/10. Huy: ground → lơ lửng/lún → kích thước → đứt track. Cả hai cùng nằm trên đường găng của G2, và người test chỉ bắt đầu được khi G2 đạt.
+### 7.2. Giai đoạn 2 (10–11/10) — kế hoạch
 
-**Thứ tự cắt nếu trễ:** luật tách ID → kiểu 1 của sai kích thước (so với class) → báo cáo HTML (chỉ giữ CSV) → chia 5 / 5 cảnh (khi đó chỉnh ngưỡng và báo cáo trên cùng 10 cảnh, ghi rõ hạn chế). **Không cắt:** phát hiện lơ lửng/lún, kích thước trong track, nhảy vị trí; `scan --flag`; `gate`; đánh giá trên bộ lỗi chèn giả.
+| Ngày | Việc | Cổng |
+|---|---|---|
+| **10/10 sáng** | **Spike extension** (S1–S4, mục 10) trên CVAT local: bấm hộ bộ lọc, đọc `pointsnap_error` của box đang chọn, nhảy frame không tải lại. **Huy:** chẩn đoán báo nhầm lơ lửng/lún và các ca nhảy 4 m bị bỏ sót (trên cảnh tinh chỉnh) | **G4 (12h 10/10):** spike đạt → làm bản đầy đủ; không đạt → giữ cách thao tác tay + link mở đúng box, ghi rõ trong báo cáo |
+| **10/10 chiều** | **Việt Anh:** extension E1–E4. **Huy:** giảm báo nhầm (thử gộp sweeps LiDAR cho mặt đất, chỉnh luật). Sửa lỗi nặng trong bảng tổng hợp test | |
+| **11/10 sáng** | **Việt Anh:** E5–E6, hướng dẫn cài, đo tiêu chí xong (mục 4.6). **Huy:** chạy `pointsnap eval --scenes test` một lần, cập nhật số liệu. **Chiến:** cài và test extension theo README | **G5 (12h 11/10):** extension đạt tiêu chí xong; số liệu đánh giá cuối |
+| **11/10 chiều** | **Khánh:** cập nhật báo cáo, slide (thêm extension, số liệu cuối). **Chiến:** quay video demo trọn luồng (quét → gắn cờ → extension → sửa → quét lại → ĐẠT). **Hân:** phần kết quả đánh giá + precision xem tay. Merge PR cuối | **Nộp cuối ngày 11/10** |
 
-### 7.1. Phân công
+**Thứ tự cắt nếu trễ:** E6 → E5 (giữ E1–E4 vì chạy chỉ nhờ cờ trên box) → giảm báo nhầm (giữ số liệu A10, ghi rõ chưa đạt). **Không cắt:** sửa lỗi nặng từ đợt test, video demo, báo cáo.
 
-| Thành viên | Vai trò | Phụ trách | Ước lượng (ngày công) |
+### 7.3. Phân công
+
+| Thành viên | Vai trò | Giai đoạn 1 | Giai đoạn 2 |
 |---|---|---|---|
-| **Khúc Việt Anh** | Sản phẩm — phía CVAT, môi trường | Tải dữ liệu, dựng CVAT (E1); đọc nuScenes (B1); chuyển nuScenes → CVAT (A2); adapter CVAT đọc nhãn và ghi cờ lỗi (A3, A4); `scan` + `gate` (A5); tích hợp (A6); bộ chèn lỗi giả (A7); README cài đặt (A9) | ~4 |
-| **Đặng Văn Huy** | Sản phẩm — thuật toán | Module ground + kiểm chứng (B2); 3 bộ phát hiện kèm test có đáp án (B3–B5); script precision/recall (B6); chốt ngưỡng, chạy đánh giá (B7) | ~4 |
-| **Vũ Bảo Khánh** | Báo cáo | Khung báo cáo và slide (07–08/10); hoàn thiện báo cáo, slide bằng số liệu; nhật ký tuần; nộp | ~2 |
-| **Nhữ Đình Chiến** | Test (khi xong sản phẩm) | Test quy trình trên CVAT theo README; cùng Hân xem tay cảnh báo; quay video demo | ~1 |
-| **Nguyễn Văn Hân** | Test (khi xong sản phẩm) | Chủ trì xem tay cảnh báo, điền bảng chỉ số; viết phần kết quả đánh giá trong báo cáo | ~1 |
-
-Hai người làm sản phẩm **kín 100% lịch và không có ngày dự phòng**: trễ ở đâu thì cắt ngay theo thứ tự ở trên, không dời cổng. Người test chỉ có nửa ngày 09/10, nên README cài đặt (A9) phải sẵn sàng từ tối 08/10.
+| **Khúc Việt Anh** | Sản phẩm — CVAT, giao diện, extension | Dữ liệu, CVAT, adapter, cờ lỗi, `scan` / `gate`, lỗi chèn giả, giao diện web (A1–A14) | Extension (E1–E6), sửa lỗi giao diện / CLI từ đợt test |
+| **Đặng Văn Huy** | Sản phẩm — thuật toán | Ground, 3 bộ phát hiện, precision/recall, chốt ngưỡng (B2–B7) | Giảm báo nhầm lơ lửng/lún, nhảy 4 m; review PR |
+| **Vũ Bảo Khánh** | Lead · báo cáo | Khung báo cáo, nhật ký tuần, tổng hợp lỗi test | Báo cáo, slide cuối, nộp |
+| **Nhữ Đình Chiến** | Test | Test quy trình theo README | Test extension, video demo |
+| **Nguyễn Văn Hân** | Test | Xem tay cảnh báo (duyệt nhanh), bảng chỉ số | Phần kết quả đánh giá |
 
 ---
 
 ## 8. ĐO LƯỜNG & TIÊU CHÍ CHẤP NHẬN
 
-Nhãn chuẩn nuScenes là **đáp án**. Mọi chỉ số được báo cáo **riêng cho từng loại lỗi**, trên **5 cảnh kiểm tra**. Ngưỡng dưới đây là đề xuất, chốt lại sau baseline.
+Nhãn chuẩn nuScenes là **đáp án**. Mọi chỉ số báo cáo **riêng cho từng loại lỗi**, trên **5 cảnh kiểm tra**; chỉnh ngưỡng chỉ trên 5 cảnh tinh chỉnh.
 
 ### 8.1. Bộ lỗi chèn giả
 
-Chèn vào nhãn chuẩn của 5 cảnh kiểm tra, khoảng 10% số track mỗi cảnh, mỗi box hoặc track chỉ mang một lỗi.
+Chèn vào nhãn chuẩn, khoảng 10% số track mỗi cảnh, mỗi box hoặc track chỉ mang một lỗi, 10 vòng mỗi cảnh.
 
 | Loại lỗi | Cách chèn | Mức độ |
 |---|---|---|
 | Lơ lửng / lún | Dịch Z của box lên hoặc xuống | 5, 10, 20, 40 cm |
 | Kích thước — trong track | Làm lệch l, w, h ở một keyframe của track | 5%, 15%, 30% |
-| Kích thước — theo class | Phóng to/thu nhỏ cả track, hoặc gán kích thước của class khác (ví dụ ô tô mang kích thước xe buýt) | ×0,6; ×1,5; đổi class |
+| Kích thước — theo class | Phóng to/thu nhỏ cả track, hoặc gán kích thước của class khác | ×0,6; ×1,5; đổi class |
 | Đứt track — nhảy vị trí | Dịch tâm một keyframe | 0,5; 1; 2; 4 m |
 | Đứt track — tách ID | Cắt một track thành hai ID | — |
 | Đứt track — khoảng nội suy | Xóa các keyframe liên tiếp của đối tượng đang di chuyển | 1, 2, 3 keyframe |
 
-Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sát ngưỡng Cảnh báo. Chúng chỉ được báo cáo để biết giới hạn của tool, không tính vào tiêu chí đạt.
+Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sát ngưỡng Cảnh báo, chỉ báo cáo để biết giới hạn của tool.
 
-### 8.2. Chỉ số
+### 8.2. Chỉ số và kết quả hiện tại
 
-| Chỉ số | Cách đo | Ngưỡng đề xuất |
+Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gia-tu-dong.md`.
+
+| Chỉ số | Mục tiêu | Hiện tại (08/10) |
 |---|---|---|
-| **Recall trên lỗi chèn giả** | Một lỗi được tính là bắt được khi tool báo đúng box/track đó ở mức **Cảnh báo trở lên** | ≥ 90% cho: lơ lửng/lún ≥ 20 cm; kích thước trong track ≥ 15%; kích thước theo class; nhảy ≥ 2 m. ≥ 80% cho tách ID và khoảng nội suy ≥ 2 keyframe |
-| **Phân mức đúng** | Tỷ lệ lỗi chèn mức lớn (Z 40 cm, kích thước 30%, nhảy 4 m) được báo ở mức **Lỗi** | ≥ 80% |
-| **Precision** | Trên 5 cảnh kiểm tra đã chèn lỗi. Mục tool báo mà không khớp lỗi nào được xem thủ công trước khi tính là báo động giả (nhãn chuẩn cũng có thể sai) | ≥ 70% cho mỗi loại lỗi |
-| **Báo động giả trên nhãn sạch** | Chạy trên nhãn chuẩn chưa chèn lỗi | Báo cáo số mục / 100 box theo từng mức; mục tiêu ≤ 2 Cảnh báo và ≤ 0,5 Lỗi / 100 box |
-| **Độ chính xác của số đo** | Sai số giữa giá trị tool báo (ví dụ "lơ lửng 15 cm") và giá trị thật trên lỗi chèn giả | Sai số trung vị < 5 cm (Z), < 5% (kích thước) |
-| **Kiểm chứng ground** | Đáy box chuẩn so với ground ước lượng, ~200 box | Trung vị < 5 cm, 90% < 10 cm |
-| **Hiệu năng** | Thời gian chạy `scan` trên một cảnh và toàn bộ bản mini | Mục tiêu < 2 phút/cảnh |
+| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,80 · 0,85 ❌ (chủ yếu lơ lửng/lún) → giai đoạn 2 |
+| **Recall lơ lửng/lún ≥ 20 cm** (box có đủ điểm mặt đất) | ≥ 90% | 20 cm: 75% (3/4) · 40 cm: 100% (9/9); trên mọi box chỉ 26% ở 40 cm do thiếu điểm mặt đất |
+| **Recall kích thước theo class** | ≥ 90% | 96% ✅ |
+| **Recall kích thước trong track ≥ 15%** (thuộc phạm vi) | ≥ 90% | 100% ✅ |
+| **Recall nhảy vị trí ≥ 2 m** | ≥ 90% | 2 m: 92% ✅ · 4 m: 88% ❌ → giai đoạn 2 |
+| **Recall tách ID** | ≥ 80% | 100% ✅ |
+| **Recall khoảng nội suy ≥ 2 keyframe** (vật đang chạy) | ≥ 80% | 100% (6/6) ✅ |
+| **Phân mức đúng** (lỗi lớn báo ở mức Lỗi) | ≥ 80% | 84% ✅ |
+| **Precision xem tay** | ≥ 70% mỗi loại | ⏳ đợt test (duyệt nhanh tự tính) |
+| **Hiệu năng** | < 2 phút / cảnh | ~3–4 giây / job 39 frame ✅ |
+| **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | ⏳ giai đoạn 2 |
 
-**Kỳ vọng định tính:** reviewer không còn phải soi thủ công 3 loại lỗi này; annotator thấy lỗi ngay trong CVAT trước khi nộp; giảm số lần bị trả về. Mức giảm cụ thể sẽ báo cáo bằng **số liệu đo thực tế**.
+**Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.
 
 ---
 
@@ -357,50 +457,61 @@ Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sá
 
 | Rủi ro | Biện pháp |
 |---|---|
-| **4 ngày quá gấp, chỉ 2 người làm sản phẩm** | Phạm vi đã cắt còn phần lõi (mục 1.1). Ground và bộ phát hiện làm trên adapter nuScenes song song với việc dựng CVAT; CVAT chỉ cần cho demo 1–2 cảnh. Trong lúc làm, tự kiểm bằng test có đáp án; nhóm test vào cuộc ngay khi G2 đạt. Mỗi ngày có cổng nghiệm thu; trễ thì cắt ngay theo thứ tự ở mục 7. Dùng AI agent hỗ trợ viết code (mục 5) |
-| **Một người làm sản phẩm bị kẹt hoặc nghỉ** | Code đẩy lên repo hằng ngày qua Pull Request, có test đi kèm; hai người review code của nhau nên có thể tiếp phần của nhau |
-| **Chuyển nuScenes vào CVAT chậm** (định dạng `.pcd.bin`, tọa độ toàn cục, thứ tự [w, l, h]) | Làm ngay Ngày 1 (cổng G0), bắt đầu với 1 cảnh; kiểm tra bằng mắt. Nếu trễ, phát triển và đánh giá vẫn tiếp tục trên adapter nuScenes; CVAT chỉ bắt buộc cho phần `--flag` và demo |
-| **Ground không ổn định** (dốc, bờ vỉa, bị che, LiDAR thưa) | Ground cục bộ quanh box; bỏ qua khi thiếu điểm; kiểm chứng bằng nhãn chuẩn ở G1. Nếu không đạt, luật lơ lửng/lún chỉ ở mức Cảnh báo. Hai loại lỗi còn lại không phụ thuộc ground |
-| **Nhãn chuẩn nuScenes không hoàn hảo** | Dùng dung sai khi so sánh; cảnh báo trên nhãn chuẩn được kiểm tra thủ công trước khi tính là báo động giả |
-| **Luật đứt track báo nhầm** (rẽ gấp, phanh, bị che lâu, ra khỏi tầm) | Ngưỡng nhảy tính theo độ lệch so với nội suy, không dùng `v_max × Δt`; chỉ báo frame lệch lớn nhất trong cụm; bỏ qua rìa tầm cảm biến; tách ID và khoảng nội suy chỉ ở mức Cảnh báo |
-| Ngưỡng bị overfit | Chỉnh ngưỡng trên 5 cảnh tinh chỉnh, báo cáo trên 5 cảnh kiểm tra |
-| Ghi cờ lỗi làm hỏng nhãn | Chỉ ghi một thuộc tính, PATCH theo id, lưu bản chụp trước khi ghi, chỉ chạy trên job không có ai mở |
-| Sai hệ tọa độ | Spike Ngày 1, test với box đã biết, `CONVENTIONS.md` |
-| Kết quả trên nuScenes không đại diện cho dữ liệu thật | Ngưỡng nằm trong `config.yaml`, thống kê lại được; ghi rõ giới hạn trong báo cáo |
-| Nâng cấp CVAT làm vỡ tool | Ghim phiên bản CVAT và `cvat-sdk` |
+| **Báo nhầm lơ lửng/lún còn cao** (LiDAR thưa, bờ vỉa, dốc) | So với trung vị track, "thiếu bằng chứng" khi < 15 điểm; giai đoạn 2 thử gộp sweeps LiDAR; chỉnh trên cảnh tinh chỉnh, báo cáo số thật trên cảnh kiểm tra |
+| **Extension phụ thuộc giao diện CVAT** | Chỉ dùng tên lớp ổn định mà test của CVAT dùng; ghim phiên bản CVAT 2.77; spike S1–S4 trước khi làm; đường lui: hướng dẫn thao tác tay + link mở đúng box |
+| **Không tự bật được bộ lọc lần đầu** | Hướng dẫn người dùng tạo bộ lọc một lần; từ lần sau dùng "bộ lọc đã dùng gần đây" |
+| **Gắn cờ trong lúc có người đang mở job** | Gắn cờ trước khi mở job; extension nhắc tải lại trang sau khi gắn cờ |
+| **Id box đổi sau mỗi lần lưu / gắn cờ** | Link và cờ luôn dựa trên lần quét mới nhất; nút "Quét lại và gắn cờ" quét lại trước khi ghi |
+| **Nhãn chuẩn nuScenes không hoàn hảo** | Mục không khớp lỗi chèn được xem tay (Đúng / Báo nhầm) trước khi tính báo nhầm |
+| Ngưỡng bị overfit | Chỉnh trên 5 cảnh tinh chỉnh, báo cáo trên 5 cảnh kiểm tra; `eval --scenes test` chạy một lần ở cuối |
+| Ghi cờ làm hỏng nhãn | Chỉ ghi một thuộc tính, gửi nguyên track, lưu bản chụp mỗi lần quét, test vòng ghi – đọc |
+| Kết quả trên nuScenes không đại diện dữ liệu thật | Ngưỡng nằm trong guideline từng dự án, thống kê lại được; ghi rõ giới hạn |
+| Lộ token | Token không trả qua API, không commit; giao diện chỉ nghe `127.0.0.1`, không CORS; extension không đọc token |
 | Vi phạm giấy phép dữ liệu | Chỉ dùng cho học tập/nghiên cứu; không commit dữ liệu; ghi nguồn nuScenes |
 
 ---
 
-## 10. XÁC MINH BẮT BUỘC Ở NGÀY 1–2 (SPIKE)
+## 10. XÁC MINH BẮT BUỘC (SPIKE)
+
+**Giai đoạn 1 — đã xác minh trên CVAT 2.77 thật (`CONVENTIONS.md`):**
+
+| # | Việc | Kết quả |
+|---|---|---|
+| 1 | Chuyển `LIDAR_TOP` sang `.pcd`, tạo task 3D, hiển thị được | ✅ |
+| 2 | Nạp nhãn chuẩn dạng track; box đúng vị trí, kích thước, hướng | ✅ |
+| 3 | Layout `points` của cuboid; ánh xạ [w, l, h], quaternion | ✅ |
+| 4 | Ghi `pointsnap_error` qua API; lọc theo thuộc tính trong canvas 3D | ✅ (update xóa rồi tạo lại shape/track) |
+| 5 | Ánh xạ frame CVAT ↔ `.pcd` ↔ `sample_token` ↔ vị trí xe thu | ✅ qua `manifest.json` |
+| 6 | Trục lên, đơn vị, yaw | ✅ |
+| 7 | Track qua API: chỉ keyframe nhập tay; biểu diễn `outside` | ✅ |
+| 8 | Link mở thẳng frame và đối tượng | ✅ `?frame=&type=track&serverID=` |
+
+**Giai đoạn 2 — spike extension (sáng 10/10, cổng G4):**
 
 | # | Việc cần xác minh | Ảnh hưởng đến |
 |---|---|---|
-| 1 | Tải nuScenes v1.0-mini; chuyển keyframe `LIDAR_TOP` sang `.pcd`; tạo task 3D trên CVAT và hiển thị được | Toàn bộ dự án |
-| 2 | Nạp nhãn chuẩn của 1 cảnh qua API dưới dạng track; box hiển thị đúng vị trí, kích thước, hướng | Adapter, đánh giá |
-| 3 | Layout `points` của cuboid 3D qua API; ánh xạ [w, l, h] và quaternion sang CVAT | Cả 3 bộ phát hiện |
-| 4 | Ghi thuộc tính `pointsnap_error` lên box qua API; lọc theo thuộc tính này trong canvas 3D | `scan --flag` |
-| 5 | Ánh xạ frame CVAT ↔ file `.pcd` ↔ `sample_token` ↔ vị trí xe thu (point cloud đọc từ thư mục nuScenes) | Ground, nhảy vị trí |
-| 6 | Đặt box tại điểm đã biết: kiểm tra trục lên, đơn vị, yaw | Mọi công thức hình học |
-| 7 | Track qua API trả về những frame nào (chỉ keyframe nhập tay hay cả frame nội suy); cách biểu diễn cờ `outside` | Bộ phát hiện đứt track |
-| 8 | Định dạng link mở thẳng frame | Báo cáo |
+| S1 | Bấm hộ Filters → bộ lọc đã dùng gần đây → Áp dụng bằng các nút `cvat-annotation-header-filters-button`, `cvat-filters-modal-recently-used-button`, `cvat-filters-modal-submit-button` trên job 3D | E2 |
+| S2 | Bấm hộ tạo bộ lọc mới `pointsnap_error` *is not empty* lần đầu (hộp tạo bộ lọc) | E2 (bỏ bước thao tác tay) |
+| S3 | Đọc giá trị `pointsnap_error` của đối tượng đang chọn trong khung đối tượng của workspace 3D | E3 |
+| S4 | Gõ số vào `cvat-player-frame-selector` và bấm nút Sau ở kiểu "theo bộ lọc": chuyển frame không tải lại trang | E4, E5 |
 
 ---
 
 ## 11. HƯỚNG PHÁT TRIỂN
 
-- **Hỗ trợ sửa (giai đoạn 2), chỉ mở cho loại lỗi có bộ phát hiện đạt ngưỡng ở mục 8:**
-  - `fix --z`: đặt `z_tâm = z_ground + h/2`, giữ nguyên h, roll, pitch; chỉ tự sửa khi |Δz| ≤ 0,3 m.
-  - `fix --size`: đưa keyframe lệch về trung vị của track, giữ nguyên đáy box và tâm x, y; chỉ khi track có ≥ 3 keyframe và lệch ≤ 30%.
-  - Đứt track: gợi ý đánh dấu `outside` hoặc nối hai ID nghi bị tách.
-  - Ghi an toàn: backup tự động, `--dry-run` mặc định và chỉ ghi khi có `--apply`, file kế hoạch CSV, PATCH theo id, xác minh sau ghi, `restore`, nhật ký thay đổi JSONL, idempotent. Đo "không làm tệ hơn" bằng IoU với nhãn chuẩn trước và sau sửa.
-- **Phần đã cắt khỏi 4 ngày:** bộ lỗi thật + lệnh `diff`, đo thời gian review có / không có tool, luật "khoảng nội suy dài", đọc point cloud qua API của CVAT.
-- **Thêm luật phát hiện:** ngược yaw 180°, box rỗng / quá ít điểm, chồng lấn / trùng lặp, thiếu thuộc tính, dữ liệu hỏng.
-- **Cảnh báo sót đối tượng:** tìm cụm điểm giống xe/người chưa có box (chỉ báo cáo).
-- **Tự sửa thêm:** sửa ngược yaw, tự nối track bị tách ID (có xác nhận của người dùng).
-- **Tích hợp sâu vào CVAT:** tạo Issue cho mỗi lỗi; webhook tự quét khi job chuyển sang "completed"; nếu dùng nội bộ thì tô màu box lỗi trên canvas 3D và **vẽ mặt đất ước lượng ngay trong màn hình 3D** làm mặt tham chiếu khi gán nhãn.
-- **Pre-Box Generator:** sinh sẵn box thô (phân cụm + prior kích thước, hoặc detector 3D huấn luyện trên nuScenes).
-- **Chạy trên dữ liệu và CVAT thật của tổ chức** (chế độ `--readonly` trước); adapter cho bộ dữ liệu và nền tảng khác (KITTI, Waymo Open…).
+Theo góp ý mentor: hoàn thiện phát hiện trước, rồi mở rộng sang sửa theo 4 bước.
+
+1. **Hoàn thiện phát hiện:** đạt mọi chỉ tiêu mục 8 (báo nhầm ≤ 2 / ≤ 0,5 / 100 box, nhảy 4 m ≥ 90%, precision xem tay ≥ 70%).
+2. **Gợi ý sửa (chỉ đọc):** mỗi lỗi kèm giá trị đề xuất "trước → sau": kích thước về trung vị track; vị trí về điểm nội suy; đáy box về mặt đất (chỉ khi đủ điểm mặt đất); gợi ý nối hai ID. Đo tỷ lệ sửa đúng và **tỷ lệ sửa hỏng** trên lỗi chèn giả.
+3. **Sửa một chạm có người duyệt:** duyệt trong PointSnap (xem 3D trước / sau) rồi áp dụng hàng loạt lên CVAT qua API; bản chụp để hoàn tác; quét lại tự động sau khi ghi. Extension hiện thêm nút "Áp dụng gợi ý" ngay trong CVAT.
+4. **Tự sửa khi độ tin cậy cao:** chỉ cho loại lỗi có tỷ lệ sửa hỏng ≈ 0; bật / tắt theo guideline dự án; đo thời gian review có / không có tool.
+
+**Mở rộng khác:**
+- Đọc point cloud qua API của CVAT để dùng với mọi task, không cần thư mục nuScenes; gộp sweeps LiDAR cho mặt đất dày điểm hơn.
+- Bộ lỗi thật (tự gán nhãn lại một cảnh) + lệnh `diff`; đo thời gian review thực tế.
+- Thêm luật: ngược yaw 180°, box rỗng / quá ít điểm, chồng lấn, thiếu thuộc tính; cảnh báo sót đối tượng; Pre-Box Generator.
+- Adapter cho nền tảng và bộ dữ liệu khác (Segments.ai, Label Studio; KITTI, Waymo Open); chạy trên CVAT và dữ liệu thật của tổ chức.
+- Webhook tự quét khi job chuyển sang bước review; bảng chất lượng theo annotator.
 
 ---
 
@@ -412,7 +523,8 @@ Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sá
 - nuScenes trên AWS Open Data: https://registry.opendata.aws/motional-nuscenes/
 - CVAT – 3D object annotation: https://docs.cvat.ai/docs/annotation/manual-annotation/modes/3d-object-annotation/
 - CVAT – Annotation with cuboids: https://docs.cvat.ai/docs/annotation/manual-annotation/shapes/annotation-with-cuboids/
+- Chrome Extensions – Manifest V3: https://developer.chrome.com/docs/extensions/develop
 
 ---
 
-**Kính trình Ban Tổ Chức xem xét để nhóm bắt tay vào triển khai!**
+**Kính trình Ban Tổ Chức và mentor xem xét bản cập nhật!**

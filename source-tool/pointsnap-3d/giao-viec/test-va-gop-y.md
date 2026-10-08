@@ -55,7 +55,8 @@ Access tokens → tạo token mới, chép lại (chỉ hiện một lần).
 
 ### 1.3. Dữ liệu nuScenes v1.0-mini (~4 GB)
 
-1. Đăng ký tài khoản tại https://www.nuscenes.org/nuscenes#download, tải bản **Mini** (`v1.0-mini.tgz`).
+1. Tải `v1.0-mini.tgz` (4,2 GB) tại https://www.nuscenes.org/data/v1.0-mini.tgz. Nếu link không tải được thì
+   đăng ký tài khoản tại https://www.nuscenes.org/nuscenes#download rồi tải bản **Mini**.
 2. Giải nén vào một thư mục, ví dụ `D:\data\nuscenes`. Bên trong phải có `samples\`, `sweeps\`, `maps\`, `v1.0-mini\`.
 
 ### 1.4. Cài tool PointSnap 3D

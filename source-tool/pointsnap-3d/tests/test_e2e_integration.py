@@ -94,12 +94,12 @@ class MockLiveSession:
 
 
 def test_full_end_to_end_workflow(tmp_path, monkeypatch):
-    # Dựng một task có 1 xe bus dị thường (dài 22m > 18.5m) và 1 xe car chuẩn
+    # Dựng một task có 1 xe bus dị thường (dài 25 m, vượt biên Lỗi 18.5 m × 1.25) và 1 xe car chuẩn
     raw_annos = {
         "version": 0,
         "tags": [],
         "shapes": [
-            {"id": 50, "type": "cuboid", "label_id": 2, "frame": 0, "points": pts(0, l=22.0, w=2.8, h=3.2),
+            {"id": 50, "type": "cuboid", "label_id": 2, "frame": 0, "points": pts(0, l=25.0, w=2.8, h=3.2),
              "attributes": []},
             {"id": 51, "type": "cuboid", "label_id": 1, "frame": 1, "points": pts(5.0, l=4.5, w=2.0, h=1.6),
              "attributes": []},

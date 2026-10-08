@@ -57,7 +57,18 @@ def generate_html_report(
                     <tbody>
         """)
         for item in items:
-            url = frame_url(job.url, job.task_id, job.job_id, item.frame) if job.url else ""
+            url = (
+                frame_url(
+                    job.url,
+                    job.task_id,
+                    job.job_id,
+                    item.frame,
+                    track_id=item.track_id,
+                    shape_id=item.source_id if item.track_id is None else None,
+                )
+                if job.url
+                else ""
+            )
             link = (f'<a class="btn-link" href="{html.escape(url)}" target="_blank" rel="noopener">Mở frame {item.frame} &rarr;</a>'
                     if url else "&mdash;")
             sev_class = f"sev-{item.severity.value}"

@@ -48,6 +48,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | ✅ [PR #23](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/23) |
 | **A13** | Làm lại giao diện web theo thiết kế phần mềm doanh nghiệp (thanh trên navy, dropdown dự án, 2 nhóm menu, bảng chi tiết kết quả, IBM Plex, theme sáng/tối) | 08/10 | A11 | Đầy đủ chức năng, khớp bản vẽ `.dc.html`, chụp ảnh sáng/tối, test xanh | 🔍 [PR #28](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/28) |
 | **A14** | Màn chào có nút Bắt đầu (logo động khi tải); Duyệt nhanh: xem point cloud quanh box (từ trên, nhìn ngang), J / K chuyển mục, ghi kết luận Đúng / Báo nhầm (`reviews.json`, precision xem tay); hướng dẫn sửa hàng loạt trong CVAT bằng bộ lọc | 08/10 | A13 | Duyệt hết lỗi của một job mà không mở lại CVAT; test xanh | 🔍 |
+| **A15** | Extension "PointSnap cho CVAT" (Chrome / Edge, Manifest V3): tự bật bộ lọc box có `pointsnap_error`, thông báo lỗi khi chọn box, Lỗi tiếp theo / trước không tải lại trang, danh sách lỗi + Quét lại qua API PointSnap — chỉ đọc giao diện và bấm hộ nút, không đụng nội bộ CVAT (đề xuất mục 4.6) | 11/10 | A14 | Đạt spike S1–S4 (G4) và tiêu chí xong mục 4.6 trên CVAT local job 2 | ⬜ |
 
 ## Đặng Văn Huy — code thuật toán
 
@@ -59,6 +60,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **B5** | Phát hiện đứt track: nhảy vị trí, tách ID, kèm test có đáp án | 08/10 | B1 | Test xanh; chỉ báo frame lệch lớn nhất trong cụm | ✅ [PR #9](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/new/feat/B5-track-detector) |
 | **B6** | Script precision / recall theo loại lỗi và mức độ | 08/10 | A7 | Ra bảng chỉ số mục 8 từ log lỗi chèn + kết quả quét | ✅ [PR #10](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/new/feat/B6-precision-recall) |
 | **B7** | Chốt ngưỡng trên 5 cảnh tinh chỉnh; chạy đánh giá trên 5 cảnh kiểm tra | Sáng 09/10 | B6 | Ngưỡng ghi vào `config.yaml`; bảng số liệu gửi người test | ✅ [PR #11](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/new/feat/B7-thresholds-and-eval) |
+| **B8** | Giảm báo nhầm lơ lửng/lún (thử gộp sweeps LiDAR, chỉnh luật) và nâng phát hiện nhảy 4 m; chỉnh trên cảnh tinh chỉnh, chạy `eval --scenes test` một lần | 11/10 | B7, A10 | Nhãn sạch ≤ 2 Cảnh báo, ≤ 0,5 Lỗi / 100 box; nhảy 4 m ≥ 90%; recall khác không giảm | ⬜ |
 
 ## Khánh, Chiến, Hân — báo cáo và test (khi sản phẩm xong)
 

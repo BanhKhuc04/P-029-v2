@@ -44,8 +44,8 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **A7** | Bộ chèn lỗi giả theo mục 8.1 của đề xuất, kèm file log lỗi đã chèn | 08/10 | B1 | Chèn đúng loại, đúng mức; log khớp với nhãn sau khi chèn | ✅ |
 | **A9** | README cài đặt và hướng dẫn chạy cho người test; đóng gói | 08/10 | A6 | Người khác cài và chạy được theo README (G2) | ✅ |
 | **A2b** | Kèm ảnh 6 camera làm ảnh ngữ cảnh cho task 3D trên CVAT | 07/10 | A2 | Task 3D hiện ảnh camera cạnh point cloud | 🔍 [PR #19](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/19) |
-| **A10** | Giảm báo nhầm của 3 bộ phát hiện (`pointsnap/detectors/`), đánh giá lại | 08/10 | A6, B7 | Nhãn chuẩn: ≤ 2 Cảnh báo, ≤ 0,5 Lỗi / 100 box; recall không giảm | 🔍 [PR #21](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/21) |
-| **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | 🔍 |
+| **A10** | Giảm báo nhầm của 3 bộ phát hiện (`pointsnap/detectors/`), đánh giá lại | 08/10 | A6, B7 | Nhãn chuẩn: ≤ 2 Cảnh báo, ≤ 0,5 Lỗi / 100 box; recall không giảm | ✅ [PR #21](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/21) |
+| **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | 🔍 [PR #23](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/23) |
 
 ## Đặng Văn Huy — code thuật toán
 
@@ -60,11 +60,11 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 
 ## Khánh, Chiến, Hân — báo cáo và test (khi sản phẩm xong)
 
-Trước G2 không cần làm việc kỹ thuật; có thể dựng sẵn khung báo cáo từ bản đề xuất. Test bắt đầu khi Việt Anh báo **G2 đạt** (tối 08/10 hoặc sáng 09/10).
+**Từ 07/10 phần review và test do Khánh, Hân, Chiến làm** (quy trình đã chạy được trên CVAT). Các bước chi tiết: [`giao-viec/review-test.md`](giao-viec/review-test.md).
 
 | Mã | Việc | Người | Hạn | Cần trước | Tiêu chí xong | Trạng thái |
 |---|---|---|---|---|---|---|
-| **R1** | Khung báo cáo kết quả và slide: bối cảnh, vấn đề, giải pháp, cách đánh giá (lấy từ bản đề xuất), để trống phần số liệu | Khánh | 08/10 | — | `docs/bao-cao-ket-qua.md` + slide khung | ⬜ |
+| **R1** | Khung báo cáo kết quả và slide: bối cảnh, vấn đề, giải pháp, cách đánh giá (lấy từ bản đề xuất), để trống phần số liệu | Khánh | Tối 08/10 | — | `docs/bao-cao-ket-qua.md` + slide khung | ⬜ |
 | **T1** | Test quy trình trên CVAT theo README: cài trên máy khác, `scan --flag`, lọc box lỗi trong CVAT, sửa vài box, `scan` lại, `gate`; ghi lỗi gặp phải | Chiến | Sáng 09/10 | G2 | Danh sách lỗi gửi Việt Anh; README không còn chỗ thiếu | ⬜ |
 | **T2** | Test thuật toán: xem tay các cảnh báo không khớp lỗi chèn nào (đúng hay báo nhầm); điền bảng chỉ số | Hân (chủ trì), Chiến | 12h 09/10 | B7 | `docs/danh-gia.md` đủ mọi chỉ số mục 8 (G3) | ⬜ |
 | **R2** | Hoàn thiện báo cáo kết quả, slide (điền số liệu từ T2); quay video demo 3–5 phút | Khánh (báo cáo, slide), Chiến (video) | Cuối ngày 09/10 | G3 | Đủ hồ sơ nộp | ⬜ |

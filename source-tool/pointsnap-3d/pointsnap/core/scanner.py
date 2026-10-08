@@ -162,6 +162,24 @@ def check_track(job: JobData, config: Config, frames: FrameSource | None = None)
     return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps)
 
 
+def is_rule_enabled(rule: str, config: Config) -> bool:
+    """Kiểm tra một rule có được bật trong config.rules không."""
+    r = config.rules
+    if rule in ("floating", "floating.no_evidence"):
+        return r.floating
+    if rule == "size.class_range":
+        return r.size_class_range
+    if rule == "size.in_track":
+        return r.size_in_track
+    if rule == "track.jump":
+        return r.track_jump
+    if rule == "track.split_id":
+        return r.track_split_id
+    if rule == "track.long_interpolation":
+        return r.track_long_interpolation
+    return True
+
+
 DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_floating,
     check_size,
@@ -182,11 +200,25 @@ def scan_cuboids(
     """
     if not hasattr(job, "cuboids"):
         job = SimpleNamespace(cuboids=list(job))
-    active_detectors = detectors if detectors is not None else DEFAULT_DETECTORS
+
+    if detectors is not None:
+        active_detectors = list(detectors)
+    else:
+        active_detectors = []
+        r = config.rules
+        if r.floating:
+            active_detectors.append(check_floating)
+        if r.size_class_range or r.size_in_track:
+            active_detectors.append(check_size)
+        if r.track_jump or r.track_split_id or r.track_long_interpolation:
+            active_detectors.append(check_track)
+
     findings: list[Finding] = []
     for detector in active_detectors:
         findings.extend(detector(job, config, frames))
-    return sorted(findings, key=lambda f: f.sort_key())
+
+    filtered = [f for f in findings if is_rule_enabled(f.rule, config)]
+    return sorted(filtered, key=lambda f: f.sort_key())
 
 
 def actionable(findings: Iterable[Finding]) -> list[Finding]:

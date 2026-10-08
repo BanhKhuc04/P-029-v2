@@ -9,6 +9,14 @@ cvat:
   url: http://localhost:8080          # CVAT_URL ghi đè giá trị này; url trong file --config lại ưu tiên hơn CVAT_URL
   flag_attribute: pointsnap_error     # thuộc tính văn bản dùng để gắn cờ lỗi lên box
 
+rules:                                # bật / tắt từng luật theo guideline của dự án
+  floating: true
+  size_class_range: true
+  size_in_track: true
+  track_jump: true
+  track_split_id: true
+  track_long_interpolation: true
+
 floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
   warning_m: 0.12                     # |d − trung vị d của các box khác trong track| > 12 cm: Cảnh báo (B7)

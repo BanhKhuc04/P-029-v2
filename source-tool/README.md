@@ -47,21 +47,33 @@ source .venv/bin/activate
 
 # Cài đặt dạng editable:
 pip install -e .
+```
 
-# 2. Cấu hình biến môi trường
-# Tạo file .env trong thư mục source-tool/pointsnap-3d/ (hoặc export biến môi trường):
-# CVAT_URL=http://localhost:8080
-# CVAT_TOKEN=<personal_access_token>
-# NUSCENES_ROOT=D:/Vin_uni/data/nuscenes
-# POINTSNAP_EXPORT_DIR=D:/Vin_uni/data/cvat   # nơi có bản xuất to-cvat (manifest.json): để scan đọc được point cloud
+### 1. Chạy giao diện Web (Khuyến nghị)
 
-# 3. Quét job và xuất báo cáo HTML/CSV (mặc định lưu vào thư mục out/)
+Giao diện Web trực quan (FastAPI + HTML/JS thuần) thay thế hoàn toàn dòng lệnh: tạo dự án, tùy biến guideline riêng, kết nối CVAT, quét nền, xem lỗi trực quan kèm link mở frame CVAT, gắn cờ và theo dõi lịch sử lỗi giảm dần.
+
+```bash
+pointsnap ui
+```
+*Mặc định máy chủ lắng nghe tại `http://127.0.0.1:8765` và tự động mở trình duyệt. Có thể tùy chỉnh `--host 0.0.0.0`, `--port 8765`, hoặc `--no-browser`.*
+
+### 2. Dùng dòng lệnh (Nâng cao cho CI/CD và Script)
+
+Cấu hình biến môi trường qua file `.env` trong thư mục `source-tool/pointsnap-3d/` (hoặc biến môi trường hệ thống):
+- `CVAT_URL=http://localhost:8080`
+- `CVAT_TOKEN=<personal_access_token>`
+- `NUSCENES_ROOT=D:/Vin_uni/data/nuscenes`
+- `POINTSNAP_EXPORT_DIR=D:/Vin_uni/data/cvat`   # nơi có bản xuất to-cvat (manifest.json)
+
+```bash
+# Quét job và xuất báo cáo HTML/CSV (mặc định lưu vào thư mục out/)
 pointsnap scan --job 12
 
-# 4. Quét và gắn cờ lỗi 'pointsnap_error' trực tiếp lên canvas 3D CVAT
+# Quét và gắn cờ lỗi 'pointsnap_error' trực tiếp lên canvas 3D CVAT
 pointsnap scan --job 12 --flag
 
-# 5. Cổng kiểm soát chất lượng trước khi nộp (Exit code 0: ĐẠT, 1: KHÔNG ĐẠT)
+# Cổng kiểm soát chất lượng trước khi nộp (Exit code 0: ĐẠT, 1: KHÔNG ĐẠT)
 pointsnap gate --job 12
 ```
 

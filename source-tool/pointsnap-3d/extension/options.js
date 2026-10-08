@@ -1,6 +1,6 @@
 'use strict';
 
-const DEFAULTS = { pointsnapUrl: 'http://127.0.0.1:8765', cvatUrls: [], autoFilter: true, autoHighlight: true };
+const DEFAULTS = { pointsnapUrl: 'http://127.0.0.1:8765', cvatUrls: [], autoFilter: true, autoHighlight: true, autoExpand: true };
 const BUILT_IN = new Set(['http://localhost:8080', 'http://127.0.0.1:8080']);
 const $ = (id) => document.getElementById(id);
 
@@ -31,6 +31,7 @@ function readForm() {
     cvatUrls: origins,
     autoFilter: $('auto-filter').checked,
     autoHighlight: $('auto-highlight').checked,
+    autoExpand: $('auto-expand').checked,
   };
 }
 
@@ -39,6 +40,7 @@ chrome.storage.sync.get(DEFAULTS, (data) => {
   $('cvat-urls').value = (data.cvatUrls || []).join('\n');
   $('auto-filter').checked = !!data.autoFilter;
   $('auto-highlight').checked = !!data.autoHighlight;
+  $('auto-expand').checked = !!data.autoExpand;
 });
 
 $('save').addEventListener('click', () => {

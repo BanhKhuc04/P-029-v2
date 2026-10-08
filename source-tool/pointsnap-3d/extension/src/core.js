@@ -17,12 +17,13 @@
     'track.split_id': 'Kiểm tra hai track nối tiếp nhau; nếu là cùng một đối tượng thì hợp nhất ID track.',
     'track.long_interpolation': 'Chèn thêm keyframe vào giữa khoảng nội suy dài để box bám sát chuyển động của vật.',
   };
+  const SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
   const DEFAULT_FIX_TIP = 'Kiểm tra lại box và nhãn theo hướng dẫn gán nhãn của dự án.';
 
   // Cờ trên CVAT chỉ chứa câu thông báo, nên nhận luật từ mẫu câu của từng bộ phát hiện.
   const RULE_PATTERNS = [
     ['floating.no_evidence', /thiếu bằng chứng/i],
-    ['floating', /so với mặt đất/i],
+    ['floating', /\((lơ lửng|lún)\)|so với mặt đất/i],
     ['size.class_range', /bất thường so với class/i],
     ['size.in_track', /so với trung vị track/i],
     ['track.long_interpolation', /nên thêm keyframe/i],
@@ -55,7 +56,9 @@
     return hit ? hit[0] : null;
   }
 
-  function fixTip(rule) {
+  /** Gợi ý sửa của một câu thông báo; box lún thì nâng lên thay vì hạ xuống. */
+  function fixTip(rule, text) {
+    if (rule === 'floating' && /\(lún\)|nằm dưới mặt đất/i.test(text || '')) return SINK_FIX_TIP;
     return RULE_FIX_TIPS[rule] || DEFAULT_FIX_TIP;
   }
 
@@ -71,7 +74,7 @@
       const m = part.match(/^\[(Lỗi|Cảnh báo|Thông tin)\]\s*(.*)$/s);
       const body = (m ? m[2] : part).trim();
       const rule = ruleOfMessage(body);
-      return { severity: m ? SEVERITIES[m[1]] : 'warning', text: body, rule, tip: fixTip(rule) };
+      return { severity: m ? SEVERITIES[m[1]] : 'warning', text: body, rule, tip: fixTip(rule, body) };
     });
   }
 

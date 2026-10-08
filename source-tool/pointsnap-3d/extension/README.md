@@ -20,8 +20,8 @@ Cập nhật bản mới: `git pull`, rồi bấm nút tải lại (↻) của e
 1. Quét job bằng PointSnap và **Gắn cờ lên CVAT** (giao diện web `pointsnap ui` hoặc `pointsnap scan --job <id> --flag`).
 2. Mở job 3D trên CVAT. Bảng **PointSnap** hiện ở góc trái, kéo thanh tiêu đề để dời chỗ, bấm `–` để thu gọn.
 3. Extension tự bật bộ lọc của CVAT để **chỉ hiện box có cờ**.
-4. Bấm **Tiếp ›** / **‹ Trước** (hoặc phím `]` / `[`) để tới frame có lỗi kế tiếp; box lỗi đầu tiên tự sáng lên.
-5. Rê chuột vào box (trên khung 3D hoặc ở danh sách đối tượng bên phải) → mục **Box đang chọn** hiện nội dung lỗi và gợi ý sửa.
+4. Bấm **Tiếp ›** / **‹ Trước** (hoặc phím `.` / `,`, cũng nhận `]` / `[`) để tới frame có lỗi kế tiếp; box lỗi đầu tiên tự sáng lên. Bấm nhiều lần liền thì extension đi lần lượt sau khi CVAT tải xong từng frame.
+5. Rê chuột vào box (trên khung 3D hoặc ở danh sách đối tượng bên phải) → mục **Box đang chọn** hiện nội dung lỗi và gợi ý sửa. Khi đang lọc, extension tự mở DETAILS của box có cờ nên CVAT cũng hiện `pointsnap_error` ngay ở danh sách bên phải.
 6. Sửa box, **Save** (Ctrl+S) như bình thường.
 7. Xong cả job: bấm **Quét + gắn cờ** ở chân bảng để kiểm lại, rồi tải lại trang để thấy cờ mới.
 
@@ -30,11 +30,11 @@ Cập nhật bản mới: `git pull`, rồi bấm nút tải lại (↻) của e
 | E1 Bảng PointSnap trên trang job | Không |
 | E2 Tự bật bộ lọc "chỉ box có cờ" | Không |
 | E3 Thông báo lỗi + gợi ý sửa của box đang chọn | Không |
-| E4 Lỗi tiếp / trước (nút, phím `[` `]`), không tải lại trang | Không |
+| E4 Lỗi tiếp / trước (nút, phím `,` `.` hoặc `[` `]`), không tải lại trang | Không |
 | E5 Danh sách mọi lỗi của job, bấm dòng để nhảy tới frame | Không (lấy từ cờ trên CVAT) |
 | E6 Quét lại, Quét + gắn cờ, ghi **Đúng là lỗi / Báo nhầm** | Có |
 
-Phím `[` `]` được chọn vì CVAT không dùng chúng; `J` (Join) và `K` (Switch keyframe) đã là phím của CVAT nên extension không dùng.
+Phím `,` `.` và `[` `]` được chọn vì CVAT không dùng chúng; `J` (Join) và `K` (Switch keyframe) đã là phím của CVAT nên extension không dùng. Gõ tiếng Việt kiểu Telex có thể biến `[` `]` thành `ư` `ơ`, nên dùng `,` `.`.
 
 ## Khi có trục trặc
 

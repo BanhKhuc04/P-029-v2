@@ -35,6 +35,7 @@
     loading: false,
     loadError: null,
     frame: null,
+    navTarget: null,
     active: null,
     filterOn: false,
     filterBusy: false,
@@ -45,8 +46,10 @@
     listFilter: 'all',
     collapsed: false,
     pos: null,
+    timing: {},
   };
-  const settings = { autoFilter: true, autoHighlight: true };
+  const settings = { autoFilter: true, autoHighlight: true, autoExpand: true };
+  const expanded = new Set();
 
   // ---------------------------------------------------------------- PointSnap (qua service worker)
 
@@ -75,7 +78,7 @@
   function loadSettings() {
     if (!hasChrome || !chrome.storage) return Promise.resolve();
     return new Promise((resolve) => {
-      chrome.storage.sync.get({ autoFilter: true, autoHighlight: true }, (data) => {
+      chrome.storage.sync.get({ autoFilter: true, autoHighlight: true, autoExpand: true }, (data) => {
         Object.assign(settings, data || {});
         chrome.storage.local.get({ panelPos: null, panelCollapsed: false }, (local) => {
           S.pos = (local && local.panelPos) || null;
@@ -108,21 +111,26 @@
   async function startJob(job) {
     stopJob();
     const sid = ++S.sid;
+    expanded.clear();
     Object.assign(S, {
       job, flags: [], frames: [], hasFlagAttr: true, loading: true, loadError: null, frame: null, active: null,
       filterOn: false, filterBusy: false, filterProblem: null, confirmFlag: false, notice: null,
       ps: { checked: false, online: false, error: null, project: null, run: null, active: null, flagRun: false },
+      timing: { start: performance.now() },
     });
     mountPanel();
     render();
     api.seedFilterForTask(job.taskId, ATTR).catch(() => {});
     loadPointSnap(sid);
     await loadFlags(sid);
+    S.timing.flags = performance.now();
     const ready = await cvat.waitFor(cvat.workspaceReady, 120000, 250);
     if (sid !== S.sid || !ready) return;
+    S.timing.ready = performance.now();
     S.frame = cvat.currentFrame();
     tickTimer = setInterval(tick, 300);
     if (settings.autoFilter && S.flags.length) await turnFilterOn(true);
+    S.timing.filter = performance.now();
     render();
   }
 
@@ -155,6 +163,8 @@
 
   /** Theo dõi frame hiện tại, box đang chọn và trạng thái bộ lọc; chỉ vẽ lại khi có thay đổi. */
   function tick() {
+    // Bộ lọc đang bật thì danh sách bên phải chỉ còn box có cờ: mở DETAILS để thấy và đọc được nội dung cờ.
+    if (settings.autoExpand && S.filterOn && !isTyping(document.activeElement)) cvat.expandDetails(expanded);
     const frame = cvat.currentFrame();
     const active = cvat.activeObject(ATTR);
     const filterOn = cvat.filtersActive();
@@ -175,6 +185,7 @@
     S.filterProblem = null;
     render();
     const res = await cvat.applyRecentFilter(ATTR);
+    S.timing.filterSteps = res.steps;
     S.filterBusy = false;
     S.filterOn = cvat.filtersActive();
     if (!res.ok) S.filterProblem = { reason: res.reason, needsReload: !!res.needsReload, auto: !!auto };
@@ -191,8 +202,31 @@
     render();
   }
 
+  let navigating = false;
+
   async function goTo(frame) {
-    const res = await cvat.goToFrame(frame);
+    // Một lần chuyển frame tại một thời điểm: bấm dồn khi CVAT đang tải frame sẽ bị CVAT bỏ qua.
+    if (navigating) return;
+    navigating = true;
+    S.navTarget = frame;
+    render();
+    let res;
+    try {
+      res = await cvat.goToFrame(frame);
+    } finally {
+      navigating = false;
+      S.navTarget = null;
+    }
+    if (pendingStep) {
+      const dir = Math.sign(pendingStep);
+      pendingStep -= dir;
+      if (!res.ok) pendingStep = 0;
+      else {
+        S.frame = frame;
+        step(dir);
+        return;
+      }
+    }
     if (!res.ok) {
       setNotice('error', `${res.reason}. Gõ ${frame} vào ô số frame của CVAT rồi nhấn Enter.`);
       return;
@@ -200,14 +234,23 @@
     S.frame = frame;
     S.notice = null;
     render();
-    if (settings.autoHighlight) highlight(flagsAt(frame)[0], 0);
+    // Chờ danh sách đối tượng của CVAT đổi sang frame mới rồi mới làm sáng box.
+    if (settings.autoHighlight) setTimeout(() => highlight(flagsAt(frame)[0], 0), 250);
   }
+
+  let pendingStep = 0;
 
   async function step(dir) {
     if (!S.frames.length) return;
+    if (navigating) {
+      // Bấm trong lúc CVAT đang tải frame: cộng dồn số lần bấm, chạy tiếp ngay khi frame tải xong.
+      pendingStep += dir;
+      return;
+    }
     const current = cvat.currentFrame();
     const target = core.stepFrame(S.frames, current === null ? -1 : current, dir);
     if (target === null) {
+      pendingStep = 0;
       setNotice('info', dir > 0 ? 'Đã tới frame có lỗi cuối cùng của job.' : 'Đây là frame có lỗi đầu tiên của job.');
       return;
     }
@@ -472,14 +515,18 @@
     const pos = S.frames.indexOf(frame);
     const prev = frame === null ? null : core.stepFrame(S.frames, frame, -1);
     const next = core.stepFrame(S.frames, frame === null ? -1 : frame, 1);
+    if (S.navTarget !== null && S.navTarget !== undefined) {
+      return `<div class="nav"><button class="btn" disabled>‹ Trước</button><div class="where"><b>Frame ${S.navTarget}</b>`
+        + '<span>CVAT đang tải frame…</span></div><button class="btn primary" disabled>Tiếp ›</button></div>';
+    }
     const where = pos >= 0
       ? `<b>Frame ${frame}</b><span>frame lỗi ${pos + 1}/${S.frames.length}</span>`
       : `<b>Frame ${frame ?? '—'}</b><span>${S.frames.length} frame có lỗi · ${S.flags.length} box</span>`;
     return `<div class="nav">`
-      + `<button class="btn" data-action="prev" ${prev === null ? 'disabled' : ''} title="Frame có lỗi trước (phím [)">‹ Trước</button>`
+      + `<button class="btn" data-action="prev" ${prev === null ? 'disabled' : ''} title="Frame có lỗi trước (phím , hoặc [)">‹ Trước</button>`
       + `<div class="where">${where}</div>`
-      + `<button class="btn primary" data-action="next" ${next === null ? 'disabled' : ''} title="Frame có lỗi tiếp theo (phím ])">Tiếp ›</button>`
-      + `</div><div class="small muted" style="text-align:center">Phím <span class="kbd">[</span> <span class="kbd">]</span> để chuyển lỗi, không tải lại trang</div>`;
+      + `<button class="btn primary" data-action="next" ${next === null ? 'disabled' : ''} title="Frame có lỗi tiếp theo (phím . hoặc ])">Tiếp ›</button>`
+      + `</div><div class="small muted" style="text-align:center">Phím <span class="kbd">,</span> <span class="kbd">.</span> (hoặc <span class="kbd">[</span> <span class="kbd">]</span>) để chuyển lỗi, không tải lại trang</div>`;
   }
 
   function renderFilter() {
@@ -543,7 +590,6 @@
         actions += `<button class="btn small ${rs.verdict === 'fp' ? 'on' : ''}" data-action="review-fp" data-i="${index}">Báo nhầm</button>`;
       }
       html += `<div class="card ${isActive ? 'active' : ''}"><div class="top"><span class="label">${esc(flag.label)}</span>`
-        + `<span class="small muted">${flag.kind === 'track' ? `track ${flag.objectId}` : `shape ${flag.objectId}`}</span>`
         + `<span style="margin-left:auto">${sevBadge(flag.severity)}</span></div>${renderItems(flag.items)}`
         + `<div class="actions">${actions}</div></div>`;
     });
@@ -588,6 +634,10 @@
       const reviewed = Object.keys(run.reviews || {}).length;
       html += `<div class="small"><b>Lần quét gần nhất</b> ${esc(when)} · ${s.num_errors ?? 0} Lỗi · ${s.num_warnings ?? 0} Cảnh báo`
         + `${reviewed ? ` · đã xem ${reviewed}` : ''}</div>`;
+      const stale = S.flags.filter((f) => !reviewState(f)).length;
+      if (stale) {
+        html += `<div class="small muted">${stale} cờ trên CVAT không có trong lần quét này (cờ cũ hoặc box đã sửa): bấm <b>Quét + gắn cờ</b> để đồng bộ.</div>`;
+      }
     } else if (ps.project) {
       html += `<div class="small muted">Dự án ${esc(ps.project.name)}: job này chưa được quét.</div>`;
     } else {
@@ -659,13 +709,13 @@
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
   }
 
-  // Phím [ và ]: CVAT không dùng hai phím này (J là Join, K là Switch keyframe nên tránh).
+  // Phím , . (như tua từng khung trên YouTube) và [ ]: CVAT không dùng các phím này (J là Join, K là Switch keyframe nên tránh).
+  // Nhận theo cả mã phím lẫn ký tự; , . không bị bộ gõ tiếng Việt kiểu Telex đổi thành chữ như [ ] (ư, ơ).
+  const NAV_KEYS = { Period: 1, BracketRight: 1, '.': 1, ']': 1, Comma: -1, BracketLeft: -1, ',': -1, '[': -1 };
   window.addEventListener('keydown', (event) => {
     if (!S.job || !S.frames.length || event.ctrlKey || event.metaKey || event.altKey || isTyping(event.target)) return;
     if (document.querySelector('.ant-modal-wrap:not([style*="display: none"]) .ant-modal')) return;
-    let dir = 0;
-    if (event.code === 'BracketRight') dir = 1;
-    else if (event.code === 'BracketLeft') dir = -1;
+    const dir = NAV_KEYS[event.code] || NAV_KEYS[event.key] || 0;
     if (!dir) return;
     event.preventDefault();
     event.stopPropagation();

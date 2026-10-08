@@ -8,6 +8,7 @@
 
   const SEL = {
     frameInput: '.cvat-player-frame-selector input',
+    frameSlider: '.cvat-player-slider [role="slider"]',
     filtersButton: '.cvat-annotation-header-filters-button',
     filtersModal: '.cvat-filters-modal-visible',
     recentButton: '.cvat-filters-modal-recently-used-button',
@@ -47,10 +48,15 @@
     return !!$(SEL.frameInput) && !!$('.cvat-objects-sidebar');
   }
 
+  /**
+   * Frame CVAT đang hiển thị, đọc từ thanh trượt frame (`aria-valuenow`). Không đọc ô số frame vì ô này
+   * đổi ngay khi gõ, trước khi CVAT thật sự chuyển frame.
+   */
   function currentFrame() {
-    const input = $(SEL.frameInput);
-    if (!input || input.value === '') return null;
-    const n = Number(input.value);
+    const slider = $(SEL.frameSlider);
+    const raw = slider ? slider.getAttribute('aria-valuenow') : null;
+    if (raw === null || raw === '') return null;
+    const n = Number(raw);
     return Number.isFinite(n) ? n : null;
   }
 
@@ -75,11 +81,12 @@
     input.focus();
     typeInto(input, frame);
     pressEnter(input);
-    let moved = await waitFor(() => currentFrame() === frame, 1500);
+    // CVAT tải point cloud của frame mới trước khi đổi frame: chờ thanh trượt chỉ đúng frame.
+    let moved = await waitFor(() => currentFrame() === frame, 5000);
     if (!moved) {
       // Ô chọn frame cũng chuyển frame khi mất focus.
       input.blur();
-      moved = await waitFor(() => currentFrame() === frame, 1500);
+      moved = await waitFor(() => currentFrame() === frame, 5000);
     }
     input.blur();
     return moved ? { ok: true } : { ok: false, reason: `CVAT không chuyển sang frame ${frame}` };
@@ -121,11 +128,15 @@
    */
   async function applyRecentFilter(attrName) {
     if (filtersActive()) return { ok: true, already: true };
+    const t0 = performance.now();
+    const steps = {};
+    const mark = (name) => { steps[name] = Math.round(performance.now() - t0); };
     const button = $(SEL.filtersButton);
     if (!button) return { ok: false, reason: 'Không thấy nút Filters của CVAT' };
     button.click();
     const modal = await waitFor(() => $(SEL.filtersModal));
     if (!modal) return { ok: false, reason: 'Hộp thoại Filters không mở' };
+    mark('modal');
 
     const recent = $(SEL.recentButton, modal);
     if (!recent || !isVisible(recent)) {
@@ -144,6 +155,7 @@
       closeFiltersModal();
       return { ok: false, needsReload: true, reason: 'CVAT chưa có bộ lọc PointSnap trong "Recently used"' };
     }
+    mark('menu');
     item.click();
     const submit = await waitFor(() => {
       const el = $(SEL.submitButton);
@@ -153,9 +165,11 @@
       closeFiltersModal();
       return { ok: false, reason: 'Nút Submit của bộ lọc không bấm được' };
     }
+    mark('submit');
     submit.click();
     const armed = await waitFor(filtersActive, 3000);
-    return armed ? { ok: true } : { ok: false, reason: 'Đã bấm Submit nhưng bộ lọc chưa bật' };
+    mark('armed');
+    return armed ? { ok: true, steps } : { ok: false, steps, reason: 'Đã bấm Submit nhưng bộ lọc chưa bật' };
   }
 
   /** Bấm hộ "Clear filters" trong hộp thoại Filters. */
@@ -213,6 +227,28 @@
   }
 
   /**
+   * Mở khung DETAILS của các mục đang thu gọn để CVAT hiện thuộc tính `pointsnap_error` (chỉ là mở rộng giao diện,
+   * như người dùng bấm vào chữ DETAILS). `done` giữ các mục đã mở một lần để không giành lại khi người dùng tự thu gọn.
+   */
+  function expandDetails(done, limit = 6) {
+    let opened = 0;
+    for (const item of document.querySelectorAll(SEL.sidebarItem)) {
+      if (opened >= limit) break;
+      const id = itemClientId(item);
+      if (id === null || done.has(id)) continue;
+      const collapse = item.querySelector('.cvat-objects-sidebar-state-item-collapse');
+      if (!collapse) continue;
+      done.add(id);
+      const header = collapse.querySelector('.ant-collapse-header');
+      if (header && !collapse.querySelector('.ant-collapse-item-active')) {
+        header.click();
+        opened += 1;
+      }
+    }
+    return opened;
+  }
+
+  /**
    * Làm sáng box trên khung 3D bằng cách rê chuột vào mục của nó trong danh sách đối tượng,
    * giống người dùng rê chuột (CVAT kích hoạt đối tượng khi chuột đi vào mục).
    */
@@ -237,5 +273,6 @@
     activeObject,
     sidebarItems,
     hoverItem,
+    expandDetails,
   };
 })(globalThis);

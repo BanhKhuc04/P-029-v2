@@ -9,10 +9,8 @@
   const core = root.PointSnapCore;
 
   async function getJson(path) {
-    const res = await fetch(`${location.origin}${path}`, {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
+    // Không gửi header Accept riêng: CVAT trả 406 với `application/json` không kèm phiên bản API.
+    const res = await fetch(`${location.origin}${path}`, { credentials: 'include' });
     if (!res.ok) throw new Error(`CVAT trả ${res.status} cho ${path.split('?')[0]}`);
     return res.json();
   }

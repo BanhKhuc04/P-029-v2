@@ -22,6 +22,11 @@ test('parseFlag tách nhiều mục, nhận luật và gợi ý sửa', () => {
   assert.match(items[1].tip, /Hạ đáy box/);
   assert.equal(core.worstSeverity(items), 'error');
   assert.deepEqual(core.parseFlag(''), []);
+  // Mẫu câu thật của luật lơ lửng / lún (so với track) trên job scene-0061.
+  const sink = core.parseFlag('[Lỗi] Đáy box nằm dưới mặt đất 31 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị -4 cm)')[0];
+  assert.equal(sink.rule, 'floating');
+  assert.match(sink.tip, /Nâng đáy box/);
+  assert.equal(core.parseFlag('[Cảnh báo] Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị -11 cm)').length, 1);
 });
 
 test('collectFlags đọc cờ từ shape lẻ và keyframe của track', () => {

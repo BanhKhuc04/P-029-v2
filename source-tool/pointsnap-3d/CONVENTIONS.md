@@ -43,7 +43,7 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 - [x] API chỉ nhận `Accept: application/vnd.cvat+json`; gửi `application/json` bị HTTP 406.
 - [x] `GET /api/jobs/<id>/annotations`: mỗi track chỉ chứa **keyframe nhập tay**; mỗi keyframe có `id`, `frame`, `outside`, `points`, `attributes`. Keyframe `outside=true` nằm ở frame đầu tiên đối tượng vắng mặt.
 - [x] `GET /api/tasks/<id>/data/meta`: `frames[].name` theo đúng thứ tự frame (`000000.pcd`, …) → dùng để khớp với `manifest.json`.
-- [x] Link mở thẳng một frame: `<url>/tasks/<task>/jobs/<job>?frame=<n>` (route `/tasks/:tid/jobs/:jid`, tham số `frame` trong `cvat-ui`).
+- [x] Link mở thẳng một frame và đối tượng: `<url>/tasks/<task>/jobs/<job>?frame=<n>&type=<track|shape>&serverID=<id>` (route `/tasks/:tid/jobs/:jid`, tham số `frame`, `type`, `serverID` trong `cvat-ui`, tương đương tính năng "Copy object URL" của CVAT; box thuộc track dùng `type=track&serverID=<track_id>`, shape lẻ dùng `type=shape&serverID=<shape_id>`).
 - [ ] Trục lên của canvas 3D là +z, box nhìn đúng trên point cloud thật (kiểm bằng mắt ở G0).
 - [x] Ghi / gỡ thuộc tính `pointsnap_error` qua API (`PATCH /api/jobs/<id>/annotations?action=update`), hình học box không đổi (`tests/test_live_cvat.py`, A4). CVAT xử lý `update` bằng cách **xóa rồi tạo lại** shape/track được gửi, nên phải gửi nguyên track với đủ keyframe lấy từ `GET`; không dựa vào id shape để so trước/sau.
 - [x] Mỗi lần `scan --flag` đồng bộ cờ: box hết lỗi được gỡ cờ cũ; cờ chỉ ghi vào box khớp đúng id (không gắn cả frame khi finding thiếu id).

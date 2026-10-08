@@ -33,7 +33,18 @@ def generate_csv_report(
             "cvat_url",
         ])
         for finding in sorted(findings, key=lambda f: f.sort_key()):
-            url = frame_url(job.url, job.task_id, job.job_id, finding.frame) if job.url else ""
+            url = (
+                frame_url(
+                    job.url,
+                    job.task_id,
+                    job.job_id,
+                    finding.frame,
+                    track_id=finding.track_id,
+                    shape_id=finding.source_id if finding.track_id is None else None,
+                )
+                if job.url
+                else ""
+            )
             writer.writerow([
                 finding.frame,
                 finding.track_id if finding.track_id is not None else "",

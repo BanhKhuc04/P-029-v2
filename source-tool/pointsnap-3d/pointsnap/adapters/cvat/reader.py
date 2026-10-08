@@ -96,9 +96,26 @@ def annotations_to_cuboids(data: Mapping[str, Any], labels: Mapping[int, LabelIn
     return sorted(cuboids, key=lambda c: (c.frame, c.track_id if c.track_id is not None else -1, c.source_id or 0))
 
 
-def frame_url(base_url: str, task_id: int, job_id: int, frame: int) -> str:
-    """Link mở thẳng một frame trong giao diện CVAT (route `/tasks/:tid/jobs/:jid?frame=`)."""
-    return f"{base_url.rstrip('/')}/tasks/{task_id}/jobs/{job_id}?frame={frame}"
+def frame_url(
+    base_url: str,
+    task_id: int,
+    job_id: int,
+    frame: int,
+    track_id: int | None = None,
+    shape_id: int | None = None,
+) -> str:
+    """Link mở thẳng một frame và đối tượng trong giao diện CVAT.
+
+    - Có track_id: thêm &type=track&serverID=<track_id> (tương đương 'Copy object URL' trên CVAT).
+    - Không có track_id nhưng có shape_id: thêm &type=shape&serverID=<shape_id>.
+    - Không có cả hai: link chỉ mở frame.
+    """
+    url = f"{base_url.rstrip('/')}/tasks/{task_id}/jobs/{job_id}?frame={frame}"
+    if track_id is not None:
+        return f"{url}&type=track&serverID={track_id}"
+    if shape_id is not None:
+        return f"{url}&type=shape&serverID={shape_id}"
+    return url
 
 
 class ManifestFrames:
@@ -171,8 +188,13 @@ class JobData:
     cuboids: list[Cuboid]
     frame_names: list[str] = field(default_factory=list)
 
-    def frame_url(self, frame: int) -> str:
-        return frame_url(self.url, self.task_id, self.job_id, frame)
+    def frame_url(
+        self,
+        frame: int,
+        track_id: int | None = None,
+        shape_id: int | None = None,
+    ) -> str:
+        return frame_url(self.url, self.task_id, self.job_id, frame, track_id=track_id, shape_id=shape_id)
 
 
 def load_job(client: CvatClient, job_id: int) -> JobData:

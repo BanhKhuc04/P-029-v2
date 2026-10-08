@@ -77,7 +77,23 @@ def test_invalid_box_reports_its_id_and_frame():
 
 
 def test_frame_url():
+    # 1. Không có track_id và shape_id: link chỉ có frame
     assert frame_url("http://localhost:8080/", 7, 39, 12) == "http://localhost:8080/tasks/7/jobs/39?frame=12"
+    # 2. Có track_id: thêm &type=track&serverID=<track_id>
+    assert (
+        frame_url("http://localhost:8080/", 7, 39, 12, track_id=45)
+        == "http://localhost:8080/tasks/7/jobs/39?frame=12&type=track&serverID=45"
+    )
+    # 3. Không có track_id nhưng có shape_id: thêm &type=shape&serverID=<shape_id>
+    assert (
+        frame_url("http://localhost:8080/", 7, 39, 12, shape_id=88)
+        == "http://localhost:8080/tasks/7/jobs/39?frame=12&type=shape&serverID=88"
+    )
+    # 4. Có cả hai (ưu tiên track_id)
+    assert (
+        frame_url("http://localhost:8080/", 7, 39, 12, track_id=45, shape_id=88)
+        == "http://localhost:8080/tasks/7/jobs/39?frame=12&type=track&serverID=45"
+    )
 
 
 def test_manifest_frames_map_cvat_frames_to_nuscenes_points(tmp_path):

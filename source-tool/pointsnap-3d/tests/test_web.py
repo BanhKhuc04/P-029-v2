@@ -654,3 +654,51 @@ def test_check_cvat_unknown_slug_returns_404(client: TestClient):
     res = client.get("/api/projects/nonexistent-slug/cvat/check")
     assert res.status_code == 404
     assert "nonexistent-slug" in res.json()["detail"]
+
+
+# --- Test 14 (A11b): finding_to_dict trả link có serverID trỏ thẳng tới object ---
+
+def test_finding_to_dict_cvat_link():
+    from pointsnap.web.runner import finding_to_dict
+
+    # 1. Box thuộc track: link có type=track&serverID=<track_id>
+    f_track = Finding(
+        error_type=ErrorType.SIZE,
+        rule="size.class_range",
+        severity=Severity.ERROR,
+        frame=5,
+        label="car",
+        message="Kích thước bất thường",
+        track_id=42,
+        source_id=101,  # keyframe ID bị bỏ qua, dùng track_id
+    )
+    d_track = finding_to_dict(f_track, cvat_url="http://cvat:8080", task_id=10, job_id=20)
+    assert d_track["cvat_link"] == "http://cvat:8080/tasks/10/jobs/20?frame=5&type=track&serverID=42"
+
+    # 2. Shape lẻ: link có type=shape&serverID=<source_id>
+    f_shape = Finding(
+        error_type=ErrorType.FLOATING,
+        rule="floating",
+        severity=Severity.WARNING,
+        frame=3,
+        label="pedestrian",
+        message="Lơ lửng",
+        track_id=None,
+        source_id=88,
+    )
+    d_shape = finding_to_dict(f_shape, cvat_url="http://cvat:8080", task_id=10, job_id=20)
+    assert d_shape["cvat_link"] == "http://cvat:8080/tasks/10/jobs/20?frame=3&type=shape&serverID=88"
+
+    # 3. Không có track_id và source_id: giữ link cũ chỉ mở frame
+    f_plain = Finding(
+        error_type=ErrorType.TRACK,
+        rule="track.split_id",
+        severity=Severity.INFO,
+        frame=0,
+        label="bus",
+        message="Nghi tách ID",
+        track_id=None,
+        source_id=None,
+    )
+    d_plain = finding_to_dict(f_plain, cvat_url="http://cvat:8080", task_id=10, job_id=20)
+    assert d_plain["cvat_link"] == "http://cvat:8080/tasks/10/jobs/20?frame=0"

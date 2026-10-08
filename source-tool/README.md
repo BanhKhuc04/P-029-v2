@@ -58,6 +58,10 @@ pointsnap ui
 ```
 *Mặc định máy chủ lắng nghe tại `http://127.0.0.1:8765` và tự động mở trình duyệt. Có thể tùy chỉnh `--host 0.0.0.0`, `--port 8765`, hoặc `--no-browser`.*
 
+*Lưu ý khi bấm link "Mở CVAT":*
+- Link trỏ thẳng tới đúng đối tượng bị báo (`&type=track&serverID=<id>`), chỉ đúng với **lần quét mới nhất** (do CVAT tạo lại id khi annotation được lưu hoặc gắn cờ). Sau khi sửa box xong, hãy quét lại rồi mới bấm link.
+- Nên **đăng nhập CVAT trước** trên trình duyệt, vì trang đăng nhập của CVAT khi chuyển hướng về job sẽ làm mất tham số `?frame=…`.
+
 ### 2. Dùng dòng lệnh (Nâng cao cho CI/CD và Script)
 
 Cấu hình biến môi trường qua file `.env` trong thư mục `source-tool/pointsnap-3d/` (hoặc biến môi trường hệ thống):

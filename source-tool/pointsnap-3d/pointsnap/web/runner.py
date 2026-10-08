@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from pointsnap.adapters.cvat.client import CvatClient
-from pointsnap.adapters.cvat.reader import load_job
+from pointsnap.adapters.cvat.reader import frame_url, load_job
 from pointsnap.adapters.cvat.writer import flag_job_errors, save_snapshot
 from pointsnap.cli.common import frames_for_job
 from pointsnap.core.gate import gate_verdict
@@ -31,8 +31,14 @@ def finding_to_dict(
 ) -> dict[str, Any]:
     link = ""
     if cvat_url and task_id is not None and job_id is not None:
-        clean_url = cvat_url.rstrip("/")
-        link = f"{clean_url}/tasks/{task_id}/jobs/{job_id}?frame={f.frame}"
+        link = frame_url(
+            cvat_url,
+            task_id,
+            job_id,
+            f.frame,
+            track_id=f.track_id,
+            shape_id=f.source_id if f.track_id is None else None,
+        )
     return {
         "error_type": f.error_type.value,
         "error_type_label": f.error_type.label_vi,

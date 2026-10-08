@@ -44,8 +44,8 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **A7** | Bộ chèn lỗi giả theo mục 8.1 của đề xuất, kèm file log lỗi đã chèn | 08/10 | B1 | Chèn đúng loại, đúng mức; log khớp với nhãn sau khi chèn | ✅ |
 | **A9** | README cài đặt và hướng dẫn chạy cho người test; đóng gói | 08/10 | A6 | Người khác cài và chạy được theo README (G2) | ✅ |
 | **A2b** | Kèm ảnh 6 camera làm ảnh ngữ cảnh cho task 3D trên CVAT | 07/10 | A2 | Task 3D hiện ảnh camera cạnh point cloud | 🔍 [PR #19](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/19) |
-| **A10** | Giảm báo nhầm của 3 bộ phát hiện (`pointsnap/detectors/`), đánh giá lại | 08/10 | A6, B7 | Nhãn chuẩn: ≤ 2 Cảnh báo, ≤ 0,5 Lỗi / 100 box; recall không giảm | ✅ [PR #21](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/21) |
-| **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | 🔍 [PR #23](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/23) |
+| **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | ✅ [PR #23](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/23) |
+| **A13** | Làm lại giao diện web theo thiết kế phần mềm doanh nghiệp (thanh trên navy, dropdown dự án, 2 nhóm menu, bảng chi tiết kết quả, IBM Plex, theme sáng/tối) | 08/10 | A11 | Đầy đủ chức năng, khớp bản vẽ `.dc.html`, chụp ảnh sáng/tối, test xanh | 🔍 |
 
 ## Đặng Văn Huy — code thuật toán
 

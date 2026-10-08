@@ -654,3 +654,13 @@ def test_check_cvat_unknown_slug_returns_404(client: TestClient):
     res = client.get("/api/projects/nonexistent-slug/cvat/check")
     assert res.status_code == 404
     assert "nonexistent-slug" in res.json()["detail"]
+
+
+# --- Test 14 (A13): GET / trả về 200 và chứa 'PointSnap 3D' ---
+
+def test_index_page_returns_pointsnap_3d(client: TestClient):
+    """GET / phải trả về mã HTTP 200 và chứa tiêu đề nhận diện 'PointSnap 3D'."""
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "PointSnap 3D" in res.text
+

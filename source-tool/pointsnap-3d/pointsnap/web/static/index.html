@@ -3,401 +3,565 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PointSnap 3D — Giám sát chất lượng nhãn 3D</title>
+  <title>PointSnap 3D — Kiểm soát chất lượng nhãn 3D</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <div id="app-container">
-    <!-- Sidebar bên trái -->
-    <aside id="sidebar">
-      <div class="sidebar-header">
-        <div class="brand">
-          <div class="brand-icon">3D</div>
-          <div>
-            <div class="brand-title">PointSnap 3D</div>
-            <div class="brand-badge">Bản 0.1.0</div>
-          </div>
+    <!-- Thanh trên cùng (Topbar Navy) -->
+    <header class="topbar">
+      <a href="#results" class="topbar-brand">
+        <svg width="26" height="26" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"></path>
+          <path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path>
+          <path d="M3 38 H16 M32 38 H45" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.4"></path>
+          <circle cx="24" cy="38" r="4.5" fill="var(--logo-dot)"></circle>
+        </svg>
+        <span>PointSnap 3D</span>
+      </a>
+
+      <span class="topbar-divider"></span>
+
+      <!-- Nút chọn dự án dạng Dropdown -->
+      <div class="project-selector-wrapper">
+        <button id="btn-project-dropdown" class="project-dropdown-btn" aria-haspopup="true" aria-expanded="false" title="Chọn dự án">
+          <span class="project-dropdown-label">Dự án</span>
+          <span id="current-project-name" class="project-dropdown-name">Đang nạp...</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M3 4.5 L6 7.5 L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+
+        <div id="project-dropdown-menu" class="project-dropdown-menu">
+          <div class="project-menu-header">Danh sách dự án</div>
+          <ul id="project-dropdown-list" class="project-menu-list">
+            <!-- Render qua JS -->
+          </ul>
+          <div class="project-menu-divider"></div>
+          <button id="btn-open-create-proj" class="project-menu-action">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M7 2 V12 M2 7 H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+            </svg>
+            Tạo dự án mới
+          </button>
+          <button id="btn-open-delete-proj" class="project-menu-action danger">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 4 H11.5 M5 4 V2.5 H9 V4 M4 4 V11.5 H10 V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            Xóa dự án hiện tại
+          </button>
         </div>
       </div>
 
-      <div class="sidebar-actions">
-        <button id="btn-open-create-proj" class="btn-new-project">
-          <span>＋</span> Tạo dự án mới
-        </button>
-      </div>
+      <!-- Khu vực bên phải của Topbar -->
+      <div class="topbar-right">
+        <span id="cvat-status-badge" class="cvat-status-indicator">
+          <span id="cvat-status-dot" class="status-dot"></span>
+          <span id="cvat-status-text">CVAT · Đang kiểm tra</span>
+        </span>
 
-      <div class="project-list-header">Danh sách dự án</div>
-      <ul id="project-list" class="project-list">
-        <!-- Danh sách dự án sẽ render qua JavaScript -->
-      </ul>
-
-      <div class="sidebar-footer">
-        <span id="system-status-indicator">● Sẵn sàng</span>
-        <button id="btn-toggle-theme" class="theme-toggle-btn" title="Chuyển chế độ sáng/tối">
-          🌓 Giao diện
-        </button>
-      </div>
-    </aside>
-
-    <!-- Khu vực nội dung chính -->
-    <main id="main-content">
-      <!-- Header dự án -->
-      <header class="main-header">
-        <div class="header-top">
-          <div class="project-info-box">
-            <h1 id="current-project-name">Đang tải...</h1>
-            <p id="current-project-desc" class="project-desc-line"></p>
-          </div>
-          <div class="header-badges">
-            <span id="cvat-status-badge" class="status-badge neutral">
-              <span>●</span> CVAT: Đang kiểm tra
-            </span>
-            <button id="btn-open-delete-proj" class="btn-delete-proj" title="Xóa dự án">
-              🗑️ Xóa dự án
-            </button>
-          </div>
+        <!-- Chế độ hiển thị Sáng | Tối -->
+        <div role="group" aria-label="Chế độ hiển thị" class="theme-switch-group">
+          <button id="theme-btn-light" class="theme-switch-btn" aria-pressed="false">Sáng</button>
+          <button id="theme-btn-dark" class="theme-switch-btn" aria-pressed="true">Tối</button>
         </div>
+      </div>
+    </header>
 
-        <!-- Thanh Tabs -->
-        <nav class="tabs-nav">
-          <button class="tab-btn active" data-tab="tab-scan">🔍 Quét (Scan)</button>
-          <button class="tab-btn" data-tab="tab-results">📊 Kết quả & Gate</button>
-          <button class="tab-btn" data-tab="tab-guideline">⚙️ Guideline</button>
-          <button class="tab-btn" data-tab="tab-connection">🔌 Kết nối</button>
-          <button class="tab-btn" data-tab="tab-history">📈 Lịch sử</button>
-        </nav>
-      </header>
+    <!-- Thân ứng dụng gồm Sidebar và Main Content -->
+    <div class="app-body">
+      <!-- Sidebar trái 2 nhóm Kiểm tra & Cấu hình -->
+      <aside class="app-sidebar" aria-label="Điều hướng">
+        <div class="nav-group-title">Kiểm tra</div>
+        <button class="nav-link" data-tab="tab-scan">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"></circle>
+            <path d="M10.5 10.5 L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+          </svg>
+          Quét job
+        </button>
 
-      <!-- Nội dung các Tab -->
-      <section class="tab-content-area">
-        <!-- TAB 1: QUÉT (SCAN) -->
-        <div id="tab-scan" class="tab-pane active">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">Khởi chạy tác vụ quét kiểm tra chất lượng nhãn</h3>
-                <p class="card-subtitle">Chọn Task/Job từ CVAT để rà soát lỗi lơ lửng, sai kích thước và đứt track</p>
-              </div>
+        <button class="nav-link active" data-tab="tab-results">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 4 H14 M2 8 H14 M2 12 H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+          </svg>
+          <span style="flex: 1;">Kết quả</span>
+          <span id="nav-badge-findings" class="nav-badge">0</span>
+        </button>
+
+        <button class="nav-link" data-tab="tab-history">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"></circle>
+            <path d="M8 5 V8 L10 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+          </svg>
+          Lịch sử
+        </button>
+
+        <div class="nav-group-title">Cấu hình</div>
+        <button class="nav-link" data-tab="tab-guideline">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 5 H14 M2 11 H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            <circle cx="6" cy="5" r="1.8" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"></circle>
+            <circle cx="10" cy="11" r="1.8" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"></circle>
+          </svg>
+          Guideline
+        </button>
+
+        <button class="nav-link" data-tab="tab-connection">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M6.5 9.5 L9.5 6.5 M7 4.5 L8.5 3 A2.5 2.5 0 0 1 13 6.5 L11.5 8 M9 11.5 L7.5 13 A2.5 2.5 0 0 1 3 9.5 L4.5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+          </svg>
+          Kết nối CVAT
+        </button>
+
+        <div class="sidebar-footer">Phiên bản 0.1.0</div>
+      </aside>
+
+      <!-- Vùng nội dung chính -->
+      <main class="app-main">
+        <!-- ==================== TAB 1: KẾT QUẢ QUÉT (Main.dc.html) ==================== -->
+        <section id="tab-results" class="tab-pane active" aria-label="Kết quả quét">
+          <div class="breadcrumb" id="results-breadcrumb">
+            <span id="breadcrumb-project">Dự án</span> / Kết quả / <span id="breadcrumb-job">Job —</span>
+          </div>
+
+          <div class="page-header-row">
+            <div>
+              <h1 class="page-title" id="results-header-title">Kết quả quét</h1>
+              <div class="page-subtitle" id="results-header-subtitle">Chưa có lượt quét nào được chọn.</div>
             </div>
+            <div class="header-action-group" id="results-actions-group" style="display: none;">
+              <a id="btn-download-csv" href="#" download class="btn btn-secondary">Xuất CSV</a>
+              <a id="btn-download-html" href="#" target="_blank" class="btn btn-secondary">Xuất báo cáo HTML</a>
+              <button id="btn-re-flag-cvat" class="btn btn-primary">Gắn cờ lên CVAT</button>
+            </div>
+          </div>
 
-            <div class="scan-control-grid">
-              <div>
-                <div class="form-group">
-                  <label class="form-label" for="select-cvat-task">Chọn Task từ CVAT</label>
+          <!-- Trạng thái trống -->
+          <div id="results-empty-state" class="card-section" style="padding: 48px 24px; text-align: center; color: var(--text-2);">
+            <p style="margin: 0; font-size: 15px;">Chưa có kết quả quét nào. Hãy qua mục <strong>Quét job</strong> để bắt đầu lượt quét mới hoặc chọn từ <strong>Lịch sử</strong>.</p>
+          </div>
+
+          <!-- Nội dung chi tiết kết quả khi có dữ liệu -->
+          <div id="results-content-box" style="display: none; display: flex; flex-direction: column; gap: 16px;">
+            <!-- Dải thông báo Cổng kiểm soát (Gate Banner) -->
+            <section id="gate-banner-strip" class="gate-banner-strip fail" aria-label="Kết luận cổng kiểm soát">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.5"></circle>
+                <path d="M9 5 V10 M9 12.5 V13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+              </svg>
+              <strong id="gate-verdict-title">Không đạt cổng kiểm soát</strong>
+              <span id="gate-verdict-desc" class="gate-desc">Đang tính toán tiêu chí...</span>
+            </section>
+
+            <!-- 4 thẻ thống kê tổng số (Stats Grid) -->
+            <section class="stats-grid-row" aria-label="Tổng số">
+              <div class="stat-cell">
+                <div class="stat-label-text">Lỗi</div>
+                <div class="stat-number-text error" id="stat-errors-count">0</div>
+              </div>
+              <div class="stat-cell">
+                <div class="stat-label-text">Cảnh báo</div>
+                <div class="stat-number-text warn" id="stat-warnings-count">0</div>
+              </div>
+              <div class="stat-cell">
+                <div class="stat-label-text">Thông tin</div>
+                <div class="stat-number-text" id="stat-info-count">0</div>
+              </div>
+              <div class="stat-cell">
+                <div class="stat-label-text">Box đã quét</div>
+                <div class="stat-number-text" id="stat-boxes-count">0</div>
+              </div>
+            </section>
+
+            <!-- Bố cục 2 cột: Bảng phát hiện bên trái & Drawer chi tiết bên phải -->
+            <div class="results-split-layout">
+              <!-- Cột trái: Bảng phát hiện -->
+              <section class="findings-list-panel" aria-label="Danh sách phát hiện">
+                <div class="table-filter-bar">
+                  <input type="search" id="filter-search-box" class="filter-input" placeholder="Tìm theo mô tả, class, track…" style="flex: 2 1 220px;" aria-label="Tìm trong kết quả">
+                  <select id="filter-error-type" class="filter-select" style="flex: 1 1 140px;" aria-label="Loại lỗi">
+                    <option value="">Mọi loại lỗi</option>
+                    <option value="floating">Lơ lửng / lún</option>
+                    <option value="size">Kích thước</option>
+                    <option value="track">Đứt track</option>
+                  </select>
+                  <select id="filter-class" class="filter-select" style="flex: 1 1 120px;" aria-label="Class">
+                    <option value="">Mọi class</option>
+                  </select>
+                </div>
+
+                <!-- Tabs lọc mức độ -->
+                <div role="group" aria-label="Lọc theo mức" class="severity-tab-bar">
+                  <button id="sev-tab-all" class="sev-tab-btn" aria-pressed="true">Tất cả 0</button>
+                  <button id="sev-tab-error" class="sev-tab-btn" aria-pressed="false">Lỗi 0</button>
+                  <button id="sev-tab-warning" class="sev-tab-btn" aria-pressed="false">Cảnh báo 0</button>
+                  <button id="sev-tab-info" class="sev-tab-btn" aria-pressed="false">Thông tin 0</button>
+                </div>
+
+                <!-- Bảng danh sách findings -->
+                <div class="table-scroll-container">
+                  <table class="enterprise-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 100px;">Mức</th>
+                        <th style="width: 80px;">Frame</th>
+                        <th style="width: 80px;">Track</th>
+                        <th style="width: 110px;">Class</th>
+                        <th style="width: 130px;">Loại lỗi</th>
+                        <th>Mô tả</th>
+                      </tr>
+                    </thead>
+                    <tbody id="findings-table-body">
+                      <!-- Render qua JS -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Phân trang phía dưới bảng (50 mục / trang) -->
+                <div class="table-pagination-footer">
+                  <span id="pagination-summary-text">0–0 trên 0 mục</span>
+                  <div style="display: flex; gap: 6px;">
+                    <button id="btn-pagination-prev" class="btn btn-secondary btn-sm" disabled>Trước</button>
+                    <button id="btn-pagination-next" class="btn btn-secondary btn-sm" disabled>Sau</button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Cột phải: Bảng chi tiết phát hiện (Right Detail Drawer) -->
+              <aside class="detail-drawer-panel" aria-label="Chi tiết phát hiện">
+                <div class="detail-drawer-header">
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <span id="detail-sev-badge" class="pill-badge error">Lỗi</span>
+                    <span id="detail-rule-code" class="mono" style="font-size: 12px; color: var(--text-2);">rule</span>
+                  </div>
+                  <h2 id="detail-title-text" style="margin: 0; font-size: 16px; font-weight: 600;">Tiêu đề lỗi</h2>
+                </div>
+
+                <dl class="detail-drawer-meta-dl">
+                  <div>
+                    <dt>Frame</dt>
+                    <dd id="detail-frame-val">—</dd>
+                  </div>
+                  <div>
+                    <dt>Track · class</dt>
+                    <dd id="detail-track-class-val">—</dd>
+                  </div>
+                  <div>
+                    <dt>Giá trị đo</dt>
+                    <dd id="detail-measured-val">—</dd>
+                  </div>
+                  <div>
+                    <dt>Ngưỡng</dt>
+                    <dd id="detail-threshold-val">—</dd>
+                  </div>
+                </dl>
+
+                <div class="detail-drawer-body-text">
+                  <div class="detail-field-label">Mô tả</div>
+                  <div id="detail-message-desc" style="color: var(--text);">—</div>
+                  <div class="detail-field-label" style="margin-top: 8px;">Gợi ý cách sửa</div>
+                  <div id="detail-fix-hint" style="color: var(--text);">—</div>
+                </div>
+
+                <div class="detail-drawer-actions">
+                  <a id="detail-btn-cvat-link" href="#" target="_blank" class="btn btn-primary" style="width: 100%;">
+                    Mở đúng box trong CVAT
+                  </a>
+                  <div class="detail-hint-note">
+                    Link chỉ đúng với lần quét mới nhất. Sửa box xong hãy quét lại.
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 2: QUÉT JOB (Quet.dc.html) ==================== -->
+        <section id="tab-scan" class="tab-pane" aria-label="Quét job" style="display: none;">
+          <div class="breadcrumb">
+            <span id="scan-breadcrumb-project">Dự án</span> / Quét job
+          </div>
+
+          <div class="page-header-row">
+            <div>
+              <h1 class="page-title">Quét job</h1>
+              <div class="page-subtitle">Kiểm lơ lửng / lún, kích thước và đứt track theo guideline của dự án</div>
+            </div>
+          </div>
+
+          <div class="scan-layout-grid">
+            <!-- Cột trái: Thiết lập lần quét -->
+            <section class="scan-setup-card" aria-label="Thiết lập lần quét">
+              <div class="card-header-row">
+                <h2 class="card-title-h2">1. Chọn job</h2>
+              </div>
+              <div class="form-grid-row">
+                <div class="form-group-item full-width">
+                  <label for="select-cvat-task">Task trên CVAT</label>
                   <div style="display: flex; gap: 8px;">
-                    <select id="select-cvat-task" class="form-select">
+                    <select id="select-cvat-task" class="form-select" style="flex: 1;">
                       <option value="">-- Chọn Task --</option>
                     </select>
-                    <button id="btn-refresh-tasks" class="btn btn-secondary" title="Làm mới danh sách Task từ CVAT">🔄</button>
+                    <button id="btn-refresh-tasks" class="btn btn-secondary" title="Tải lại danh sách Task">Tải lại</button>
                   </div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label" for="select-cvat-job">Chọn Job</label>
+                <div class="form-group-item">
+                  <label for="select-cvat-job">Job</label>
                   <select id="select-cvat-job" class="form-select">
                     <option value="">-- Chọn Job --</option>
                   </select>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label" for="input-custom-job-id">Hoặc nhập trực tiếp Job ID</label>
-                  <input type="number" id="input-custom-job-id" class="form-input" placeholder="Ví dụ: 2">
+                <div class="form-group-item">
+                  <label for="input-custom-job-id">Hoặc nhập id job</label>
+                  <input type="number" id="input-custom-job-id" class="form-input" placeholder="Ví dụ 2">
                 </div>
               </div>
 
-              <div>
-                <div class="form-group" style="padding-top: 10px;">
-                  <label class="form-label">Tùy chọn gắn cờ tự động</label>
-                  <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 8px;">
-                    <input type="checkbox" id="check-scan-flag" style="margin-top: 4px;">
-                    <div>
-                      <label for="check-scan-flag" style="font-weight: 600; cursor: pointer; font-size: 13.5px;">
-                        Gắn cờ lỗi lên CVAT (thuộc tính pointsnap_error)
-                      </label>
-                      <p class="form-hint">
-                        Chỉ gắn cờ các mục Lỗi và Cảnh báo. Đảm bảo không ai đang mở sửa job trên CVAT khi bật tùy chọn này.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                  <button id="btn-start-scan" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px;">
-                    🚀 Bắt đầu quét ngay
-                  </button>
-                </div>
+              <div style="padding: 16px 20px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                <h2 style="margin: 0 0 12px; font-size: 15px; font-weight: 600;">2. Tùy chọn</h2>
+                <label style="display: flex; gap: 12px; align-items: flex-start; cursor: pointer;">
+                  <input type="checkbox" id="check-scan-flag" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--primary);">
+                  <span>
+                    <span style="display: block; font-weight: 500;">Gắn cờ lên CVAT sau khi quét</span>
+                    <span style="display: block; font-size: 13px; color: var(--text-2);">Ghi mục Lỗi và Cảnh báo vào thuộc tính pointsnap_error để lọc box trong CVAT.</span>
+                  </span>
+                </label>
               </div>
+
+              <div style="padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                <span id="scan-guideline-summary" style="font-size: 13px; color: var(--text-3);">Guideline: mặc định</span>
+                <button id="btn-start-scan" class="btn btn-primary" style="padding: 0 20px;">Bắt đầu quét</button>
+              </div>
+            </section>
+
+            <!-- Cột phải: Tiến độ quét -->
+            <section class="scan-progress-card" aria-label="Tiến độ">
+              <div class="card-header-row">
+                <h2 class="card-title-h2">Tiến độ</h2>
+                <span id="scan-progress-percent" class="mono" style="font-size: 13px; color: var(--text-2);">0%</span>
+              </div>
+              <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px;">
+                <div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tiến độ quét" class="progress-bar-track">
+                  <div id="scan-progress-bar" class="progress-bar-fill"></div>
+                </div>
+                <div id="scan-status-message" style="color: var(--text-2);">Chưa chạy. Chọn job rồi bấm Bắt đầu quét.</div>
+
+                <!-- 5 bước tiến độ -->
+                <ol class="scan-step-list">
+                  <li class="scan-step-item">
+                    <span id="step-dot-1" class="step-indicator-dot"></span>
+                    <span id="step-label-1" style="flex: 1; color: var(--text-3);">Tải nhãn từ CVAT</span>
+                    <span id="step-state-1" style="font-size: 12px; color: var(--text-3);">Chờ</span>
+                  </li>
+                  <li class="scan-step-item">
+                    <span id="step-dot-2" class="step-indicator-dot"></span>
+                    <span id="step-label-2" style="flex: 1; color: var(--text-3);">Đọc point cloud theo manifest</span>
+                    <span id="step-state-2" style="font-size: 12px; color: var(--text-3);">Chờ</span>
+                  </li>
+                  <li class="scan-step-item">
+                    <span id="step-dot-3" class="step-indicator-dot"></span>
+                    <span id="step-label-3" style="flex: 1; color: var(--text-3);">Chạy 3 bộ phát hiện</span>
+                    <span id="step-state-3" style="font-size: 12px; color: var(--text-3);">Chờ</span>
+                  </li>
+                  <li class="scan-step-item">
+                    <span id="step-dot-4" class="step-indicator-dot"></span>
+                    <span id="step-label-4" style="flex: 1; color: var(--text-3);">Tạo báo cáo HTML / CSV</span>
+                    <span id="step-state-4" style="font-size: 12px; color: var(--text-3);">Chờ</span>
+                  </li>
+                  <li class="scan-step-item">
+                    <span id="step-dot-5" class="step-indicator-dot"></span>
+                    <span id="step-label-5" style="flex: 1; color: var(--text-3);">Kết luận cổng kiểm soát</span>
+                    <span id="step-state-5" style="font-size: 12px; color: var(--text-3);">Chờ</span>
+                  </li>
+                </ol>
+              </div>
+            </section>
+          </div>
+
+          <!-- Thẻ tóm tắt lần quét gần đây -->
+          <section class="card-section" style="margin-top: 16px;" aria-label="Lần quét gần đây">
+            <div class="card-header-row">
+              <h2 class="card-title-h2">Lần quét gần đây</h2>
+              <a href="#history" class="btn btn-outline btn-sm">Xem tất cả</a>
             </div>
+            <div id="recent-scan-box" style="padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center;">
+              <span id="recent-scan-time" class="mono" style="font-size: 13px;">Chưa có lượt quét nào</span>
+            </div>
+          </section>
+        </section>
 
-            <!-- Khung theo dõi tiến độ chạy nền -->
-            <div id="scan-progress-box" class="progress-box" style="display: none;">
-              <div class="progress-status-text">
-                <span id="scan-status-message">Đang xử lý...</span>
-                <span id="scan-progress-percent">0%</span>
-              </div>
-              <div class="progress-bar-container">
-                <div id="scan-progress-bar" class="progress-bar-fill"></div>
-              </div>
-              <div id="scan-sub-note" class="form-hint"></div>
+        <!-- ==================== TAB 3: GUIDELINE (Guideline.dc.html) ==================== -->
+        <section id="tab-guideline" class="tab-pane" aria-label="Guideline của dự án" style="display: none;">
+          <div class="breadcrumb">
+            <span id="guideline-breadcrumb-project">Dự án</span> / Guideline
+          </div>
+
+          <div class="page-header-row">
+            <div>
+              <h1 class="page-title">Guideline của dự án</h1>
+              <div class="page-subtitle">Luật, ngưỡng và tiêu chí đạt áp dụng cho mọi lần quét trong dự án này</div>
+            </div>
+            <!-- Bộ chuyển đổi Biểu mẫu / YAML -->
+            <div role="group" aria-label="Cách chỉnh sửa" style="display: flex; padding: 2px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--surface);">
+              <button id="btn-mode-form" class="btn btn-sm btn-primary" style="height: 34px;">Biểu mẫu</button>
+              <button id="btn-mode-yaml" class="btn btn-sm btn-outline" style="height: 34px; border: 0;">YAML</button>
             </div>
           </div>
-        </div>
 
-        <!-- TAB 2: KẾT QUẢ (RESULTS) -->
-        <div id="tab-results" class="tab-pane">
-          <div id="results-empty-state" class="card" style="text-align: center; padding: 50px 20px;">
-            <p style="font-size: 16px; color: var(--text-muted);">Chưa có kết quả quét nào được chọn. Hãy thực hiện một lượt quét hoặc chọn từ Lịch sử.</p>
-          </div>
-
-          <div id="results-content-box" style="display: none;">
-            <!-- Banner Gate -->
-            <div id="gate-banner" class="gate-banner passed">
-              <div>
-                <div id="gate-title" class="gate-title">✅ CỔNG KIỂM TRA ĐẠT CHUẨN</div>
-                <div id="gate-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
-                  Tất cả các tiêu chí lỗi và cảnh báo đều nằm trong giới hạn cho phép.
-                </div>
-                <ul id="gate-reasons-list" class="gate-reasons-list"></ul>
-              </div>
-              <div id="run-time-display" style="font-size: 12.5px; color: var(--text-muted); text-align: right;"></div>
-            </div>
-
-            <!-- Thẻ thống kê số lượng -->
-            <div class="stats-grid">
-              <div class="stat-card error">
-                <div class="stat-value" id="stat-errors-count">0</div>
-                <div class="stat-label">Lỗi (Cần sửa)</div>
-              </div>
-              <div class="stat-card warning">
-                <div class="stat-value" id="stat-warnings-count">0</div>
-                <div class="stat-label">Cảnh báo</div>
-              </div>
-              <div class="stat-card info">
-                <div class="stat-value" id="stat-info-count">0</div>
-                <div class="stat-label">Thông tin</div>
-              </div>
-              <div class="stat-card total">
-                <div class="stat-value" id="stat-boxes-count">0</div>
-                <div class="stat-label">Tổng số Box</div>
-              </div>
-            </div>
-
-            <!-- Thanh hành động & Cờ lỗi -->
-            <div class="card" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-              <div id="flag-summary-text" style="font-size: 13px; color: var(--text-secondary);">
-                <!-- Thông tin cờ -->
-              </div>
-              <div style="display: flex; gap: 10px;">
-                <button id="btn-re-flag-cvat" class="btn btn-secondary" title="Quét lại và cập nhật cờ lên CVAT">
-                  🚩 Quét lại & Gắn cờ lên CVAT
-                </button>
-                <a id="btn-download-html" href="#" target="_blank" class="btn btn-outline">
-                  📄 Tải báo cáo HTML
-                </a>
-                <a id="btn-download-csv" href="#" download class="btn btn-outline">
-                  📊 Tải file CSV
-                </a>
-              </div>
-            </div>
-
-            <!-- Bảng danh sách findings -->
-            <div class="card">
-              <div class="card-header">
+          <!-- Chế độ Biểu mẫu -->
+          <div id="guideline-form-view" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- 1. Luật kiểm tra -->
+            <section class="card-section" aria-label="Luật kiểm tra">
+              <div class="card-header-row">
                 <div>
-                  <h3 class="card-title">Danh sách chi tiết các phát hiện (Findings)</h3>
-                  <p id="findings-count-summary" class="card-subtitle">Hiển thị 0 phát hiện</p>
+                  <h2 class="card-title-h2">Luật kiểm tra</h2>
+                  <div style="font-size: 13px; color: var(--text-2);">Luật tắt sẽ không được chạy khi quét</div>
+                </div>
+              </div>
+              <div id="rules-toggles-container">
+                <!-- 6 luật kiểm tra -->
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-bottom: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Lơ lửng / lún đất <span class="mono" style="font-size: 12px; color: var(--text-3);">floating</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Đáy box lệch so với mặt đất quanh box</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-floating" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Lơ lửng / lún đất" id="rule-floating" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-bottom: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Kích thước theo class <span class="mono" style="font-size: 12px; color: var(--text-3);">size_class_range</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Dài, rộng, cao ngoài khoảng chuẩn của class</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-size-class-range" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Kích thước theo class" id="rule-size-class-range" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-bottom: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Kích thước trong track <span class="mono" style="font-size: 12px; color: var(--text-3);">size_in_track</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Một box khác hẳn các box khác cùng track</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-size-in-track" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Kích thước trong track" id="rule-size-in-track" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-bottom: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Nhảy vị trí <span class="mono" style="font-size: 12px; color: var(--text-3);">track_jump</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Box lệch xa vị trí nội suy từ các frame lân cận</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-track-jump" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Nhảy vị trí" id="rule-track-jump" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-bottom: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Nghi tách ID <span class="mono" style="font-size: 12px; color: var(--text-3);">track_split_id</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Một vật bị gán thành hai track nối nhau</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-track-split-id" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Nghi tách ID" id="rule-track-split-id" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px;">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Khoảng nội suy dài <span class="mono" style="font-size: 12px; color: var(--text-3);">track_long_interpolation</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Nhiều frame liền chỉ có box nội suy khi vật đang chạy</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-track-long-interpolation" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Khoảng nội suy dài" id="rule-track-long-interpolation" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 2. Cổng kiểm soát và ngưỡng -->
+            <section class="card-section" aria-label="Cổng kiểm soát và ngưỡng">
+              <div class="card-header-row">
+                <h2 class="card-title-h2">Cổng kiểm soát và ngưỡng</h2>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 12px 32px; padding: 16px 20px; border-bottom: 1px solid var(--border);">
+                <div style="flex: 1 1 240px;">
+                  <div style="font-weight: 500;">Tiêu chí đạt</div>
+                  <div style="font-size: 13px; color: var(--text-2);">Job đạt khi số mục không vượt các mức này</div>
+                </div>
+                <div style="flex: 2 1 360px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+                    Lỗi tối đa
+                    <input type="number" id="gate-max-errors" class="form-input mono" min="0" value="0">
+                  </label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+                    Cảnh báo tối đa
+                    <input type="number" id="gate-max-warnings" class="form-input mono" min="0" value="10">
+                  </label>
                 </div>
               </div>
 
-              <!-- Bộ lọc -->
-              <div class="filter-bar">
-                <input type="text" id="filter-search-box" class="form-input filter-input" placeholder="Tìm kiếm theo tin nhắn, class, rule...">
-                <select id="filter-severity" class="form-select" style="width: 150px;">
-                  <option value="">Mọi mức độ</option>
-                  <option value="error">Lỗi</option>
-                  <option value="warning">Cảnh báo</option>
-                  <option value="info">Thông tin</option>
-                </select>
-                <select id="filter-error-type" class="form-select" style="width: 170px;">
-                  <option value="">Mọi loại lỗi</option>
-                  <option value="floating">Lơ lửng / lún</option>
-                  <option value="size">Sai kích thước</option>
-                  <option value="track">Đứt track</option>
-                </select>
-                <select id="filter-class" class="form-select" style="width: 150px;">
-                  <option value="">Mọi class</option>
-                </select>
+              <div style="display: flex; flex-wrap: wrap; gap: 12px 32px; padding: 16px 20px;">
+                <div style="flex: 1 1 240px;">
+                  <div style="font-weight: 500;">Lơ lửng / lún (mét)</div>
+                  <div style="font-size: 13px; color: var(--text-2);">So với các frame khác của cùng track; box lẻ so trực tiếp với mặt đất</div>
+                </div>
+                <div style="flex: 2 1 360px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+                    Cảnh báo
+                    <input type="number" step="0.01" id="fl-warning-m" class="form-input mono" value="0.12">
+                  </label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+                    Lỗi
+                    <input type="number" step="0.01" id="fl-error-m" class="form-input mono" value="0.22">
+                  </label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+                    Cảnh báo, box lẻ
+                    <input type="number" step="0.01" id="fl-single-warning-m" class="form-input mono" value="0.15">
+                  </label>
+                  <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+                    Lỗi, box lẻ
+                    <input type="number" step="0.01" id="fl-single-error-m" class="form-input mono" value="0.30">
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3. Khoảng kích thước theo class -->
+            <section class="card-section" aria-label="Khoảng kích thước theo class">
+              <div class="card-header-row">
+                <div>
+                  <h2 class="card-title-h2">Khoảng kích thước theo class (mét)</h2>
+                  <div style="font-size: 13px; color: var(--text-2);">Áp dụng cho class ít mẫu; class nhiều mẫu lấy từ thống kê dữ liệu</div>
+                </div>
+                <button id="btn-add-size-class" class="btn btn-secondary">Thêm class</button>
               </div>
 
-              <!-- Bảng -->
-              <div class="table-container">
-                <table class="findings-table">
+              <div class="table-scroll-container">
+                <table class="enterprise-table">
                   <thead>
                     <tr>
-                      <th>Mức độ</th>
-                      <th>Frame</th>
-                      <th>Track ID</th>
-                      <th>Class</th>
-                      <th>Quy tắc</th>
-                      <th>Mô tả chi tiết</th>
-                      <th>Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody id="findings-table-body">
-                    <!-- Rows render qua JS -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB 3: GUIDELINE -->
-        <div id="tab-guideline" class="tab-pane">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">Cấu hình Guideline gán nhãn cho dự án</h3>
-                <p class="card-subtitle">Tùy biến các luật kiểm tra, ngưỡng đo và khoảng kích thước riêng biệt cho từng dự án</p>
-              </div>
-              <div class="mode-switch-bar">
-                <button id="btn-mode-form" class="mode-btn active">Form trực quan</button>
-                <button id="btn-mode-yaml" class="mode-btn">YAML nâng cao</button>
-              </div>
-            </div>
-
-            <!-- FORM TRỰC QUAN -->
-            <div id="guideline-form-view">
-              <!-- Ghi chú: URL CVAT được đặt ở tab Kết nối và luôn ghi đè cvat.url trong guideline -->
-              <div class="alert-info" style="margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; font-size: 13px; background: var(--bg-secondary); border-left: 3px solid var(--primary);">
-                ⓘ <strong>Lưu ý:</strong> URL CVAT và Token được quản lý ở tab <strong>Kết nối</strong>.
-                Mọi giá trị <code>cvat.url</code> trong YAML này sẽ bị URL dự án ghi đè khi chạy.
-              </div>
-              <!-- Bật / tắt 6 luật -->
-              <h4 style="font-size: 15px; margin-bottom: 12px; color: var(--primary);">1. Bật / tắt từng luật kiểm tra (Rules)</h4>
-              <div class="rules-grid">
-                <div class="rule-toggle-card">
-                  <div class="rule-info-col">
-                    <h4>Lơ lửng / lún đất</h4>
-                    <p>So khoảng cách đáy box tới mặt đất</p>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" id="rule-floating">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-
-                <div class="rule-toggle-card">
-                  <div class="rule-info-col">
-                    <h4>Kích thước theo class</h4>
-                    <p>Bất thường so với khoảng mẫu của class</p>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" id="rule-size-class-range">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-
-                <div class="rule-toggle-card">
-                  <div class="rule-info-col">
-                    <h4>Kích thước dao động trong track</h4>
-                    <p>Box lệch lớn so với trung vị của cùng xe</p>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" id="rule-size-in-track">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-
-                <div class="rule-toggle-card">
-                  <div class="rule-info-col">
-                    <h4>Nhảy vị trí track</h4>
-                    <p>Lệch khỏi vị trí nội suy giữa các keyframe</p>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" id="rule-track-jump">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-
-                <div class="rule-toggle-card">
-                  <div class="rule-info-col">
-                    <h4>Nghi tách ID track</h4>
-                    <p>Track kết thúc rồi track mới xuất hiện gần đó</p>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" id="rule-track-split-id">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-
-                <div class="rule-toggle-card">
-                  <div class="rule-info-col">
-                    <h4>Khoảng nội suy dài</h4>
-                    <p>Quá nhiều frame chỉ có box nội suy khi xe di chuyển</p>
-                  </div>
-                  <label class="switch">
-                    <input type="checkbox" id="rule-track-long-interpolation">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Tiêu chí Gate -->
-              <h4 style="font-size: 15px; margin: 24px 0 12px; color: var(--primary);">2. Tiêu chí Cổng kiểm soát (Gate)</h4>
-              <div class="input-row">
-                <div class="form-group">
-                  <label class="form-label" for="gate-max-errors">Số lỗi tối đa cho phép (max_errors)</label>
-                  <input type="number" id="gate-max-errors" class="form-input" min="0">
-                  <p class="form-hint">Mặc định: 0 (không cho phép lỗi)</p>
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="gate-max-warnings">Số cảnh báo tối đa cho phép (max_warnings)</label>
-                  <input type="number" id="gate-max-warnings" class="form-input" min="0">
-                  <p class="form-hint">Mặc định: 10 cảnh báo</p>
-                </div>
-              </div>
-
-              <!-- Ngưỡng Lơ lửng / lún -->
-              <h4 style="font-size: 15px; margin: 24px 0 12px; color: var(--primary);">3. Ngưỡng Lơ lửng / lún đất (Floating)</h4>
-              <div class="input-row">
-                <div class="form-group">
-                  <label class="form-label" for="fl-warning-m">Ngưỡng Cảnh báo (mét)</label>
-                  <input type="number" step="0.01" id="fl-warning-m" class="form-input">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="fl-error-m">Ngưỡng Lỗi (mét)</label>
-                  <input type="number" step="0.01" id="fl-error-m" class="form-input">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="fl-single-warning-m">Ngưỡng Cảnh báo box đơn (mét)</label>
-                  <input type="number" step="0.01" id="fl-single-warning-m" class="form-input">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="fl-single-error-m">Ngưỡng Lỗi box đơn (mét)</label>
-                  <input type="number" step="0.01" id="fl-single-error-m" class="form-input">
-                </div>
-              </div>
-
-              <!-- Khoảng kích thước class -->
-              <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 12px;">
-                <h4 style="font-size: 15px; color: var(--primary);">4. Khoảng kích thước cho phép theo Class (manual_ranges)</h4>
-                <button id="btn-add-size-class" class="btn btn-secondary" style="padding: 5px 12px; font-size: 12px;">
-                  ＋ Thêm Class
-                </button>
-              </div>
-              <div class="table-container">
-                <table class="size-table">
-                  <thead>
-                    <tr>
-                      <th>Class</th>
-                      <th>Dài tối thiểu (m)</th>
-                      <th>Dài tối đa (m)</th>
-                      <th>Rộng tối thiểu (m)</th>
-                      <th>Rộng tối đa (m)</th>
-                      <th>Cao tối thiểu (m)</th>
-                      <th>Cao tối đa (m)</th>
-                      <th>Thao tác</th>
+                      <th style="padding-left: 20px;">Class</th>
+                      <th>Dài (min–max)</th>
+                      <th>Rộng (min–max)</th>
+                      <th>Cao (min–max)</th>
+                      <th style="text-align: right; padding-right: 20px;">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody id="size-classes-table-body">
@@ -405,109 +569,135 @@
                   </tbody>
                 </table>
               </div>
+            </section>
+          </div>
 
-              <!-- Nút lưu Guideline Form -->
-              <div style="margin-top: 26px; display: flex; justify-content: flex-end; gap: 12px;">
-                <button id="btn-reset-guideline" class="btn btn-outline">Khôi phục mặc định</button>
-                <button id="btn-save-guideline-form" class="btn btn-primary">💾 Lưu Guideline</button>
+          <!-- Chế độ YAML -->
+          <div id="guideline-yaml-view" style="display: none;">
+            <section class="card-section" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;" aria-label="YAML">
+              <label style="display: flex; flex-direction: column; gap: 8px; font-weight: 600;">
+                Toàn bộ guideline (YAML)
+                <textarea id="guideline-yaml-textarea" rows="18" class="mono form-input" style="height: auto; padding: 12px; line-height: 1.6; white-space: pre;" spellcheck="false"></textarea>
+              </label>
+              <div style="font-size: 13px; color: var(--text-3);">
+                Khi lưu, hệ thống kiểm tra cú pháp và giá trị; nếu sai sẽ báo vị trí lỗi và không lưu.
               </div>
-            </div>
+            </section>
+          </div>
 
-            <!-- YAML NÂNG CAO -->
-            <div id="guideline-yaml-view" style="display: none;">
-              <div class="form-group">
-                <label class="form-label" for="guideline-yaml-textarea">Nội dung cấu hình đầy đủ (YAML)</label>
-                <textarea id="guideline-yaml-textarea" class="form-textarea" spellcheck="false"></textarea>
-                <p class="form-hint">Mọi thay đổi sẽ được kiểm tra hợp lệ bằng parse_config trước khi lưu.</p>
-              </div>
-              <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                <button id="btn-reload-guideline-yaml" class="btn btn-secondary">Tải lại từ server</button>
-                <button id="btn-save-guideline-yaml" class="btn btn-primary">💾 Kiểm tra & Lưu YAML</button>
-              </div>
+          <!-- Thanh lưu thay đổi cố định dưới cùng của Guideline -->
+          <div id="guideline-save-bar" class="guideline-action-bar" style="margin-top: 16px;">
+            <span id="guideline-dirty-note" style="margin-right: auto; color: var(--text-2);">Guideline hợp lệ · đã lưu</span>
+            <button id="btn-reset-guideline" class="btn btn-secondary">Khôi phục mặc định</button>
+            <button id="btn-save-guideline" class="btn btn-primary" style="padding: 0 18px;">Lưu thay đổi</button>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 4: KẾT NỐI CVAT ==================== -->
+        <section id="tab-connection" class="tab-pane" aria-label="Cài đặt kết nối" style="display: none;">
+          <div class="breadcrumb">
+            <span id="conn-breadcrumb-project">Dự án</span> / Kết nối CVAT
+          </div>
+
+          <div class="page-header-row">
+            <div>
+              <h1 class="page-title">Cấu hình kết nối CVAT & Dữ liệu</h1>
+              <div class="page-subtitle">Thông tin URL máy chủ, token xác thực an toàn và đường dẫn point cloud</div>
             </div>
           </div>
-        </div>
 
-        <!-- TAB 4: KẾT NỐI -->
-        <div id="tab-connection" class="tab-pane">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">Cấu hình kết nối CVAT và Dữ liệu cục bộ</h3>
-                <p class="card-subtitle">Thông tin URL, Token bảo mật và đường dẫn dữ liệu của dự án</p>
+          <section class="card-section" aria-label="Thông số kết nối">
+            <div class="card-header-row">
+              <h2 class="card-title-h2">Thông số kết nối</h2>
+            </div>
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-group-item">
+                <label for="conn-cvat-url">URL máy chủ CVAT</label>
+                <div style="display: flex; gap: 10px;">
+                  <input type="text" id="conn-cvat-url" class="form-input" style="flex: 1;" placeholder="http://localhost:8080">
+                  <button id="btn-check-cvat-connection" class="btn btn-secondary">Kiểm tra kết nối</button>
+                </div>
+                <div id="cvat-test-result-msg" style="font-size: 12.5px; color: var(--text-3); margin-top: 2px;"></div>
+              </div>
+
+              <div class="form-group-item">
+                <label for="conn-cvat-token">Token xác thực CVAT (Personal Access Token)</label>
+                <input type="password" id="conn-cvat-token" class="form-input" placeholder="Nhập token mới nếu muốn cập nhật...">
+                <div style="font-size: 12.5px; color: var(--text-3);">
+                  Token được bảo mật trong secret.json và <strong>không bao giờ lộ ra ngoài API</strong>. Để trống nếu muốn giữ nguyên token cũ.
+                </div>
+              </div>
+
+              <div class="form-group-item">
+                <label for="conn-nuscenes-root">Thư mục nuScenes (NUSCENES_ROOT)</label>
+                <input type="text" id="conn-nuscenes-root" class="form-input" placeholder="Ví dụ: D:/Vin_uni/data/nuscenes">
+                <div style="font-size: 12.5px; color: var(--text-3);">Nơi chứa point cloud và metadata nuScenes.</div>
+              </div>
+
+              <div class="form-group-item">
+                <label for="conn-export-dirs">Thư mục bản xuất to-cvat (POINTSNAP_EXPORT_DIR)</label>
+                <input type="text" id="conn-export-dirs" class="form-input" placeholder="Ví dụ: D:/Vin_uni/data/cvat">
+                <div style="font-size: 12.5px; color: var(--text-3);">Nơi chứa file manifest.json để nạp point cloud và khớp frame. Phân cách bằng dấu ; nếu nhiều thư mục.</div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="conn-cvat-url">URL máy chủ CVAT</label>
-              <div style="display: flex; gap: 10px;">
-                <input type="text" id="conn-cvat-url" class="form-input" placeholder="http://localhost:8080">
-                <button id="btn-check-cvat-connection" class="btn btn-secondary" style="white-space: nowrap;">
-                  Kiểm tra kết nối
-                </button>
-              </div>
-              <p id="cvat-test-result-msg" class="form-hint"></p>
+            <div style="padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+              <button id="btn-save-connection-settings" class="btn btn-primary">Lưu cài đặt kết nối</button>
             </div>
+          </section>
+        </section>
 
-            <div class="form-group">
-              <label class="form-label" for="conn-cvat-token">Token xác thực CVAT (Personal Access Token)</label>
-              <input type="password" id="conn-cvat-token" class="form-input" placeholder="Nhập token mới nếu muốn cập nhật...">
-              <p class="form-hint">
-                🔒 Token được lưu cục bộ trong secret.json và <strong>không bao giờ lộ ra ngoài API</strong>. Để trống nếu muốn giữ nguyên token cũ.
-              </p>
-            </div>
+        <!-- ==================== TAB 5: LỊCH SỬ (LichSu.dc.html) ==================== -->
+        <section id="tab-history" class="tab-pane" aria-label="Lịch sử quét" style="display: none;">
+          <div class="breadcrumb">
+            <span id="history-breadcrumb-project">Dự án</span> / Lịch sử
+          </div>
 
-            <div class="form-group">
-              <label class="form-label" for="conn-nuscenes-root">Thư mục nuScenes (NUSCENES_ROOT)</label>
-              <input type="text" id="conn-nuscenes-root" class="form-input" placeholder="Ví dụ: D:/Vin_uni/data/nuscenes">
-              <p class="form-hint">Nơi chứa point cloud gốc và metadata nuScenes</p>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="conn-export-dirs">Thư mục bản xuất to-cvat (POINTSNAP_EXPORT_DIR)</label>
-              <input type="text" id="conn-export-dirs" class="form-input" placeholder="Ví dụ: D:/Vin_uni/data/cvat (phân cách bởi dấu ; nếu nhiều thư mục)">
-              <p class="form-hint">Nơi chứa file manifest.json để nạp point cloud và khớp frame</p>
-            </div>
-
-            <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
-              <button id="btn-save-connection-settings" class="btn btn-primary">
-                💾 Lưu cài đặt kết nối
-              </button>
+          <div class="page-header-row">
+            <div>
+              <h1 class="page-title">Lịch sử quét</h1>
+              <div class="page-subtitle">Theo dõi số Lỗi và Cảnh báo giảm dần sau mỗi lần sửa nhãn và quét lại</div>
             </div>
           </div>
-        </div>
 
-        <!-- TAB 5: LỊCH SỬ (HISTORY) -->
-        <div id="tab-history" class="tab-pane">
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">Xu hướng chất lượng & Lịch sử các lần quét</h3>
-                <p class="card-subtitle">Theo dõi số lượng lỗi giảm dần qua từng lần chỉnh sửa nhãn</p>
+          <!-- Biểu đồ SVG cột xếp chồng -->
+          <section class="card-section" aria-label="Biểu đồ lỗi theo thời gian">
+            <div class="card-header-row">
+              <h2 class="card-title-h2" id="history-chart-title">Lỗi và Cảnh báo theo lần quét</h2>
+              <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-2);">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 10px; height: 10px; border-radius: 2px; background: var(--error);"></span>
+                  Lỗi
+                </span>
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 10px; height: 10px; border-radius: 2px; background: var(--warn-bar);"></span>
+                  Cảnh báo
+                </span>
               </div>
             </div>
-
-            <!-- Biểu đồ SVG thuần (Không dùng CDN) -->
-            <div class="chart-box">
-              <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary);">Biểu đồ lỗi theo thời gian</h4>
-              <div id="history-chart-container" style="flex: 1; display: flex; align-items: center; justify-content: center;">
-                <svg id="history-svg-chart" class="history-svg-chart" viewBox="0 0 800 180"></svg>
+            <div class="chart-container-box">
+              <div id="history-chart-empty" style="display: none; padding: 40px; text-align: center; color: var(--text-3);">
+                Chưa có dữ liệu lịch sử quét để dựng biểu đồ.
+              </div>
+              <div id="history-chart-svg-wrapper">
+                <svg id="history-svg-chart" class="chart-svg" viewBox="0 0 800 200"></svg>
               </div>
             </div>
+          </section>
 
-            <!-- Bảng danh sách các lần quét -->
-            <div class="table-container">
-              <table class="findings-table">
+          <!-- Bảng các lần quét -->
+          <section class="card-section" style="margin-top: 16px;" aria-label="Các lần quét">
+            <div class="table-scroll-container">
+              <table class="enterprise-table">
                 <thead>
                   <tr>
-                    <th>Thời điểm</th>
-                    <th>Job ID</th>
-                    <th>Tổng Box</th>
+                    <th style="padding-left: 20px;">Thời điểm</th>
+                    <th>Job</th>
+                    <th>Loại</th>
                     <th>Lỗi</th>
                     <th>Cảnh báo</th>
-                    <th>Gate</th>
-                    <th>Cờ lỗi</th>
-                    <th>Thao tác</th>
+                    <th>Kết luận</th>
+                    <th style="text-align: right; padding-right: 20px;">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody id="history-table-body">
@@ -515,43 +705,44 @@
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      </section>
-    </main>
+          </section>
+        </section>
+      </main>
+    </div>
   </div>
 
-  <!-- MODAL: TẠO DỰ ÁN MỚI -->
+  <!-- ==================== MODALS ==================== -->
+  <!-- Modal Tạo dự án mới -->
   <div id="modal-create-proj" class="modal-overlay">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3>Tạo dự án kiểm tra mới</h3>
-        <button class="modal-close-btn" data-close="modal-create-proj">✕</button>
+        <button class="modal-close-btn" data-close="modal-create-proj" aria-label="Đóng">✕</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label" for="create-proj-name">Tên dự án *</label>
-          <input type="text" id="create-proj-name" class="form-input" placeholder="Ví dụ: Dự án Xe tự hành Scene 61" required>
+        <div class="form-group-item">
+          <label for="create-proj-name">Tên dự án *</label>
+          <input type="text" id="create-proj-name" class="form-input" placeholder="Ví dụ: scene-0061 — CVAT local" required>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="create-proj-desc">Mô tả ngắn</label>
+        <div class="form-group-item">
+          <label for="create-proj-desc">Mô tả ngắn</label>
           <input type="text" id="create-proj-desc" class="form-input" placeholder="Mô tả mục tiêu gán nhãn...">
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="create-proj-url">URL máy chủ CVAT</label>
+        <div class="form-group-item">
+          <label for="create-proj-url">URL máy chủ CVAT</label>
           <input type="text" id="create-proj-url" class="form-input" value="http://localhost:8080">
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="create-proj-token">Token CVAT</label>
+        <div class="form-group-item">
+          <label for="create-proj-token">Token CVAT</label>
           <input type="password" id="create-proj-token" class="form-input" placeholder="Nhập Personal Access Token...">
-          <p class="form-hint">Lưu an toàn trong secret.json, không lộ ra API.</p>
+          <div style="font-size: 12px; color: var(--text-3);">Lưu an toàn trong secret.json, không lộ ra API.</div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="create-proj-preset">Sao chép Guideline từ dự án có sẵn (Tùy chọn)</label>
+        <div class="form-group-item">
+          <label for="create-proj-preset">Sao chép Guideline từ dự án có sẵn (Tùy chọn)</label>
           <select id="create-proj-preset" class="form-select">
             <option value="">-- Dùng Guideline mặc định --</option>
           </select>
@@ -564,19 +755,19 @@
     </div>
   </div>
 
-  <!-- MODAL: XÁC NHẬN XÓA DỰ ÁN (Điểm 5 Mục 6) -->
+  <!-- Modal Xác nhận Xóa dự án (Bắt buộc gõ lại tên) -->
   <div id="modal-delete-proj" class="modal-overlay">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 style="color: var(--error);">Xác nhận xóa dự án</h3>
-        <button class="modal-close-btn" data-close="modal-delete-proj">✕</button>
+        <button class="modal-close-btn" data-close="modal-delete-proj" aria-label="Đóng">✕</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 14px; margin-bottom: 14px; color: var(--text-primary);">
+        <p style="margin: 0; font-size: 14px; color: var(--text);">
           Hành động này sẽ <strong>xóa vĩnh viễn</strong> dự án <strong id="delete-proj-target-name"></strong> cùng toàn bộ cấu hình guideline và lịch sử các lần quét liên quan.
         </p>
-        <div class="form-group">
-          <label class="form-label" for="delete-proj-confirm-input">
+        <div class="form-group-item" style="margin-top: 8px;">
+          <label for="delete-proj-confirm-input">
             Vui lòng gõ lại tên dự án để xác nhận:
           </label>
           <input type="text" id="delete-proj-confirm-input" class="form-input" placeholder="Gõ chính xác tên dự án">
@@ -589,7 +780,7 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
+  <!-- Thùng chứa Toast Thông báo -->
   <div id="toast-container" class="toast-container"></div>
 
   <script src="/static/app.js"></script>

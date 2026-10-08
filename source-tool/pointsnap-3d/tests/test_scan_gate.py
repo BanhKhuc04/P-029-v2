@@ -224,4 +224,4 @@ def test_cli_scan_and_gate_commands(tmp_path, monkeypatch):
     patched_json = server.patch_calls[0][1]
     assert "shapes" in patched_json
     assert patched_json["shapes"][0]["attributes"][0]["spec_id"] == 10
-    assert "vượt quá ngưỡng tối đa" in patched_json["shapes"][0]["attributes"][0]["value"]
+    assert "lớn bất thường so với class bus" in patched_json["shapes"][0]["attributes"][0]["value"]

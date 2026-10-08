@@ -7,6 +7,7 @@ import sys
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.reader import load_job
+from pointsnap.cli.common import frames_for_job
 from pointsnap.core.config import Config
 from pointsnap.core.model import Severity
 from pointsnap.core.scanner import scan_cuboids
@@ -29,7 +30,10 @@ def run(args: argparse.Namespace, config: Config) -> int:
         print(f"Lỗi khi đọc job #{args.job}: {exc}", file=sys.stderr)
         return EXIT_RUNTIME_ERROR
 
-    findings = scan_cuboids(job, config)
+    frames, note = frames_for_job(job, getattr(args, "manifest", None))
+    if frames is None:
+        print(note, file=sys.stderr)
+    findings = scan_cuboids(job, config, frames)
 
     errors = [f for f in findings if f.severity == Severity.ERROR]
     warnings = [f for f in findings if f.severity == Severity.WARNING]

@@ -37,6 +37,11 @@ class FloatingConfig:
     ring_inner_m: float
     ring_outer_m: float
     min_ground_points: int
+    # Luật so với track (`detect_floating_scene`, A10); mặc định để code cũ tạo FloatingConfig vẫn chạy.
+    error_min_abs_m: float = 0.15
+    single_warning_m: float = 0.15
+    single_error_m: float = 0.30
+    min_track_boxes: int = 2
 
 
 @dataclass(frozen=True)
@@ -46,6 +51,8 @@ class ClassRangeConfig:
     warning_margin: float
     error_margin: float
     min_instances: int
+    stats: Mapping[str, Mapping[str, tuple[float, float]]] = dataclasses.field(default_factory=dict)
+    """Khoảng [p_low, p_high] của từng class theo `length`, `width`, `height`."""
 
 
 @dataclass(frozen=True)
@@ -214,26 +221,44 @@ def _parse_floating(r: _Reader) -> FloatingConfig:
         classes=r.strings("classes"),
         warning_m=r.number("warning_m", 0.0),
         error_m=r.number("error_m", 0.0),
+        error_min_abs_m=r.number("error_min_abs_m", 0.0),
+        single_warning_m=r.number("single_warning_m", 0.0),
+        single_error_m=r.number("single_error_m", 0.0),
+        min_track_boxes=r.integer("min_track_boxes", 1),
         ring_inner_m=r.number("ring_inner_m", 0.0),
         ring_outer_m=r.number("ring_outer_m", 0.0),
         min_ground_points=r.integer("min_ground_points", 1),
     )
     r.finish()
     _require_order("floating", cfg.warning_m, cfg.error_m, "warning_m", "error_m")
+    _require_order("floating", cfg.single_warning_m, cfg.single_error_m, "single_warning_m", "single_error_m")
     _require_order("floating", cfg.ring_inner_m, cfg.ring_outer_m, "ring_inner_m", "ring_outer_m")
     return cfg
 
 
 def _parse_size(r: _Reader) -> SizeConfig:
     cr = r.section("class_range")
-    class_range = ClassRangeConfig(
-        percentile_low=cr.number("percentile_low", 0.0),
-        percentile_high=cr.number("percentile_high", 0.0),
-        warning_margin=cr.number("warning_margin", 0.0),
-        error_margin=cr.number("error_margin", 0.0),
-        min_instances=cr.integer("min_instances", 1),
-    )
+    percentile_low = cr.number("percentile_low", 0.0)
+    percentile_high = cr.number("percentile_high", 0.0)
+    warning_margin = cr.number("warning_margin", 0.0)
+    error_margin = cr.number("error_margin", 0.0)
+    min_instances = cr.integer("min_instances", 1)
+    sr = cr.section("stats")
+    stats: dict[str, dict[str, tuple[float, float]]] = {}
+    for label in sr.keys():
+        lr = sr.section(label)
+        stats[label] = {dim: lr.min_max(dim) for dim in DIMENSIONS}
+        lr.finish()
+    sr.finish()
     cr.finish()
+    class_range = ClassRangeConfig(
+        percentile_low=percentile_low,
+        percentile_high=percentile_high,
+        warning_margin=warning_margin,
+        error_margin=error_margin,
+        min_instances=min_instances,
+        stats=stats,
+    )
     _require_order("size.class_range", class_range.percentile_low, class_range.percentile_high,
                    "percentile_low", "percentile_high")
     if class_range.percentile_high > 100:

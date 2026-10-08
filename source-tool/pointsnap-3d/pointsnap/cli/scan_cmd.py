@@ -9,11 +9,22 @@ from pathlib import Path
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.reader import load_job
 from pointsnap.adapters.cvat.writer import flag_job_errors, save_snapshot
+from pointsnap.cli.common import frames_for_job
 from pointsnap.core.config import Config
-from pointsnap.core.model import Severity
-from pointsnap.core.scanner import scan_cuboids
+from pointsnap.core.model import Finding, Severity
+from pointsnap.core.scanner import actionable, scan_cuboids
 from pointsnap.report.csv_rep import generate_csv_report
 from pointsnap.report.html import generate_html_report
+
+
+def print_summary(num_boxes: int, findings: list[Finding]) -> None:
+    counts = {s: sum(1 for f in findings if f.severity is s) for s in Severity}
+    print("\n--- TỔNG KẾT QUÉT ---")
+    print(f"Tổng số box:      {num_boxes}")
+    print(f"Lỗi (cần sửa):    {counts[Severity.ERROR]}")
+    print(f"Cảnh báo:         {counts[Severity.WARNING]}")
+    print(f"Thông tin:        {counts[Severity.INFO]}")
+    print("----------------------")
 
 
 def run(args: argparse.Namespace, config: Config) -> int:
@@ -39,8 +50,10 @@ def run(args: argparse.Namespace, config: Config) -> int:
     print(f"-> Đã lưu bản chụp nhãn: {snap_path}")
 
     # 2. Quét kiểm tra chất lượng nhãn
+    frames, note = frames_for_job(job, getattr(args, "manifest", None))
+    print(f"-> {note}", file=sys.stdout if frames is not None else sys.stderr)
     print(f"Đang quét {len(job.cuboids)} box của job #{args.job}...")
-    findings = scan_cuboids(job, config)
+    findings = scan_cuboids(job, config, frames)
 
     # 3. Xuất báo cáo HTML và CSV
     html_path = out_dir / f"report_job_{args.job}.html"
@@ -50,15 +63,11 @@ def run(args: argparse.Namespace, config: Config) -> int:
     print(f"-> Báo cáo HTML: {html_path}")
     print(f"-> Báo cáo CSV:  {csv_path}")
 
-    num_errors = sum(1 for f in findings if f.severity == Severity.ERROR)
-    num_warnings = sum(1 for f in findings if f.severity == Severity.WARNING)
-    num_infos = sum(1 for f in findings if f.severity == Severity.INFO)
-
-    # 4. Gắn cờ lỗi lên CVAT nếu có flag --flag
+    # 4. Gắn cờ lỗi lên CVAT nếu có flag --flag (chỉ mức Lỗi / Cảnh báo; mục Thông tin không gắn cờ)
     if args.flag:
         print("Đang gắn cờ thuộc tính 'pointsnap_error' lên các box bị lỗi trên CVAT...")
         try:
-            summary = flag_job_errors(client, job, findings)
+            summary = flag_job_errors(client, job, actionable(findings), flag_attribute=config.cvat.flag_attribute)
             print(f"-> Đã gắn cờ lỗi lên {summary.flagged} box, gỡ cờ cũ ở {summary.cleared} box trên CVAT.")
             if summary.unmatched:
                 print(f"   Cảnh báo: {summary.unmatched} finding không khớp box nào trên CVAT, không gắn được cờ.",
@@ -67,11 +76,5 @@ def run(args: argparse.Namespace, config: Config) -> int:
             print(f"Lỗi khi gắn cờ lỗi lên CVAT: {exc}", file=sys.stderr)
             return 3
 
-    print("\n--- TỔNG KẾT QUÉT ---")
-    print(f"Tổng số box:      {len(job.cuboids)}")
-    print(f"Lỗi (cần sửa):    {num_errors}")
-    print(f"Cảnh báo:         {num_warnings}")
-    print(f"Thông tin:        {num_infos}")
-    print("----------------------")
-
+    print_summary(sum(1 for c in job.cuboids if not c.outside), findings)
     return 0

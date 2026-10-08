@@ -14,7 +14,9 @@ def generate_html_report(
     job: JobData,
     findings: Iterable[Finding],
     output_path: str | Path,
+    source_name: str | None = None,
 ) -> Path:
+    """Ghi báo cáo HTML. source_name (ví dụ tên cảnh nuScenes) thay cho Task / Job khi quét không qua CVAT."""
     findings_list = sorted(findings, key=lambda f: f.sort_key())
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -55,7 +57,9 @@ def generate_html_report(
                     <tbody>
         """)
         for item in items:
-            url = frame_url(job.url, job.task_id, job.job_id, item.frame)
+            url = frame_url(job.url, job.task_id, job.job_id, item.frame) if job.url else ""
+            link = (f'<a class="btn-link" href="{html.escape(url)}" target="_blank" rel="noopener">Mở frame {item.frame} &rarr;</a>'
+                    if url else "&mdash;")
             sev_class = f"sev-{item.severity.value}"
             sev_label = item.severity.label_vi
             rows_html.append(f"""
@@ -65,7 +69,7 @@ def generate_html_report(
                             <td>Frame {item.frame}</td>
                             <td><span class="class-tag">{html.escape(item.label)}</span></td>
                             <td><strong>{html.escape(item.message)}</strong></td>
-                            <td><a class="btn-link" href="{html.escape(url)}" target="_blank" rel="noopener">Mở frame {item.frame} &rarr;</a></td>
+                            <td>{link}</td>
                         </tr>
             """)
         rows_html.append("""
@@ -83,12 +87,15 @@ def generate_html_report(
         </div>
     """
 
+    source_tags = (f'<span class="meta-tag">{html.escape(source_name)}</span>' if source_name else
+                   f'<span class="meta-tag">Task #{job.task_id}</span> <span class="meta-tag">Job #{job.job_id}</span>')
+
     html_content = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PointSnap 3D — Báo cáo quét Job #{job.job_id}</title>
+    <title>PointSnap 3D — Báo cáo quét {html.escape(source_name) if source_name else f'Job #{job.job_id}'}</title>
     <style>
         :root {{
             --bg: #0f172a;
@@ -314,8 +321,7 @@ def generate_html_report(
                 </div>
             </div>
             <div class="meta-badges">
-                <span class="meta-tag">Task #{job.task_id}</span>
-                <span class="meta-tag">Job #{job.job_id}</span>
+                {source_tags}
                 <span class="meta-tag">Frame {job.start_frame}&ndash;{job.stop_frame}</span>
                 <span class="meta-tag">Tổng {len(job.cuboids)} box</span>
             </div>

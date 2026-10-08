@@ -140,6 +140,26 @@ class ManifestFrames:
 
 
 
+def find_manifest(task_id: int, search_dirs: Iterable[str | Path]) -> Path | None:
+    """Tìm `manifest.json` của bản xuất đã tạo task `task_id` (`cvat_task.json` nằm cạnh, do `to-cvat --upload` ghi).
+
+    Mỗi thư mục trong `search_dirs` là nơi chứa các bản xuất (`<dir>/<scene>/cvat_task.json`) hoặc chính một bản xuất.
+    """
+    for directory in search_dirs:
+        directory = Path(directory)
+        if not directory.is_dir():
+            continue
+        for info_path in [directory / "cvat_task.json", *directory.glob("*/cvat_task.json")]:
+            try:
+                info = json.loads(info_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            manifest = info_path.parent / "manifest.json"
+            if info.get("task_id") == task_id and manifest.is_file():
+                return manifest
+    return None
+
+
 @dataclass
 class JobData:
     url: str

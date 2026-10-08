@@ -52,7 +52,8 @@ pip install -e .
 # Tạo file .env trong thư mục source-tool/pointsnap-3d/ (hoặc export biến môi trường):
 # CVAT_URL=http://localhost:8080
 # CVAT_TOKEN=<personal_access_token>
-# NUSCENES_ROOT=D:/Vin_uni/data/sets/nuscenes
+# NUSCENES_ROOT=D:/Vin_uni/data/nuscenes
+# POINTSNAP_EXPORT_DIR=D:/Vin_uni/data/cvat   # nơi có bản xuất to-cvat (manifest.json): để scan đọc được point cloud
 
 # 3. Quét job và xuất báo cáo HTML/CSV (mặc định lưu vào thư mục out/)
 pointsnap scan --job 12
@@ -62,6 +63,15 @@ pointsnap scan --job 12 --flag
 
 # 5. Cổng kiểm soát chất lượng trước khi nộp (Exit code 0: ĐẠT, 1: KHÔNG ĐẠT)
 pointsnap gate --job 12
+```
+
+`scan` / `gate` đọc point cloud từ thư mục nuScenes theo `manifest.json` của bản xuất `nuscenes to-cvat` (tự tìm theo id task trong `POINTSNAP_EXPORT_DIR` và `data/cvat`, hoặc chỉ thẳng bằng `--manifest`). Không tìm được thì tool in cảnh báo, bỏ luật lơ lửng / lún và luật đứt track dùng tọa độ của từng frame. `--flag` chỉ gắn cờ mục Lỗi / Cảnh báo.
+
+**Chạy thử không cần CVAT** (đọc thẳng nuScenes, cùng 3 bộ phát hiện):
+
+```bash
+# Chèn lỗi giả vào 30% số track rồi quét; in lỗi chèn nào có / không có finding đúng loại
+pointsnap nuscenes scan --scene scene-0103 --inject --rate 0.3 --out out/demo
 ```
 
 Trên Windows PowerShell, có thể đặt biến môi trường tạm thời bằng `$env:CVAT_URL = "http://localhost:8080"` và `$env:CVAT_TOKEN = "..."`. Hoặc sử dụng file `.env` được tool tự động nạp.

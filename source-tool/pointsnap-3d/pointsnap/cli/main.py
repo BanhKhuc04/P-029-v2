@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 from pointsnap import __version__
-from pointsnap.cli import gate_cmd, nuscenes_cmd, scan_cmd
+from pointsnap.cli import eval_cmd, gate_cmd, nuscenes_cmd, scan_cmd
 from pointsnap.core.config import ConfigError, load_config
 
 EXIT_OK = 0
@@ -39,9 +39,11 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--flag", action="store_true",
                       help="gắn cờ lỗi lên box trong CVAT (chỉ chạy khi không ai đang mở job)")
     scan.add_argument("--out", type=Path, default=Path("out"), help="thư mục ghi báo cáo (mặc định: out)")
+    scan.add_argument("--manifest", type=Path, help="manifest.json của bản xuất to-cvat (mặc định: tự tìm theo id task)")
 
     gate = sub.add_parser("gate", help="cổng kiểm tra trước khi nộp: ĐẠT (0) / KHÔNG ĐẠT (1)")
     gate.add_argument("--job", type=int, required=True, help="id job trên CVAT")
+    gate.add_argument("--manifest", type=Path, help="manifest.json của bản xuất to-cvat (mặc định: tự tìm theo id task)")
 
     diff = sub.add_parser("diff", help="so hai phiên bản nhãn")
     diff.add_argument("old", type=Path, help="bản chụp nhãn cũ (JSON)")
@@ -50,6 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("config", help="in cấu hình đang dùng (token được ẩn)")
     nuscenes_cmd.add_parser(sub)
+    eval_cmd.add_parser(sub)
     return parser
 
 
@@ -94,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
         return scan_cmd.run(args, config)
     if args.command == "gate":
         return gate_cmd.run(args, config)
+    if args.command == "eval":
+        return eval_cmd.run(args, config)
 
     task = _NOT_IMPLEMENTED[args.command]
     print(f"Lệnh '{args.command}' chưa có (việc {task} trong TASKS.md).", file=sys.stderr)

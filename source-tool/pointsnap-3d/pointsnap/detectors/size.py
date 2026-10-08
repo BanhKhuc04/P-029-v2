@@ -1,9 +1,9 @@
 """Bộ phát hiện sai kích thước (việc B4).
 
 Hai kiểu phát hiện:
-1. Kiểu 1 (`size.class_range`): So sánh (l, w, h) với khoảng [p1, p99] của class.
-   - Cảnh báo nếu ngoài [p1 - 5%, p99 + 5%].
-   - Lỗi nếu ngoài [p1 - 15%, p99 + 15%].
+1. Kiểu 1 (`size.class_range`): So sánh (l, w, h) với khoảng [p1, p99] của class (`warning_margin` /
+   `error_margin` trong config). Track được xét bằng **trung vị kích thước** của nó và báo tối đa một mục cho cả
+   track (A10): kích thước theo class là thuộc tính của đối tượng, keyframe lẻ lệch do kiểu 2 bắt.
 2. Kiểu 2 (`size.in_track`): Kích thước một keyframe lệch so với trung vị của track.
    - Bỏ qua class người đi bộ (pedestrian).
    - Cảnh báo nếu lệch > max(10 cm, 5%).
@@ -13,6 +13,7 @@ Hai kiểu phát hiện:
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 import numpy as np
@@ -83,8 +84,10 @@ def get_resolved_class_ranges(
     config: SizeConfig,
     custom_ranges: Mapping[str, Mapping[str, tuple[float, float]]] | None = None,
 ) -> dict[str, dict[str, tuple[float, float]]]:
-    """Kết hợp default ranges và manual_ranges trong config."""
+    """Kết hợp default ranges, thống kê `class_range.stats` và `manual_ranges` trong config (sau ghi đè trước)."""
     resolved = {label: dict(dim_dict) for label, dim_dict in DEFAULT_CLASS_RANGES.items()}
+    for label, stats_dict in config.class_range.stats.items():
+        resolved.setdefault(label, {}).update(stats_dict)
     if config.manual_ranges:
         for label, manual_dict in config.manual_ranges.items():
             resolved.setdefault(label, {}).update(manual_dict)
@@ -247,22 +250,64 @@ def detect_size_in_track(
     return findings
 
 
+def _worst(findings: Sequence[Finding]) -> Finding | None:
+    """Finding nặng nhất: mức Lỗi trước, rồi vượt ngưỡng nhiều nhất (tương đối)."""
+    def excess(f: Finding) -> float:
+        return abs(f.value - f.threshold) / max(abs(f.threshold), 1e-6) if f.value is not None and f.threshold else 0.0
+
+    return min(findings, key=lambda f: (f.severity.rank, -excess(f)), default=None)
+
+
+def detect_size_class_range_for_track(
+    track_boxes: Sequence[Cuboid],
+    config: SizeConfig,
+    class_ranges: Mapping[str, Mapping[str, tuple[float, float]]],
+) -> list[Finding]:
+    """Kiểu 1 cho cả track: xét trung vị kích thước, báo một mục gắn vào keyframe lệch nhiều nhất."""
+    active = [b for b in track_boxes if not b.outside]
+    if not active:
+        return []
+    median_dims = tuple(float(v) for v in np.median(np.array([b.dims for b in active]), axis=0))
+    worst = _worst(detect_size_class_range_for_box(active[0].replace(dims=median_dims), config, class_ranges))
+    if worst is None:
+        return []
+    dim_index = DIM_NAMES.index(worst.details["dimension"])
+    pick = max if worst.details["bound_type"] == "lớn" else min
+    box = pick(active, key=lambda b: b.dims[dim_index])
+    message = worst.message
+    if len(active) > 1:
+        message = message.replace(" m ", f" m (trung vị của {len(active)} keyframe) ", 1)
+    return [dataclasses.replace(worst, frame=box.frame, source_id=box.source_id, message=message,
+                                details={**worst.details, "keyframes": len(active)})]
+
+
 def detect_size(
     cuboids: Sequence[Cuboid],
     config: SizeConfig,
     class_ranges: Mapping[str, Mapping[str, tuple[float, float]]] | None = None,
 ) -> list[Finding]:
-    """Phát hiện lỗi kích thước (cả kiểu 1 và kiểu 2) trên tập box."""
+    """Phát hiện lỗi kích thước (cả kiểu 1 và kiểu 2) trên tập box.
+
+    Kiểu 1: box lẻ xét từng box (mục nặng nhất), track xét theo trung vị (một mục mỗi track).
+    Kiểu 2: mỗi keyframe tối đa một mục (chiều lệch nặng nhất).
+    """
     resolved_ranges = get_resolved_class_ranges(config, class_ranges)
     findings: list[Finding] = []
+    tracks = group_by_track(cuboids)
 
     # Kiểu 1: theo class
     for c in cuboids:
-        findings.extend(detect_size_class_range_for_box(c, config, resolved_ranges))
-
-    # Kiểu 2: theo track
-    tracks = group_by_track(cuboids)
+        if c.track_id is None:
+            worst = _worst(detect_size_class_range_for_box(c, config, resolved_ranges))
+            findings.extend([worst] if worst else [])
     for track_boxes in tracks.values():
-        findings.extend(detect_size_in_track(track_boxes, config))
+        findings.extend(detect_size_class_range_for_track(track_boxes, config, resolved_ranges))
+
+    # Kiểu 2: theo track, một mục mỗi keyframe
+    for track_boxes in tracks.values():
+        per_box: dict[int, list[Finding]] = {}
+        for f in detect_size_in_track(track_boxes, config):
+            per_box.setdefault(f.frame, []).append(f)
+        findings.extend(_worst(items) for items in per_box.values())
 
     return findings

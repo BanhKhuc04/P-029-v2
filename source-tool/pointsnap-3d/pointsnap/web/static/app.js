@@ -56,8 +56,15 @@
     document.querySelectorAll('.tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetTab = btn.getAttribute('data-tab');
+        window.location.hash = targetTab;
         switchTab(targetTab);
       });
+    });
+
+    window.addEventListener('hashchange', () => {
+      if (window.location.hash) {
+        switchTab(window.location.hash.substring(1));
+      }
     });
 
     // Modal Tạo dự án
@@ -137,6 +144,28 @@
       loadHistoryTab();
     } else if (tabId === 'tab-scan') {
       if (state.tasksList.length === 0) fetchCvatTasks();
+    } else if (tabId === 'tab-results') {
+      if (!state.currentRun && state.currentSlug) {
+        loadLatestRun();
+      }
+    }
+  }
+
+  async function loadLatestRun() {
+    if (!state.currentSlug) return;
+    try {
+      const res = await fetch(`/api/projects/${state.currentSlug}/scans`);
+      if (!res.ok) return;
+      const runs = await res.json();
+      if (runs.length > 0) {
+        const fullRes = await fetch(`/api/projects/${state.currentSlug}/scans/${runs[0].run_id}`);
+        if (fullRes.ok) {
+          const runData = await fullRes.json();
+          displayRunResults(runData);
+        }
+      }
+    } catch (e) {
+      console.error(e);
     }
   }
 
@@ -220,9 +249,13 @@
       // Kiểm tra kết nối CVAT ngầm
       checkCvatConnection(false);
 
-      // Nạp tab hiện tại
-      const activeTabBtn = document.querySelector('.tab-btn.active');
-      if (activeTabBtn) switchTab(activeTabBtn.getAttribute('data-tab'));
+      // Nạp tab hiện tại (ưu tiên theo URL hash nếu có)
+      if (window.location.hash) {
+        switchTab(window.location.hash.substring(1));
+      } else {
+        const activeTabBtn = document.querySelector('.tab-btn.active');
+        if (activeTabBtn) switchTab(activeTabBtn.getAttribute('data-tab'));
+      }
     } catch (err) {
       showToast(err.message, 'error');
     }

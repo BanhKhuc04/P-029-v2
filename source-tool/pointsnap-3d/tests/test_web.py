@@ -541,3 +541,116 @@ def test_end_to_end_mock_scan(mock_home: Path, client: TestClient, monkeypatch):
     csv_res = client.get(f"/api/projects/e2e-proj/scans/{run_id}/report.csv")
     assert csv_res.status_code == 200
     assert "size.class_range" in csv_res.text
+
+
+# --- Test 10 (Lỗi bắt buộc 1 — mục 7): Không có CORS header khi gọi từ origin lạ ---
+
+def test_no_cors_header_for_foreign_origin(client: TestClient):
+    """Preflight từ origin lạ KHÔNG được trả access-control-allow-origin.
+
+    Mục 7 bắt buộc: CORSMiddleware allow_origins=['*'] bị xóa; giao diện được
+    phục vụ cùng origin nên không cần CORS.
+    """
+    # OPTIONS preflight từ origin độc hại
+    res = client.options(
+        "/api/projects",
+        headers={
+            "Origin": "https://evil.example",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    # Không có header ACAO dù phản hồi thành công hay không
+    assert "access-control-allow-origin" not in res.headers
+    assert "Access-Control-Allow-Origin" not in res.headers
+
+    # GET thường từ origin lạ cũng không có ACAO
+    get_res = client.get(
+        "/api/projects",
+        headers={"Origin": "https://evil.example"},
+    )
+    assert "access-control-allow-origin" not in get_res.headers
+    assert "Access-Control-Allow-Origin" not in get_res.headers
+
+
+# --- Test 11 (Lỗi bắt buộc 2 — mục 7): Xóa class trong save_guideline thực sự biến mất ---
+
+def test_delete_class_from_guideline_is_permanent(mock_home: Path, client: TestClient):
+    """Sau khi PUT guideline không có 'bicycle', đọc lại thì bicycle không còn.
+
+    Mục 7 bắt buộc: save_guideline phải ghi thay thế (trộn với mặc định),
+    không trộn với file cũ.
+    """
+    pm = ProjectManager(mock_home)
+    # 1. Tạo dự án — guideline mặc định chứa sẵn bicycle trong manual_ranges
+    pm.create_project(name="Class Delete Project", slug="class-del")
+    data, _ = pm.get_guideline("class-del")
+
+    # Đảm bảo mặc định có bicycle
+    manual_ranges = data.get("size", {}).get("manual_ranges", {})
+    assert "bicycle" in manual_ranges, "Guideline mặc định phải có class 'bicycle'"
+
+    # 2. Gửi PUT guideline với manual_ranges không có bicycle
+    new_ranges = {k: v for k, v in manual_ranges.items() if k != "bicycle"}
+    new_size = {**data.get("size", {}), "manual_ranges": new_ranges}
+    new_config = {**data, "size": new_size}
+
+    put_res = client.put(
+        "/api/projects/class-del/guideline",
+        json={"config": new_config},
+    )
+    assert put_res.status_code == 200
+
+    # 3. Đọc lại — bicycle phải thực sự biến mất
+    read_res = client.get("/api/projects/class-del/guideline")
+    assert read_res.status_code == 200
+    saved_ranges = read_res.json()["config"]["size"]["manual_ranges"]
+    assert "bicycle" not in saved_ranges, (
+        "bicycle vẫn còn trong guideline sau khi xóa — lỗi merge với file cũ!"
+    )
+
+    # 4. Kiểm tra trực tiếp trên đĩa
+    g_file = mock_home / "projects" / "class-del" / "guideline.yaml"
+    on_disk = yaml.safe_load(g_file.read_text(encoding="utf-8"))
+    assert "bicycle" not in on_disk.get("size", {}).get("manual_ranges", {})
+
+
+# --- Test 12 (điểm nhỏ 3 — mục 7): run_id độc hại bị từ chối ---
+
+def test_malicious_run_id_rejected(mock_home: Path, client: TestClient):
+    """run_id sai định dạng hoặc cố tình path traversal phải bị từ chối với HTTP 400."""
+    pm = ProjectManager(mock_home)
+    pm.create_project(name="Path Traversal Test", slug="ptrav")
+
+    bad_ids = [
+        "bad-format",
+        "12345",
+        "2024-01-01-job2",
+        "evil..traversal",
+        "..%5C..%5Csecret",
+        "hack-run-id",
+    ]
+    for bad_id in bad_ids:
+        res = client.get(f"/api/projects/ptrav/scans/{bad_id}")
+        assert res.status_code == 400, (
+            f"run_id '{bad_id}' phải bị từ chối với 400, nhận {res.status_code}"
+        )
+
+        res_html = client.get(f"/api/projects/ptrav/scans/{bad_id}/report.html")
+        assert res_html.status_code == 400
+
+        res_csv = client.get(f"/api/projects/ptrav/scans/{bad_id}/report.csv")
+        assert res_csv.status_code == 400
+
+    # run_id hợp lệ (với ms suffix) phải qua validation (404 vì run chưa tồn tại trên đĩa)
+    valid_id = "20240101-120000-123-job2"
+    res = client.get(f"/api/projects/ptrav/scans/{valid_id}")
+    assert res.status_code == 404  # không tìm thấy run, nhưng không phải 400 validation
+
+
+# --- Test 13 (điểm nhỏ 5 — mục 7): check_cvat với slug không tồn tại trả 404 ---
+
+def test_check_cvat_unknown_slug_returns_404(client: TestClient):
+    """check_cvat với slug không tồn tại phải trả 404, không phải 500."""
+    res = client.get("/api/projects/nonexistent-slug/cvat/check")
+    assert res.status_code == 404
+    assert "nonexistent-slug" in res.json()["detail"]

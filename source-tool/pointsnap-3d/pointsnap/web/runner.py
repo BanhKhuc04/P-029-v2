@@ -59,8 +59,11 @@ class ScanRunner:
     def start_scan(self, slug: str, job_id: int, flag: bool = False) -> str:
         """Bắt đầu quét một job trong luồng nền. Trả về `run_id`."""
         self.pm.get_project(slug)  # kiểm tra dự án tồn tại
-        now_str = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        run_id = f"{now_str}-job{job_id}"
+        now = datetime.datetime.now()
+        # Điểm nhỏ 4: thêm millisecond để tránh run_id trùng khi bấm 2 lần trong 1 giây
+        now_str = now.strftime("%Y%m%d-%H%M%S")
+        ms = now.microsecond // 1000
+        run_id = f"{now_str}-{ms:03d}-job{job_id}"
 
         run_info: dict[str, Any] = {
             "run_id": run_id,

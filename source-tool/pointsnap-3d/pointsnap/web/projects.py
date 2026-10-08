@@ -51,6 +51,24 @@ def clean_guideline_dict(data: dict[str, Any]) -> dict[str, Any]:
     return cleaned
 
 
+def merge_guideline_with_default(incoming: Mapping[str, Any]) -> dict[str, Any]:
+    """Trộn guideline với cấu hình mặc định để điền các khóa schema còn thiếu.
+
+    Các dynamic mapping (nơi key do người dùng định nghĩa, ví dụ class trong manual_ranges
+    hoặc nhóm trong track.groups) sẽ được lấy nguyên vẹn từ incoming nếu người dùng đã cung cấp,
+    tránh việc deep-merge hồi sinh các class/khóa đã bị xóa (Lỗi bắt buộc 2 — Mục 7).
+    """
+    base_data = clean_guideline_dict(_read_yaml(default_config_text(), "config.yaml mặc định"))
+    merged = _deep_merge(base_data, incoming)
+    if "size" in incoming and isinstance(incoming["size"], Mapping):
+        if "manual_ranges" in incoming["size"] and "size" in merged and isinstance(merged["size"], dict):
+            merged["size"]["manual_ranges"] = dict(incoming["size"]["manual_ranges"])
+    if "track" in incoming and isinstance(incoming["track"], Mapping):
+        if "groups" in incoming["track"] and "track" in merged and isinstance(merged["track"], dict):
+            merged["track"]["groups"] = dict(incoming["track"]["groups"])
+    return merged
+
+
 def slugify(text: str) -> str:
     """Tạo slug an toàn từ tên dự án."""
     text = text.lower().strip()
@@ -272,7 +290,12 @@ class ProjectManager:
     def save_guideline(
         self, slug: str, content: dict[str, Any] | str
     ) -> dict[str, Any]:
-        """Lưu guideline mới. Bỏ token, validate bằng parse_config trước khi ghi (Điểm 1 Mục 6)."""
+        """Lưu guideline mới. Bỏ token, validate bằng parse_config trước khi ghi (Điểm 1 Mục 6).
+
+        Ghi thay thế hoàn toàn (không trộn với file cũ) để xóa class / khóa thực sự có hiệu lực
+        (Lỗi bắt buộc 2 — mục 7). Chỉ trộn với cấu hình mặc định để kiểm hợp lệ / điền khóa còn
+        thiếu, không kết hợp với guideline.yaml đang có.
+        """
         proj_dir = self._project_dir(slug)
         g_file = proj_dir / "guideline.yaml"
 
@@ -289,19 +312,13 @@ class ProjectManager:
 
         clean_incoming = clean_guideline_dict(data)
 
-        # Lấy guideline hiện tại làm base nếu có, hoặc default config
-        if g_file.is_file():
-            existing_dict = yaml.safe_load(g_file.read_text(encoding="utf-8")) or {}
-        else:
-            existing_dict = load_config().to_dict(redact=False)
-
-        existing_clean = clean_guideline_dict(existing_dict)
-        merged_clean = _deep_merge(existing_clean, clean_incoming)
+        # Trộn với MẶC ĐỊNH (không phải file cũ) để điền khóa còn thiếu, rồi validate
+        merged_clean = merge_guideline_with_default(clean_incoming)
 
         # Kiểm tra tính hợp lệ bằng parse_config (ném ConfigError nếu sai)
         parse_config(merged_clean)
 
-        # Lưu file
+        # Lưu file — ghi đè hoàn toàn (ghi thay thế, không giữ khóa cũ)
         clean_yaml = yaml.safe_dump(merged_clean, allow_unicode=True, sort_keys=False)
         g_file.write_text(clean_yaml, encoding="utf-8")
         return merged_clean
@@ -322,8 +339,7 @@ class ProjectManager:
         proj = self.get_project(slug)
         clean_data, _ = self.get_guideline(slug)
 
-        base_data = _read_yaml(default_config_text(), "config.yaml mặc định")
-        merged_data = _deep_merge(base_data, clean_data)
+        merged_data = merge_guideline_with_default(clean_data)
 
         # Điểm 2: Ghi đè cvat.url của dự án lên cấu hình hiệu lực
         cvat_dict = dict(merged_data.get("cvat", {}))

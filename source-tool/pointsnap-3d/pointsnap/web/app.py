@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,9 @@ from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner
 
 STATIC_DIR = Path(__file__).parent / "static"
+
+# run_id hợp lệ: YYYYMMDD-HHMMSS[-<ms>]-job<id>  (điểm nhỏ 3 — chặn path traversal)
+_RUN_ID_RE = re.compile(r"^\d{8}-\d{6}(?:-\d+)?-job\d+$")
 
 
 class CreateProjectRequest(BaseModel):
@@ -57,14 +60,6 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         title="PointSnap 3D",
         description="Giao diện Web kiểm tra và giám sát chất lượng nhãn 3D trên CVAT",
         version="0.1.0",
-    )
-
-    application.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
     )
 
     # Lưu trữ trong app.state để test có thể truy cập nếu cần
@@ -149,6 +144,11 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
     @application.get("/api/projects/{slug}/cvat/check")
     def check_cvat(slug: str) -> dict[str, Any]:
+        # Điểm nhỏ 5: bắt ProjectError trước → trả 404 thay vì 500
+        try:
+            proj = pm.get_project(slug)
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         try:
             cfg = pm.get_effective_config(slug)
             if not cfg.cvat.token:
@@ -161,7 +161,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             ver = client.server_version()
             return {"connected": True, "version": ver, "url": cfg.cvat.url}
         except Exception as exc:
-            return {"connected": False, "error": str(exc), "url": pm.get_project(slug)["cvat_url"]}
+            return {"connected": False, "error": str(exc), "url": proj["cvat_url"]}
 
     @application.get("/api/projects/{slug}/cvat/tasks")
     def get_cvat_tasks(slug: str) -> dict[str, Any]:
@@ -191,8 +191,18 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             return {"tasks": tasks_result}
         except CvatError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     # --- API Quét & Báo cáo ---
+
+    def _validate_run_id(run_id: str) -> None:
+        """Điểm nhỏ 3: chặn path traversal qua run_id độc hại (vd: ../../etc/passwd)."""
+        if not _RUN_ID_RE.match(run_id):
+            raise HTTPException(
+                status_code=400,
+                detail=f"run_id không hợp lệ: '{run_id}'. Định dạng: YYYYMMDD-HHMMSS-job<id>.",
+            )
 
     @application.post("/api/projects/{slug}/scans", status_code=202)
     def start_scan(slug: str, req: StartScanRequest) -> dict[str, Any]:
@@ -213,6 +223,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
     @application.get("/api/projects/{slug}/scans/{run_id}")
     def get_scan(slug: str, run_id: str) -> dict[str, Any]:
+        _validate_run_id(run_id)
         try:
             return runner.get_run(slug, run_id, include_findings=True)
         except ProjectError as exc:
@@ -221,6 +232,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.post("/api/projects/{slug}/scans/{run_id}/flag", status_code=202)
     def flag_scan(slug: str, run_id: str) -> dict[str, Any]:
         """Gắn cờ kết quả: khởi động một lượt quét lại với flag=True để tránh trượt ID (Điểm 4 Mục 6)."""
+        _validate_run_id(run_id)
         try:
             prev_run = runner.get_run(slug, run_id)
             job_id = prev_run.get("job_id")
@@ -236,6 +248,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
     @application.get("/api/projects/{slug}/scans/{run_id}/report.html")
     def get_html_report(slug: str, run_id: str) -> FileResponse:
+        _validate_run_id(run_id)
         path = pm._project_dir(slug) / "runs" / run_id / "report.html"
         if not path.is_file():
             raise HTTPException(status_code=404, detail="Không tìm thấy file report.html")
@@ -243,10 +256,12 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
     @application.get("/api/projects/{slug}/scans/{run_id}/report.csv")
     def get_csv_report(slug: str, run_id: str) -> FileResponse:
+        _validate_run_id(run_id)
         path = pm._project_dir(slug) / "runs" / run_id / "report.csv"
         if not path.is_file():
             raise HTTPException(status_code=404, detail="Không tìm thấy file report.csv")
         return FileResponse(path, media_type="text/csv", filename=f"report_{run_id}.csv")
+
 
     # --- Phục vụ Static Files & Single Page App ---
 

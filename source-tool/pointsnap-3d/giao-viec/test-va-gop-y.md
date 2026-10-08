@@ -1,15 +1,17 @@
-# Quy trình kiểm thử PointSnap 3D — Khánh, Chiến, Hân (08/10 – 09/10)
+# Quy trình kiểm thử PointSnap 3D — Khánh, Chiến, Hân
 
 Code đã xong và đã vào `main` (PR #18 – #23), gồm cả **giao diện web** (`pointsnap ui`).
 **Ba người làm cùng một quy trình** dưới đây, mỗi người trên máy của mình, ghi kết quả vào file riêng. Sau đó Khánh
 tổng hợp lỗi để Việt Anh giao việc sửa cho Việt Anh và Huy.
 
-| Hạn | Việc | Ai |
+Làm **sớm nhất có thể**, theo thứ tự:
+
+| Bước | Việc | Ai |
 |---|---|---|
-| Tối 08/10 | Xong **Phần 1 — Cài đặt** (TC-01 – TC-04) | Cả 3 |
-| **10h 09/10** | Xong **Phần 2 — Kiểm thử**, đẩy file kết quả `docs/test/<tên>.md` | Cả 3 |
-| **11h 09/10** | Xong **Phần 4 — Tổng hợp lỗi** `docs/test/tong-hop-loi.md` | Khánh |
-| 11h – 12h 09/10 | Đọc tổng hợp, giao việc sửa cho Việt Anh và Huy (điền cột "Giao cho") | Việt Anh |
+| 1 | Xong **Phần 1 — Cài đặt** (TC-01 – TC-04) | Cả 3 |
+| 2 | Xong **Phần 2 — Kiểm thử**, đẩy file kết quả `docs/test/<tên>.md` | Cả 3 |
+| 3 | Xong **Phần 4 — Tổng hợp lỗi** `docs/test/tong-hop-loi.md` ngay khi đủ 3 file | Khánh |
+| 4 | Đọc tổng hợp, giao việc sửa cho Việt Anh và Huy (điền cột "Giao cho") | Việt Anh |
 
 **Quy tắc:**
 - Không sửa code. Thấy lỗi thì ghi lại, kể cả lỗi nhỏ, kể cả chỗ README khó hiểu.
@@ -186,7 +188,7 @@ Mã lỗi dùng tên viết tắt: `KHANH-01`, `CHIEN-01`, `HAN-01`, …
 
 ---
 
-## Phần 4 — Tổng hợp lỗi (Khánh, hạn 11h 09/10)
+## Phần 4 — Tổng hợp lỗi (Khánh)
 
 Khánh gộp 3 file kết quả thành `source-tool/pointsnap-3d/docs/test/tong-hop-loi.md`:
 - Lỗi trùng nhau (nhiều người gặp) gộp thành một dòng, ghi đủ người gặp.
@@ -194,7 +196,7 @@ Khánh gộp 3 file kết quả thành `source-tool/pointsnap-3d/docs/test/tong-
 - **Không điền** cột "Giao cho" và "Hạn": Việt Anh điền khi giao việc.
 
 ```markdown
-# Tổng hợp lỗi kiểm thử PointSnap 3D (09/10)
+# Tổng hợp lỗi kiểm thử PointSnap 3D (<ngày>)
 
 ## 1. Tổng quan
 | Người | Số ca Đạt / Lỗi / Không làm được | Thời gian cài đặt |
@@ -226,6 +228,6 @@ Gợi ý chia việc khi điền "Giao cho":
 
 ## Sau khi tổng hợp
 
-- Hân dùng bảng mục 3 để điền độ chính xác xem tay vào `docs/danh-gia.md`. Hạn 12h 09/10 (G3).
-- Khánh đưa mục 4 vào phần Hướng phát triển của báo cáo kết quả. Chiều 09/10 hoàn thiện báo cáo và slide.
+- Hân dùng bảng mục 3 để điền độ chính xác xem tay vào `docs/danh-gia.md`.
+- Khánh đưa mục 4 vào phần Hướng phát triển của báo cáo kết quả, rồi hoàn thiện báo cáo và slide.
 - Chiến quay video demo 3 – 5 phút bằng giao diện web, theo đúng TC-11 → TC-21.

@@ -159,9 +159,37 @@
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme(state.theme);
     setupEventListeners();
+    setupQuickReview();
     handleHashNavigation();
-    loadProjects();
+    setupSplash(loadProjects());
   });
+
+  // --- Màn chào (A14): logo + nút Bắt đầu; logo động che đúng thời gian đang tải dự án ---
+  function setupSplash(appReady) {
+    const splash = document.getElementById('splash');
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem('pointsnap_splash_done') === '1';
+    } catch (_) {}
+    if (seen || !splash) return;
+
+    splash.hidden = false;
+    const startBtn = document.getElementById('splash-start');
+    startBtn.focus();
+    startBtn.addEventListener('click', async () => {
+      startBtn.hidden = true;
+      document.getElementById('splash-logo').innerHTML = loaderSvg(120, { ground: true, ring: true, label: 'Đang mở PointSnap 3D' });
+      const status = document.getElementById('splash-status');
+      status.textContent = 'Đang tải dự án và kết nối CVAT…';
+      await Promise.all([appReady.catch(() => {}), new Promise((r) => setTimeout(r, 1200))]);
+      status.textContent = 'Đã sẵn sàng';
+      splash.classList.add('leaving');
+      setTimeout(() => { splash.hidden = true; }, 350);
+      try {
+        sessionStorage.setItem('pointsnap_splash_done', '1');
+      } catch (_) {}
+    }, { once: true });
+  }
 
   // --- Thiết lập các bộ lắng nghe sự kiện ---
   function setupEventListeners() {
@@ -726,7 +754,7 @@
       const sevLabel = f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
 
       tr.innerHTML = `
-        <td><span class="pill-badge ${sevClass}">${sevLabel}</span></td>
+        <td><span class="pill-badge ${sevClass}">${sevLabel}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
         <td class="mono">#${f.frame}</td>
         <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${f.track_id}` : '—'}</td>
         <td>${escapeHtml(f.label || '—')}</td>
@@ -749,8 +777,196 @@
     if (currentPick) renderDetailDrawer(currentPick);
   }
 
+  // --- Duyệt nhanh (A14): xem point cloud quanh box, chuyển mục, ghi kết luận, không cần mở CVAT ---
+  const previewCache = new Map();
+
+  function runFindingIndex(f) {
+    return state.currentRun && state.currentRun.findings ? state.currentRun.findings.indexOf(f) : -1;
+  }
+
+  function setupQuickReview() {
+    document.getElementById('btn-quick-prev').addEventListener('click', () => moveSelection(-1));
+    document.getElementById('btn-quick-next').addEventListener('click', () => moveSelection(1));
+    document.getElementById('btn-review-ok').addEventListener('click', () => markReview('ok'));
+    document.getElementById('btn-review-fp').addEventListener('click', () => markReview('fp'));
+    document.addEventListener('keydown', (e) => {
+      if (state.currentTab !== 'tab-results' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (['input', 'textarea', 'select'].includes(tag) || e.target.isContentEditable) return;
+      if (document.querySelector('.modal-overlay.open') || !document.getElementById('splash').hidden) return;
+      const key = e.key.toLowerCase();
+      if (key === 'j' || e.key === 'ArrowDown') moveSelection(1);
+      else if (key === 'k' || e.key === 'ArrowUp') moveSelection(-1);
+      else if (key === '1') markReview('ok');
+      else if (key === '2') markReview('fp');
+      else return;
+      e.preventDefault();
+    });
+    window.addEventListener('resize', () => {
+      if (state.previewData) drawPreviewViews(state.previewData);
+    });
+  }
+
+  function moveSelection(step) {
+    const filtered = getFilteredFindings();
+    if (filtered.length === 0) return;
+    const next = Math.min(Math.max(state.selectedFindingIndex + step, 0), filtered.length - 1);
+    if (next === state.selectedFindingIndex) return;
+    state.selectedFindingIndex = next;
+    state.findingsPage = Math.floor(next / state.findingsPerPage) + 1;
+    renderFindingsTable();
+    const row = document.querySelector('#findings-table-body tr.selected');
+    if (row) row.scrollIntoView({ block: 'nearest' });
+  }
+
+  async function markReview(verdict) {
+    const f = state.currentDetail;
+    const index = runFindingIndex(f);
+    if (!f || index < 0 || !state.currentSlug) return;
+    const reviews = state.currentRun.reviews || {};
+    const value = reviews[String(index)] === verdict ? null : verdict;
+    try {
+      const res = await fetch(`/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/reviews/${index}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verdict: value }),
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Không lưu được kết luận');
+      state.currentRun.reviews = (await res.json()).reviews;
+      if (value) moveSelection(1);
+      renderFindingsTable();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  function reviewLabel(index) {
+    const v = state.currentRun && state.currentRun.reviews ? state.currentRun.reviews[String(index)] : undefined;
+    return v === 'ok' ? 'Đúng' : v === 'fp' ? 'Báo nhầm' : '';
+  }
+
+  function updateReviewPanel(f) {
+    const index = runFindingIndex(f);
+    const reviews = (state.currentRun && state.currentRun.reviews) || {};
+    const v = reviews[String(index)];
+    const ok = document.getElementById('btn-review-ok');
+    const fp = document.getElementById('btn-review-fp');
+    ok.setAttribute('aria-pressed', v === 'ok' ? 'true' : 'false');
+    fp.setAttribute('aria-pressed', v === 'fp' ? 'true' : 'false');
+
+    const values = Object.values(reviews);
+    const nOk = values.filter((x) => x === 'ok').length;
+    const nFp = values.filter((x) => x === 'fp').length;
+    const total = (state.currentRun && state.currentRun.findings || []).length;
+    const precision = nOk + nFp > 0 ? ` · precision xem tay ${Math.round((nOk / (nOk + nFp)) * 100)}%` : '';
+    document.getElementById('review-progress-text').textContent =
+      `Đã xem ${nOk + nFp} / ${total} (đúng ${nOk}, báo nhầm ${nFp})${precision}.`;
+
+    const filtered = getFilteredFindings();
+    document.getElementById('quick-nav-counter').textContent =
+      `${filtered.length ? state.selectedFindingIndex + 1 : 0} / ${filtered.length}`;
+    document.getElementById('btn-quick-prev').disabled = state.selectedFindingIndex <= 0;
+    document.getElementById('btn-quick-next').disabled = state.selectedFindingIndex >= filtered.length - 1;
+  }
+
+  function fetchPreview(index) {
+    const key = `${state.currentSlug}/${state.currentRun.run_id}/${index}`;
+    if (!previewCache.has(key)) {
+      const p = fetch(`/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/findings/${index}/preview`)
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Không dựng được bản xem nhanh');
+          return data;
+        });
+      p.catch(() => previewCache.delete(key));
+      previewCache.set(key, p);
+    }
+    return previewCache.get(key);
+  }
+
+  async function loadPreview(f) {
+    const index = runFindingIndex(f);
+    const status = document.getElementById('preview-status');
+    state.previewData = null;
+    clearPreviewCanvases();
+    if (index < 0 || !state.currentSlug) return;
+    status.innerHTML = `<span class="inline-loading">${loaderSvg(20)}<span>Đang tải point cloud…</span></span>`;
+    try {
+      const data = await fetchPreview(index);
+      if (state.currentDetail !== f) return;
+      data.color = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warn' : 'primary';
+      state.previewData = data;
+      drawPreviewViews(data);
+      status.textContent = data.exact_frame
+        ? `${data.points.length} điểm quanh box · cách LiDAR ${data.distance_m} m · frame ${data.frame}`
+        : `Box gần nhất của track ở frame ${data.frame} · ${data.points.length} điểm · cách LiDAR ${data.distance_m} m`;
+      const nextF = getFilteredFindings()[state.selectedFindingIndex + 1];
+      if (nextF) fetchPreview(runFindingIndex(nextF)).catch(() => {});
+    } catch (err) {
+      if (state.currentDetail === f) status.textContent = err.message;
+    }
+  }
+
+  function clearPreviewCanvases() {
+    ['preview-canvas-top', 'preview-canvas-side'].forEach((id) => {
+      const c = document.getElementById(id);
+      c.getContext('2d').clearRect(0, 0, c.width, c.height);
+    });
+  }
+
+  function drawPreviewViews(data) {
+    drawPreview(document.getElementById('preview-canvas-top'), data, 'top');
+    drawPreview(document.getElementById('preview-canvas-side'), data, 'side');
+  }
+
+  // Vẽ điểm trong hệ của box: x dọc chiều dài; nhìn từ trên dùng y, nhìn ngang dùng z (mặt đất ở dưới).
+  function drawPreview(canvas, data, view) {
+    const css = getComputedStyle(document.documentElement);
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const { length: L, width: W, height: H } = data.box;
+    const margin = 2.0;
+    const xr = L / 2 + margin;
+    const [v0, v1] = view === 'top' ? [-(W / 2 + margin), W / 2 + margin] : [-H / 2 - 1.5, H / 2 + 1.0];
+    const scale = Math.min((w - 8) / (2 * xr), (h - 8) / (v1 - v0));
+    const vc = (v0 + v1) / 2;
+    const px = (x) => w / 2 + x * scale;
+    const py = (v) => h / 2 - (v - vc) * scale;
+
+    const outside = css.getPropertyValue('--text-3').trim();
+    const inside = css.getPropertyValue('--text').trim();
+    data.points.forEach(([x, y, z]) => {
+      const isIn = Math.abs(x) <= L / 2 && Math.abs(y) <= W / 2 && Math.abs(z) <= H / 2;
+      ctx.fillStyle = isIn ? inside : outside;
+      ctx.fillRect(px(x) - 0.75, py(view === 'top' ? y : z) - 0.75, 1.5, 1.5);
+    });
+
+    ctx.strokeStyle = css.getPropertyValue(`--${data.color}`).trim();
+    ctx.lineWidth = 1.5;
+    const half = view === 'top' ? W / 2 : H / 2;
+    ctx.strokeRect(px(-L / 2), py(half), L * scale, 2 * half * scale);
+    if (view === 'top') {
+      ctx.beginPath();
+      ctx.moveTo(px(L / 2), py(0));
+      ctx.lineTo(px(L / 2) + 8, py(0));
+      ctx.stroke();
+    }
+  }
+
   function renderDetailDrawer(f) {
     if (!f) return;
+    if (state.currentDetail !== f) {
+      state.currentDetail = f;
+      loadPreview(f);
+    }
+    updateReviewPanel(f);
     const sevClass = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info';
     const sevLabel = f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
 
@@ -784,6 +1000,10 @@
   }
 
   function clearDetailDrawer() {
+    state.currentDetail = null;
+    state.previewData = null;
+    clearPreviewCanvases();
+    document.getElementById('preview-status').textContent = '';
     document.getElementById('detail-sev-badge').textContent = '—';
     document.getElementById('detail-rule-code').textContent = '—';
     document.getElementById('detail-title-text').textContent = 'Chưa chọn mục';

@@ -62,6 +62,10 @@ pointsnap ui
 - Link trỏ thẳng tới đúng đối tượng bị báo (`&type=track&serverID=<id>`), chỉ đúng với **lần quét mới nhất** (do CVAT tạo lại id khi annotation được lưu hoặc gắn cờ). Sau khi sửa box xong, hãy quét lại rồi mới bấm link.
 - Nên **đăng nhập CVAT trước** trên trình duyệt, vì trang đăng nhập của CVAT khi chuyển hướng về job sẽ làm mất tham số `?frame=…`.
 
+*Duyệt nhiều lỗi mà không mở lại CVAT:*
+- **Kiểm tra đúng / báo nhầm ngay trên PointSnap:** ở màn Kết quả, khung **Duyệt nhanh** hiện point cloud quanh box (nhìn từ trên và nhìn ngang, mặt đất ở dưới). Phím `J` / `K` chuyển mục sau / trước, `1` = đúng là lỗi, `2` = báo nhầm. Kết luận lưu vào `reviews.json` của lần quét và tính luôn precision xem tay.
+- **Sửa hàng loạt trong CVAT (chỉ tải job một lần):** bấm **Gắn cờ lên CVAT**, mở job trên CVAT, đặt bộ lọc `pointsnap_error` *is not empty*, rồi **bấm chuột phải** vào nút Trước hoặc Sau trên thanh điều khiển frame và chọn kiểu nhảy **theo bộ lọc**. Mỗi lần bấm Sau, CVAT nhảy tới frame kế tiếp có box bị gắn cờ; nội dung lỗi nằm trong thuộc tính `pointsnap_error` của box.
+
 ### 2. Dùng dòng lệnh (Nâng cao cho CI/CD và Script)
 
 Cấu hình biến môi trường qua file `.env` trong thư mục `source-tool/pointsnap-3d/` (hoặc biến môi trường hệ thống):

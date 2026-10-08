@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.core.config import ConfigError
+from pointsnap.web.preview import PreviewError, finding_preview, load_reviews, save_review
 from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner
 
@@ -47,6 +48,10 @@ class SaveGuidelineRequest(BaseModel):
     yaml: str | None = None
 
 
+class ReviewRequest(BaseModel):
+    verdict: Literal["ok", "fp"] | None = None
+
+
 class StartScanRequest(BaseModel):
     job_id: int
     flag: bool = False
@@ -61,6 +66,14 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         description="Giao diện Web kiểm tra và giám sát chất lượng nhãn 3D trên CVAT",
         version="0.1.0",
     )
+
+    @application.middleware("http")
+    async def revalidate_ui_files(request, call_next):
+        """Trang giao diện luôn được trình duyệt kiểm lại, để bản cập nhật hiện ngay mà không cần xóa cache."""
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
     # Lưu trữ trong app.state để test có thể truy cập nếu cần
     application.state.pm = pm
@@ -225,9 +238,36 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     def get_scan(slug: str, run_id: str) -> dict[str, Any]:
         _validate_run_id(run_id)
         try:
-            return runner.get_run(slug, run_id, include_findings=True)
+            data = runner.get_run(slug, run_id, include_findings=True)
+            data["reviews"] = load_reviews(pm._project_dir(slug) / "runs" / run_id)
+            return data
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.get("/api/projects/{slug}/scans/{run_id}/findings/{index}/preview")
+    def get_finding_preview(slug: str, run_id: str, index: int) -> dict[str, Any]:
+        """Point cloud quanh box của một mục, trong hệ của box, để xem nhanh không cần mở CVAT (A14)."""
+        _validate_run_id(run_id)
+        try:
+            project = pm.get_project(slug)
+            return finding_preview(pm._project_dir(slug) / "runs" / run_id, project, index)
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except PreviewError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @application.put("/api/projects/{slug}/scans/{run_id}/reviews/{index}")
+    def put_review(slug: str, run_id: str, index: int, req: ReviewRequest) -> dict[str, Any]:
+        """Lưu kết luận xem tay của một mục: ok = đúng là lỗi, fp = báo nhầm, null = bỏ kết luận."""
+        _validate_run_id(run_id)
+        try:
+            run = runner.get_run(slug, run_id, include_findings=True)
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        if not 0 <= index < len(run.get("findings") or []):
+            raise HTTPException(status_code=404, detail=f"Không có mục số {index}")
+        reviews = save_review(pm._project_dir(slug) / "runs" / run_id, index, req.verdict)
+        return {"reviews": reviews}
 
     @application.post("/api/projects/{slug}/scans/{run_id}/flag", status_code=202)
     def flag_scan(slug: str, run_id: str) -> dict[str, Any]:

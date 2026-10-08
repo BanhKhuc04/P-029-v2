@@ -47,6 +47,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **A10** | Giảm báo nhầm của 3 bộ phát hiện (`pointsnap/detectors/`), đánh giá lại | 08/10 | A6, B7 | Nhãn chuẩn: ≤ 2 Cảnh báo, ≤ 0,5 Lỗi / 100 box; recall không giảm | ✅ [PR #21](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/21) |
 | **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | ✅ [PR #23](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/23) |
 | **A13** | Làm lại giao diện web theo thiết kế phần mềm doanh nghiệp (thanh trên navy, dropdown dự án, 2 nhóm menu, bảng chi tiết kết quả, IBM Plex, theme sáng/tối) | 08/10 | A11 | Đầy đủ chức năng, khớp bản vẽ `.dc.html`, chụp ảnh sáng/tối, test xanh | 🔍 [PR #28](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/28) |
+| **A14** | Màn chào có nút Bắt đầu (logo động khi tải); Duyệt nhanh: xem point cloud quanh box (từ trên, nhìn ngang), J / K chuyển mục, ghi kết luận Đúng / Báo nhầm (`reviews.json`, precision xem tay); hướng dẫn sửa hàng loạt trong CVAT bằng bộ lọc | 08/10 | A13 | Duyệt hết lỗi của một job mà không mở lại CVAT; test xanh | 🔍 |
 
 ## Đặng Văn Huy — code thuật toán
 

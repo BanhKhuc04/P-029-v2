@@ -19,6 +19,60 @@
 
   const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
 
+  // --- Logo động khi tải (Loading.dc.html): khối hộp rơi xuống mặt đất, chấm "snap" bật ra ---
+  function loaderSvg(size, opts = {}) {
+    const small = size < 32;
+    const ground = opts.ground
+      ? '<path d="M3 38 H16 M32 38 H45" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"></path>'
+      : '';
+    const ring = opts.ring
+      ? '<circle class="ps-ring" cx="24" cy="38" r="4.5" stroke="var(--loader-dot)" stroke-width="1.2"></circle>'
+      : '';
+    const a11y = opts.label ? `role="img" aria-label="${escapeHtml(opts.label)}"` : 'aria-hidden="true"';
+    return `<svg class="ps-loader" width="${size}" height="${size}" viewBox="0 0 48 48" fill="none" ${a11y}>${ground}`
+      + `<g class="ps-box"><path d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="${small ? 4 : 3}" stroke-linejoin="round" stroke-linecap="round"></path></g>`
+      + `${ring}<circle class="ps-dot" cx="24" cy="38" r="${small ? 6 : 4.5}" fill="var(--loader-dot)"></circle></svg>`;
+  }
+
+  function setButtonBusy(btn, busyText) {
+    if (!btn.dataset.idleText) btn.dataset.idleText = btn.textContent.trim();
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.innerHTML = `${loaderSvg(18)}<span>${escapeHtml(busyText)}</span>`;
+  }
+
+  function setButtonIdle(btn) {
+    btn.disabled = false;
+    btn.classList.remove('is-busy');
+    if (btn.dataset.idleText) btn.textContent = btn.dataset.idleText;
+  }
+
+  function showScanLoader(show) {
+    const el = document.getElementById('scan-loader');
+    if (!el) return;
+    el.hidden = !show;
+    el.innerHTML = show ? loaderSvg(48, { ground: true, ring: true }) : '';
+  }
+
+  // Giá trị đo / ngưỡng kèm đơn vị theo luật (detectors trả mét, m/s hoặc số frame).
+  function formatMeasure(f, v, signed = false) {
+    if (v === null || v === undefined || v === '' || Number.isNaN(Number(v))) return '—';
+    const n = Number(v);
+    const fixed = (x, d) => x.toFixed(d).replace('.', ',');
+    const sign = signed && n > 0 ? '+' : '';
+    switch (f.rule) {
+      case 'floating':
+        return `${sign}${Math.round(n * 100)} cm`;
+      case 'floating.no_evidence':
+      case 'track.long_interpolation':
+        return `${Math.round(n)} frame`;
+      case 'track.jump':
+        return (f.message || '').includes('m/s') ? `${fixed(n, 1)} m/s` : `${fixed(n, 2)} m`;
+      default:
+        return `${fixed(n, 2)} m`;
+    }
+  }
+
   // --- State toàn cục ---
   const state = {
     projects: [],
@@ -328,7 +382,7 @@
       btn.className = `project-menu-item ${p.slug === state.currentSlug ? 'active' : ''}`;
       btn.innerHTML = `
         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(p.name)}</span>
-        ${p.slug === state.currentSlug ? '<span style="color: var(--primary);">✓</span>' : ''}
+        ${p.slug === state.currentSlug ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" role="img" aria-label="Đang chọn" style="color: var(--primary); flex: none;"><path d="M2.5 7.5 L5.5 10.5 L11.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>' : ''}
       `;
       btn.addEventListener('click', async () => {
         document.getElementById('project-dropdown-menu').classList.remove('open');
@@ -533,7 +587,7 @@
     document.getElementById('results-header-title').textContent = `Kết quả quét job #${runData.job_id}`;
     const runTimeStr = formatDateTime(sum.timestamp || runData.created_at);
     document.getElementById('results-header-subtitle').textContent =
-      `Quét lúc ${runTimeStr} · ${sum.num_boxes ?? 0} box · ${sum.num_tracks ?? 0} track · guideline của dự án`;
+      `Quét lúc ${runTimeStr} · ${sum.num_boxes ?? 0} box · guideline của dự án`;
 
     // Cổng kiểm soát (Gate Banner)
     const gateBanner = document.getElementById('gate-banner-strip');
@@ -711,8 +765,8 @@
     document.getElementById('detail-track-class-val').textContent =
       `${f.track_id !== null && f.track_id !== undefined ? `#${f.track_id}` : '—'} · ${f.label || '—'}`;
 
-    document.getElementById('detail-measured-val').textContent = f.value || '—';
-    document.getElementById('detail-threshold-val').textContent = f.threshold || '—';
+    document.getElementById('detail-measured-val').textContent = formatMeasure(f, f.value, true);
+    document.getElementById('detail-threshold-val').textContent = formatMeasure(f, f.threshold);
     document.getElementById('detail-message-desc').textContent = f.message || '—';
 
     // Gợi ý cách sửa từ từ điển A13
@@ -760,7 +814,7 @@
   async function handleReFlagScan() {
     if (!state.currentRun || !state.currentSlug) return;
     const btn = document.getElementById('btn-re-flag-cvat');
-    btn.disabled = true;
+    setButtonBusy(btn, 'Đang khởi động…');
 
     try {
       showToast('Đang khởi động quét lại và gắn cờ lên CVAT...', 'info');
@@ -781,7 +835,7 @@
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
-      btn.disabled = false;
+      setButtonIdle(btn);
     }
   }
 
@@ -789,6 +843,8 @@
   async function fetchCvatTasks() {
     if (!state.currentSlug) return;
     const taskSelect = document.getElementById('select-cvat-task');
+    const refreshBtn = document.getElementById('btn-refresh-tasks');
+    setButtonBusy(refreshBtn, 'Đang tải');
     taskSelect.innerHTML = '<option value="">Đang tải Task từ CVAT...</option>';
 
     try {
@@ -813,6 +869,8 @@
     } catch (err) {
       taskSelect.innerHTML = '<option value="">Không tải được Task (kiểm tra kết nối)</option>';
       showToast(err.message, 'error');
+    } finally {
+      setButtonIdle(refreshBtn);
     }
   }
 
@@ -854,8 +912,7 @@
 
     const flag = document.getElementById('check-scan-flag').checked;
     const btn = document.getElementById('btn-start-scan');
-    btn.disabled = true;
-    btn.textContent = 'Đang quét…';
+    setButtonBusy(btn, 'Đang quét…');
 
     resetScanProgress();
 
@@ -875,8 +932,8 @@
       pollScanProgress(scanInfo.run_id);
     } catch (err) {
       showToast(err.message, 'error');
-      btn.disabled = false;
-      btn.textContent = 'Bắt đầu quét';
+      setButtonIdle(btn);
+      showScanLoader(false);
     }
   }
 
@@ -884,6 +941,7 @@
     document.getElementById('scan-progress-bar').style.width = '10%';
     document.getElementById('scan-progress-percent').textContent = '10%';
     document.getElementById('scan-status-message').textContent = 'Khởi tạo tác vụ quét…';
+    showScanLoader(true);
 
     for (let i = 1; i <= 5; i++) {
       const dot = document.getElementById(`step-dot-${i}`);
@@ -905,7 +963,7 @@
         if (!res.ok) return;
         const data = await res.json();
 
-        if (data.status === 'running') {
+        if (data.status === 'running' || data.status === 'queued') {
           progressSim = Math.min(progressSim + 15, 85);
           document.getElementById('scan-progress-bar').style.width = `${progressSim}%`;
           document.getElementById('scan-progress-percent').textContent = `${progressSim}%`;
@@ -913,7 +971,7 @@
 
           const activeStep = progressSim < 30 ? 1 : progressSim < 55 ? 2 : 3;
           updateScanStepsUI(activeStep);
-        } else if (data.status === 'completed') {
+        } else if (data.status === 'done') {
           clearInterval(state.scanPollTimer);
           document.getElementById('scan-progress-bar').style.width = '100%';
           document.getElementById('scan-progress-percent').textContent = '100%';
@@ -921,11 +979,12 @@
           updateScanStepsUI(5, true);
 
           const btn = document.getElementById('btn-start-scan');
-          btn.disabled = false;
-          btn.textContent = 'Bắt đầu quét';
+          setButtonIdle(btn);
+          showScanLoader(false);
 
           showToast('Quá trình quét hoàn tất!', 'success');
           state.currentRun = data;
+          renderRunResults(data);
           updateRecentScanCard(data);
 
           // Tự động chuyển qua tab Kết quả sau 800ms
@@ -936,8 +995,8 @@
           clearInterval(state.scanPollTimer);
           document.getElementById('scan-status-message').textContent = `Lỗi: ${data.error || 'Quét thất bại'}`;
           const btn = document.getElementById('btn-start-scan');
-          btn.disabled = false;
-          btn.textContent = 'Bắt đầu quét';
+          setButtonIdle(btn);
+          showScanLoader(false);
           showToast(`Lỗi quét: ${data.error}`, 'error');
         }
       } catch (_) {}
@@ -1227,7 +1286,7 @@
 
   async function checkCvatConnection() {
     const msg = document.getElementById('cvat-test-result-msg');
-    msg.textContent = 'Đang kiểm tra kết nối tới CVAT...';
+    msg.innerHTML = `<span class="inline-loading">${loaderSvg(20)}<span>Đang kiểm tra kết nối tới CVAT…</span></span>`;
     msg.style.color = 'var(--text-2)';
 
     try {

@@ -351,6 +351,7 @@
                 <div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tiến độ quét" class="progress-bar-track">
                   <div id="scan-progress-bar" class="progress-bar-fill"></div>
                 </div>
+                <div id="scan-loader" class="scan-loader" hidden></div>
                 <div id="scan-status-message" style="color: var(--text-2);">Chưa chạy. Chọn job rồi bấm Bắt đầu quét.</div>
 
                 <!-- 5 bước tiến độ -->
@@ -717,7 +718,7 @@
     <div class="modal-dialog">
       <div class="modal-header">
         <h3>Tạo dự án kiểm tra mới</h3>
-        <button class="modal-close-btn" data-close="modal-create-proj" aria-label="Đóng">✕</button>
+        <button class="modal-close-btn" data-close="modal-create-proj" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></button>
       </div>
       <div class="modal-body">
         <div class="form-group-item">
@@ -760,7 +761,7 @@
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 style="color: var(--error);">Xác nhận xóa dự án</h3>
-        <button class="modal-close-btn" data-close="modal-delete-proj" aria-label="Đóng">✕</button>
+        <button class="modal-close-btn" data-close="modal-delete-proj" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></button>
       </div>
       <div class="modal-body">
         <p style="margin: 0; font-size: 14px; color: var(--text);">

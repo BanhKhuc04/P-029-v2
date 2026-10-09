@@ -24,7 +24,7 @@ from pointsnap.core.model import (
     group_by_track,
 )
 from pointsnap.detectors.attributes import detect_attribute_errors
-from pointsnap.detectors.fit import fit_findings_for_frame, overlap_findings
+from pointsnap.detectors.fit import fit_findings_for_frame, outside_findings, overlap_findings
 from pointsnap.detectors.floating import detect_floating_scene
 from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
 from pointsnap.detectors.size import detect_size
@@ -194,6 +194,7 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
     r = config.rules
     findings: list[Finding] = []
     measures = []
+    outside = []
     for frame, boxes in group_by_frame(c for c in job.cuboids if c.visible).items():
         if r.fit_overlap:
             findings.extend(overlap_findings(boxes, config.fit, typed=lambda b: _typed_label(b, config)))
@@ -202,12 +203,15 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
         points = frames.frame_data(frame).points
         items = box_point_sets(points, boxes, margin=config.fit.outside_margin_m,
                                clearance=config.fit.ground_clearance_m, margin_rel=config.fit.outside_margin_rel)
-        findings.extend(fit_findings_for_frame(items, config.fit, points[:, :3], empty=r.fit_empty,
-                                               outside=r.fit_outside, loose=r.fit_loose))
+        frame_findings, frame_outside = fit_findings_for_frame(items, config.fit, points[:, :3], empty=r.fit_empty,
+                                                               outside=r.fit_outside, loose=r.fit_loose)
+        findings.extend(frame_findings)
+        outside.extend(frame_outside)
         if r.heading_points:
             measures.extend((item.box, dev) for item in items
                             if (dev := heading_points_measure(item, config.heading.points)) is not None)
     findings.extend(heading_points_findings(measures, config.heading.points))
+    findings.extend(outside_findings(outside, config.fit))
     return findings
 
 

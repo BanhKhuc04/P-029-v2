@@ -238,7 +238,7 @@ def inject_track_interpolation_gap(
 ) -> tuple[list[Cuboid], InjectedError]:
     """Xóa `num_frames` keyframe liên tiếp ở giữa track của đối tượng."""
     tracks = group_by_track(cuboids)
-    track_boxes = [b for b in tracks.get(track_id, []) if not b.outside]
+    track_boxes = [b for b in tracks.get(track_id, []) if b.visible]
     if len(track_boxes) < num_frames + 2:
         raise ValueError(f"Track {track_id} quá ngắn ({len(track_boxes)} keyframe) để xóa {num_frames} frame ở giữa")
 
@@ -416,7 +416,7 @@ def inject_dataset(
 ) -> tuple[list[Cuboid], list[InjectedError]]:
     """Tự động chèn lỗi có kiểm soát vào ~10% số track theo mục 8.1.
 
-    Mỗi track được chọn chỉ mang ĐÚNG MỘT lỗi.
+    Mỗi track được chọn chỉ mang ĐÚNG MỘT lỗi, chèn vào box nhìn thấy được (không `outside`, không `occluded`).
     Phân bố đều qua các loại lỗi và các mức độ: track thứ i nhận kiểu lỗi thứ `(i + offset)` trong danh mục,
     nên khi chèn nhiều vòng, tăng `offset` để cảnh ít track vẫn lần lượt nhận đủ mọi kiểu.
     `catalog`: `core` (6 loại lỗi của mục 8.1), `c1` (sai hướng và box lệch, `C1_ERRORS`) hoặc `all` (cả hai).
@@ -430,7 +430,7 @@ def inject_dataset(
     # Lọc các track hợp lệ có ít nhất 3 frame hoạt động
     valid_tids = [
         tid for tid, boxes in tracks.items()
-        if len([b for b in boxes if not b.outside]) >= 3
+        if len([b for b in boxes if b.visible]) >= 3
     ]
     if not valid_tids:
         return cuboid_list, []
@@ -475,7 +475,7 @@ def inject_dataset(
     next_free_track_id = max(tracks.keys(), default=0) + 1000
 
     for i, tid in enumerate(chosen_tids):
-        active_boxes = [b for b in tracks[tid] if not b.outside]
+        active_boxes = [b for b in tracks[tid] if b.visible]
         mid_box = active_boxes[len(active_boxes) // 2]
         err_type, param = error_configs[(i + offset) % len(error_configs)]
 

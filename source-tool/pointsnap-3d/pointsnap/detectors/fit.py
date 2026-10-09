@@ -7,7 +7,7 @@ Spec 4.2: box phải bao trọn toàn bộ vật thể, không dư thừa quá m
    đánh occluded; trên nhãn chuẩn có cả vật thấp / đổ chỉ để lại vài điểm sát đáy nên không để mức Lỗi). Box có ít điểm
    hơn `sparse_warning_points` → Cảnh báo "quá ít điểm" (tắt mặc định, chờ chốt P-009).
 2. `fit.outside`: trong vùng box nới `outside_margin_m`, sau khi bỏ mặt đất và điểm của box khác, tỉ lệ điểm của vật
-   nằm ngoài box > `outside_warning_ratio` → box nhỏ hoặc lệch khỏi vật.
+   nằm ngoài box cao hơn trung vị của các frame khác cùng track quá `outside_warning_ratio` → box nhỏ hoặc lệch.
 3. `fit.loose`: mặt box quay về phía cảm biến (nhìn thấy được, không bị che) mà cách điểm gần nhất của vật hơn
    `loose_warning_m` → box dư. Chỉ xét box gần, nhiều điểm; mặt sau của vật vốn không có điểm nên không xét.
 4. `fit.overlap`: hai box cùng frame chồng nhau (diện tích phần chung nhìn từ trên / diện tích box nhỏ hơn, và chồng
@@ -18,6 +18,7 @@ Spec 4.2: box phải bao trọn toàn bộ vật thể, không dư thừa quá m
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from itertools import combinations
 from typing import TYPE_CHECKING, Callable, Iterable, Sequence
 
@@ -57,26 +58,77 @@ def empty_finding(item: BoxPointSet, cfg: FitConfig) -> Finding | None:
     return None
 
 
-def outside_finding(item: BoxPointSet, cfg: FitConfig) -> Finding | None:
+@dataclass(frozen=True)
+class OutsideMeasure:
+    """Số đo của luật `fit.outside` cho một box: số điểm của vật, số điểm nằm ngoài box, phía và độ thò ra nhiều nhất."""
+
+    box: Cuboid
+    outside: int
+    total: int
+    side: str
+    reach_m: float
+
+    @property
+    def ratio(self) -> float:
+        return self.outside / self.total
+
+
+def outside_measure(item: BoxPointSet, cfg: FitConfig) -> OutsideMeasure | None:
+    """Đo điểm của vật nằm ngoài box; `None` nếu vật có ít hơn `outside_min_points` điểm."""
     total, outside = item.num_object_points, item.num_outside
-    if outside < cfg.outside_min_points or total == 0:
+    if total < cfg.outside_min_points:
         return None
-    ratio = outside / total
-    if ratio <= cfg.outside_warning_ratio:
-        return None
-    severity = Severity.ERROR if ratio > cfg.outside_error_ratio else Severity.WARNING
-    threshold = cfg.outside_error_ratio if ratio > cfg.outside_error_ratio else cfg.outside_warning_ratio
-    out = item.local[~item.inside]
-    half = np.asarray(item.box.dims) / 2.0
-    excess = np.maximum(np.abs(out) - half, 0.0)
-    axis = int(np.argmax(excess[:, :2].sum(axis=0)))
-    side = 1 if np.sum(np.sign(out[:, axis]) * excess[:, axis]) >= 0 else -1
-    where = FACE_NAMES[(axis, side)]
-    reach = float(np.percentile(excess[:, axis], 90))
-    return _finding("fit.outside", severity, item.box,
-                    f"{outside}/{total} điểm của vật ({ratio:.0%}) nằm ngoài box, nhiều nhất phía {where} "
-                    f"(tới {reach * 100:.0f} cm): box nhỏ hoặc lệch khỏi vật (ngưỡng {threshold:.0%})",
-                    ratio, threshold, {"outside": outside, "total": total, "side": where, "reach_m": reach})
+    side, reach = "", 0.0
+    if outside:
+        out = item.local[~item.inside]
+        half = np.asarray(item.box.dims) / 2.0
+        excess = np.maximum(np.abs(out) - half, 0.0)
+        axis = int(np.argmax(excess[:, :2].sum(axis=0)))
+        sign = 1 if np.sum(np.sign(out[:, axis]) * excess[:, axis]) >= 0 else -1
+        side, reach = FACE_NAMES[(axis, sign)], float(np.percentile(excess[:, axis], 90))
+    return OutsideMeasure(item.box, outside, total, side, reach)
+
+
+def outside_findings(measures: Sequence[OutsideMeasure], cfg: FitConfig) -> list[Finding]:
+    """Luật `fit.outside`: tỉ lệ điểm của vật nằm ngoài box, **so với trung vị của các box khác cùng track**.
+
+    Vật mang đồ, người đứng sát không có box, cây sát xe… làm tỉ lệ này cao đều trong cả track (đo trên 5 cảnh kiểm
+    tra: gần như mọi báo nhầm thuộc vài track người đi bộ); keyframe bị co / dời lệch khác thường so với chính track
+    mới là lỗi vẽ. Box lẻ hoặc track có ít hơn 2 box khác đo được thì so tỉ lệ tuyệt đối.
+    """
+    by_track: dict[int, list[float]] = {}
+    for m in measures:
+        if m.box.track_id is not None:
+            by_track.setdefault(m.box.track_id, []).append(m.ratio)
+    findings: list[Finding] = []
+    for m in measures:
+        if m.outside < cfg.outside_min_points:
+            continue
+        others = list(by_track.get(m.box.track_id, [])) if m.box.track_id is not None else []
+        if others:
+            others.remove(m.ratio)
+        reference = float(np.median(others)) if len(others) >= 2 else 0.0
+        excess = m.ratio - reference
+        if excess <= cfg.outside_warning_ratio:
+            continue
+        severity = Severity.ERROR if excess > cfg.outside_error_ratio else Severity.WARNING
+        threshold = cfg.outside_error_ratio if excess > cfg.outside_error_ratio else cfg.outside_warning_ratio
+        relative = f"; các frame khác của track: {reference:.0%}" if len(others) >= 2 else ""
+        findings.append(_finding(
+            "fit.outside", severity, m.box,
+            f"{m.outside}/{m.total} điểm của vật ({m.ratio:.0%}) nằm ngoài box, nhiều nhất phía {m.side} "
+            f"(tới {m.reach_m * 100:.0f} cm){relative}: box nhỏ hoặc lệch khỏi vật (ngưỡng {threshold:.0%})",
+            excess, threshold, {"outside": m.outside, "total": m.total, "ratio": m.ratio, "track_median": reference,
+                                "side": m.side, "reach_m": m.reach_m},
+        ))
+    return findings
+
+
+def outside_finding(item: BoxPointSet, cfg: FitConfig) -> Finding | None:
+    """`fit.outside` cho một box đứng riêng (so tỉ lệ tuyệt đối)."""
+    measure = outside_measure(item, cfg)
+    found = outside_findings([measure], cfg) if measure is not None else []
+    return found[0] if found else None
 
 
 def _occluded(points: np.ndarray, target: np.ndarray, own: np.ndarray, radius: float = 0.3) -> bool:
@@ -181,14 +233,17 @@ def overlap_findings(
 def fit_findings_for_frame(
     items: Sequence[BoxPointSet], cfg: FitConfig, frame_points: np.ndarray | None,
     empty: bool = True, outside: bool = True, loose: bool = True,
-) -> list[Finding]:
+) -> tuple[list[Finding], list[OutsideMeasure]]:
+    """Luật box rỗng và box dư của một frame, cùng số đo cho luật điểm ngoài box (chốt sau khi có cả job,
+    `outside_findings`). Box rỗng thì không xét hai luật kia."""
     findings: list[Finding] = []
+    measures: list[OutsideMeasure] = []
     for item in items:
         if empty and (f := empty_finding(item, cfg)) is not None:
             findings.append(f)
             continue
-        if outside and (f := outside_finding(item, cfg)) is not None:
-            findings.append(f)
+        if outside and (m := outside_measure(item, cfg)) is not None:
+            measures.append(m)
         if loose and (f := loose_finding(item, cfg, frame_points)) is not None:
             findings.append(f)
-    return findings
+    return findings, measures

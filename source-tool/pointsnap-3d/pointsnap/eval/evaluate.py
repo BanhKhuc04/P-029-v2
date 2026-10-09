@@ -216,7 +216,7 @@ def evaluate_scene(
 ) -> tuple[SceneStats, list[ErrorOutcome]]:
     frames = reader.frames(scene)
     clean_boxes = add_track_markers(reader.annotations(scene), frames.num_frames)
-    num_boxes = sum(1 for b in clean_boxes if not b.outside)
+    num_boxes = sum(1 for b in clean_boxes if b.visible)  # không tính box occluded do add_track_markers thêm
 
     started = time.perf_counter()
     clean_findings = scan_cuboids(clean_boxes, config, frames)

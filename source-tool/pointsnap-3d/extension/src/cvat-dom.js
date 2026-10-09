@@ -260,7 +260,22 @@
     return true;
   }
 
+  /**
+   * Tự kiểm khi mở job: các phần giao diện CVAT mà extension cần nhưng không tìm thấy
+   * (thường do CVAT khác phiên bản 2.77). Trả về tên dễ hiểu của từng phần thiếu.
+   */
+  function missingParts() {
+    const parts = [
+      ['ô số frame', SEL.frameInput],
+      ['thanh trượt frame', SEL.frameSlider],
+      ['nút Filters', SEL.filtersButton],
+      ['danh sách đối tượng', '.cvat-objects-sidebar'],
+    ];
+    return parts.filter(([, sel]) => !$(sel)).map(([name]) => name);
+  }
+
   root.PointSnapCvat = {
+    missingParts,
     SEL,
     waitFor,
     workspaceReady,

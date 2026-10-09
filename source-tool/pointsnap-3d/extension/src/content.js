@@ -117,6 +117,7 @@
       filterOn: false, filterBusy: false, filterProblem: null, confirmFlag: false, notice: null,
       ps: { checked: false, online: false, error: null, project: null, run: null, active: null, flagRun: false },
       timing: { start: performance.now() },
+      missing: [],
     });
     mountPanel();
     render();
@@ -127,6 +128,7 @@
     const ready = await cvat.waitFor(cvat.workspaceReady, 120000, 250);
     if (sid !== S.sid || !ready) return;
     S.timing.ready = performance.now();
+    S.missing = cvat.missingParts();
     S.frame = cvat.currentFrame();
     tickTimer = setInterval(tick, 300);
     if (settings.autoFilter && S.flags.length) await turnFilterOn(true);
@@ -234,8 +236,7 @@
     S.frame = frame;
     S.notice = null;
     render();
-    // Chờ danh sách đối tượng của CVAT đổi sang frame mới rồi mới làm sáng box.
-    if (settings.autoHighlight) setTimeout(() => highlight(flagsAt(frame)[0], 0), 250);
+    if (settings.autoHighlight) highlight(flagsAt(frame)[0], 0);
   }
 
   let pendingStep = 0;
@@ -265,10 +266,18 @@
    */
   async function highlight(flag, turn) {
     if (!flag) return;
+    // Chỉ lấy danh sách khi CVAT đã ở đúng frame của cờ và danh sách đã đứng yên qua hai lần đọc liên tiếp,
+    // để không rê nhầm vào box của frame cũ còn sót lại trong lúc CVAT vẽ lại.
+    let previous = '';
     const items = await cvat.waitFor(() => {
+      if (cvat.currentFrame() !== flag.frame) return null;
       const list = cvat.sidebarItems().filter((it) => it.label === flag.label);
-      return list.length ? list : null;
-    }, 1500);
+      const ids = list.map((it) => it.clientId).join(',');
+      const stable = ids === previous;
+      previous = ids;
+      return stable && list.length ? list : null;
+    }, 2500, 120);
+    if (cvat.currentFrame() !== flag.frame) return;
     if (!items) {
       if (turn !== 0) setNotice('info', `Không thấy box ${flag.label} trong danh sách đối tượng của CVAT ở frame này.`);
       return;
@@ -493,6 +502,10 @@
     if (S.notice) html += renderNotice();
     if (!S.flags.length) {
       return `${html}<div class="note">Job không còn box nào mang cờ lỗi. Nếu vừa sửa xong, bấm <b>Quét + gắn cờ</b> để kiểm lại.</div>`;
+    }
+    if (S.missing && S.missing.length) {
+      html += `<div class="note warn">Không tìm thấy ${esc(S.missing.join(', '))} của CVAT (extension viết cho CVAT 2.77). `
+        + 'Phần liên quan có thể không chạy; danh sách lỗi bên dưới vẫn đúng, chuyển frame bằng tay theo số frame.</div>';
     }
     html += renderNav();
     html += renderFilter();

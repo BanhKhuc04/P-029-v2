@@ -38,9 +38,33 @@ async function callPointSnap({ method, path, body }) {
   }
 }
 
+const BUILT_IN_CVAT = ['http://localhost:8080', 'http://127.0.0.1:8080'];
+
+/** Chỉ nhận yêu cầu từ trang của chính extension hoặc từ trang CVAT đã cấu hình, không từ trang web khác. */
+async function trustedSender(sender) {
+  if (sender.id !== chrome.runtime.id) return false;
+  if ((sender.url || '').startsWith(chrome.runtime.getURL(''))) return true;
+  let origin;
+  try {
+    origin = new URL(sender.url || '').origin;
+  } catch (_) {
+    return false;
+  }
+  if (BUILT_IN_CVAT.includes(origin)) return true;
+  const { cvatUrls } = await chrome.storage.sync.get(DEFAULTS);
+  return (cvatUrls || []).some((url) => {
+    try {
+      return new URL(url).origin === origin;
+    } catch (_) {
+      return false;
+    }
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (sender.id !== chrome.runtime.id || !message || message.type !== 'pointsnap') return false;
-  callPointSnap(message).then(sendResponse);
+  if (!message || message.type !== 'pointsnap') return false;
+  trustedSender(sender).then((ok) => (ok ? callPointSnap(message) : { ok: false, error: 'Nguồn yêu cầu không được phép' }))
+    .then(sendResponse);
   return true;
 });
 

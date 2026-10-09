@@ -1,5 +1,9 @@
 # Quy trình kiểm thử PointSnap 3D — Khánh, Chiến, Hân
 
+> **Từ 09/10:** danh sách ca, cách ghi kết quả, chuẩn báo lỗi và chuẩn xem tay theo
+> [docs/test/CHUAN-KIEM-THU.md](../docs/test/CHUAN-KIEM-THU.md) (toàn app, gồm cả extension). File này giữ lại phần
+> phân công và tổng hợp lỗi.
+
 Code đã xong và đã vào `main` (PR #18 – #23), gồm cả **giao diện web** (`pointsnap ui`).
 **Ba người làm cùng một quy trình** dưới đây, mỗi người trên máy của mình, ghi kết quả vào file riêng. Sau đó Khánh
 tổng hợp lỗi để Việt Anh giao việc sửa cho Việt Anh và Huy.

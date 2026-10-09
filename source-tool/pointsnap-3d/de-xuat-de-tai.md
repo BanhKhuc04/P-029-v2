@@ -405,9 +405,9 @@ tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 
 | Ngày | Việc | Cổng |
 |---|---|---|
-| **10/10 sáng** | **Spike extension** (S1–S4, mục 10) trên CVAT local: bấm hộ bộ lọc, đọc `pointsnap_error` của box đang chọn, nhảy frame không tải lại. **Huy:** chẩn đoán báo nhầm lơ lửng/lún và các ca nhảy 4 m bị bỏ sót (trên cảnh tinh chỉnh) | **G4 (12h 10/10):** spike đạt → làm bản đầy đủ; không đạt → giữ cách thao tác tay + link mở đúng box, ghi rõ trong báo cáo |
+| **10/10 sáng** | **Spike extension** (S1–S4, mục 10) trên CVAT local: bấm hộ bộ lọc, đọc `pointsnap_error` của box đang chọn, nhảy frame không tải lại. **Huy:** chẩn đoán báo nhầm lơ lửng/lún và các ca nhảy 4 m bị bỏ sót (trên cảnh tinh chỉnh) | **G4 (12h 10/10):** spike đạt → làm bản đầy đủ; không đạt → giữ cách thao tác tay + link mở đúng box, ghi rõ trong báo cáo. ✅ **Đạt sớm 08/10** (mục 10) |
 | **10/10 chiều** | **Việt Anh:** extension E1–E4. **Huy:** giảm báo nhầm (thử gộp sweeps LiDAR cho mặt đất, chỉnh luật). Sửa lỗi nặng trong bảng tổng hợp test | |
-| **11/10 sáng** | **Việt Anh:** E5–E6, hướng dẫn cài, đo tiêu chí xong (mục 4.6). **Huy:** chạy `pointsnap eval --scenes test` một lần, cập nhật số liệu. **Chiến:** cài và test extension theo README | **G5 (12h 11/10):** extension đạt tiêu chí xong; số liệu đánh giá cuối |
+| **11/10 sáng** | **Việt Anh:** E5–E6, hướng dẫn cài, đo tiêu chí xong (mục 4.6). **Huy:** chạy `pointsnap eval --scenes test` một lần, cập nhật số liệu. **Chiến:** cài và test extension theo README | **G5 (12h 11/10):** extension đạt tiêu chí xong; số liệu đánh giá cuối. Extension ✅ **đạt 08/10** (PR #31, có thêm liên kết với web); số liệu cuối chờ B8 |
 | **11/10 chiều** | **Khánh:** cập nhật báo cáo, slide (thêm extension, số liệu cuối). **Chiến:** quay video demo trọn luồng (quét → gắn cờ → extension → sửa → quét lại → ĐẠT). **Hân:** phần kết quả đánh giá + precision xem tay. Merge PR cuối | **Nộp cuối ngày 11/10** |
 
 **Thứ tự cắt nếu trễ:** E6 → E5 (giữ E1–E4 vì chạy chỉ nhờ cờ trên box) → giảm báo nhầm (giữ số liệu A10, ghi rõ chưa đạt). **Không cắt:** sửa lỗi nặng từ đợt test, video demo, báo cáo.
@@ -459,7 +459,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Phân mức đúng** (lỗi lớn báo ở mức Lỗi) | ≥ 80% | 84% ✅ |
 | **Precision xem tay** | ≥ 70% mỗi loại | ⏳ đợt test (duyệt nhanh tự tính) |
 | **Hiệu năng** | < 2 phút / cảnh | ~3–4 giây / job 39 frame ✅ |
-| **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | ⏳ giai đoạn 2 |
+| **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | **7 giây** cho 35 frame lỗi, 0 lần tải lại trang; mở từng link: 11–12,7 giây mỗi lần (≈ 8,6 phút cho 43 mục) ✅ |
 
 **Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.
 

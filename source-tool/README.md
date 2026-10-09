@@ -32,6 +32,8 @@ Tool **chỉ ghi thuộc tính cờ lỗi**: không đổi vị trí, kích thư
 
 ## Cài đặt và chạy
 
+> **Cài từ máy trắng (CVAT, dữ liệu nuScenes, PointSnap, extension), từng bước có kiểm tra: xem [CAI-DAT.md](CAI-DAT.md).** Phần dưới đây là tóm tắt.
+
 **Chuẩn bị trên CVAT:** thêm vào label spec thuộc tính văn bản `pointsnap_error` và checkbox `reviewed`. Tạo access token trong CVAT.
 
 ```bash

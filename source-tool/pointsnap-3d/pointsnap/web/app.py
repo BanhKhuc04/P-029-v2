@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.core.config import ConfigError
+from pointsnap.web.link import ExtensionLink
 from pointsnap.web.preview import PreviewError, finding_preview, load_reviews, save_review
 from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner
@@ -53,6 +54,18 @@ class ReviewRequest(BaseModel):
     verdict: Literal["ok", "fp"] | None = None
 
 
+class FocusRequest(BaseModel):
+    """Lệnh từ web: tab CVAT có extension đang mở job này hãy chuyển tới frame và làm sáng box của mục này."""
+
+    job_id: int
+    frame: int
+    label: str | None = None
+    message: str | None = None
+    run_id: str | None = None
+    index: int | None = None
+    bring: bool = False  # True: đưa tab CVAT lên trước (bấm "Mở trong CVAT"); False: chỉ đồng bộ theo lựa chọn
+
+
 class StartScanRequest(BaseModel):
     job_id: int
     flag: bool = False
@@ -72,6 +85,7 @@ def _same_cvat(a: str, b: str) -> bool:
 def create_app(home_dir: Path | str | None = None) -> FastAPI:
     pm = ProjectManager(home_dir=home_dir)
     runner = ScanRunner(project_manager=pm)
+    link = ExtensionLink()
 
     application = FastAPI(
         title="PointSnap 3D",
@@ -90,6 +104,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     # Lưu trữ trong app.state để test có thể truy cập nếu cần
     application.state.pm = pm
     application.state.runner = runner
+    application.state.link = link
 
     # --- API Quản lý dự án ---
 
@@ -279,7 +294,18 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         if not 0 <= index < len(run.get("findings") or []):
             raise HTTPException(status_code=404, detail=f"Không có mục số {index}")
         reviews = save_review(pm._project_dir(slug) / "runs" / run_id, index, req.verdict)
+        link.bump_reviews()
         return {"reviews": reviews}
+
+    @application.get("/api/projects/{slug}/scans/{run_id}/reviews")
+    def get_reviews(slug: str, run_id: str) -> dict[str, Any]:
+        """Chỉ kết luận xem tay (nhẹ hơn tải cả lần quét), để web và extension đồng bộ với nhau."""
+        _validate_run_id(run_id)
+        try:
+            run_dir = pm._project_dir(slug) / "runs" / run_id
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"reviews": load_reviews(run_dir), "rev": link.reviews_rev}
 
     @application.post("/api/projects/{slug}/scans/{run_id}/flag", status_code=202)
     def flag_scan(slug: str, run_id: str) -> dict[str, Any]:
@@ -297,6 +323,21 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             }
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.post("/api/extension/focus")
+    def extension_focus(req: FocusRequest) -> dict[str, Any]:
+        """Web gửi lệnh mở một mục trong tab CVAT có sẵn; `extension_online` = False thì web tự mở link."""
+        return link.focus(req.job_id, req.model_dump(exclude={"job_id"}))
+
+    @application.get("/api/extension/poll")
+    def extension_poll(job_id: int, after: int = -1) -> dict[str, Any]:
+        """Extension trên tab CVAT hỏi lệnh mới (mỗi giây); cũng là tín hiệu tab đó đang mở job."""
+        return link.poll(job_id, after)
+
+    @application.get("/api/extension/status")
+    def extension_status(job_id: int) -> dict[str, Any]:
+        """Web hỏi: có tab CVAT nào (cài extension) đang mở job này không, và phiên bản kết luận xem tay."""
+        return link.status(job_id)
 
     @application.get("/api/extension/jobs/{job_id}")
     def extension_job(job_id: int, cvat_url: str = "") -> dict[str, Any]:

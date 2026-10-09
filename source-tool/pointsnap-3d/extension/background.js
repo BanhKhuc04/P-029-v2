@@ -62,6 +62,17 @@ async function trustedSender(sender) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Web PointSnap vừa bấm "Mở trong CVAT": đưa tab CVAT đang mở job đó lên trước (không tải lại trang).
+  if (message && message.type === 'focusTab' && sender.tab) {
+    trustedSender(sender).then((ok) => {
+      if (ok) {
+        chrome.tabs.update(sender.tab.id, { active: true });
+        chrome.windows.update(sender.tab.windowId, { focused: true });
+      }
+      sendResponse({ ok });
+    });
+    return true;
+  }
   if (!message || message.type !== 'pointsnap') return false;
   trustedSender(sender).then((ok) => (ok ? callPointSnap(message) : { ok: false, error: 'Nguồn yêu cầu không được phép' }))
     .then(sendResponse);

@@ -1,0 +1,59 @@
+"""Cầu nối giữa giao diện web PointSnap và extension trên trang CVAT (A15).
+
+Web gửi lệnh "mở lỗi này" (`focus`); extension trên tab CVAT đang mở job đó hỏi định kỳ (`poll`), nhận lệnh rồi tự
+chuyển frame và làm sáng box mà không tải lại trang. Mỗi lần extension hỏi cũng là một tín hiệu "đang mở job này",
+để web biết nên chuyển trong tab CVAT có sẵn hay phải mở link mới. Chỉ giữ trong bộ nhớ: tắt PointSnap là mất, không sao.
+"""
+
+from __future__ import annotations
+
+import threading
+import time
+from typing import Any, Callable
+
+# Extension hỏi mỗi giây; quá ngần này giây không hỏi thì coi như tab CVAT đã đóng.
+ONLINE_SECONDS = 4.0
+
+
+class ExtensionLink:
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._seq = 0
+        self._commands: dict[int, dict[str, Any]] = {}
+        self._seen: dict[int, float] = {}
+        self._reviews_rev = 0
+
+    def _online(self, job_id: int) -> bool:
+        seen = self._seen.get(job_id)
+        return seen is not None and self._clock() - seen <= ONLINE_SECONDS
+
+    def focus(self, job_id: int, command: dict[str, Any]) -> dict[str, Any]:
+        """Ghi lệnh mới nhất cho job; trả về số thứ tự và việc có extension nào đang mở job đó không."""
+        with self._lock:
+            self._seq += 1
+            self._commands[job_id] = {**command, "job_id": job_id, "seq": self._seq}
+            return {"seq": self._seq, "extension_online": self._online(job_id)}
+
+    def poll(self, job_id: int, after: int) -> dict[str, Any]:
+        """Extension hỏi lệnh mới hơn `after`. `after < 0` (vừa mở trang): chỉ lấy số thứ tự hiện tại, không chạy lệnh cũ."""
+        with self._lock:
+            self._seen[job_id] = self._clock()
+            command = self._commands.get(job_id)
+            fresh = after >= 0 and command is not None and command["seq"] > after
+            return {"seq": self._seq, "command": command if fresh else None, "reviews_rev": self._reviews_rev}
+
+    def status(self, job_id: int) -> dict[str, Any]:
+        with self._lock:
+            return {"extension_online": self._online(job_id), "reviews_rev": self._reviews_rev}
+
+    @property
+    def reviews_rev(self) -> int:
+        with self._lock:
+            return self._reviews_rev
+
+    def bump_reviews(self) -> int:
+        """Có kết luận xem tay mới (từ web hoặc extension): tăng số phiên bản để phía bên kia đọc lại."""
+        with self._lock:
+            self._reviews_rev += 1
+            return self._reviews_rev

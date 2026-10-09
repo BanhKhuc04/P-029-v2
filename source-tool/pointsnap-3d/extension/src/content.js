@@ -120,11 +120,14 @@
       ps: { checked: false, online: false, error: null, project: null, run: null, active: null, flagRun: false },
       timing: { start: performance.now() },
       missing: [],
+      linkSeq: -1,
+      reviewsRev: null,
     });
     mountPanel();
     render();
     api.seedFilterForTask(job.taskId, ATTR).catch(() => {});
     loadPointSnap(sid);
+    linkLoop(sid);
     await loadFlags(sid);
     S.timing.flags = performance.now();
     const ready = await cvat.waitFor(cvat.workspaceReady, 120000, 250);
@@ -209,9 +212,17 @@
 
   let navigating = false;
 
-  async function goTo(frame) {
+  /** Chỉ số cờ ở `frame` khớp lệnh từ web (cùng nhãn, nội dung cờ chứa câu thông báo của mục); không khớp thì 0. */
+  function pickFor(frame, match) {
+    if (!match) return 0;
+    const index = flagsAt(frame).findIndex((f) => (!match.label || f.label === match.label)
+      && (!match.message || f.value.includes(match.message)));
+    return Math.max(index, 0);
+  }
+
+  async function goTo(frame, match) {
     // Một lần chuyển frame tại một thời điểm: bấm dồn khi CVAT đang tải frame sẽ bị CVAT bỏ qua.
-    if (navigating) return;
+    if (navigating) return { ok: false, busy: true };
     navigating = true;
     S.navTarget = frame;
     render();
@@ -229,17 +240,25 @@
       else {
         S.frame = frame;
         step(dir);
-        return;
+        return res;
       }
     }
     if (!res.ok) {
       setNotice('error', `${res.reason}. Gõ ${frame} vào ô số frame của CVAT rồi nhấn Enter.`);
-      return;
+    } else {
+      S.frame = frame;
+      S.pick = pickFor(frame, match);
+      if (match) S.active = null;
+      S.notice = null;
+      render();
+      if (settings.autoHighlight || match) highlight(flagsAt(frame)[S.pick], 0);
     }
-    S.frame = frame;
-    S.notice = null;
-    render();
-    if (settings.autoHighlight) highlight(flagsAt(frame)[0], 0);
+    if (pendingCommand) {
+      const command = pendingCommand;
+      pendingCommand = null;
+      runCommand(command);
+    }
+    return res;
   }
 
   let pendingStep = 0;
@@ -293,6 +312,54 @@
 
   function flagsAt(frame) {
     return S.flags.filter((f) => f.frame === frame);
+  }
+
+  // ---------------------------------------------------------------- liên kết với giao diện web PointSnap
+
+  let pendingCommand = null;
+
+  /**
+   * Hỏi PointSnap mỗi giây: web có gửi lệnh "mở mục này" cho job đang mở không, và kết luận xem tay có đổi không.
+   * Mỗi lần hỏi cũng báo cho web biết tab CVAT này đang mở job (để web không mở thêm tab tải lại job).
+   */
+  async function linkLoop(sid) {
+    while (sid === S.sid) {
+      const res = await pointsnap('GET', `/api/extension/poll?job_id=${S.job.jobId}&after=${S.linkSeq}`);
+      if (sid !== S.sid) return;
+      if (res.ok) {
+        if (!S.ps.online) loadPointSnap(sid);
+        S.linkSeq = res.data.seq;
+        if (res.data.command) runCommand(res.data.command);
+        if (S.reviewsRev !== null && res.data.reviews_rev !== S.reviewsRev) refreshReviews();
+        S.reviewsRev = res.data.reviews_rev;
+      } else if (S.ps.online) {
+        S.ps.online = false;
+        render();
+      }
+      await new Promise((resolve) => setTimeout(resolve, res.ok ? 1000 : 5000));
+    }
+  }
+
+  /** Lệnh từ web: chuyển tới frame của mục, làm sáng đúng box; `bring` thì đưa tab CVAT này lên trước. */
+  async function runCommand(command) {
+    if (navigating) {
+      pendingCommand = command;
+      return;
+    }
+    S.tab = 'now';
+    if (command.bring && hasChrome) chrome.runtime.sendMessage({ type: 'focusTab' }, () => void chrome.runtime.lastError);
+    await goTo(command.frame, command);
+  }
+
+  /** Kết luận xem tay vừa đổi ở phía web: đọc lại để nút Đúng / Báo nhầm khớp nhau. */
+  async function refreshReviews() {
+    const run = S.ps.run;
+    if (!run || !S.ps.project) return;
+    const res = await pointsnap('GET', `/api/projects/${S.ps.project.slug}/scans/${run.run_id}/reviews`);
+    if (res.ok && S.ps.run === run) {
+      run.reviews = res.data.reviews;
+      render();
+    }
   }
 
   // ---------------------------------------------------------------- PointSnap: quét, gắn cờ, kết luận

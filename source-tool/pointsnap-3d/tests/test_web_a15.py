@@ -47,3 +47,42 @@ def test_extension_job_without_scan_still_names_project(tmp_path: Path):
     data = client.get("/api/extension/jobs/9", params={"cvat_url": "http://localhost:8080"}).json()
     assert data == {"project": {"slug": "local", "name": "local"}, "run": None, "active": None}
     assert client.get("/api/extension/jobs/9", params={"cvat_url": "http://nowhere:1"}).json()["project"] is None
+
+
+def test_link_relays_focus_from_web_to_extension(tmp_path: Path):
+    """Web gửi lệnh mở mục; extension đang mở job nhận đúng một lần, không nhận lệnh cũ khi vừa mở trang."""
+    client = TestClient(create_app(tmp_path))
+    old = client.post("/api/extension/focus", json={"job_id": 2, "frame": 3}).json()
+    assert old["extension_online"] is False  # chưa có tab CVAT nào hỏi
+
+    first = client.get("/api/extension/poll", params={"job_id": 2}).json()
+    assert first["command"] is None and first["seq"] == old["seq"]  # vừa mở trang: bỏ lệnh cũ
+
+    sent = client.post("/api/extension/focus", json={"job_id": 2, "frame": 7, "label": "bus", "message": "m", "bring": True}).json()
+    assert sent["extension_online"] is True
+    got = client.get("/api/extension/poll", params={"job_id": 2, "after": first["seq"]}).json()
+    assert got["command"]["frame"] == 7 and got["command"]["label"] == "bus" and got["command"]["bring"] is True
+    again = client.get("/api/extension/poll", params={"job_id": 2, "after": got["seq"]}).json()
+    assert again["command"] is None
+    assert client.get("/api/extension/poll", params={"job_id": 5, "after": 0}).json()["command"] is None  # job khác
+
+
+def test_link_goes_offline_and_tracks_review_versions(tmp_path: Path):
+    from pointsnap.web.link import ONLINE_SECONDS, ExtensionLink
+
+    now = [100.0]
+    link = ExtensionLink(clock=lambda: now[0])
+    link.poll(2, -1)
+    assert link.status(2)["extension_online"] is True
+    now[0] += ONLINE_SECONDS + 0.1
+    assert link.status(2)["extension_online"] is False
+
+    client = TestClient(create_app(tmp_path))
+    client.post("/api/projects", json={"name": "local", "slug": "local"})
+    _write_run(tmp_path, "local", "20261008-100000-job2", 2, "2026-10-08T10:00:00+00:00", [{"frame": 1}])
+    url = "/api/projects/local/scans/20261008-100000-job2/reviews"
+    rev0 = client.get(url).json()["rev"]
+    client.put(f"{url}/0", json={"verdict": "ok"})
+    data = client.get(url).json()
+    assert data == {"reviews": {"0": "ok"}, "rev": rev0 + 1}
+    assert client.get("/api/extension/status", params={"job_id": 2}).json()["reviews_rev"] == rev0 + 1

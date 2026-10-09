@@ -25,6 +25,16 @@ Cập nhật bản mới: `git pull`, rồi bấm nút tải lại (↻) của e
 6. Tab **Danh sách**: mọi lỗi của job, lọc Lỗi / Cảnh báo, bấm dòng để nhảy tới frame; phía dưới là **Quét lại** / **Quét + gắn cờ**. Sửa box xong thì **Save** (Ctrl+S) như bình thường.
 7. Xong cả job: bấm **Quét + gắn cờ** ở tab Danh sách để kiểm lại, rồi tải lại trang để thấy cờ mới.
 
+### Liên kết với giao diện web PointSnap
+
+Mở cùng lúc web PointSnap (`127.0.0.1:8765`) và tab CVAT đang mở job:
+
+- Ở màn Kết quả của web, nút **Mở trong CVAT** đổi thành **Chuyển CVAT tới box này** khi có tab CVAT (cài extension) đang mở job đó. Bấm nút: tab CVAT nhảy tới đúng frame, làm sáng đúng box và được đưa lên trước, **không tải lại trang**. Chưa mở tab CVAT nào thì nút mở link như cũ.
+- Chọn mục trên web (bấm dòng, phím J / K) thì tab CVAT tự chuyển theo.
+- **Đúng là lỗi / Báo nhầm** ghi ở web hay ở extension đều hiện ở bên kia sau khoảng 2 giây.
+
+Cách hoạt động: web gửi lệnh lên PointSnap (`POST /api/extension/focus`); extension hỏi PointSnap mỗi giây (`GET /api/extension/poll`), lần hỏi đó cũng cho web biết tab CVAT đang mở job nào (`GET /api/extension/status`). Không có kết nối trực tiếp giữa hai tab, không cần quyền đặc biệt của trình duyệt.
+
 | Chức năng | Cần PointSnap chạy? |
 |---|---|
 | E1 Bảng PointSnap trên trang job | Không |
@@ -65,7 +75,7 @@ extension/
 
 Bộ lọc được chuẩn bị bằng cách thêm một mục vào **lịch sử bộ lọc** của CVAT (`annotationFiltersHistory` trong localStorage của trang CVAT), giống như khi người dùng đã tự tạo bộ lọc đó một lần; sau đó extension bấm hộ **Filters → Recently used → mục PointSnap → Submit**.
 
-API PointSnap dùng: `GET /api/extension/jobs/{job_id}?cvat_url=…` (dự án và lần quét mới nhất của job), `POST /api/projects/{slug}/scans`, `GET /api/projects/{slug}/scans/{run_id}`, `PUT /api/projects/{slug}/scans/{run_id}/reviews/{index}`.
+API PointSnap dùng: `GET /api/extension/jobs/{job_id}?cvat_url=…` (dự án và lần quét mới nhất của job), `GET /api/extension/poll`, `POST /api/projects/{slug}/scans`, `GET /api/projects/{slug}/scans/{run_id}`, `GET` / `PUT /api/projects/{slug}/scans/{run_id}/reviews[/{index}]`.
 
 Test:
 

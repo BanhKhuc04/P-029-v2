@@ -540,6 +540,20 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Hiệu năng** | < 2 phút / cảnh | ~3–4 giây / job 39 frame ✅ |
 | **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | **7 giây** cho 35 frame lỗi, 0 lần tải lại trang; mở từng link: 11–12,7 giây mỗi lần (≈ 8,6 phút cho 43 mục) ✅ |
 
+**Giai đoạn 3 (10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-giai-doan-3.md](docs/ket-qua-giai-doan-3.md).
+
+| Chỉ số | Mục tiêu | Giai đoạn 3 |
+|---|---|---|
+| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 (từ 3,80 · 0,85); cảnh tinh chỉnh 1,92 · 0,35 ✅. Lơ lửng / lún còn 2,41 · 0,31 |
+| **Recall lật box 180° / xoay 90°** | ≥ 90% | 100% · 100% ✅; báo ở mức Lỗi 93% · 88% |
+| **Recall ngược chiều cả track** (xe chạy ≥ 2 m/s) | ≥ 90% | 100% (2/2), ít mẫu |
+| **Recall vẽ trùng** | ≥ 80% | 100% (5/5) ✅ |
+| **Recall box dời ≥ 0,5 m / co ×0,7** (vật ≥ 30 điểm) | — | 20–33% / 25%: chỉ bắt lệch rõ; lệch nhỏ do `track.jump`, `size.in_track` |
+| **Báo nhầm của luật lật hướng / ngược chiều** | — | 0 trên 10 cảnh ✅ |
+| **Recall nhảy vị trí 2 m / 4 m** | ≥ 90% | 100% / 100% ✅ |
+| **Phân mức đúng** | ≥ 80% | 100% ✅ |
+| **Hiệu năng** | < 2 phút / cảnh | 5–35 giây / cảnh ✅ (gộp 4 sweep) |
+
 **Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.
 
 ---

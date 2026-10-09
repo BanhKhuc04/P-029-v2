@@ -9,9 +9,9 @@ Vẫn giữ góp ý của mentor: **chỉ phát hiện và cảnh báo**, không
 
 | Mã | Việc | Kết quả |
 |---|---|---|
-| C1 | Luật **sai hướng box** `heading.flip`, `heading.motion`, `heading.points` (spec 4.2) | Lật box 180° / xoay ngang bắt được ở mức Lỗi; 0 báo nhầm trên nhãn sạch với luật theo track |
-| C1 | Luật **box lệch khỏi vật** `fit.empty`, `fit.outside`, `fit.loose`, `fit.overlap` (spec 4.2) | Bắt box vẽ trùng, box rỗng, box lệch / dư rõ |
-| C1 | **Mặt đất v2**: gộp 4 lượt quét LiDAR, bỏ vệt xe đang chạy | Báo nhầm lơ lửng / lún giảm ~17–25% trên cảnh tinh chỉnh |
+| C1 | Luật **sai hướng box** `heading.flip`, `heading.motion`, `heading.points` (spec 4.2) | Lật 180° / xoay 90° bắt 100%; lật hướng / ngược chiều 0 báo nhầm trên 10 cảnh |
+| C1 | Luật **box lệch khỏi vật** `fit.empty`, `fit.outside`, `fit.loose`, `fit.overlap` (spec 4.2) | Vẽ trùng bắt 100%; box dời / co chỉ bắt khi lệch rõ trên vật lớn |
+| C1 | **Mặt đất v2**: gộp 4 lượt quét LiDAR, bỏ vệt xe đang chạy | Báo nhầm lơ lửng / lún trên cảnh kiểm tra 3,18 · 0,66 → 2,41 · 0,31 / 100 box |
 | C2 | Track theo spec 4.4: `to-cvat` dùng **occluded** cho đoạn vắng ≤ 6 frame, tách track khi vắng lâu; luật `track.reuse_id`, `track.occluded_long` | Box occluded không bị kiểm hình học |
 | C2 | Luật **thiếu / sai thuộc tính** `attr.missing`, `attr.invalid` (spec 3.1.3); kích thước theo **Class/thuộc tính** | — |
 | C2 | Bộ class **spec-vn** (`--taxonomy spec-vn`) + guideline mẫu `pointsnap/guidelines/spec-vn.yaml` | Demo trên task có label Vehicle / Two-wheels / Pedestrian / Animal / Obstacle |

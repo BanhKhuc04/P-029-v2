@@ -44,6 +44,8 @@
     confirmFlag: false,
     notice: null,
     listFilter: 'all',
+    tab: 'now',
+    pick: 0,
     collapsed: false,
     pos: null,
     timing: {},
@@ -172,6 +174,7 @@
     const filterOn = cvat.filtersActive();
     const activeKey = (a) => (a ? `${a.clientId}|${a.label}|${a.flag}` : '');
     if (frame !== S.frame || activeKey(active) !== activeKey(S.active) || filterOn !== S.filterOn) {
+      if (frame !== S.frame) S.pick = 0;
       S.frame = frame;
       S.active = active;
       S.filterOn = filterOn;
@@ -454,216 +457,231 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   })[c]);
 
+  const svg = (d, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" aria-hidden="true">`
+    + `<path d="${d}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const LOGO = '<svg width="18" height="18" viewBox="0 0 48 48" fill="none" aria-hidden="true">'
     + '<path d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>'
     + '<circle cx="24" cy="38" r="5" fill="#4C9AFF"/></svg>';
-  const ICON_MIN = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-  const ICON_MAX = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ICON = {
+    prev: svg('M10 3.5 5.5 8 10 12.5'),
+    next: svg('M6 3.5 10.5 8 6 12.5'),
+    min: svg('M3.5 8h9', 14),
+    max: svg('M4 6l4 4 4-4', 14),
+    close: svg('M4.5 4.5l7 7M11.5 4.5l-7 7', 12),
+    check: svg('M3.5 8.5l3 3 6-7', 14),
+    cross: svg('M4.5 4.5l7 7M11.5 4.5l-7 7', 14),
+    target: svg('M8 2.5v2M8 11.5v2M2.5 8h2M11.5 8h2M8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z', 14),
+    refresh: svg('M12.5 6A4.75 4.75 0 1 0 13 9M12.5 2.5V6H9', 14),
+  };
 
   function sevBadge(sev) {
     return `<span class="sev ${esc(sev)}">${esc(SEV_LABEL[sev] || sev)}</span>`;
+  }
+
+  /** Cờ đang hiện trên thẻ: của box đang chọn nếu đọc được, nếu không thì cờ thứ `S.pick` ở frame hiện tại. */
+  function currentFlag() {
+    const here = flagsAt(S.frame);
+    const a = S.active;
+    if (a && a.flag) {
+      const hit = here.find((f) => f.value === a.flag);
+      if (hit) return { flag: hit, index: here.indexOf(hit), here, clientId: a.clientId };
+      const items = core.parseFlag(a.flag);
+      return {
+        flag: { frame: S.frame, label: a.label, value: a.flag, items, severity: core.worstSeverity(items) },
+        index: -1,
+        here,
+        clientId: a.clientId,
+      };
+    }
+    if (!here.length) return { flag: null, index: -1, here };
+    const i = ((S.pick % here.length) + here.length) % here.length;
+    const flag = here[i];
+    const sameLabel = a && a.label === flag.label && here.filter((f) => f.label === a.label).length === 1;
+    return { flag, index: i, here, clientId: sameLabel ? a.clientId : null };
   }
 
   function render() {
     if (!shadow) return;
     const panel = shadow.querySelector('.ps');
     const body = panel.querySelector('.body');
-    const list = panel.querySelector('.list');
-    const scroll = { body: body ? body.scrollTop : 0, list: list ? list.scrollTop : 0 };
-
+    const scroll = body ? body.scrollTop : 0;
     panel.classList.toggle('collapsed', S.collapsed);
-    panel.innerHTML = renderHead() + (S.collapsed ? '' : `<div class="body">${renderBody()}</div>${renderFoot()}`);
-
+    panel.innerHTML = renderHead() + (S.collapsed ? '' : renderTabs() + `<div class="body">${renderBody()}</div>`);
     const newBody = panel.querySelector('.body');
-    const newList = panel.querySelector('.list');
-    if (newBody) newBody.scrollTop = scroll.body;
-    if (newList) newList.scrollTop = scroll.list;
+    if (newBody) newBody.scrollTop = scroll;
   }
 
   function renderHead() {
     const ps = S.ps;
-    const status = !ps.checked ? '' : ps.online
-      ? '<span class="status on" title="PointSnap đang chạy"><i></i>PointSnap</span>'
-      : '<span class="status" title="PointSnap chưa bật: vẫn dùng được bộ lọc, chuyển lỗi và thông báo lỗi"><i></i>PointSnap tắt</span>';
-    const count = S.collapsed && S.flags.length ? `<span class="small" style="color:#B8C6D8">${S.flags.length} lỗi</span>` : '';
-    return `<div class="head">${LOGO}<span class="brand">PointSnap</span>${count}${status}`
-      + `<button class="icon-btn" data-action="collapse" aria-label="${S.collapsed ? 'Mở rộng' : 'Thu gọn'}" title="${S.collapsed ? 'Mở rộng' : 'Thu gọn'}">${S.collapsed ? ICON_MAX : ICON_MIN}</button></div>`;
+    const dotTitle = ps.online ? 'PointSnap đang chạy' : 'PointSnap chưa bật — bộ lọc, chuyển lỗi, thông báo lỗi vẫn dùng được';
+    const dot = ps.checked ? `<span class="dot ${ps.online ? 'on' : ''}" title="${dotTitle}"></span>` : '';
+    const pos = S.frames.indexOf(S.frame);
+    const count = S.collapsed && S.frames.length
+      ? `<span class="head-count">${pos >= 0 ? `${pos + 1} / ${S.frames.length}` : `${S.frames.length} frame lỗi`}</span>` : '';
+    const label = S.collapsed ? 'Mở rộng' : 'Thu gọn';
+    return `<div class="head">${LOGO}<span class="brand">PointSnap</span>${count}<span class="grow"></span>${dot}`
+      + `<button class="icon-btn" data-action="collapse" aria-label="${label}" title="${label}">${S.collapsed ? ICON.max : ICON.min}</button></div>`;
+  }
+
+  function renderTabs() {
+    if (!S.flags.length) return '';
+    const tab = (key, text) => `<button class="tab" role="tab" aria-selected="${S.tab === key}" data-action="tab" data-k="${key}">${text}</button>`;
+    return `<div class="tabs" role="tablist">${tab('now', 'Lỗi hiện tại')}${tab('list', `Danh sách <span class="tab-count">${S.flags.length}</span>`)}</div>`;
   }
 
   function renderBody() {
     if (S.loading && !S.flags.length) return '<div class="empty">Đang đọc cờ lỗi của job từ CVAT…</div>';
-    if (S.loadError) {
-      return `<div class="note error">${esc(S.loadError)}<div class="actions"><button class="btn small" data-action="refresh">Thử lại</button></div></div>`;
-    }
+    if (S.loadError) return note('error', esc(S.loadError), [{ action: 'refresh', text: 'Thử lại' }]);
     if (!S.hasFlagAttr) {
-      return '<div class="note warn">Job này chưa có thuộc tính <b>pointsnap_error</b>. Quét job bằng PointSnap và bấm "Gắn cờ lên CVAT", rồi tải lại trang.</div>';
+      return note('warn', 'Job này chưa được gắn cờ. Quét bằng PointSnap, bấm <b>Gắn cờ lên CVAT</b>, rồi tải lại trang.');
     }
     let html = '';
-    if (S.notice) html += renderNotice();
-    if (!S.flags.length) {
-      return `${html}<div class="note">Job không còn box nào mang cờ lỗi. Nếu vừa sửa xong, bấm <b>Quét + gắn cờ</b> để kiểm lại.</div>`;
-    }
+    if (S.notice) html += note(S.notice.kind, esc(S.notice.text), S.notice.actions, true);
     if (S.missing && S.missing.length) {
-      html += `<div class="note warn">Không tìm thấy ${esc(S.missing.join(', '))} của CVAT (extension viết cho CVAT 2.77). `
-        + 'Phần liên quan có thể không chạy; danh sách lỗi bên dưới vẫn đúng, chuyển frame bằng tay theo số frame.</div>';
+      html += note('warn', `Không tìm thấy ${esc(S.missing.join(', '))} của CVAT (extension viết cho CVAT 2.77); phần liên quan có thể không chạy.`);
     }
-    html += renderNav();
-    html += renderFilter();
-    html += renderActive();
-    html += renderFrameFlags();
-    html += renderAll();
-    return html;
+    if (!S.flags.length) {
+      return `${html}<div class="empty"><b>Job không còn box mang cờ.</b><br>Vừa sửa xong? Quét lại và gắn cờ bằng PointSnap để kiểm.</div>${renderScan()}`;
+    }
+    return html + (S.tab === 'list' ? renderList() : renderNow());
   }
 
-  function renderNotice() {
-    const n = S.notice;
-    const kind = n.kind === 'error' ? 'error' : n.kind === 'warn' ? 'warn' : '';
-    const actions = [...n.actions, { action: 'dismiss', text: 'Đóng' }]
-      .map((a) => `<button class="btn small" data-action="${esc(a.action)}">${esc(a.text)}</button>`).join('');
-    return `<div class="note ${kind}" role="status">${esc(n.text)}<div class="actions">${actions}</div></div>`;
+  function note(kind, html, actions, closable) {
+    const buttons = (actions || []).map((a) => `<button class="link" data-action="${esc(a.action)}">${esc(a.text)}</button>`).join('');
+    const close = closable ? `<button class="icon-btn small" data-action="dismiss" aria-label="Đóng">${ICON.close}</button>` : '';
+    return `<div class="note ${esc(kind)}" role="status"><div class="grow">${html}`
+      + `${buttons ? `<div class="note-actions">${buttons}</div>` : ''}</div>${close}</div>`;
+  }
+
+  function renderNow() {
+    return renderNav() + renderCard() + renderStatus();
   }
 
   function renderNav() {
     const frame = S.frame;
+    const loading = S.navTarget !== null && S.navTarget !== undefined;
+    const prev = loading || frame === null ? null : core.stepFrame(S.frames, frame, -1);
+    const next = loading ? null : core.stepFrame(S.frames, frame === null ? -1 : frame, 1);
     const pos = S.frames.indexOf(frame);
-    const prev = frame === null ? null : core.stepFrame(S.frames, frame, -1);
-    const next = core.stepFrame(S.frames, frame === null ? -1 : frame, 1);
-    if (S.navTarget !== null && S.navTarget !== undefined) {
-      return `<div class="nav"><button class="btn" disabled>‹ Trước</button><div class="where"><b>Frame ${S.navTarget}</b>`
-        + '<span>CVAT đang tải frame…</span></div><button class="btn primary" disabled>Tiếp ›</button></div>';
-    }
-    const where = pos >= 0
-      ? `<b>Frame ${frame}</b><span>frame lỗi ${pos + 1}/${S.frames.length}</span>`
-      : `<b>Frame ${frame ?? '—'}</b><span>${S.frames.length} frame có lỗi · ${S.flags.length} box</span>`;
-    return `<div class="nav">`
-      + `<button class="btn" data-action="prev" ${prev === null ? 'disabled' : ''} title="Frame có lỗi trước (phím , hoặc [)">‹ Trước</button>`
-      + `<div class="where">${where}</div>`
-      + `<button class="btn primary" data-action="next" ${next === null ? 'disabled' : ''} title="Frame có lỗi tiếp theo (phím . hoặc ])">Tiếp ›</button>`
-      + `</div><div class="small muted" style="text-align:center">Phím <span class="kbd">,</span> <span class="kbd">.</span> (hoặc <span class="kbd">[</span> <span class="kbd">]</span>) để chuyển lỗi, không tải lại trang</div>`;
+    const sub = loading ? 'Đang tải frame…' : pos >= 0 ? `Frame lỗi ${pos + 1} / ${S.frames.length}` : `${S.frames.length} frame có lỗi`;
+    return '<div class="nav">'
+      + `<button class="nav-btn" data-action="prev" ${prev === null ? 'disabled' : ''} aria-label="Frame có lỗi trước" title="Frame có lỗi trước (phím ,)">${ICON.prev}</button>`
+      + `<div class="nav-mid"><span class="nav-frame">Frame ${loading ? S.navTarget : frame ?? '—'}</span><span class="nav-sub">${sub}</span></div>`
+      + `<button class="nav-btn primary" data-action="next" ${next === null ? 'disabled' : ''} aria-label="Frame có lỗi tiếp theo" title="Frame có lỗi tiếp theo (phím .)">${ICON.next}</button>`
+      + '</div>';
   }
 
-  function renderFilter() {
-    let html = '<div class="row"><div class="grow small">';
-    if (S.filterBusy) html += 'Đang bấm hộ bộ lọc của CVAT…';
-    else if (S.filterOn) html += '<b>Đang lọc</b>: CVAT chỉ hiện box của bộ lọc đang bật';
-    else html += 'CVAT đang hiện mọi box';
-    html += '</div>';
-    html += S.filterOn
-      ? `<button class="btn small" data-action="filter-off" ${S.filterBusy ? 'disabled' : ''}>Hiện tất cả</button>`
-      : `<button class="btn small on" data-action="filter-on" ${S.filterBusy ? 'disabled' : ''}>Chỉ box lỗi</button>`;
-    html += '</div>';
+  function renderCard() {
+    const { flag, index, here, clientId } = currentFlag();
+    if (!flag) {
+      return '<div class="empty">Frame này không có box mang cờ.<br>Bấm <b>›</b> hoặc phím <span class="kbd">.</span> để tới lỗi tiếp theo.</div>';
+    }
+    const first = flag.items[0];
+    const title = RULE_LABEL[first.rule] || 'Lỗi nhãn';
+    const pager = here.length > 1
+      ? `<span class="pager"><button class="icon-btn small" data-action="pick" data-d="-1" aria-label="Lỗi trước trong frame">${ICON.prev}</button>`
+        + `<span>${index >= 0 ? index + 1 : '–'} / ${here.length}</span>`
+        + `<button class="icon-btn small" data-action="pick" data-d="1" aria-label="Lỗi sau trong frame">${ICON.next}</button></span>` : '';
+    const meta = [esc(flag.label), clientId != null ? `#${clientId}` : null, `frame ${flag.frame}`].filter(Boolean).join(' · ');
+    const messages = flag.items
+      .map((it) => `<p class="msg">${flag.items.length > 1 ? `${sevBadge(it.severity)} ` : ''}${esc(it.text)}</p>`).join('');
+    const tips = [...new Set(flag.items.map((it) => it.tip))].map((t) => `<div>${esc(t)}</div>`).join('');
+    const i = S.flags.indexOf(flag);
+    const rs = i >= 0 ? reviewState(flag) : null;
+    let actions = '';
+    if (rs) {
+      actions += `<button class="btn ${rs.verdict === 'ok' ? 'chosen ok' : ''}" data-action="review-ok" data-i="${i}" aria-pressed="${rs.verdict === 'ok'}">${ICON.check}Đúng là lỗi</button>`;
+      actions += `<button class="btn ${rs.verdict === 'fp' ? 'chosen fp' : ''}" data-action="review-fp" data-i="${i}" aria-pressed="${rs.verdict === 'fp'}">${ICON.cross}Báo nhầm</button>`;
+    }
+    if (i >= 0) {
+      actions += `<span class="grow"></span><button class="icon-btn ghost" data-action="highlight" data-i="${i}" title="Làm sáng box này trên khung 3D" aria-label="Làm sáng box">${ICON.target}</button>`;
+    }
+    return `<article class="card sev-${esc(flag.severity)}">`
+      + `<div class="card-top">${sevBadge(flag.severity)}${first.rule ? `<code>${esc(first.rule)}</code>` : ''}<span class="grow"></span>${pager}</div>`
+      + `<h3 class="card-title">${esc(title)}</h3><div class="card-meta">${meta}</div>${messages}`
+      + `<div class="fix"><div class="fix-label">Cách sửa</div>${tips}</div>`
+      + (actions ? `<div class="card-actions">${actions}</div>` : '')
+      + '</article>';
+  }
+
+  function renderStatus() {
+    let filter;
+    if (S.filterBusy) filter = '<span class="muted">Đang bật bộ lọc…</span>';
+    else if (S.filterOn) filter = '<span class="state on"></span>Chỉ hiện box lỗi<button class="link" data-action="filter-off">Hiện tất cả</button>';
+    else filter = '<span class="state"></span>Đang hiện mọi box<button class="link" data-action="filter-on">Chỉ box lỗi</button>';
+    let html = `<div class="status-row"><span class="grow filter">${filter}</span><span class="keys"><span class="kbd">,</span><span class="kbd">.</span>chuyển lỗi</span></div>`;
     const p = S.filterProblem;
     if (p && !S.filterOn) {
-      html += '<div class="note warn">';
-      if (p.needsReload) {
-        html += 'CVAT chưa nạp bộ lọc PointSnap (lần đầu mở task này). Tải lại trang một lần là xong.';
-        html += '<div class="actions"><button class="btn small" data-action="reload">Tải lại trang</button></div>';
-      } else {
-        html += `${esc(p.reason)}.`;
-      }
-      html += `<div class="tip">Làm tay: Filters → Add rule → Attributes → nhãn → <b>${ATTR}</b> → is not empty → Submit.</div></div>`;
+      html += p.needsReload
+        ? note('warn', 'Lần đầu mở task này: CVAT cần tải lại trang một lần để có bộ lọc PointSnap.', [{ action: 'reload', text: 'Tải lại trang' }])
+        : note('warn', `${esc(p.reason)}. Làm tay: Filters → Add rule → Attributes → nhãn → <b>${ATTR}</b> → is not empty.`);
     }
     return html;
   }
 
-  function renderItems(items) {
-    return items.map((it) => `<div class="msg">${sevBadge(it.severity)} ${it.rule ? `<b>${esc(RULE_LABEL[it.rule] || it.rule)}:</b> ` : ''}${esc(it.text)}</div>`
-      + `<div class="tip"><b>Gợi ý sửa:</b> ${esc(it.tip)}</div>`).join('');
-  }
-
-  function renderActive() {
-    const a = S.active;
-    let html = '<div class="section-title">Box đang chọn</div>';
-    if (!a) return `${html}<div class="small muted">Rê chuột vào box (hoặc vào mục ở danh sách bên phải của CVAT) để xem lỗi của nó.</div>`;
-    const name = `#${a.clientId ?? '?'} ${esc(a.label || '')}`;
-    if (a.flag) {
-      return `${html}<div class="card active"><div class="top"><span class="label">${name}</span>${sevBadge(core.worstSeverity(core.parseFlag(a.flag)))}</div>${renderItems(core.parseFlag(a.flag))}</div>`;
-    }
-    const here = flagsAt(S.frame).filter((f) => f.label === a.label);
-    if (a.flag === '' || (a.flag === null && !here.length)) {
-      return `${html}<div class="small muted">${name}: không có cờ lỗi.</div>`;
-    }
-    if (here.length === 1) {
-      return `${html}<div class="card active"><div class="top"><span class="label">${name}</span>${sevBadge(here[0].severity)}</div>${renderItems(here[0].items)}</div>`;
-    }
-    return `${html}<div class="small muted">${name}: frame này có ${here.length} box ${esc(a.label)} mang cờ, xem ở mục dưới. Mở DETAILS của box bên phải CVAT để biết chính xác.</div>`;
-  }
-
-  function renderFrameFlags() {
-    const here = flagsAt(S.frame);
-    let html = `<div class="section-title">Ở frame này (${here.length})</div>`;
-    if (!here.length) return `${html}<div class="small muted">Frame này không có box mang cờ. Bấm <b>Tiếp ›</b>.</div>`;
-    here.forEach((flag) => {
-      const index = S.flags.indexOf(flag);
-      const isActive = S.active && S.active.flag && S.active.flag === flag.value;
-      const rs = reviewState(flag);
-      let actions = `<button class="btn small" data-action="highlight" data-i="${index}" title="Làm sáng box này trên khung 3D">Làm sáng box</button>`;
-      if (rs) {
-        actions += `<button class="btn small ${rs.verdict === 'ok' ? 'on' : ''}" data-action="review-ok" data-i="${index}">Đúng là lỗi</button>`;
-        actions += `<button class="btn small ${rs.verdict === 'fp' ? 'on' : ''}" data-action="review-fp" data-i="${index}">Báo nhầm</button>`;
-      }
-      html += `<div class="card ${isActive ? 'active' : ''}"><div class="top"><span class="label">${esc(flag.label)}</span>`
-        + `<span style="margin-left:auto">${sevBadge(flag.severity)}</span></div>${renderItems(flag.items)}`
-        + `<div class="actions">${actions}</div></div>`;
-    });
-    return html;
-  }
-
-  function renderAll() {
+  function renderList() {
     const counts = { all: S.flags.length, error: 0, warning: 0 };
     S.flags.forEach((f) => { if (counts[f.severity] !== undefined) counts[f.severity] += 1; });
-    const chip = (key, text) => `<button class="chip ${S.listFilter === key ? 'on' : ''}" data-action="list-filter" data-k="${key}">${text} ${counts[key]}</button>`;
+    const seg = (key, text) => `<button class="seg-btn" aria-pressed="${S.listFilter === key}" data-action="list-filter" data-k="${key}">${text}<span>${counts[key]}</span></button>`;
     const shown = S.flags.filter((f) => S.listFilter === 'all' || f.severity === S.listFilter);
-    let html = `<div class="section-title">Tất cả lỗi của job<span class="chips">${chip('all', 'Tất cả')}${chip('error', 'Lỗi')}${chip('warning', 'Cảnh báo')}</span></div>`;
-    if (!shown.length) return `${html}<div class="empty">Không có mục nào.</div>`;
-    html += '<div class="list">';
-    shown.forEach((flag) => {
-      const rs = reviewState(flag);
-      const verdict = rs && rs.verdict ? `<span class="verdict ${rs.verdict}">${rs.verdict === 'ok' ? 'Đúng' : 'Nhầm'}</span>` : sevBadge(flag.severity);
-      const first = flag.items[0];
-      const more = flag.items.length > 1 ? ` (+${flag.items.length - 1})` : '';
-      html += `<button class="item ${flag.frame === S.frame ? 'current' : ''}" data-action="goto" data-f="${flag.frame}" title="${esc(flag.value)}">`
-        + `<span class="f">#${flag.frame}</span><span class="t"><b>${esc(flag.label)}</b> · ${esc(RULE_LABEL[first.rule] || first.text)}${more}</span>${verdict}</button>`;
-    });
-    return `${html}</div>`;
+    let html = `<div class="seg">${seg('all', 'Tất cả')}${seg('error', 'Lỗi')}${seg('warning', 'Cảnh báo')}</div>`;
+    if (!shown.length) {
+      html += '<div class="empty">Không có mục nào.</div>';
+    } else {
+      html += '<div class="list">';
+      shown.forEach((flag) => {
+        const rs = reviewState(flag);
+        const first = flag.items[0];
+        const tag = rs && rs.verdict
+          ? `<span class="verdict ${rs.verdict}">${rs.verdict === 'ok' ? 'Đúng' : 'Nhầm'}</span>`
+          : `<span class="sev-dot ${esc(flag.severity)}" title="${esc(SEV_LABEL[flag.severity])}"></span>`;
+        html += `<button class="row-item ${flag.frame === S.frame ? 'current' : ''}" data-action="goto" data-f="${flag.frame}" title="${esc(flag.value)}">`
+          + `<span class="f">${flag.frame}</span><span class="t"><b>${esc(flag.label)}</b><span>${esc(RULE_LABEL[first.rule] || first.text)}</span></span>${tag}</button>`;
+      });
+      html += '</div>';
+    }
+    return html + renderScan();
   }
 
-  function renderFoot() {
+  function renderScan() {
     const ps = S.ps;
-    let html = '<div class="foot">';
-    if (!ps.checked) return `${html}<div class="small muted">Đang tìm PointSnap…</div></div>`;
+    let html = '<section class="scan"><div class="scan-title">PointSnap';
+    html += ps.checked ? `<span class="scan-state ${ps.online ? 'on' : ''}">${ps.online ? 'đang chạy' : 'chưa bật'}</span>` : '';
+    html += '<span class="grow"></span>'
+      + `<button class="icon-btn small ghost" data-action="refresh" title="Đọc lại cờ trên CVAT và kết quả PointSnap" aria-label="Làm mới">${ICON.refresh}</button></div>`;
+    if (!ps.checked) return `${html}<div class="muted small">Đang tìm PointSnap…</div></section>`;
     if (!ps.online) {
-      return `${html}<div class="small muted">PointSnap chưa bật: chạy <b>pointsnap ui</b> để quét lại, gắn cờ và ghi Đúng / Báo nhầm ngay tại đây.</div>`
-        + '<div class="row"><button class="btn small" data-action="refresh">Kiểm tra lại</button></div></div>';
+      return `${html}<div class="muted small">Chạy <code>pointsnap ui</code> để quét lại, gắn cờ và ghi Đúng / Báo nhầm ngay tại đây.</div></section>`;
     }
     if (ps.active) {
       const pct = Math.max(3, Math.min(100, Number(ps.active.progress) || 0));
-      return `${html}<div class="small">${esc(ps.active.message || 'Đang quét…')}</div><div class="progress"><i style="width:${pct}%"></i></div></div>`;
+      return `${html}<div class="small">${esc(ps.active.message || 'Đang quét…')}</div><div class="progress"><i style="width:${pct}%"></i></div></section>`;
     }
     const run = ps.run;
     if (run && run.summary) {
       const s = run.summary;
-      const when = (run.started_at || '').replace('T', ' ').slice(0, 16);
+      // started_at là giờ UTC (ISO): đổi sang giờ máy, dạng 09/10 08:43.
+      const t = new Date(run.started_at);
+      const pad = (n) => String(n).padStart(2, '0');
+      const when = Number.isNaN(t.getTime()) ? '' : `${pad(t.getDate())}/${pad(t.getMonth() + 1)} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
       const reviewed = Object.keys(run.reviews || {}).length;
-      html += `<div class="small"><b>Lần quét gần nhất</b> ${esc(when)} · ${s.num_errors ?? 0} Lỗi · ${s.num_warnings ?? 0} Cảnh báo`
-        + `${reviewed ? ` · đã xem ${reviewed}` : ''}</div>`;
+      html += `<div class="small">Lần quét gần nhất <span class="mono">${esc(when)}</span></div>`
+        + `<div class="small muted">${s.num_errors ?? 0} Lỗi · ${s.num_warnings ?? 0} Cảnh báo${reviewed ? ` · đã xem ${reviewed}` : ''}</div>`;
       const stale = S.flags.filter((f) => !reviewState(f)).length;
-      if (stale) {
-        html += `<div class="small muted">${stale} cờ trên CVAT không có trong lần quét này (cờ cũ hoặc box đã sửa): bấm <b>Quét + gắn cờ</b> để đồng bộ.</div>`;
-      }
+      if (stale) html += `<div class="small warn-text">${stale} cờ trên CVAT không có trong lần quét này. Quét + gắn cờ để đồng bộ.</div>`;
     } else if (ps.project) {
-      html += `<div class="small muted">Dự án ${esc(ps.project.name)}: job này chưa được quét.</div>`;
+      html += `<div class="small muted">Job này chưa được quét trong dự án ${esc(ps.project.name)}.</div>`;
     } else {
-      html += `<div class="small muted">PointSnap chưa có dự án nối với ${esc(location.origin)}.</div>`;
+      html += `<div class="small muted">Chưa có dự án PointSnap nối với ${esc(location.origin)}.</div>`;
     }
     if (S.confirmFlag) {
-      html += '<div class="note warn">Gắn cờ sẽ ghi lên nhãn của job này. <b>Save</b> trên CVAT trước, và sau khi gắn cờ thì tải lại trang trước khi sửa tiếp.'
-        + '<div class="actions"><button class="btn small primary" data-action="scan-flag-go">Gắn cờ</button><button class="btn small" data-action="scan-flag-cancel">Thôi</button></div></div>';
+      html += note('warn', 'Gắn cờ sẽ ghi lên nhãn của job. <b>Save</b> trên CVAT trước; gắn cờ xong thì tải lại trang.',
+        [{ action: 'scan-flag-go', text: 'Gắn cờ' }, { action: 'scan-flag-cancel', text: 'Thôi' }]);
+    } else {
+      html += `<div class="scan-actions"><button class="btn" data-action="scan" ${ps.project ? '' : 'disabled'}>Quét lại</button>`
+        + `<button class="btn" data-action="scan-flag" ${ps.project ? '' : 'disabled'}>Quét + gắn cờ</button></div>`;
     }
-    html += `<div class="row"><button class="btn small" data-action="scan" ${ps.project ? '' : 'disabled'}>Quét lại</button>`
-      + `<button class="btn small" data-action="scan-flag" ${ps.project ? '' : 'disabled'}>Quét + gắn cờ</button>`
-      + '<button class="btn small" data-action="refresh" title="Đọc lại cờ trên CVAT và kết quả PointSnap">Làm mới</button></div>';
-    return `${html}</div>`;
+    return `${html}</section>`;
   }
 
   // ---------------------------------------------------------------- sự kiện
@@ -681,12 +699,30 @@
         break;
       case 'prev': step(-1); break;
       case 'next': step(1); break;
-      case 'goto': goTo(Number(button.dataset.f)); break;
+      case 'goto':
+        S.tab = 'now';
+        goTo(Number(button.dataset.f));
+        break;
       case 'filter-on': turnFilterOn(false); break;
       case 'filter-off': turnFilterOff(); break;
       case 'highlight': highlight(flag, 1); break;
       case 'review-ok': review(flag, 'ok'); break;
       case 'review-fp': review(flag, 'fp'); break;
+      case 'tab':
+        S.tab = button.dataset.k;
+        render();
+        break;
+      case 'pick': {
+        const here = flagsAt(S.frame);
+        if (!here.length) break;
+        const { index } = currentFlag();
+        S.pick = ((((index < 0 ? S.pick : index) + Number(button.dataset.d)) % here.length) + here.length) % here.length;
+        // Thẻ đi theo lựa chọn mới (bỏ box đang chọn), rồi làm sáng box đó trên CVAT.
+        S.active = null;
+        render();
+        highlight(here[S.pick], 0);
+        break;
+      }
       case 'list-filter':
         S.listFilter = button.dataset.k;
         render();

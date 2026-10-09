@@ -1,123 +1,186 @@
 /*
  * Kiểu dáng bảng PointSnap trên trang CVAT. Nằm trong Shadow DOM nên không ảnh hưởng giao diện CVAT
- * và không bị CSS của CVAT ảnh hưởng. Cùng bộ màu xanh nước biển với giao diện web PointSnap.
+ * và không bị CSS của CVAT ảnh hưởng. Dùng đúng bộ màu và kiểu thẻ của giao diện web PointSnap (A13),
+ * tông sáng để hợp với CVAT.
  */
 globalThis.PointSnapPanelCss = `
 :host { all: initial; }
 .ps {
-  --bg: #FFFFFF; --soft: #F4F6F9; --border: #DDE2E8; --text: #161B22; --muted: #5B6573;
-  --primary: #0B63CE; --on-primary: #FFFFFF; --primary-soft: #E8F1FC; --primary-text: #0A57B5;
-  --error: #B42318; --error-soft: #FDEEEE; --warn: #A35200; --warn-soft: #FFF3E3;
+  --surface: #FFFFFF; --surface-2: #F7F9FB; --border: #DDE2E8; --border-strong: #C3CBD5;
+  --text: #161B22; --text-2: #4A5563; --text-3: #68717D;
+  --topbar: #0F2A47; --topbar-text-2: #B7C6D8; --logo-dot: #4C9AFF;
+  --primary: #0B63CE; --on-primary: #FFFFFF; --primary-soft: #E8F1FC; --primary-text: #0A57B5; --selected: #EEF5FD;
+  --error: #B42318; --error-soft: #FDEEEE; --warn: #A35200; --warn-soft: #FFF3E3; --warn-bar: #E9B56B;
   --info: #4A5563; --info-soft: #EEF1F5; --success: #157A4A; --success-soft: #EBF8F1;
-  --head: #0F2A47; --dot: #4C9AFF;
-  position: fixed; z-index: 2147483000; width: 340px; max-height: calc(100vh - 120px);
-  display: flex; flex-direction: column;
-  font: 13px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--text);
-  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(15, 42, 71, .18); overflow: hidden;
-}
-@media (prefers-color-scheme: dark) {
-  .ps {
-    --bg: #151B23; --soft: #0D1117; --border: #2A333F; --text: #E6EAF0; --muted: #9AA5B4;
-    --primary: #4C9AFF; --on-primary: #04162E; --primary-soft: #14284A; --primary-text: #7DB4FF;
-    --error: #F38B85; --error-soft: #2E1718; --warn: #F0A54A; --warn-soft: #33260F;
-    --info: #A9B4C2; --info-soft: #222A35; --success: #5FD39A; --success-soft: #12291D; --head: #0A0F15;
-  }
+  --note: #E8F1FC; --note-border: #B8D3F5; --radius: 6px;
+  position: fixed; z-index: 2147483000; width: 320px; max-height: calc(100vh - 120px);
+  display: flex; flex-direction: column; overflow: hidden;
+  font: 13px/1.5 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 42, 71, .06), 0 8px 24px rgba(15, 42, 71, .14);
+  -webkit-font-smoothing: antialiased;
 }
 .ps * { box-sizing: border-box; }
-.ps button { font: inherit; cursor: pointer; }
-.ps button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.ps button { font: inherit; color: inherit; cursor: pointer; }
+.ps button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.ps button:disabled { cursor: default; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.muted { color: var(--text-3); }
+.small { font-size: 12px; }
+.mono, code { font-family: 'IBM Plex Mono', Consolas, ui-monospace, monospace; }
+.kbd {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px;
+  font: 500 11px 'IBM Plex Mono', Consolas, monospace; color: var(--text-2);
+  background: var(--surface); border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px;
+}
 
+/* ---- Thanh tiêu đề (navy như web) ---- */
 .head {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--head); color: #fff;
-  cursor: grab; user-select: none;
+  display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 12px;
+  background: var(--topbar); color: #fff; cursor: grab; user-select: none; flex: none;
 }
 .head:active { cursor: grabbing; }
-.brand { font-weight: 600; letter-spacing: .2px; }
-.status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; color: #B8C6D8; }
-.status i { width: 7px; height: 7px; border-radius: 50%; background: #6B7785; display: inline-block; }
-.status.on i { background: #3FCF8E; }
+.brand { font-weight: 600; font-size: 14px; letter-spacing: -.01em; }
+.head-count { font: 500 12px 'IBM Plex Mono', Consolas, monospace; color: var(--topbar-text-2); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #6B7785; margin-right: 4px; }
+.dot.on { background: #3FCF8E; box-shadow: 0 0 0 3px rgba(63, 207, 142, .18); }
 .icon-btn {
-  border: 0; background: transparent; color: #fff; width: 26px; height: 26px; border-radius: 4px;
-  display: grid; place-items: center; padding: 0;
+  display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0;
+  border: 0; border-radius: 4px; background: transparent; color: inherit;
 }
-.icon-btn:hover { background: rgba(255,255,255,.12); }
+.head .icon-btn:hover { background: rgba(255, 255, 255, .12); }
+.icon-btn.small { width: 22px; height: 22px; }
+.icon-btn.ghost { color: var(--text-2); }
+.icon-btn.ghost:hover, .pager .icon-btn:hover, .note .icon-btn:hover { background: var(--info-soft); color: var(--text); }
+.ps.collapsed { width: auto; min-width: 200px; }
 
-.body { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-.ps.collapsed { width: auto; }
-.ps.collapsed .body { display: none; }
+/* ---- Tab ---- */
+.tabs { display: flex; padding: 0 8px; border-bottom: 1px solid var(--border); flex: none; }
+.tab {
+  height: 38px; padding: 0 10px; border: 0; border-bottom: 2px solid transparent; background: transparent;
+  color: var(--text-2); font-size: 13px;
+}
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--text); font-weight: 600; border-bottom-color: var(--primary); }
+.tab-count {
+  display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 9px; background: var(--info-soft);
+  font: 500 11px/18px 'IBM Plex Mono', Consolas, monospace; color: var(--text-2);
+}
 
-.nav { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
-.nav .where { text-align: center; }
-.nav .where b { display: block; font-size: 15px; }
-.nav .where span { color: var(--muted); font-size: 11px; }
+.body { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ---- Điều hướng frame ---- */
+.nav { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 8px; }
+.nav-btn {
+  display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text);
+}
+.nav-btn:hover:not(:disabled) { background: var(--surface-2); }
+.nav-btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.nav-btn.primary:hover:not(:disabled) { background: var(--primary); opacity: .92; }
+.nav-btn:disabled { opacity: .4; }
+.nav-mid { display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.nav-frame { font-size: 15px; font-weight: 600; }
+.nav-sub { font-size: 12px; color: var(--text-3); }
+
+/* ---- Thẻ lỗi (giống khung chi tiết của web) ---- */
+.card {
+  border: 1px solid var(--border); border-left: 3px solid var(--info); border-radius: var(--radius);
+  background: var(--surface); padding: 12px;
+}
+.card.sev-error { border-left-color: var(--error); }
+.card.sev-warning { border-left-color: var(--warn-bar); }
+.card-top { display: flex; align-items: center; gap: 8px; min-height: 22px; }
+.card-top code { font-size: 11px; color: var(--text-3); }
+.card-title { margin: 8px 0 2px; font-size: 15px; font-weight: 600; line-height: 1.3; letter-spacing: -.005em; }
+.card-meta { font-size: 12px; color: var(--text-3); }
+.msg { margin: 8px 0 0; color: var(--text); }
+.msg .sev { margin-right: 4px; }
+.fix {
+  margin-top: 10px; padding: 8px 10px; border-radius: var(--radius);
+  background: var(--note); border: 1px solid var(--note-border); font-size: 12px; color: var(--text);
+}
+.fix-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--primary-text); margin-bottom: 2px; }
+.card-actions { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.pager { display: inline-flex; align-items: center; gap: 2px; font: 500 12px 'IBM Plex Mono', Consolas, monospace; color: var(--text-2); }
+.pager .icon-btn { color: var(--text-2); }
+
 .btn {
-  height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border);
-  background: var(--bg); color: var(--text); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface);
+  font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap;
 }
-.btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary-text); }
-.btn:disabled { opacity: .45; cursor: default; }
-.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-.btn.primary:hover:not(:disabled) { color: var(--on-primary); filter: brightness(1.08); }
-.btn.small { height: 26px; padding: 0 8px; font-size: 12px; }
-.btn.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-text); }
-.kbd { font: 11px ui-monospace, Consolas, monospace; padding: 0 4px; border: 1px solid var(--border); border-radius: 3px; color: var(--muted); }
+.btn:hover:not(:disabled) { background: var(--surface-2); }
+.btn:disabled { opacity: .5; }
+.btn.chosen.ok { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+.btn.chosen.fp { background: var(--error-soft); border-color: var(--error); color: var(--error); }
 
-.row { display: flex; align-items: center; gap: 8px; }
-.row .grow { flex: 1; min-width: 0; }
-.muted { color: var(--muted); }
-.small { font-size: 12px; }
-.section-title {
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
-  display: flex; align-items: center; gap: 6px;
+.sev {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
 }
-
-.note {
-  padding: 8px 10px; border-radius: 6px; background: var(--primary-soft); color: var(--text); font-size: 12px;
-}
-.note.warn { background: var(--warn-soft); }
-.note.error { background: var(--error-soft); }
-.note .actions { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
-
-.card { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; background: var(--bg); }
-.card.active { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; }
-.card .top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.card .label { font-weight: 600; }
-.msg { margin: 2px 0; }
-.tip { margin-top: 4px; font-size: 12px; color: var(--muted); }
-.tip b { color: var(--text); font-weight: 600; }
-.card .actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-
-.sev { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 10px; white-space: nowrap; }
 .sev.error { background: var(--error-soft); color: var(--error); }
 .sev.warning { background: var(--warn-soft); color: var(--warn); }
 .sev.info { background: var(--info-soft); color: var(--info); }
 
-.chips { display: flex; gap: 4px; margin-left: auto; }
-.chip {
-  height: 22px; padding: 0 8px; border-radius: 11px; border: 1px solid var(--border); background: var(--bg);
-  color: var(--muted); font-size: 11px;
+/* ---- Dòng trạng thái bộ lọc ---- */
+.status-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
+.status-row .filter { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.state { width: 6px; height: 6px; border-radius: 50%; background: var(--off, #B4BCC6); }
+.state.on { background: var(--primary); }
+.keys { display: inline-flex; align-items: center; gap: 3px; color: var(--text-3); white-space: nowrap; }
+.keys .kbd:last-of-type { margin-right: 3px; }
+.link {
+  border: 0; background: none; padding: 0; color: var(--primary-text); font-weight: 500; font-size: 12px;
+  text-decoration: underline; text-underline-offset: 2px; text-decoration-color: rgba(10, 87, 181, .35);
 }
-.chip.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-text); }
+.link:hover { text-decoration-color: currentColor; }
 
-.list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 6px; max-height: 240px; overflow-y: auto; }
-.item {
-  display: grid; grid-template-columns: 38px 1fr auto; gap: 6px; align-items: center; text-align: left;
-  padding: 6px 8px; border: 0; border-bottom: 1px solid var(--border); background: var(--bg); color: var(--text);
+/* ---- Thông báo ---- */
+.note {
+  display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: var(--radius);
+  font-size: 12px; background: var(--note); border: 1px solid var(--note-border);
 }
-.item:last-child { border-bottom: 0; }
-.item:hover { background: var(--soft); }
-.item.current { background: var(--primary-soft); }
-.item .f { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); }
-.item .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.item .t b { font-weight: 600; }
-.verdict { font-size: 11px; color: var(--muted); }
+.note.warn { background: var(--warn-soft); border-color: #F2D2A4; }
+.note.error { background: var(--error-soft); border-color: #F3C5C2; }
+.note-actions { display: flex; gap: 12px; margin-top: 4px; }
+
+/* ---- Danh sách ---- */
+.seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--radius); background: var(--info-soft); align-self: flex-start; }
+.seg-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+  border: 0; border-radius: 4px; background: transparent; font-size: 12px; color: var(--text-2);
+}
+.seg-btn span { font: 500 11px 'IBM Plex Mono', Consolas, monospace; color: var(--text-3); }
+.seg-btn[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(15, 42, 71, .12); }
+.list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); max-height: 260px; overflow-y: auto; }
+.row-item {
+  display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 8px; text-align: left;
+  min-height: 40px; padding: 4px 10px; border: 0; border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.row-item:last-child { border-bottom: 0; }
+.row-item:hover { background: var(--surface-2); }
+.row-item.current { background: var(--selected); box-shadow: inset 2px 0 0 var(--primary); }
+.row-item .f { font: 500 12px 'IBM Plex Mono', Consolas, monospace; color: var(--text-3); text-align: right; }
+.row-item .t { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.row-item .t b { font-weight: 600; font-size: 12px; }
+.row-item .t span { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sev-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--info); }
+.sev-dot.error { background: var(--error); }
+.sev-dot.warning { background: var(--warn-bar); }
+.verdict { font-size: 11px; font-weight: 600; }
 .verdict.ok { color: var(--success); }
 .verdict.fp { color: var(--error); }
 
-.foot { border-top: 1px solid var(--border); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--soft); }
-.foot .row { flex-wrap: wrap; }
-.progress { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+/* ---- PointSnap: quét, gắn cờ ---- */
+.scan { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+.scan-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); }
+.scan-state { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }
+.scan-state.on { color: var(--success); }
+.scan-actions { display: flex; gap: 6px; margin-top: 6px; }
+.warn-text { color: var(--warn); }
+.progress { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; margin-top: 4px; }
 .progress i { display: block; height: 100%; background: var(--primary); transition: width .3s; }
-.empty { padding: 10px; text-align: center; color: var(--muted); font-size: 12px; }
+.empty { padding: 16px 8px; text-align: center; color: var(--text-3); font-size: 12px; line-height: 1.6; }
+.empty b { color: var(--text); }
 `;

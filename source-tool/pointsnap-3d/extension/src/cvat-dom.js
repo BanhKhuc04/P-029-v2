@@ -78,15 +78,19 @@
     const input = $(SEL.frameInput);
     if (!input) return { ok: false, reason: 'Không thấy ô chọn frame của CVAT' };
     if (currentFrame() === frame) return { ok: true };
-    input.focus();
-    typeInto(input, frame);
-    pressEnter(input);
-    // CVAT tải point cloud của frame mới trước khi đổi frame: chờ thanh trượt chỉ đúng frame.
-    let moved = await waitFor(() => currentFrame() === frame, 5000);
-    if (!moved) {
-      // Ô chọn frame cũng chuyển frame khi mất focus.
-      input.blur();
-      moved = await waitFor(() => currentFrame() === frame, 5000);
+    // CVAT bỏ qua lệnh chuyển frame khi đang bận (vd. vừa áp bộ lọc, đang tải lại nhãn): thử tối đa hai lần.
+    let moved = false;
+    for (let attempt = 0; attempt < 2 && !moved; attempt += 1) {
+      input.focus();
+      typeInto(input, frame);
+      pressEnter(input);
+      // CVAT tải point cloud của frame mới trước khi đổi frame: chờ thanh trượt chỉ đúng frame.
+      moved = await waitFor(() => currentFrame() === frame, 2500);
+      if (!moved) {
+        // Ô chọn frame cũng chuyển frame khi mất focus.
+        input.blur();
+        moved = await waitFor(() => currentFrame() === frame, 2500);
+      }
     }
     input.blur();
     return moved ? { ok: true } : { ok: false, reason: `CVAT không chuyển sang frame ${frame}` };

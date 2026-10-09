@@ -18,12 +18,12 @@ Cập nhật bản mới: `git pull`, rồi bấm nút tải lại (↻) của e
 ## Dùng
 
 1. Quét job bằng PointSnap và **Gắn cờ lên CVAT** (giao diện web `pointsnap ui` hoặc `pointsnap scan --job <id> --flag`).
-2. Mở job 3D trên CVAT. Bảng **PointSnap** hiện ở góc trái, kéo thanh tiêu đề để dời chỗ, bấm `–` để thu gọn.
-3. Extension tự bật bộ lọc của CVAT để **chỉ hiện box có cờ**.
-4. Bấm **Tiếp ›** / **‹ Trước** (hoặc phím `.` / `,`, cũng nhận `]` / `[`) để tới frame có lỗi kế tiếp; box lỗi đầu tiên tự sáng lên. Bấm nhiều lần liền thì extension đi lần lượt sau khi CVAT tải xong từng frame.
-5. Rê chuột vào box (trên khung 3D hoặc ở danh sách đối tượng bên phải) → mục **Box đang chọn** hiện nội dung lỗi và gợi ý sửa. Khi đang lọc, extension tự mở DETAILS của box có cờ nên CVAT cũng hiện `pointsnap_error` ngay ở danh sách bên phải.
-6. Sửa box, **Save** (Ctrl+S) như bình thường.
-7. Xong cả job: bấm **Quét + gắn cờ** ở chân bảng để kiểm lại, rồi tải lại trang để thấy cờ mới.
+2. Mở job 3D trên CVAT. Bảng **PointSnap** hiện ở góc trái (kéo thanh tiêu đề để dời chỗ, bấm `–` để thu gọn) và tự bật bộ lọc của CVAT để **chỉ hiện box có cờ**.
+3. Tab **Lỗi hiện tại**: bấm **›** / **‹** (hoặc phím `.` / `,`, cũng nhận `]` / `[`) để tới frame có lỗi kế tiếp; box lỗi tự sáng lên. Bấm nhiều lần liền thì extension đi lần lượt sau khi CVAT tải xong từng frame.
+4. Thẻ lỗi cho biết mức lỗi, loại lỗi, box, mô tả và **Cách sửa**. Frame có nhiều box lỗi thì bấm `1 / 2 ›` trên thẻ để chuyển và làm sáng box kế tiếp. Rê chuột vào box trên CVAT thì thẻ đổi theo box đó.
+5. Ghi kết luận bằng **Đúng là lỗi** / **Báo nhầm** (cần PointSnap chạy).
+6. Tab **Danh sách**: mọi lỗi của job, lọc Lỗi / Cảnh báo, bấm dòng để nhảy tới frame; phía dưới là **Quét lại** / **Quét + gắn cờ**. Sửa box xong thì **Save** (Ctrl+S) như bình thường.
+7. Xong cả job: bấm **Quét + gắn cờ** ở tab Danh sách để kiểm lại, rồi tải lại trang để thấy cờ mới.
 
 | Chức năng | Cần PointSnap chạy? |
 |---|---|

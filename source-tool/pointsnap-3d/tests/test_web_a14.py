@@ -69,3 +69,25 @@ def test_preview_without_snapshot_explains(client_with_run: TestClient):
 def test_ui_files_are_revalidated(client_with_run: TestClient):
     assert client_with_run.get("/").headers["cache-control"] == "no-cache"
     assert client_with_run.get("/static/app.js").headers["cache-control"] == "no-cache"
+
+
+def test_concurrent_reviews_are_not_lost(client_with_run: TestClient, tmp_path: Path):
+    """Nhiều yêu cầu ghi kết luận cùng lúc không làm mất kết luận nào (góp ý review PR #29)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from pointsnap.web.preview import load_reviews, save_review
+
+    run_dir = tmp_path / "projects" / "a14" / "runs" / RUN_ID
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(lambda i: save_review(run_dir, i, "ok" if i % 2 else "fp"), range(40)))
+    assert len(load_reviews(run_dir)) == 40
+    assert not (run_dir / "reviews.json.tmp").exists()
+
+
+def test_ui_fonts_are_served_locally(client_with_run: TestClient):
+    """Giao diện không tải font từ Google, chạy được khi không có mạng (góp ý review PR #28)."""
+    html = client_with_run.get("/").text
+    assert "fonts.googleapis.com" not in html and "/static/fonts/fonts.css" in html
+    css = client_with_run.get("/static/fonts/fonts.css")
+    assert css.status_code == 200 and "IBM Plex Sans" in css.text
+    assert client_with_run.get("/static/fonts/ibm-plex-sans-400-vietnamese.woff2").status_code == 200

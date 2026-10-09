@@ -25,7 +25,7 @@ pointsnap = "pointsnap.cli.main:main"
 include = ["pointsnap*"]
 
 [tool.setuptools.package-data]
-pointsnap = ["config.yaml", "web/static/*"]
+pointsnap = ["config.yaml", "web/static/*", "web/static/fonts/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

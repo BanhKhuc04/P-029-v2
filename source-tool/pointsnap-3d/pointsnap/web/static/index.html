@@ -202,6 +202,7 @@
                     <option value="track">Đứt track</option>
                     <option value="heading">Sai hướng box</option>
                     <option value="fit">Box lệch khỏi vật</option>
+                    <option value="attribute">Thiếu / sai thuộc tính</option>
                   </select>
                   <select id="filter-class" class="filter-select" style="flex: 1 1 120px;" aria-label="Class">
                     <option value="">Mọi class</option>
@@ -614,6 +615,50 @@
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <span id="label-rule-fit-overlap" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
                     <button role="switch" aria-checked="true" aria-label="Hai box chồng nhau" id="rule-fit-overlap" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Dùng lại track sau outside <span class="mono" style="font-size: 12px; color: var(--text-3);">track_reuse_id</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Track đã kết thúc rồi xuất hiện lại (spec 4.4.3)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-track-reuse-id" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Dùng lại track sau outside" id="rule-track-reuse-id" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Che khuất quá lâu <span class="mono" style="font-size: 12px; color: var(--text-3);">track_occluded_long</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Occluded liên tục quá 6 frame (spec 4.4.5)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-track-occluded-long" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Che khuất quá lâu" id="rule-track-occluded-long" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Thiếu thuộc tính bắt buộc <span class="mono" style="font-size: 12px; color: var(--text-3);">attr_missing</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Theo mục spec.required_attributes của guideline (spec 3.1.3)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-attr-missing" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Thiếu thuộc tính bắt buộc" id="rule-attr-missing" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Thuộc tính sai giá trị <span class="mono" style="font-size: 12px; color: var(--text-3);">attr_invalid</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Giá trị ngoài danh sách spec.allowed_values</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-attr-invalid" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Thuộc tính sai giá trị" id="rule-attr-invalid" class="switch-btn"><span class="switch-thumb"></span></button>
                   </div>
                 </div>
               </div>

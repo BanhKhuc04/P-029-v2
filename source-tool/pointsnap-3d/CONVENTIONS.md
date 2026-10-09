@@ -35,7 +35,8 @@ Ghi ngược lại: `points = [*center, rx, ry, yaw, *dims, 0, 0, 0, 0, 0, 0, 0]
 **Task do `pointsnap nuscenes to-cvat --upload` tạo** (`datasets/nuscenes/to_cvat.py`):
 - 10 label kiểu `cuboid`; mỗi label có thuộc tính `pointsnap_error` (text) và `reviewed` (checkbox), cả hai `mutable` (giá trị riêng từng frame).
 - Dữ liệu tải lên là một file zip các `.pcd` tên `000000.pcd`, `000001.pcd`, …; CVAT sắp frame theo tên (`sorting_method=lexicographical`), nên frame CVAT = frame trong `manifest.json`.
-- Mỗi đối tượng nuScenes là một track. Trong CVAT một track kéo dài tới cuối job cho tới khi gặp keyframe `outside`, nên: sau frame cuối của track thêm một keyframe `outside`; khi track khuyết frame ở giữa thì thêm `outside` ngay sau frame có mặt cuối cùng.
+- Mỗi đối tượng nuScenes là một track. Trong CVAT một track kéo dài tới cuối job cho tới khi gặp keyframe `outside`, nên: sau frame cuối của track thêm một keyframe `outside`. Từ C2 (spec 4.4, `core.model.add_track_markers`): track khuyết ≤ 6 frame ở giữa thì thêm keyframe `occluded` (vị trí nội suy) ở frame đầu đoạn vắng và giữ track; khuyết lâu hơn thì thêm `outside` sau frame có mặt cuối cùng và phần sau thành track mới.
+- `--taxonomy spec-vn` (C2): 5 label theo spec giao thông VN (`Vehicle`, `Two-wheels`, `Pedestrian`, `Animal`, `Obstacle`), mỗi label thêm thuộc tính `select` (mutable) theo `datasets/taxonomy.py`; giá trị lấy từ category và thuộc tính của nuScenes. Quét task này với `--config pointsnap/guidelines/spec-vn.yaml`.
 - Bản xuất ghi kèm `manifest.json` (frame ↔ file ↔ `sample_token` ↔ `sensor_to_world`), `ground_truth.json` (nhãn chuẩn) và sau khi tải lên là `cvat_task.json` (id task, id job).
 
 Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuScenes giả; `tests/test_live_cvat.py`):
@@ -85,6 +86,14 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | `fit.outside` | Box lệch khỏi vật | Nhiều điểm của vật (nối liền với điểm trong box) nằm ngoài box: box nhỏ hoặc lệch (C1) |
 | `fit.loose` | Box lệch khỏi vật | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật quá xa: box dư (C1) |
 | `fit.overlap` | Box lệch khỏi vật | Hai box cùng frame chồng nhau (phần chung / box nhỏ hơn), trừ cặp class được phép (C1) |
+| `track.reuse_id` | Đứt track | Track đã kết thúc bằng `outside` rồi lại có box (spec 4.4.3–4.4.4). Mức Cảnh báo (C2) |
+| `track.occluded_long` | Đứt track | `occluded` liên tục quá `track.max_occluded_frames` (6) frame (spec 4.4.5). Mức Cảnh báo (C2) |
+| `attr.missing` | Thiếu / sai thuộc tính | Thiếu thuộc tính bắt buộc theo `spec.required_attributes` (spec 3.1.3). Mức Lỗi (C2) |
+| `attr.invalid` | Thiếu / sai thuộc tính | Giá trị ngoài `spec.allowed_values` (khóa `thuộc_tính` hoặc `Class.thuộc_tính`). Mức Lỗi (C2) |
+
+**Box `occluded`** (thuộc tính `occluded` của CVAT, `Cuboid.occluded`): vật không nhìn thấy, vị trí do người gán ước
+lượng. Mọi luật hình học (lơ lửng / lún, kích thước, nhảy vị trí, nội suy dài, hướng, box lệch) bỏ qua box này; chỉ
+luật track theo spec dùng đến (C2).
 
 Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu thông báo luôn có số đo cụ thể, ví dụ *"Đáy box cách mặt đất 22 cm"*.
 

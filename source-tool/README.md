@@ -18,13 +18,16 @@ Reviewer mất **3–5 phút mỗi frame** để soi thủ công; rework chiếm
 
 ## Tool làm gì
 
-PointSnap 3D đọc job 3D cuboid qua REST API của CVAT, tìm 3 loại lỗi trên và chỉ ra box nào sai, ở frame nào, sai bao nhiêu. Lỗi được báo ra file HTML/CSV và **gắn cờ thẳng lên box trong CVAT** (thuộc tính `pointsnap_error`) để annotator lọc ra sửa trước khi nộp. Lệnh `gate` trả ĐẠT / KHÔNG ĐẠT để làm cổng kiểm tra cuối.
+PointSnap 3D đọc job 3D cuboid qua REST API của CVAT, tìm 3 loại lỗi trên (giai đoạn 3 thêm sai hướng box, box lệch khỏi vật và các điều khoản track / thuộc tính của spec gán nhãn) và chỉ ra box nào sai, ở frame nào, sai bao nhiêu. Lỗi được báo ra file HTML/CSV và **gắn cờ thẳng lên box trong CVAT** (thuộc tính `pointsnap_error`) để annotator lọc ra sửa trước khi nộp. Lệnh `gate` trả ĐẠT / KHÔNG ĐẠT để làm cổng kiểm tra cuối.
 
 | Lỗi | Tool đo gì | Cảnh báo / Lỗi (mặc định) |
 |---|---|---|
 | Lơ lửng / lún | Khoảng cách đáy box tới mặt đất ước lượng cục bộ quanh box | > 10 cm / > 20 cm |
 | Sai kích thước | l, w, h so với khoảng thường gặp của class; độ lệch so với trung vị của track | Theo class; > max(10 cm, 5%) / > max(30 cm, 15%) |
-| Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai frame bên cạnh; track kết thúc rồi track cùng class bắt đầu ngay gần đó; đoạn dài chỉ có box nội suy (ngoài phạm vi 4 ngày) | Xe: 1 m / 2 m; tách ID chỉ Cảnh báo |
+| Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai frame bên cạnh; track kết thúc rồi track cùng class bắt đầu ngay gần đó; đoạn dài chỉ có box nội suy; dùng lại track sau `outside`, `occluded` quá 6 frame (spec 4.4) | Xe: 1 m / 2 m; tách ID, luật spec chỉ Cảnh báo |
+| Sai hướng box (giai đoạn 3) | Hướng box đổi đột ngột giữa hai keyframe; lệch / ngược hướng chuyển động; trục box lệch trục cụm điểm LiDAR (spec 4.2) | Lật / xoay > 45° / > 75°; ngược chiều > 60° / > 135° |
+| Box lệch khỏi vật (giai đoạn 3) | Box rỗng; điểm của vật nằm ngoài box; mặt box nhìn thấy cách xa vật; hai box chồng nhau (spec 4.2) | > 50% điểm ngoài box / > 70%; chồng > 20% / > 50% |
+| Thiếu / sai thuộc tính (giai đoạn 3) | Thuộc tính bắt buộc theo class, giá trị cho phép (spec 3.1.3), theo guideline của dự án | Lỗi |
 
 Ngưỡng nằm trong `config.yaml` và sẽ chốt lại trên dữ liệu. Chi tiết từng luật: [mục 4.1 của bản đề xuất](pointsnap-3d/de-xuat-de-tai.md#41--ba-bộ-phát-hiện).
 
@@ -135,11 +138,13 @@ Gán nhãn xong
 
 Những chỗ tool **không** kiểm, annotator và reviewer vẫn phải tự soi:
 
-- Chỉ có 3 loại lỗi trên. Ngược yaw 180°, box rỗng điểm, box chồng lấn, thiếu thuộc tính bắt buộc và sót đối tượng **chưa được kiểm**.
+- Sót đối tượng (vật có điểm mà chưa gán box) **chưa được kiểm**: cần mô hình phát hiện 3D, để hướng phát triển.
+- Luật box lệch chỉ bắt được box lệch rõ (box có từ 30 điểm của vật trở lên); lệch nhỏ vẫn do luật nhảy vị trí / kích thước trong track bắt.
+- Box `occluded` (vật bị che) không được kiểm hình học; chỉ kiểm thời gian che theo spec.
 - Tool chỉ cảnh báo, **không tự sửa**.
 - Mặt đất ước lượng kém ở đoạn dốc, bờ vỉa, chỗ bị che hoặc ở xa (LiDAR thưa). Những box này được ghi "thiếu bằng chứng" ở mức Thông tin, cần tự kiểm.
 - Tách ID và khoảng nội suy dài chỉ ở mức Cảnh báo. Đối tượng bị che lâu hoặc ra khỏi tầm cảm biến có thể bị báo nhầm.
-- Ngưỡng được thống kê trên nuScenes; dùng với dữ liệu khác cần thống kê lại.
+- Ngưỡng được thống kê trên nuScenes; dùng với dữ liệu khác cần thống kê lại. Bộ class theo spec giao thông VN có guideline mẫu [`spec-vn.yaml`](pointsnap-3d/pointsnap/guidelines/spec-vn.yaml), một số khoảng kích thước (van, xe ba gác, động vật…) là ước lượng vì chưa có dữ liệu Việt Nam.
 - Mới thử trên CVAT local, chưa chạy trên CVAT của BTC.
 - CVAT không khóa job khi có người mở: chỉ chạy `--flag` khi không ai đang mở job đó.
 

@@ -91,6 +91,9 @@
     selectedFindingIndex: 0,
     selectedSeverityTab: 'all', // 'all', 'error', 'warning', 'info'
 
+    // Liên kết với extension trên tab CVAT (A15): có tab CVAT đang mở job này không, phiên bản kết luận xem tay
+    cvatLink: { online: false, jobId: null, rev: null },
+
     // Trạng thái dirty của Guideline
     guidelineDirty: false,
     guidelineMode: 'form', // 'form' hoặc 'yaml'
@@ -160,6 +163,7 @@
     applyTheme(state.theme);
     setupEventListeners();
     setupQuickReview();
+    setupCvatLink();
     handleHashNavigation();
     setupSplash(loadProjects());
   });
@@ -807,6 +811,98 @@
     });
   }
 
+  // --- Liên kết với extension trên tab CVAT (A15): chọn mục trên web thì tab CVAT tự đi theo, không tải lại trang ---
+  let linkTimer = null;
+  let syncTimer = null;
+
+  function setupCvatLink() {
+    document.getElementById('detail-btn-cvat-link').addEventListener('click', openInCvat);
+    const tick = () => { pollCvatLink().finally(() => { linkTimer = setTimeout(tick, 2500); }); };
+    tick();
+  }
+
+  /** Hỏi PointSnap: có tab CVAT (cài extension) đang mở job của lần quét này không; kết luận xem tay có đổi không. */
+  async function pollCvatLink() {
+    const run = state.currentRun;
+    if (!run || !run.job_id || document.hidden) return;
+    try {
+      const res = await fetch(`/api/extension/status?job_id=${run.job_id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const changed = data.extension_online !== state.cvatLink.online || state.cvatLink.jobId !== run.job_id;
+      const rev = state.cvatLink.jobId === run.job_id ? state.cvatLink.rev : null;
+      state.cvatLink = { online: data.extension_online, jobId: run.job_id, rev: data.reviews_rev };
+      if (changed) updateCvatButton();
+      if (rev !== null && rev !== data.reviews_rev) await refreshReviewsFromServer(run);
+    } catch (_) {
+      // PointSnap tạm không trả lời: giữ trạng thái cũ, lần sau hỏi lại.
+    }
+  }
+
+  /** Kết luận xem tay vừa đổi ở extension: đọc lại và vẽ lại bảng, giữ nguyên mục đang chọn. */
+  async function refreshReviewsFromServer(run) {
+    const res = await fetch(`/api/projects/${state.currentSlug}/scans/${run.run_id}/reviews`);
+    if (!res.ok || state.currentRun !== run) return;
+    const { reviews } = await res.json();
+    if (JSON.stringify(reviews) === JSON.stringify(run.reviews || {})) return;
+    run.reviews = reviews;
+    renderFindingsTable();
+  }
+
+  function updateCvatButton() {
+    const btn = document.getElementById('detail-btn-cvat-link');
+    const status = document.getElementById('cvat-link-status');
+    if (state.cvatLink.online) {
+      btn.textContent = 'Chuyển CVAT tới box này';
+      status.innerHTML = '<span class="link-dot on"></span>CVAT đang mở job này: chọn mục ở đây thì CVAT tự chuyển theo, không tải lại trang.';
+    } else {
+      btn.textContent = 'Mở trong CVAT để sửa';
+      status.innerHTML = '<span class="link-dot"></span>Cài extension PointSnap cho CVAT để chuyển box mà không tải lại job.';
+    }
+  }
+
+  function sendFocus(f, bring) {
+    const index = runFindingIndex(f);
+    return fetch('/api/extension/focus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        job_id: state.currentRun.job_id,
+        frame: f.frame,
+        label: f.label,
+        message: f.message,
+        run_id: state.currentRun.run_id,
+        index: index >= 0 ? index : null,
+        bring,
+      }),
+    }).then((res) => (res.ok ? res.json() : { extension_online: false }));
+  }
+
+  /** "Mở trong CVAT": có tab CVAT đang mở job thì chuyển trong tab đó; chưa có thì mở link như cũ. */
+  async function openInCvat(e) {
+    const f = state.currentDetail;
+    if (!f || !state.currentRun) return;
+    e.preventDefault();
+    const link = e.currentTarget.href;
+    try {
+      const data = await sendFocus(f, true);
+      if (data.extension_online) {
+        showToast(`Đã chuyển CVAT tới frame ${f.frame} (không tải lại trang).`, 'success');
+        return;
+      }
+    } catch (_) {
+      // Không gửi được lệnh: mở link như cũ.
+    }
+    if (link && link !== '#') window.open(link, 'pointsnap-cvat');
+  }
+
+  /** Chọn mục khác trên web: nếu CVAT đang mở job này thì gửi lệnh đồng bộ (chờ 250 ms để J/K liên tục chỉ gửi mục cuối). */
+  function syncCvatSelection(f) {
+    if (!state.cvatLink.online || !state.currentRun || state.cvatLink.jobId !== state.currentRun.job_id) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { if (state.currentDetail === f) sendFocus(f, false).catch(() => {}); }, 250);
+  }
+
   function moveSelection(step) {
     const filtered = getFilteredFindings();
     if (filtered.length === 0) return;
@@ -965,6 +1061,7 @@
     if (state.currentDetail !== f) {
       state.currentDetail = f;
       loadPreview(f);
+      syncCvatSelection(f);
     }
     updateReviewPanel(f);
     const sevClass = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info';

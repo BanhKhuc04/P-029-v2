@@ -20,3 +20,19 @@ jobs:
           cache-dependency-path: source-tool/pointsnap-3d/pyproject.toml
       - run: pip install -e ".[dev]"
       - run: python -m pytest -q
+
+  extension:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: source-tool/pointsnap-3d/extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/*.test.js
+      - name: Kiểm tra cú pháp các file JS và manifest
+        run: |
+          for f in background.js options.js src/*.js; do node --check "$f"; done
+          node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"

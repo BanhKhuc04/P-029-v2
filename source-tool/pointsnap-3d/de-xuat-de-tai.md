@@ -274,7 +274,8 @@ Có thể thêm thuộc tính checkbox `reviewed` vào label spec trên CVAT đ�
 #### Nguyên tắc thiết kế
 
 - **Không sửa mã nguồn CVAT, không đọc hay ghi trạng thái nội bộ của trang CVAT.** Extension chỉ **đọc những gì CVAT đang hiển thị** và **bấm hộ các nút sẵn có**, như người dùng tự bấm. Các nút được nhận diện bằng tên lớp ổn định mà bộ test tự động của chính CVAT dùng (`cvat-annotation-header-filters-button`, `cvat-filters-modal-*`, `cvat-player-frame-selector`, `cvat-objects-sidebar-*`).
-- **Dữ liệu lỗi đi đường chính thức:** PointSnap ghi cờ `pointsnap_error` lên box qua REST API (mục 4.2). Extension chỉ cần cờ trên box để hoạt động; danh sách lỗi chi tiết từ PointSnap là phần thêm.
+- **Dữ liệu lỗi đi đường chính thức:** PointSnap ghi cờ `pointsnap_error` lên box qua REST API (mục 4.2). Extension đọc cờ bằng REST API của CVAT (chỉ `GET`, cùng nguồn với trang nên dùng phiên đăng nhập sẵn có), nên E1–E5 chạy được khi PointSnap tắt; PointSnap chỉ cần cho quét lại, gắn cờ và kết luận xem tay.
+- **Bộ lọc lần đầu:** extension thêm sẵn mục `pointsnap_error is not empty` vào **lịch sử bộ lọc** của CVAT (localStorage của trang CVAT), như khi người dùng đã tự tạo bộ lọc đó một lần, rồi bấm hộ chọn mục này.
 - **Không sửa box**, không gửi dữ liệu ra ngoài máy, không đọc token CVAT.
 - **Luôn có đường lui:** không tìm thấy nút cần bấm (CVAT khác phiên bản) thì extension báo rõ và hướng dẫn thao tác tay; vẫn có link "Mở đúng box" (tải lại trang).
 
@@ -283,11 +284,11 @@ Có thể thêm thuộc tính checkbox `reviewed` vào label spec trên CVAT đ�
 | # | Chức năng | Cách làm | Cần PointSnap chạy? |
 |---|---|---|---|
 | E1 | **Nhận diện trang job**, hiện bảng nổi "PointSnap" (thu gọn được) cạnh khung 3D | URL `/tasks/<t>/jobs/<j>` | Không |
-| E2 | **Tự bật bộ lọc** chỉ hiện box có `pointsnap_error` | Bấm hộ: Filters → bộ lọc đã dùng gần đây → Áp dụng. Lần đầu chưa có: hướng dẫn tạo một lần (hoặc bấm hộ tạo nếu spike S2 đạt) | Không |
-| E3 | **Thông báo lỗi khi chọn box**: mức, nội dung, gợi ý sửa | Đọc thuộc tính `pointsnap_error` của đối tượng đang chọn ở khung bên phải của CVAT; gợi ý sửa theo luật (dùng chung bảng với PointSnap) | Không |
-| E4 | **Lỗi tiếp theo / trước** (nút và phím J / K), không tải lại trang | Bấm hộ nút Sau / Trước của CVAT ở kiểu nhảy "theo bộ lọc" | Không |
-| E5 | **Danh sách lỗi** của job (frame, class, mô tả, giá trị đo); bấm dòng → nhảy tới frame | Lấy lần quét mới nhất của job qua API PointSnap (`127.0.0.1:8765`); nhảy frame bằng cách gõ số vào ô chọn frame | Có |
-| E6 | **Quét lại / Gắn cờ** ngay từ bảng; ghi **Đúng / Báo nhầm** | Gọi API PointSnap; sau khi gắn cờ nhắc tải lại trang | Có |
+| E2 | **Tự bật bộ lọc** chỉ hiện box có `pointsnap_error` | Bấm hộ: Filters → Recently used → mục PointSnap → Submit. Mục này được thêm sẵn vào lịch sử bộ lọc khi trang bắt đầu tải | Không |
+| E3 | **Thông báo lỗi khi chọn box**: mức, nội dung, gợi ý sửa | Đọc thuộc tính `pointsnap_error` của đối tượng đang chọn ở khung bên phải của CVAT (khi đang lọc, tự mở DETAILS của box có cờ); gợi ý sửa theo luật (dùng chung bảng với PointSnap, box lún có gợi ý riêng) | Không |
+| E4 | **Lỗi tiếp theo / trước** (nút và phím `.` `,` hoặc `]` `[`), không tải lại trang | Gõ số frame vào ô chọn frame của CVAT, chờ thanh trượt frame báo đã chuyển. Không dùng J/K vì `K` là Switch keyframe của CVAT; bộ gõ Telex có thể đổi `[` `]` thành `ư` `ơ` | Không |
+| E5 | **Danh sách lỗi** của job (frame, class, luật, mức); bấm dòng → nhảy tới frame | Đọc cờ của job qua REST API của CVAT (`GET /api/jobs/<id>/annotations`); ghép với lần quét mới nhất của PointSnap để hiện kết luận Đúng / Nhầm | Không |
+| E6 | **Quét lại / Quét + gắn cờ** ngay từ bảng; ghi **Đúng / Báo nhầm** | Gọi API PointSnap (`GET /api/extension/jobs/<id>`, quét, `reviews`); gắn cờ có bước xác nhận, xong thì nhắc tải lại trang | Có |
 
 #### Luồng sử dụng
 
@@ -301,8 +302,9 @@ sequenceDiagram
   P->>C: REST API: ghi pointsnap_error lên box lỗi
   A->>C: Mở job 3D
   X->>C: Nhận diện trang job, hiện bảng PointSnap
+  X->>C: REST API (GET): đọc cờ của job
   X->>C: Bấm hộ bộ lọc "pointsnap_error is not empty"
-  X-->>P: (tùy chọn) lấy danh sách lỗi của job
+  X-->>P: (tùy chọn) lần quét mới nhất, kết luận xem tay
   A->>X: Bấm "Lỗi tiếp theo" / chọn dòng
   X->>C: Chuyển frame (không tải lại trang)
   A->>C: Chọn box
@@ -317,11 +319,13 @@ sequenceDiagram
 
 ```
 extension/                     # Manifest V3, Chrome / Edge
-  manifest.json                # quyền: storage; host: URL CVAT + http://127.0.0.1:8765
-  content.js                   # chạy trên trang CVAT: bảng nổi, đọc DOM, bấm hộ nút
-  panel.css                    # cùng bộ màu với PointSnap, sáng / tối
-  background.js                # service worker: gọi API PointSnap (không cần mở CORS cho web)
-  options.html / options.js    # cấu hình URL CVAT và URL PointSnap
+  manifest.json                # quyền: storage, scripting; host: PointSnap 127.0.0.1:8765 (CVAT khác: xin quyền khi thêm)
+  background.js                # service worker: gọi API PointSnap (không cần mở CORS); đăng ký content script cho CVAT khác
+  options.html / options.js    # URL PointSnap, CVAT khác, tự lọc / tự mở DETAILS / tự làm sáng box
+  src/core.js                  # logic thuần: đọc cờ, gợi ý sửa, frame kế tiếp, bộ lọc (có test Node)
+  src/cvat-dom.js              # đọc giao diện CVAT, bấm hộ nút (tên lớp ổn định của CVAT)
+  src/cvat-api.js, seed.js     # GET nhãn qua REST API của CVAT; thêm bộ lọc vào lịch sử khi trang bắt đầu tải
+  src/content.js, panel-css.js # bảng PointSnap trong Shadow DOM, sáng / tối
   README.md                    # cài: chrome://extensions → Developer mode → Load unpacked
 ```
 
@@ -329,7 +333,8 @@ extension/                     # Manifest V3, Chrome / Edge
 
 - Bộ lọc hiện **mọi box có cờ** trong frame, không tách riêng một box; thường mỗi frame chỉ 1–2 box lỗi.
 - Phụ thuộc giao diện CVAT: nâng cấp lớn có thể phải sửa tên nút trong extension (đường lui ở trên).
-- Mỗi người cài extension một lần; dùng đầy đủ E5–E6 cần bật PointSnap trên máy.
+- Mỗi người cài extension một lần; E6 cần bật PointSnap trên máy.
+- CVAT chỉ đọc lịch sử bộ lọc khi dựng trang job: nếu trang dựng xong trước khi extension kịp thêm bộ lọc (lần đầu mở task), bảng nhắc tải lại trang một lần.
 - Gắn cờ khi job đang mở thì trang CVAT phải tải lại để thấy cờ mới (giới hạn của CVAT, mục 3.1).
 
 #### Tiêu chí xong (đo trên CVAT 2.77 local, job scene-0061)
@@ -339,6 +344,13 @@ extension/                     # Manifest V3, Chrome / Edge
 - E4 / E5: đi hết các frame có lỗi **không lần nào tải lại trang**; thời gian đi hết 43 mục so với cách mở từng link (báo cáo cả hai số).
 - Tắt PointSnap: E1–E4 vẫn chạy; bật lại: E5–E6 chạy.
 - Không lỗi console trên trang CVAT; extension không gửi yêu cầu nào ngoài URL CVAT và PointSnap đã cấu hình.
+
+**Kết quả thử 08/10** ([chi tiết](docs/thu-extension.md)), job 2 có 60 cờ ở 35 frame:
+- E2: bộ lọc bật sau 0,69–0,76 giây.
+- E3: đúng 10/10.
+- E4 / E5: 34 lần chuyển, 0 lần sai frame, 0 lần tải lại trang, đi hết job trong 7 giây; mở từng link mất 11–12,7 giây mỗi lần (43 mục ≈ 8,6 phút).
+- Tắt PointSnap: E1–E5 vẫn chạy.
+- Lỗi console còn lại là của CVAT (404 user-agreements, 503 lambda).
 
 ---
 
@@ -393,9 +405,9 @@ tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 
 | Ngày | Việc | Cổng |
 |---|---|---|
-| **10/10 sáng** | **Spike extension** (S1–S4, mục 10) trên CVAT local: bấm hộ bộ lọc, đọc `pointsnap_error` của box đang chọn, nhảy frame không tải lại. **Huy:** chẩn đoán báo nhầm lơ lửng/lún và các ca nhảy 4 m bị bỏ sót (trên cảnh tinh chỉnh) | **G4 (12h 10/10):** spike đạt → làm bản đầy đủ; không đạt → giữ cách thao tác tay + link mở đúng box, ghi rõ trong báo cáo |
+| **10/10 sáng** | **Spike extension** (S1–S4, mục 10) trên CVAT local: bấm hộ bộ lọc, đọc `pointsnap_error` của box đang chọn, nhảy frame không tải lại. **Huy:** chẩn đoán báo nhầm lơ lửng/lún và các ca nhảy 4 m bị bỏ sót (trên cảnh tinh chỉnh) | **G4 (12h 10/10):** spike đạt → làm bản đầy đủ; không đạt → giữ cách thao tác tay + link mở đúng box, ghi rõ trong báo cáo. ✅ **Đạt sớm 08/10** (mục 10) |
 | **10/10 chiều** | **Việt Anh:** extension E1–E4. **Huy:** giảm báo nhầm (thử gộp sweeps LiDAR cho mặt đất, chỉnh luật). Sửa lỗi nặng trong bảng tổng hợp test | |
-| **11/10 sáng** | **Việt Anh:** E5–E6, hướng dẫn cài, đo tiêu chí xong (mục 4.6). **Huy:** chạy `pointsnap eval --scenes test` một lần, cập nhật số liệu. **Chiến:** cài và test extension theo README | **G5 (12h 11/10):** extension đạt tiêu chí xong; số liệu đánh giá cuối |
+| **11/10 sáng** | **Việt Anh:** E5–E6, hướng dẫn cài, đo tiêu chí xong (mục 4.6). **Huy:** chạy `pointsnap eval --scenes test` một lần, cập nhật số liệu. **Chiến:** cài và test extension theo README | **G5 (12h 11/10):** extension đạt tiêu chí xong; số liệu đánh giá cuối. Extension ✅ **đạt 08/10** (PR #31, có thêm liên kết với web); số liệu cuối chờ B8 |
 | **11/10 chiều** | **Khánh:** cập nhật báo cáo, slide (thêm extension, số liệu cuối). **Chiến:** quay video demo trọn luồng (quét → gắn cờ → extension → sửa → quét lại → ĐẠT). **Hân:** phần kết quả đánh giá + precision xem tay. Merge PR cuối | **Nộp cuối ngày 11/10** |
 
 **Thứ tự cắt nếu trễ:** E6 → E5 (giữ E1–E4 vì chạy chỉ nhờ cờ trên box) → giảm báo nhầm (giữ số liệu A10, ghi rõ chưa đạt). **Không cắt:** sửa lỗi nặng từ đợt test, video demo, báo cáo.
@@ -447,7 +459,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Phân mức đúng** (lỗi lớn báo ở mức Lỗi) | ≥ 80% | 84% ✅ |
 | **Precision xem tay** | ≥ 70% mỗi loại | ⏳ đợt test (duyệt nhanh tự tính) |
 | **Hiệu năng** | < 2 phút / cảnh | ~3–4 giây / job 39 frame ✅ |
-| **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | ⏳ giai đoạn 2 |
+| **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | **7 giây** cho 35 frame lỗi, 0 lần tải lại trang; mở từng link: 11–12,7 giây mỗi lần (≈ 8,6 phút cho 43 mục) ✅ |
 
 **Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.
 
@@ -488,12 +500,12 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 
 **Giai đoạn 2 — spike extension (sáng 10/10, cổng G4):**
 
-| # | Việc cần xác minh | Ảnh hưởng đến |
-|---|---|---|
-| S1 | Bấm hộ Filters → bộ lọc đã dùng gần đây → Áp dụng bằng các nút `cvat-annotation-header-filters-button`, `cvat-filters-modal-recently-used-button`, `cvat-filters-modal-submit-button` trên job 3D | E2 |
-| S2 | Bấm hộ tạo bộ lọc mới `pointsnap_error` *is not empty* lần đầu (hộp tạo bộ lọc) | E2 (bỏ bước thao tác tay) |
-| S3 | Đọc giá trị `pointsnap_error` của đối tượng đang chọn trong khung đối tượng của workspace 3D | E3 |
-| S4 | Gõ số vào `cvat-player-frame-selector` và bấm nút Sau ở kiểu "theo bộ lọc": chuyển frame không tải lại trang | E4, E5 |
+| # | Việc cần xác minh | Ảnh hưởng đến | Kết quả (08/10) |
+|---|---|---|---|
+| S1 | Bấm hộ Filters → bộ lọc đã dùng gần đây → Áp dụng bằng các nút `cvat-annotation-header-filters-button`, `cvat-filters-modal-recently-used-button`, `cvat-filters-modal-submit-button` trên job 3D | E2 | ✅ |
+| S2 | Bấm hộ tạo bộ lọc mới `pointsnap_error` *is not empty* lần đầu (hộp tạo bộ lọc) | E2 (bỏ bước thao tác tay) | ✅ đổi cách: thêm sẵn vào lịch sử bộ lọc thay vì bấm trình tạo |
+| S3 | Đọc giá trị `pointsnap_error` của đối tượng đang chọn trong khung đối tượng của workspace 3D | E3 | ✅ cần mở DETAILS của box |
+| S4 | Gõ số vào `cvat-player-frame-selector` và bấm nút Sau ở kiểu "theo bộ lọc": chuyển frame không tải lại trang | E4, E5 | ✅ chỉ cần gõ số frame; đọc frame thật từ thanh trượt |
 
 ---
 

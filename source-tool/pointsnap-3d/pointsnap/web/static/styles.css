@@ -1245,3 +1245,8 @@ button, input, select, textarea {
 .review-btn[aria-pressed="true"]#btn-review-ok { background: var(--success-soft); border-color: var(--success); color: var(--success); }
 .review-btn[aria-pressed="true"]#btn-review-fp { background: var(--info-soft); border-color: var(--text-2); color: var(--text); }
 .review-mark { margin-left: 6px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
+
+/* Liên kết với extension trên tab CVAT (A15) */
+.cvat-link-status { display: flex; align-items: flex-start; gap: 6px; }
+.link-dot { flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--off); }
+.link-dot.on { background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }

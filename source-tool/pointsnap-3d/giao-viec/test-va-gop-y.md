@@ -23,7 +23,7 @@ Làm **sớm nhất có thể**, theo thứ tự:
 
 ## Phần 1 — Hướng dẫn cài đặt (Windows)
 
-Cần khoảng 15 GB ổ trống, RAM ≥ 8 GB. Bản đầy đủ trong [README](../../README.md); chỗ nào hai bản khác nhau thì ghi lỗi.
+Cần khoảng 15 GB ổ trống, RAM ≥ 8 GB. Bản đầy đủ (có thêm extension và liên kết với web) trong [CAI-DAT.md](../../CAI-DAT.md); chỗ nào hai bản khác nhau thì ghi lỗi.
 
 ### 1.1. Phần mềm
 

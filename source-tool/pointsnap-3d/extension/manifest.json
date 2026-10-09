@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "PointSnap cho CVAT",
+  "short_name": "PointSnap",
+  "version": "0.1.0",
+  "description": "Chuyển nhanh giữa các box có cờ lỗi PointSnap trong job 3D của CVAT, hiện thông báo lỗi và gợi ý sửa.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "PointSnap cho CVAT — Tùy chọn",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "permissions": ["storage", "scripting"],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "http://localhost:8765/*"
+  ],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["src/core.js", "src/cvat-dom.js", "src/cvat-api.js", "src/seed.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["src/panel-css.js", "src/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

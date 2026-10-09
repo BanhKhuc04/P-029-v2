@@ -83,7 +83,7 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | `heading.motion` | Sai hướng box | Hướng box lệch / ngược hướng chuyển động khi vật chạy nhanh hơn `min_speed_mps` (C1, spec 4.2) |
 | `heading.points` | Sai hướng box | Trục box lệch trục cụm điểm LiDAR (khớp hình chữ L), so với các frame khác của track (C1) |
 | `fit.empty` | Box lệch khỏi vật | Vùng quanh box quét rõ nhưng trong box không có điểm nào cao hơn đáy box; box `occluded` thì bỏ qua. Mức Cảnh báo (C1) |
-| `fit.outside` | Box lệch khỏi vật | Nhiều điểm của vật (nối liền với điểm trong box) nằm ngoài box: box nhỏ hoặc lệch (C1) |
+| `fit.outside` | Box lệch khỏi vật | Tỉ lệ điểm của vật (nối liền với điểm trong box) nằm ngoài box, so với trung vị các frame khác của track: box nhỏ hoặc lệch (C1) |
 | `fit.loose` | Box lệch khỏi vật | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật quá xa: box dư (C1) |
 | `fit.overlap` | Box lệch khỏi vật | Hai box cùng frame chồng nhau (phần chung / box nhỏ hơn), trừ cặp class được phép (C1) |
 | `track.reuse_id` | Đứt track | Track đã kết thúc bằng `outside` rồi lại có box (spec 4.4.3–4.4.4). Mức Cảnh báo (C2) |

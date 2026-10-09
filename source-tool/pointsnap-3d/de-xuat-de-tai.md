@@ -263,7 +263,7 @@ với điểm trong / sát box, để cây, tường, cột bên cạnh không b
 | Luật | Định nghĩa | Ngưỡng |
 |---|---|---|
 | `fit.empty` | Vùng quanh box quét rõ (đo được mặt đất) mà trong box không có điểm nào cao hơn đáy; box `occluded` bỏ qua | Cảnh báo |
-| `fit.outside` | Tỉ lệ điểm của vật nằm ngoài box, cần ≥ 30 điểm ngoài | > 50% / > 70% |
+| `fit.outside` | Tỉ lệ điểm của vật nằm ngoài box, **so với trung vị các frame khác của track** (người mang đồ, cây sát xe làm tỉ lệ cao đều cả track); cần ≥ 30 điểm ngoài | cao hơn > 50% / > 70% |
 | `fit.loose` | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật (box gần < 30 m, ≥ 40 điểm) | > 50 cm / > 100 cm |
 | `fit.overlap` | Phần chung nhìn từ trên / diện tích box nhỏ hơn, cùng chồng theo chiều cao; trừ cặp class được phép (người sát nhau, xe máy đỗ sát nhau, đầu kéo – rơ-moóc…) | > 20% / > 50% |
 

@@ -12,7 +12,7 @@ from pointsnap.adapters.cvat.reader import JobData
 from pointsnap.adapters.nuscenes import NuScenesReader
 from pointsnap.cli.scan_cmd import print_summary
 from pointsnap.core.config import Config
-from pointsnap.core.model import Finding, add_outside_markers
+from pointsnap.core.model import Finding, add_track_markers
 from pointsnap.core.scanner import actionable, scan_cuboids
 from pointsnap.core.synthetic import InjectedError, inject_dataset, save_injection_log
 from pointsnap.datasets.nuscenes.to_cvat import export_scene, upload_scene
@@ -27,6 +27,11 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
         help="thư mục nuScenes chứa samples/ và v1.0-mini/ (mặc định: biến môi trường NUSCENES_ROOT)",
     )
     nuscenes.add_argument("--version", default="v1.0-mini", help="phiên bản bảng nuScenes (mặc định: v1.0-mini)")
+    nuscenes.add_argument(
+        "--taxonomy", choices=("nuscenes", "spec-vn"), default="nuscenes",
+        help="bộ class: nuscenes (10 class, mặc định) hoặc spec-vn (5 class + thuộc tính theo spec giao thông VN; "
+             "quét với --config pointsnap/guidelines/spec-vn.yaml)",
+    )
     actions = nuscenes.add_subparsers(dest="nuscenes_command", required=True, metavar="VIỆC")
 
     actions.add_parser("scenes", help="liệt kê các cảnh")
@@ -51,7 +56,7 @@ def run(args: argparse.Namespace, config: Config) -> int:
         print("Thiếu --dataroot (hoặc biến môi trường NUSCENES_ROOT).", file=sys.stderr)
         return 3
     try:
-        reader = NuScenesReader(args.dataroot, version=args.version)
+        reader = NuScenesReader(args.dataroot, version=args.version, taxonomy=args.taxonomy)
         if args.nuscenes_command == "scenes":
             for scene in reader.scenes():
                 print(f"{scene.name}\t{scene.num_frames} frame\t{scene.description}")
@@ -107,7 +112,7 @@ def _reported(error: InjectedError, findings: list[Finding]) -> bool:
 
 def _scan(reader: NuScenesReader, args: argparse.Namespace, config: Config) -> int:
     frames = reader.frames(args.scene)
-    boxes = add_outside_markers(reader.annotations(args.scene), frames.num_frames)
+    boxes = add_track_markers(reader.annotations(args.scene), frames.num_frames)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     name = args.scene

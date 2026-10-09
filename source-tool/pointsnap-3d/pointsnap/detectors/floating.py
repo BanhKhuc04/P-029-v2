@@ -202,7 +202,7 @@ def estimate_scene_ground(
     """
     classes = set(config.classes)
     use_sweeps = config.sweeps > 0 and hasattr(frames, "ground_sweeps")
-    by_frame = group_by_frame(c for c in cuboids if not c.outside)
+    by_frame = group_by_frame(c for c in cuboids if c.visible)
     # Sweep chỉ lặp lại các chỗ keyframe đã thấy: giữ yêu cầu bằng chứng tương đương keyframe (theo mật độ điểm).
     min_points = config.min_ground_points * (1 + config.sweeps) if use_sweeps else config.min_ground_points
     results: list[tuple[Cuboid, GroundEstimate]] = []

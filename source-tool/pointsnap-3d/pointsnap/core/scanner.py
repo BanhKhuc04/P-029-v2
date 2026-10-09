@@ -23,6 +23,7 @@ from pointsnap.core.model import (
     group_by_frame,
     group_by_track,
 )
+from pointsnap.detectors.attributes import detect_attribute_errors
 from pointsnap.detectors.fit import fit_findings_for_frame, overlap_findings
 from pointsnap.detectors.floating import detect_floating_scene
 from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
@@ -178,6 +179,13 @@ def check_heading(job: JobData, config: Config, frames: FrameSource | None = Non
                                 timestamps, flip=config.rules.heading_flip, motion=config.rules.heading_motion)
 
 
+def _typed_label(box: Cuboid, config: Config) -> str:
+    """`Class/giá trị thuộc tính phân loại` (size.key_attributes, vd `Vehicle/truck`), hoặc `Class` nếu không có."""
+    attr = config.size.key_attributes.get(box.label)
+    value = box.attrs.get(attr) if attr else None
+    return f"{box.label}/{value}" if value not in (None, "") else box.label
+
+
 def check_box_points(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Luật dựa trên điểm LiDAR của từng vật (C1): trục box so với cụm điểm, box rỗng / nhỏ / lệch / dư; box chồng nhau.
 
@@ -186,9 +194,9 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
     r = config.rules
     findings: list[Finding] = []
     measures = []
-    for frame, boxes in group_by_frame(c for c in job.cuboids if not c.outside).items():
+    for frame, boxes in group_by_frame(c for c in job.cuboids if c.visible).items():
         if r.fit_overlap:
-            findings.extend(overlap_findings(boxes, config.fit))
+            findings.extend(overlap_findings(boxes, config.fit, typed=lambda b: _typed_label(b, config)))
         if frames is None or not (r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose):
             continue
         points = frames.frame_data(frame).points
@@ -203,7 +211,14 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
     return findings
 
 
+def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
+    return detect_attribute_errors(job.cuboids, config.spec)
+
+
 _RULE_SWITCH = {
+    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long",
+    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
     "heading.flip": "heading_flip", "heading.motion": "heading_motion", "heading.points": "heading_points",
     "fit.empty": "fit_empty", "fit.outside": "fit_outside", "fit.loose": "fit_loose", "fit.overlap": "fit_overlap",
 }
@@ -235,6 +250,7 @@ DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_track,
     check_heading,
     check_box_points,
+    check_attributes,
 )
 
 
@@ -261,12 +277,15 @@ def scan_cuboids(
             active_detectors.append(check_floating)
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
-        if r.track_jump or r.track_split_id or r.track_long_interpolation:
+        if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
+                or r.track_occluded_long):
             active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)
         if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:
             active_detectors.append(check_box_points)
+        if r.attr_missing or r.attr_invalid:
+            active_detectors.append(check_attributes)
 
     findings: list[Finding] = []
     for detector in active_detectors:

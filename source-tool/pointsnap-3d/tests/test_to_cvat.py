@@ -49,11 +49,18 @@ def test_track_reaching_last_frame_has_no_outside():
     assert frames_and_outside(track) == [(8, False), (9, False)]
 
 
-def test_gap_in_track_is_closed_with_outside():
-    # Đối tượng vắng ở frame 3–4: phải có outside ở frame 3 để CVAT không nội suy qua đoạn đó
+def test_short_gap_in_track_is_marked_occluded():
+    # Spec 4.4.5: vắng 2 frame (3–4) là bị che tạm thời: giữ track, keyframe occluded ở frame 3, không outside.
     [track] = build_tracks([box(1), box(2), box(5), box(6)], num_frames=7, label_ids=LABEL_IDS)
-    assert frames_and_outside(track) == [(1, False), (2, False), (3, True), (5, False), (6, False)]
-    assert track["shapes"][2]["points"] == track["shapes"][1]["points"]  # outside giữ hình học của frame trước
+    assert frames_and_outside(track) == [(1, False), (2, False), (3, False), (5, False), (6, False)]
+    assert [s["occluded"] for s in track["shapes"]] == [False, False, True, False, False]
+
+
+def test_long_gap_in_track_ends_track_and_starts_new_one():
+    # Spec 4.4.3 / 4.4.4: vắng hơn 6 frame thì kết thúc track (outside) và phần sau là track mới.
+    tracks = build_tracks([box(1), box(2), box(10), box(11)], num_frames=12, label_ids=LABEL_IDS)
+    assert [frames_and_outside(t) for t in tracks] == [[(1, False), (2, False), (3, True)], [(10, False), (11, False)]]
+    assert tracks[0]["shapes"][2]["points"] == tracks[0]["shapes"][1]["points"]  # outside giữ hình học frame trước
 
 
 def test_track_with_two_classes_is_rejected():

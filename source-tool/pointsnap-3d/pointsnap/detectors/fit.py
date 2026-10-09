@@ -3,7 +3,8 @@
 Spec 4.2: box phải bao trọn toàn bộ vật thể, không dư thừa quá mức; không gán box khi vật quá ít điểm. Bốn luật:
 
 1. `fit.empty`: vùng quanh box được LiDAR quét dày (đo được mặt đất) nhưng trong box không có điểm nào cao hơn mặt
-   đất (≤ `empty_max_points`), và box không đánh `occluded` → Lỗi. Vật ở xa / thưa điểm thì không kết luận. Box có ít điểm
+   box (≤ `empty_max_points`), và box không đánh `occluded` → Cảnh báo (vẽ vào chỗ trống, hoặc vật bị che mà chưa
+   đánh occluded; trên nhãn chuẩn có cả vật thấp / đổ chỉ để lại vài điểm sát đáy nên không để mức Lỗi). Box có ít điểm
    hơn `sparse_warning_points` → Cảnh báo "quá ít điểm" (tắt mặc định, chờ chốt P-009).
 2. `fit.outside`: trong vùng box nới `outside_margin_m`, sau khi bỏ mặt đất và điểm của box khác, tỉ lệ điểm của vật
    nằm ngoài box > `outside_warning_ratio` → box nhỏ hoặc lệch khỏi vật.
@@ -18,7 +19,7 @@ from __future__ import annotations
 
 import math
 from itertools import combinations
-from typing import TYPE_CHECKING, Iterable, Sequence
+from typing import TYPE_CHECKING, Callable, Iterable, Sequence
 
 import numpy as np
 
@@ -44,7 +45,7 @@ def empty_finding(item: BoxPointSet, cfg: FitConfig) -> Finding | None:
     if box.attrs.get("occluded"):
         return None
     if item.raw_inside <= cfg.empty_max_points and item.ground_z is not None:
-        return _finding("fit.empty", Severity.ERROR, box,
+        return _finding("fit.empty", Severity.WARNING, box,
                         f"Box không có điểm LiDAR nào ({item.raw_inside} điểm): vẽ vào chỗ trống, hoặc vật bị che "
                         f"thì đánh dấu occluded", float(item.raw_inside), float(cfg.empty_max_points),
                         {"num_points": item.raw_inside})
@@ -145,17 +146,23 @@ def _overlap_ratio(a: Cuboid, b: Cuboid) -> float:
     return inter / smaller if smaller > 0 else 0.0
 
 
-def overlap_findings(boxes: Iterable[Cuboid], cfg: FitConfig) -> list[Finding]:
+def overlap_findings(
+    boxes: Iterable[Cuboid], cfg: FitConfig, typed: Callable[[Cuboid], str] | None = None,
+) -> list[Finding]:
+    """Luật `fit.overlap`. `typed(box)` cho tên chi tiết `Class/thuộc tính phân loại` (vd `Vehicle/truck`) để cặp
+    được phép có thể ghi theo tên chi tiết; mặc định chỉ dùng class."""
     allowed = {frozenset(p) for p in cfg.overlap_allowed_pairs}
+    typed = typed or (lambda box: box.label)
     findings: list[Finding] = []
-    active = [b for b in boxes if not b.outside]
+    active = [b for b in boxes if b.visible]
     for a, b in combinations(active, 2):
         reach = (math.hypot(a.length, a.width) + math.hypot(b.length, b.width)) / 2.0
         if math.hypot(a.center[0] - b.center[0], a.center[1] - b.center[1]) > reach:
             continue
         if a.label not in cfg.overlap_classes or b.label not in cfg.overlap_classes:
             continue
-        if frozenset((a.label, b.label)) in allowed:
+        names_a, names_b = {a.label, typed(a)}, {b.label, typed(b)}
+        if any(frozenset((x, y)) in allowed for x in names_a for y in names_b):
             continue
         ratio = _overlap_ratio(a, b)
         if ratio <= cfg.overlap_warning:

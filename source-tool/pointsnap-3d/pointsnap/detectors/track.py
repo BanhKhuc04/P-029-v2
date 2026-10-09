@@ -13,6 +13,8 @@ Ba kiểu phát hiện:
    đầu ngay gần vị trí ngoại suy của A. Mỗi track B ghép với track A gần nhất. Mức Cảnh báo.
 3. Kiểu 3 (`track.long_interpolation`, bật bằng `long_interpolation.enabled`): ≥ `min_frames` frame liền chỉ có box
    nội suy (không có `outside` ở giữa) trong khi đối tượng dịch > `min_motion_m`. Mức Cảnh báo.
+4. Theo spec 4.4 (C2, `detect_track_spec`): `track.reuse_id` (dùng lại track sau `outside`), `track.occluded_long`
+   (occluded quá `max_occluded_frames` frame). Mức Cảnh báo.
 """
 
 from __future__ import annotations
@@ -171,7 +173,7 @@ def detect_track_jumps_for_track(
     timestamps_by_frame: Mapping[int, float] | None = None,
 ) -> list[Finding]:
     """Kiểm tra kiểu 1: nhảy vị trí trong một track."""
-    active = [b for b in track_boxes if not b.outside]
+    active = [b for b in track_boxes if b.visible]
     if len(active) < 2:
         return []
     grp = config.group_for(active[0].label)
@@ -202,6 +204,8 @@ def detect_long_interpolation(
         centers, _ = _get_world_centers(segment, sensor_to_world_by_frame)
         for i in range(len(segment) - 1):
             a, b = segment[i], segment[i + 1]
+            if a.occluded or b.occluded:
+                continue  # đoạn vật bị che: không thêm keyframe được (spec 4.4.5)
             missing = b.frame - a.frame - 1
             motion = float(np.linalg.norm(centers[i + 1, :2] - centers[i, :2]))
             if missing < cfg.min_frames or motion <= cfg.min_motion_m:
@@ -292,6 +296,56 @@ def detect_track_splits(
     return findings
 
 
+def detect_track_spec(track_boxes: Sequence[Cuboid], config: TrackConfig) -> list[Finding]:
+    """Luật track theo spec 4.4 (C2), mức Cảnh báo.
+
+    - `track.reuse_id`: track đã kết thúc bằng keyframe `outside` rồi lại có box ở frame sau. Spec 4.4.3: sau khi kết
+      thúc track_id không gán box cho vật đó nữa; 4.4.4: vật xuất hiện lại sau khi track kết thúc phải có track_id mới.
+      Vắng ngắn (≤ `max_occluded_frames`) thường là vật bị che: nên bỏ `outside`, đánh dấu `occluded`.
+    - `track.occluded_long`: các frame liên tiếp mang `occluded` dài hơn `max_occluded_frames` (spec: occluded chỉ cho
+      che khuất tạm thời ≤ 6 frame; lâu hơn thì kết thúc track).
+    """
+    limit = config.max_occluded_frames
+    boxes = sorted(track_boxes, key=lambda b: b.frame)
+    findings: list[Finding] = []
+    ended_at: int | None = None
+    for box in boxes:
+        if box.outside:
+            ended_at = box.frame if ended_at is None else ended_at
+            continue
+        if ended_at is not None:
+            gap = box.frame - ended_at
+            advice = ("vật chỉ bị che tạm thời thì bỏ outside, đánh dấu occluded (spec 4.4.5)" if gap <= limit
+                      else "spec 4.4.3–4.4.4: không dùng lại track_id sau khi đã kết thúc, tách phần sau thành track mới")
+            findings.append(Finding(
+                error_type=ErrorType.TRACK, rule="track.reuse_id", severity=Severity.WARNING, frame=box.frame,
+                label=box.label, track_id=box.track_id, source_id=box.source_id,
+                message=f"Track đã kết thúc (outside) ở frame {ended_at} rồi xuất hiện lại ở frame {box.frame} "
+                        f"sau {gap} frame vắng: {advice}",
+                value=float(gap), threshold=float(limit), details={"ended_at": ended_at},
+            ))
+            ended_at = None
+    start: Cuboid | None = None
+    for box in boxes + [None]:
+        hidden = box is not None and not box.outside and bool(box.attrs.get("occluded"))
+        if hidden and start is None:
+            start = box
+        elif not hidden and start is not None:
+            end = box.frame if box is not None else boxes[-1].frame + 1
+            length = end - start.frame
+            if length > limit:
+                findings.append(Finding(
+                    error_type=ErrorType.TRACK, rule="track.occluded_long", severity=Severity.WARNING,
+                    frame=start.frame, label=start.label, track_id=start.track_id, source_id=start.source_id,
+                    message=f"Box đánh occluded {length} frame liền (frame {start.frame}–{end - 1}), quá {limit} frame: "
+                            f"spec 4.4.5 chỉ dùng occluded cho che khuất tạm thời; kết thúc track nếu không còn cơ sở "
+                            f"xác định cùng vật",
+                    value=float(length), threshold=float(limit), details={"end_frame": end - 1},
+                ))
+            start = None
+    return findings
+
+
 def detect_track_errors(
     cuboids: Sequence[Cuboid],
     config: TrackConfig,
@@ -311,6 +365,10 @@ def detect_track_errors(
         # Kiểu 3: khoảng nội suy dài
         if config.long_interpolation.enabled and config.group_for(track_boxes[0].label) is not None:
             findings.extend(detect_long_interpolation(track_boxes, config, sensor_to_world_by_frame))
+
+    # Luật track theo spec 4.4 (C2)
+    for track_boxes in tracks.values():
+        findings.extend(detect_track_spec(track_boxes, config))
 
     # Kiểu 2: tách ID
     findings.extend(detect_track_splits(

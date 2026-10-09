@@ -25,7 +25,8 @@ EMPTY_TOLERANCE_M = 0.2
 """Đếm điểm cho luật box rỗng trong box nới 20 cm: box chỉ hụt vật vài cm không bị coi là rỗng."""
 
 EMPTY_FLOOR_M = 0.1
-"""Khi đếm điểm cho luật box rỗng, bỏ điểm thấp hơn mặt đất + 10 cm: box đặt trên mặt đường trống vẫn là box rỗng."""
+"""Khi đếm điểm cho luật box rỗng, bỏ điểm thấp hơn đáy box + 10 cm (25% chiều cao với vật thấp hơn 40 cm): box đặt
+trên mặt đường trống vẫn là box rỗng."""
 
 CONNECT_VOXEL_M = 0.3
 """Cạnh ô lưới khi loang điểm: hai điểm thuộc cùng vật nếu nối được qua các ô có điểm liền kề."""
@@ -70,7 +71,7 @@ class BoxPointSet:
 
     - `local`: (M, 3) điểm của vật trong hệ box (gốc ở tâm, x theo hướng đầu box), trong box nới `margin`.
     - `inside`: mask (M,) các điểm nằm trong box.
-    - `raw_inside`: số điểm nằm trong box (nới `EMPTY_TOLERANCE_M`), cao hơn mặt đất `EMPTY_FLOOR_M`: 0 là box rỗng.
+    - `raw_inside`: số điểm nằm trong box (nới `EMPTY_TOLERANCE_M`), cao hơn đáy box `EMPTY_FLOOR_M`: 0 là box rỗng.
     - `ground_z`: mặt đất cục bộ đã dùng để bỏ điểm mặt đất (hệ point cloud); `None` nếu không đo được.
     - `sensor_local`: vị trí cảm biến (gốc point cloud) trong hệ box, để biết mặt nào của box nhìn thấy được.
     """
@@ -115,7 +116,7 @@ def box_point_sets(
         ground_z = ground.ground_z if ground.is_valid else None
         base = (ground_z if ground_z is not None else box.bottom_z) - box.center[2]
         raw_inside = int((np.all(np.abs(local_all) <= half + EMPTY_TOLERANCE_M, axis=1)
-                          & (local_all[:, 2] > base + EMPTY_FLOOR_M)).sum())
+                          & (local_all[:, 2] > -half[2] + min(EMPTY_FLOOR_M, 0.25 * box.height))).sum())
         floor_local = max(base + clearance, -half[2] - margin)
 
         others = cloud.belongs_to_others(index, near_idx)

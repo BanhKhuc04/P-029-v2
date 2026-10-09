@@ -44,6 +44,10 @@ class RulesConfig:
     fit_outside: bool = True
     fit_loose: bool = True
     fit_overlap: bool = True
+    track_reuse_id: bool = True
+    track_occluded_long: bool = True
+    attr_missing: bool = True
+    attr_invalid: bool = True
 
 
 @dataclass(frozen=True)
@@ -90,6 +94,9 @@ class SizeConfig:
     class_range: ClassRangeConfig
     manual_ranges: Mapping[str, Mapping[str, tuple[float, float]]]
     in_track: InTrackConfig
+    key_attributes: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    """Class → thuộc tính phân loại chi tiết (spec 3.1.2, vd `Vehicle: subtype`): khoảng kích thước tra theo khóa
+    `Class/giá trị` (vd `Vehicle/bus`), không có thì theo `Class`."""
 
 
 @dataclass(frozen=True)
@@ -114,6 +121,8 @@ class TrackConfig:
     groups: Mapping[str, TrackGroupConfig]
     split_max_gap_frames: int
     long_interpolation: LongInterpolationConfig
+    max_occluded_frames: int = 6
+    """Spec: occluded chỉ dùng cho che khuất tạm thời tối đa 6 frame; lâu hơn thì kết thúc track."""
 
     def group_for(self, label: str) -> TrackGroupConfig | None:
         """Nhóm ngưỡng của class; `None` nếu class không thuộc nhóm nào."""
@@ -177,7 +186,7 @@ class FitConfig:
     """Box vẽ lệch khỏi vật (C1, spec 4.2: bao trọn vật thể, không dư thừa quá mức; không gán box khi quá ít điểm)."""
 
     empty_max_points: int = 0
-    """Box có số điểm LiDAR <= mức này (và không đánh `occluded`) là box rỗng: Lỗi."""
+    """Box có số điểm LiDAR (cao hơn đáy box) <= mức này, không đánh `occluded`, là box rỗng: Cảnh báo."""
     sparse_warning_points: int = 0
     """Box có ít điểm hơn mức này: Cảnh báo "quá ít điểm" (spec 4.2). 0 = tắt, đợi chốt P-009."""
     outside_margin_m: float = 0.5
@@ -205,6 +214,16 @@ class FitConfig:
 
 
 @dataclass(frozen=True)
+class SpecConfig:
+    """Thuộc tính bắt buộc và giá trị cho phép theo spec của dự án (C2, spec 3.1.2–3.1.3)."""
+
+    required_attributes: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=dict)
+    """Class → các thuộc tính bắt buộc, vd `Vehicle: [subtype]`."""
+    allowed_values: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=dict)
+    """Thuộc tính (hoặc `Class.thuộc_tính`) → các giá trị cho phép."""
+
+
+@dataclass(frozen=True)
 class GateConfig:
     max_errors: int
     max_warnings: int
@@ -220,6 +239,7 @@ class Config:
     rules: RulesConfig = dataclasses.field(default_factory=RulesConfig)
     heading: HeadingConfig = dataclasses.field(default_factory=HeadingConfig)
     fit: FitConfig = dataclasses.field(default_factory=FitConfig)
+    spec: SpecConfig = dataclasses.field(default_factory=SpecConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -334,7 +354,7 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
-              "fit_overlap")
+              "fit_overlap", "track_reuse_id", "track_occluded_long", "attr_missing", "attr_invalid")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
 
 
@@ -378,6 +398,21 @@ def _parse_heading(r: _Reader) -> HeadingConfig:
     if points.error_deg > 45:
         raise ConfigError("'heading.points.error_deg' phải <= 45 (lệch trục chỉ đo được trong khoảng 0–45°)")
     cfg = HeadingConfig(groups=groups, min_motion_m=r.number("min_motion_m", 0.0), points=points)
+    r.finish()
+    return cfg
+
+
+def _parse_spec(r: _Reader) -> SpecConfig:
+    def mapping_of_lists(key: str) -> dict[str, tuple[str, ...]]:
+        if key not in r.keys():
+            return {}
+        section = r.section(key)
+        result = {name: section.strings(name) for name in section.keys()}
+        section.finish()
+        return result
+
+    cfg = SpecConfig(required_attributes=mapping_of_lists("required_attributes"),
+                     allowed_values=mapping_of_lists("allowed_values"))
     r.finish()
     return cfg
 
@@ -487,8 +522,13 @@ def _parse_size(r: _Reader) -> SizeConfig:
     tr.finish()
     _require_order("size.in_track", in_track.warning_abs_m, in_track.error_abs_m, "warning_abs_m", "error_abs_m")
     _require_order("size.in_track", in_track.warning_rel, in_track.error_rel, "warning_rel", "error_rel")
+    key_attributes: dict[str, str] = {}
+    if "key_attributes" in r.keys():
+        kr = r.section("key_attributes")
+        key_attributes = {label: kr.string(label) for label in kr.keys()}
+        kr.finish()
     r.finish()
-    return SizeConfig(class_range=class_range, manual_ranges=manual, in_track=in_track)
+    return SizeConfig(class_range=class_range, manual_ranges=manual, in_track=in_track, key_attributes=key_attributes)
 
 
 def _parse_track(r: _Reader) -> TrackConfig:
@@ -527,6 +567,7 @@ def _parse_track(r: _Reader) -> TrackConfig:
         groups=groups,
         split_max_gap_frames=r.integer("split_max_gap_frames", 1),
         long_interpolation=long_interpolation,
+        **({"max_occluded_frames": r.integer("max_occluded_frames", 1)} if "max_occluded_frames" in r.keys() else {}),
     )
     r.finish()
     return cfg
@@ -575,6 +616,7 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         rules=rules,
         heading=_parse_heading(r.section("heading")) if "heading" in r.keys() else HeadingConfig(),
         fit=_parse_fit(r.section("fit")) if "fit" in r.keys() else FitConfig(),
+        spec=_parse_spec(r.section("spec")) if "spec" in r.keys() else SpecConfig(),
     )
     r.finish()
     return cfg

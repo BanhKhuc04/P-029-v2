@@ -23,9 +23,10 @@ from pointsnap.core.geometry import (
     rotate_points_z90,
     rotate_pose_to_ego,
 )
-from pointsnap.core.model import Cuboid, group_by_track
+from pointsnap.core.model import Cuboid, add_track_markers, group_by_track
 from pointsnap.core.serialize import load_cuboids, save_cuboids
 from pointsnap.datasets.pcd import write_pcd
+from pointsnap.datasets.taxonomy import SPEC_VN_CLASSES
 
 TASK_CLASSES = (
     "car", "truck", "bus", "trailer", "construction_vehicle",
@@ -34,16 +35,24 @@ TASK_CLASSES = (
 REVIEWED_ATTRIBUTE = "reviewed"
 
 
-def label_specs(flag_attribute: str) -> list[dict[str, Any]]:
-    """10 label của task, mỗi label có thuộc tính cờ lỗi (văn bản) và `reviewed` (checkbox).
+def label_specs(flag_attribute: str, taxonomy: str = "nuscenes") -> list[dict[str, Any]]:
+    """Label của task, mỗi label có thuộc tính cờ lỗi (văn bản) và `reviewed` (checkbox).
 
     Cả hai là thuộc tính `mutable`: giá trị có thể khác nhau ở từng frame của một track.
+    `taxonomy="spec-vn"`: 5 class của spec giao thông VN, mỗi class thêm thuộc tính chọn (`select`, mutable) theo
+    `datasets.taxonomy.SPEC_VN_CLASSES`, giá trị đầu là mặc định.
     """
     attributes = [
         {"name": flag_attribute, "mutable": True, "input_type": "text", "default_value": "", "values": [""]},
         {"name": REVIEWED_ATTRIBUTE, "mutable": True, "input_type": "checkbox", "default_value": "false",
          "values": ["false"]},
     ]
+    if taxonomy == "spec-vn":
+        return [{"name": name, "type": "cuboid", "attributes": [
+            *({"name": attr, "mutable": True, "input_type": "select", "default_value": values[0],
+               "values": list(values)} for attr, values in spec.items()),
+            *attributes,
+        ]} for name, spec in SPEC_VN_CLASSES.items()]
     return [{"name": name, "type": "cuboid", "attributes": attributes} for name in TASK_CLASSES]
 
 
@@ -108,7 +117,8 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path, with_i
     save_cuboids(
         ground_truth,
         cuboids,
-        meta={"scene": scene, "source": "nuscenes", "coordinate_system": "ego", "num_frames": len(refs)},
+        meta={"scene": scene, "source": "nuscenes", "coordinate_system": "ego", "num_frames": len(refs),
+              "taxonomy": reader.taxonomy},
     )
 
     archive = directory / f"{scene}.zip"
@@ -125,38 +135,41 @@ def export_scene(reader: NuScenesReader, scene: str, out_dir: str | Path, with_i
 
 
 
-def _shape(cuboid: Cuboid, outside: bool) -> dict[str, Any]:
+def _shape(cuboid: Cuboid, outside: bool, attribute_ids: Mapping[str, int] | None = None) -> dict[str, Any]:
+    """Shape cuboid của CVAT; `attribute_ids` (tên → id thuộc tính của label) để ghi các thuộc tính có trong
+    `cuboid.attrs` (vd `subtype` khi nạp nhãn theo spec VN)."""
+    attribute_ids = attribute_ids or {}
     return {
         "type": "cuboid",
         "frame": cuboid.frame,
         "points": cuboid_to_points(cuboid),
         "outside": outside,
-        "occluded": False,
+        "occluded": bool(cuboid.attrs.get("occluded", False)),
         "z_order": 0,
         "rotation": 0.0,
-        "attributes": [],
+        "attributes": [{"spec_id": spec_id, "value": str(cuboid.attrs[name])}
+                       for name, spec_id in attribute_ids.items() if name in cuboid.attrs],
     }
 
 
-def build_tracks(cuboids: Iterable[Cuboid], num_frames: int, label_ids: Mapping[str, int]) -> list[dict[str, Any]]:
-    """Gom box thành track của CVAT.
+def build_tracks(
+    cuboids: Iterable[Cuboid], num_frames: int, label_ids: Mapping[str, int],
+    attribute_ids: Mapping[str, Mapping[str, int]] | None = None,
+) -> list[dict[str, Any]]:
+    """Gom box thành track của CVAT, đánh dấu đoạn vắng theo spec 4.4 (`core.model.add_track_markers`).
 
     Trong CVAT, một track kéo dài tới frame cuối của job cho tới khi gặp keyframe `outside`. Vì vậy:
     - sau frame cuối của track (nếu chưa phải frame cuối cảnh) thêm một keyframe `outside`;
-    - khi track khuyết frame ở giữa thêm `outside` ngay sau frame có mặt cuối cùng, để CVAT không nội suy
-      qua đoạn đối tượng vắng mặt.
+    - track khuyết ≤ 6 frame ở giữa: thêm keyframe `occluded` (vị trí nội suy) ở frame đầu đoạn vắng, giữ track;
+    - khuyết lâu hơn: `outside` sau frame có mặt cuối cùng, phần sau thành track mới.
     """
     tracks = []
-    for track_id, boxes in group_by_track(cuboids).items():
+    for track_id, boxes in group_by_track(add_track_markers(cuboids, num_frames)).items():
         labels = {b.label for b in boxes}
         if len(labels) != 1:
             raise ValueError(f"Track {track_id} có nhiều class: {sorted(labels)}")
-        shapes = []
-        for index, box in enumerate(boxes):
-            shapes.append(_shape(box, outside=False))
-            next_frame = boxes[index + 1].frame if index + 1 < len(boxes) else num_frames
-            if box.frame + 1 < next_frame:
-                shapes.append(_shape(box.replace(frame=box.frame + 1), outside=True))
+        attrs = (attribute_ids or {}).get(boxes[0].label)
+        shapes = [_shape(box, outside=box.outside, attribute_ids=attrs) for box in boxes]
         tracks.append({
             "frame": boxes[0].frame,
             "label_id": label_ids[boxes[0].label],
@@ -168,12 +181,17 @@ def build_tracks(cuboids: Iterable[Cuboid], num_frames: int, label_ids: Mapping[
     return tracks
 
 
-def build_annotations(cuboids: list[Cuboid], num_frames: int, label_ids: Mapping[str, int]) -> dict[str, Any]:
+def build_annotations(
+    cuboids: list[Cuboid], num_frames: int, label_ids: Mapping[str, int],
+    attribute_ids: Mapping[str, Mapping[str, int]] | None = None,
+) -> dict[str, Any]:
     """Dữ liệu cho `PUT /api/tasks/<id>/annotations`: box có track thành track, box lẻ thành shape."""
-    shapes = [{**_shape(c, outside=False), "label_id": label_ids[c.label], "group": 0, "source": "manual"}
-              for c in cuboids if c.track_id is None]
+    attribute_ids = attribute_ids or {}
+    shapes = [{**_shape(c, outside=False, attribute_ids=attribute_ids.get(c.label)), "label_id": label_ids[c.label],
+               "group": 0, "source": "manual"} for c in cuboids if c.track_id is None]
     shapes = [{k: v for k, v in s.items() if k != "outside"} for s in shapes]
-    return {"version": 0, "tags": [], "shapes": shapes, "tracks": build_tracks(cuboids, num_frames, label_ids)}
+    return {"version": 0, "tags": [], "shapes": shapes,
+            "tracks": build_tracks(cuboids, num_frames, label_ids, attribute_ids)}
 
 
 def upload_scene(
@@ -184,13 +202,17 @@ def upload_scene(
     timeout: float = 900.0,
 ) -> dict[str, Any]:
     """Tạo task 3D trên CVAT từ bản xuất, nạp nhãn chuẩn. Ghi `cvat_task.json` cạnh bản xuất."""
-    task = client.create_task(task_name, label_specs(flag_attribute))
+    cuboids, meta = load_cuboids(export.ground_truth)
+    taxonomy = meta.get("taxonomy", "nuscenes")
+    task = client.create_task(task_name, label_specs(flag_attribute, taxonomy))
     rq_id = client.upload_task_data(task["id"], export.archive)
     client.wait_request(rq_id, timeout=timeout)
 
-    label_ids = {label["name"]: label["id"] for label in client.task_labels(task["id"])}
-    cuboids, _ = load_cuboids(export.ground_truth)
-    client.put_task_annotations(task["id"], build_annotations(cuboids, export.num_frames, label_ids))
+    labels = client.task_labels(task["id"])
+    label_ids = {label["name"]: label["id"] for label in labels}
+    attribute_ids = {label["name"]: {a["name"]: a["id"] for a in label.get("attributes", [])
+                                     if a["name"] not in (flag_attribute, REVIEWED_ATTRIBUTE)} for label in labels}
+    client.put_task_annotations(task["id"], build_annotations(cuboids, export.num_frames, label_ids, attribute_ids))
 
     info = {
         "url": client.url,

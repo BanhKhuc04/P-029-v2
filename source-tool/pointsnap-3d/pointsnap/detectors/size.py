@@ -97,20 +97,33 @@ def get_resolved_class_ranges(
     return resolved
 
 
+def range_key(cuboid: Cuboid, config: SizeConfig, class_ranges: Mapping[str, object]) -> str:
+    """Khóa tra khoảng kích thước: `Class/giá trị thuộc tính phân loại` nếu guideline khai báo (spec 3.1.2, vd
+    `Vehicle/bus`, `Two-wheels/with_rider`) và có khoảng cho khóa đó; ngược lại là `Class`."""
+    attr = config.key_attributes.get(cuboid.label)
+    value = cuboid.attrs.get(attr) if attr else None
+    if value not in (None, ""):
+        key = f"{cuboid.label}/{value}"
+        if key in class_ranges:
+            return key
+    return cuboid.label
+
+
 def detect_size_class_range_for_box(
     cuboid: Cuboid,
     config: SizeConfig,
     class_ranges: Mapping[str, Mapping[str, tuple[float, float]]],
 ) -> list[Finding]:
-    """Kiểm tra kiểu 1: kích thước bất thường so với class."""
-    if cuboid.outside or cuboid.label not in class_ranges:
+    """Kiểm tra kiểu 1: kích thước bất thường so với class (hoặc class + thuộc tính phân loại)."""
+    key = range_key(cuboid, config, class_ranges)
+    if cuboid.outside or key not in class_ranges:
         return []
 
     c_cfg = config.class_range
     warn_m = c_cfg.warning_margin
     err_m = c_cfg.error_margin
 
-    ranges = class_ranges[cuboid.label]
+    ranges = class_ranges[key]
     findings: list[Finding] = []
 
     for dim_name, val in zip(DIM_NAMES, cuboid.dims):
@@ -147,7 +160,7 @@ def detect_size_class_range_for_box(
         if severity is not None and threshold is not None:
             vi_name = DIM_VI[dim_name]
             msg = (
-                f"{vi_name.capitalize()} {val:.2f} m {bound_type} bất thường so với class {cuboid.label} "
+                f"{vi_name.capitalize()} {val:.2f} m {bound_type} bất thường so với class {key} "
                 f"(khoảng chuẩn [{p_lo:.2f}, {p_hi:.2f}] m)"
             )
             findings.append(
@@ -264,7 +277,7 @@ def detect_size_class_range_for_track(
     class_ranges: Mapping[str, Mapping[str, tuple[float, float]]],
 ) -> list[Finding]:
     """Kiểu 1 cho cả track: xét trung vị kích thước, báo một mục gắn vào keyframe lệch nhiều nhất."""
-    active = [b for b in track_boxes if not b.outside]
+    active = [b for b in track_boxes if b.visible]
     if not active:
         return []
     median_dims = tuple(float(v) for v in np.median(np.array([b.dims for b in active]), axis=0))
@@ -292,6 +305,7 @@ def detect_size(
     Kiểu 2: mỗi keyframe tối đa một mục (chiều lệch nặng nhất).
     """
     resolved_ranges = get_resolved_class_ranges(config, class_ranges)
+    cuboids = [c for c in cuboids if not c.occluded]  # box bị che: kích thước do người gán ước lượng
     findings: list[Finding] = []
     tracks = group_by_track(cuboids)
 

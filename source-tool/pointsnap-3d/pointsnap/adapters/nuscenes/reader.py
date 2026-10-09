@@ -19,6 +19,9 @@ import numpy as np
 
 from pointsnap.core.geometry import invert_pose, pose_matrix
 from pointsnap.core.model import Cuboid, FrameData
+from pointsnap.datasets.taxonomy import spec_label
+
+TAXONOMIES = ("nuscenes", "spec-vn")
 
 LIDAR_CHANNEL = "LIDAR_TOP"
 POINT_FIELDS = 5
@@ -73,12 +76,18 @@ class NuScenesReader:
     `dataroot` là thư mục chứa `samples/`, `sweeps/` và thư mục bảng (`v1.0-mini/`).
     `min_lidar_points`: bỏ các box có ít điểm LiDAR hơn số này. Mặc định 1, tức bỏ box không có điểm
     nào: người gán nhãn không thấy được các box đó trên point cloud.
+    `taxonomy`: `nuscenes` (10 class của bài toán detection nuScenes, mặc định) hoặc `spec-vn` (5 class + thuộc tính
+    theo spec gán nhãn giao thông Việt Nam, `datasets.taxonomy`).
     """
 
-    def __init__(self, dataroot: str | Path, version: str = "v1.0-mini", min_lidar_points: int = 1) -> None:
+    def __init__(self, dataroot: str | Path, version: str = "v1.0-mini", min_lidar_points: int = 1,
+                 taxonomy: str = "nuscenes") -> None:
+        if taxonomy not in TAXONOMIES:
+            raise ValueError(f"taxonomy phải là một trong {TAXONOMIES}, nhận {taxonomy!r}")
         self.dataroot = Path(dataroot)
         self.version = version
         self.min_lidar_points = min_lidar_points
+        self.taxonomy = taxonomy
         self._table_dir = self.dataroot / version
         if not self._table_dir.is_dir():
             raise FileNotFoundError(f"Không thấy thư mục bảng nuScenes: {self._table_dir}")
@@ -257,7 +266,13 @@ class NuScenesReader:
 
     def _to_cuboid(self, annotation: dict[str, Any], frame: int, world_to_sensor: np.ndarray) -> Cuboid | None:
         category = self.category_of(annotation)
-        label = CATEGORY_TO_LABEL.get(category)
+        extra: dict[str, str] = {}
+        if self.taxonomy == "spec-vn":
+            attribute_names = [self._table("attribute")[t]["name"] for t in annotation.get("attribute_tokens", [])]
+            mapped = spec_label(category, attribute_names)
+            label, extra = mapped if mapped is not None else (None, {})
+        else:
+            label = CATEGORY_TO_LABEL.get(category)
         if label is None or annotation["num_lidar_pts"] < self.min_lidar_points:
             return None
         box_to_sensor = world_to_sensor @ pose_matrix(annotation["translation"], annotation["rotation"])
@@ -277,6 +292,7 @@ class NuScenesReader:
                 "num_lidar_pts": annotation["num_lidar_pts"],
                 # Góc giữa trục z của box và trục z của LiDAR. Core coi box chỉ có yaw nên bỏ phần nghiêng này.
                 "tilt_rad": math.acos(max(-1.0, min(1.0, rotation[2, 2]))),
+                **extra,
             },
         )
 

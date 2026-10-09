@@ -194,7 +194,7 @@ def test_clean_box_passes_all_fit_rules():
 def test_empty_box_is_error_unless_occluded():
     item = _items([_car()], [_car(x=-20.0)])[0]
     finding = empty_finding(item, FitConfig())
-    assert finding is not None and finding.rule == "fit.empty" and finding.severity is Severity.ERROR
+    assert finding is not None and finding.rule == "fit.empty" and finding.severity is Severity.WARNING
     occluded = _items([_car()], [_car(x=-20.0).replace(attrs={"occluded": True})])[0]
     assert empty_finding(occluded, FitConfig()) is None
 

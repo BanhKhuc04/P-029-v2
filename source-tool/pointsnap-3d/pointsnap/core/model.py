@@ -81,6 +81,17 @@ class Cuboid:
     def top_z(self) -> float:
         return self.center[2] + self.dims[2] / 2.0
 
+    @property
+    def occluded(self) -> bool:
+        """Box đánh dấu bị che khuất (thuộc tính `occluded` của CVAT): vật không nhìn thấy, vị trí do người gán ước
+        lượng, nên các luật hình học bỏ qua box này (spec 4.4.5)."""
+        return bool(self.attrs.get("occluded"))
+
+    @property
+    def visible(self) -> bool:
+        """Box có mặt và không bị che: dùng cho các luật hình học."""
+        return not self.outside and not self.occluded
+
     def replace(self, **changes: Any) -> Cuboid:
         """Bản sao với một số trường thay đổi."""
         return dataclasses.replace(self, **changes)
@@ -131,11 +142,12 @@ class ErrorType(Enum):
     TRACK = "track"
     HEADING = "heading"
     FIT = "fit"
+    ATTRIBUTE = "attribute"
 
     @property
     def label_vi(self) -> str:
         return {"floating": "Lơ lửng / lún", "size": "Sai kích thước", "track": "Đứt track",
-                "heading": "Sai hướng box", "fit": "Box lệch khỏi vật"}[self.value]
+                "heading": "Sai hướng box", "fit": "Box lệch khỏi vật", "attribute": "Thiếu / sai thuộc tính"}[self.value]
 
 
 @dataclass(frozen=True)
@@ -190,6 +202,53 @@ def add_outside_markers(cuboids: Iterable[Cuboid], num_frames: int) -> list[Cubo
             if box.frame + 1 < next_frame:
                 result.append(box.replace(frame=box.frame + 1, outside=True, source_id=None))
     return result + loose
+
+
+MAX_OCCLUDED_FRAMES = 6
+"""Spec (hướng dẫn CVAT): thuộc tính occluded dùng khi box bị che, tạm thời không nhìn thấy, tối đa 6 frame."""
+
+
+def _interpolate(a: Cuboid, b: Cuboid, frame: int) -> Cuboid:
+    t = (frame - a.frame) / (b.frame - a.frame)
+    center = tuple(ca + (cb - ca) * t for ca, cb in zip(a.center, b.center))
+    dims = tuple(da + (db - da) * t for da, db in zip(a.dims, b.dims))
+    yaw = a.yaw + math.remainder(b.yaw - a.yaw, 2 * math.pi) * t
+    return a.replace(center=center, dims=dims, yaw=yaw, frame=frame, source_id=None)
+
+
+def add_track_markers(
+    cuboids: Iterable[Cuboid], num_frames: int, max_occluded_frames: int = MAX_OCCLUDED_FRAMES,
+) -> list[Cuboid]:
+    """Đánh dấu đoạn vắng của track theo spec 4.4 (cách `to-cvat` nạp nhãn chuẩn lên CVAT từ giai đoạn 3).
+
+    - Vắng ≤ `max_occluded_frames` frame ở giữa track (bị che, LiDAR thưa): giữ track, thêm một keyframe `occluded`
+      ở frame đầu đoạn vắng, vị trí nội suy (spec 4.4.2, 4.4.5: che khuất không phải lý do kết thúc track).
+    - Vắng lâu hơn: kết thúc track bằng keyframe `outside`, phần sau thành track mới (spec 4.4.3, 4.4.4: không dùng
+      lại track_id sau khi đã kết thúc). Id track mới = id lớn nhất + 1, + 2, … theo thứ tự track, frame.
+    - Sau frame có mặt cuối cùng (trừ khi là frame cuối cảnh): keyframe `outside`.
+    """
+    cuboids = list(cuboids)
+    result: list[Cuboid] = [c for c in cuboids if c.track_id is None]
+    tracks = group_by_track(cuboids)
+    next_id = max(tracks, default=-1) + 1
+    for track_id, boxes in tracks.items():
+        present = [b for b in boxes if not b.outside]
+        current = track_id
+        for index, box in enumerate(present):
+            result.append(box.replace(track_id=current))
+            following = present[index + 1] if index + 1 < len(present) else None
+            next_frame = following.frame if following is not None else num_frames
+            gap = next_frame - box.frame - 1
+            if gap <= 0:
+                continue
+            if following is not None and gap <= max_occluded_frames:
+                hidden = _interpolate(box, following, box.frame + 1)
+                result.append(hidden.replace(track_id=current, attrs={**box.attrs, "occluded": True}))
+                continue
+            result.append(box.replace(frame=box.frame + 1, outside=True, source_id=None, track_id=current))
+            if following is not None:
+                current, next_id = next_id, next_id + 1
+    return result
 
 
 def group_by_frame(cuboids: Iterable[Cuboid]) -> dict[int, list[Cuboid]]:

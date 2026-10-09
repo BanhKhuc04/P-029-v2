@@ -23,7 +23,7 @@ import numpy as np
 
 from pointsnap.adapters.nuscenes import NuScenesReader
 from pointsnap.core.config import Config
-from pointsnap.core.model import Cuboid, Finding, Severity, add_outside_markers
+from pointsnap.core.model import Cuboid, Finding, Severity, add_track_markers
 from pointsnap.core.scanner import actionable, scan_cuboids
 from pointsnap.core.synthetic import InjectedError, inject_dataset
 
@@ -120,6 +120,7 @@ class SceneStats:
     clean: dict[str, int] = field(default_factory=dict)  # "rule|severity" -> số mục trên nhãn sạch
     findings_total: dict[str, int] = field(default_factory=dict)  # category -> số finding (Cảnh báo+) sau chèn
     findings_matched: dict[str, int] = field(default_factory=dict)  # category -> số finding khớp một lỗi chèn
+    findings_on_injected: dict[str, int] = field(default_factory=dict)  # category -> số finding nằm trên box bị chèn lỗi
     scan_seconds: float = 0.0
 
 
@@ -144,6 +145,25 @@ def _world_speeds(track: list[Cuboid], frames) -> list[float]:
         dt = (db.timestamp - da.timestamp) if db.timestamp and da.timestamp else 0.5 * (b.frame - a.frame)
         speeds.append(float(np.linalg.norm(wb[:2] - wa[:2])) / dt if dt > 0 else 0.0)
     return speeds
+
+
+def on_injected_box(error: InjectedError, finding: Finding) -> bool:
+    """Finding nằm trên box (hoặc track, với lỗi cả track) bị chèn lỗi, bất kể luật nào báo.
+
+    Ví dụ dời box 1 m: luật nhảy vị trí và luật box lệch đều báo đúng box sai, nên không tính là báo nhầm.
+    """
+    if finding.severity is Severity.INFO:
+        return False
+    tracks = {error.track_id}
+    if error.error_type in ("track_split_id", "fit_duplicate"):
+        tracks.add(error.injected_value)
+    if finding.track_id not in tracks:
+        return False
+    if error.frame is None or error.error_type in ("size_class_range", "heading_reverse", "track_split_id"):
+        return True
+    if error.error_type == "track_interpolation":
+        return abs(finding.frame - int(error.frame)) <= int(error.magnitude) + 1
+    return finding.frame == error.frame
 
 
 def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], config: Config, frames) -> bool:
@@ -195,7 +215,7 @@ def evaluate_scene(
     catalog: str = "core",
 ) -> tuple[SceneStats, list[ErrorOutcome]]:
     frames = reader.frames(scene)
-    clean_boxes = add_outside_markers(reader.annotations(scene), frames.num_frames)
+    clean_boxes = add_track_markers(reader.annotations(scene), frames.num_frames)
     num_boxes = sum(1 for b in clean_boxes if not b.outside)
 
     started = time.perf_counter()
@@ -210,6 +230,7 @@ def evaluate_scene(
     outcomes: list[ErrorOutcome] = []
     total: dict[str, int] = defaultdict(int)
     matched_count: dict[str, int] = defaultdict(int)
+    on_injected: dict[str, int] = defaultdict(int)
     for rnd in range(rounds):
         injected_boxes, errors = inject_dataset(clean_boxes, seed=seed + rnd, error_rate=error_rate, offset=rnd * 7,
                                                 catalog=catalog)
@@ -237,8 +258,10 @@ def evaluate_scene(
             category = f.error_type.value
             total[category] += 1
             matched_count[category] += i in used
+            on_injected[category] += i in used or any(on_injected_box(e, f) for e in errors)
     stats.findings_total = dict(total)
     stats.findings_matched = dict(matched_count)
+    stats.findings_on_injected = dict(on_injected)
     return stats, outcomes
 
 
@@ -278,7 +301,8 @@ def summarize(stats: Sequence[SceneStats], outcomes: Sequence[ErrorOutcome]) -> 
     for category in CATEGORIES:
         tot = sum(s.findings_total.get(category, 0) for s in stats)
         hit = sum(s.findings_matched.get(category, 0) for s in stats)
-        precision[category] = {"findings": tot, "matched": hit}
+        any_hit = sum(s.findings_on_injected.get(category, 0) for s in stats)
+        precision[category] = {"findings": tot, "matched": hit, "on_injected": any_hit}
 
     accuracy = {}
     for kind, unit in (("floating", 100.0), ("size_in_track", 100.0), ("track_jump", 1.0), ("heading_rotate", 1.0)):
@@ -335,9 +359,13 @@ def to_markdown(summary: dict[str, Any], title: str) -> str:
 
     lines += ["", "## Precision sau khi chèn lỗi", "",
               "Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó có cả lỗi thật của nhãn chuẩn, cần xem tay "
-              "(việc T2) trước khi chốt.", "", "| Loại | Finding (Cảnh báo+) | Khớp lỗi chèn | Precision |", "|---|---|---|---|"]
+              "(việc T2) trước khi chốt. Cột cuối tính cả finding nằm trên box bị chèn lỗi loại khác (vd dời box 1 m: "
+              "luật box lệch báo đúng box sai dù lỗi chèn thuộc loại nhảy vị trí).", "",
+              "| Loại | Finding (Cảnh báo+) | Khớp lỗi chèn cùng loại | Precision | Trên box bị chèn lỗi bất kỳ |",
+              "|---|---|---|---|---|"]
     for category, row in summary["precision"].items():
-        lines.append(f"| {category} | {row['findings']} | {row['matched']} | {_pct(row['matched'], row['findings'])} |")
+        lines.append(f"| {category} | {row['findings']} | {row['matched']} | {_pct(row['matched'], row['findings'])} | "
+                     f"{_pct(row.get('on_injected', row['matched']), row['findings'])} |")
 
     acc = summary["measurement_accuracy"]
     lines += ["", "## Độ chính xác của số đo (trung vị sai số tuyệt đối)", "", "| Kiểu lỗi | Số mẫu | Sai số |", "|---|---|---|"]

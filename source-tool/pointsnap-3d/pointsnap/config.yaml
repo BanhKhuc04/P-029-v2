@@ -23,6 +23,10 @@ rules:                                # bật / tắt từng luật theo guideli
   fit_outside: true                   # C1: nhiều điểm của vật nằm ngoài box (box nhỏ / lệch)
   fit_loose: true                     # C1: mặt box nhìn thấy được cách xa các điểm của vật (box dư)
   fit_overlap: true                   # C1: hai box chồng lên nhau (vẽ trùng)
+  track_reuse_id: true                # C2: track xuất hiện lại sau khi đã kết thúc (outside), spec 4.4.3
+  track_occluded_long: true           # C2: occluded liên tục quá max_occluded_frames, spec 4.4.5
+  attr_missing: true                  # C2: thiếu thuộc tính bắt buộc (spec.required_attributes), spec 3.1.3
+  attr_invalid: true                  # C2: giá trị thuộc tính ngoài danh sách cho phép (spec.allowed_values)
 
 floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
@@ -96,6 +100,7 @@ track:
       v_max_mps: 0.5
       split_max_dist_m: 0.5
   split_max_gap_frames: 3             # track mới bắt đầu trong k+1..k+3 thì xét nghi tách ID
+  max_occluded_frames: 6              # spec: occluded cho che khuất tạm thời <= 6 frame; lâu hơn thì kết thúc track
   long_interpolation:                 # việc B5b: ≥ min_frames frame liền chỉ có box nội suy
     enabled: true
     min_frames: 2
@@ -137,7 +142,7 @@ heading:                              # sai hướng box (C1), spec 4.2: hướn
     max_range_m: 40.0
 
 fit:                                  # box vẽ lệch khỏi vật (C1), spec 4.2: bao trọn vật thể, không dư thừa
-  empty_max_points: 0                 # box có <= 0 điểm LiDAR (không đánh occluded): Lỗi "box rỗng"
+  empty_max_points: 0                 # box có <= 0 điểm LiDAR cao hơn đáy box (không đánh occluded): Cảnh báo "box rỗng"
   sparse_warning_points: 0            # > 0: Cảnh báo box có ít điểm hơn mức này ("không nên gán", chờ chốt P-009)
   outside_margin_m: 0.5               # xét điểm trong box nới mỗi phía max(0.5 m, 25% cạnh box), bỏ điểm mặt đất,
   outside_margin_rel: 0.25            # điểm của box khác, và điểm không nối liền với điểm trong box
@@ -165,6 +170,11 @@ fit:                                  # box vẽ lệch khỏi vật (C1), spec 
     - [truck, trailer]                # đầu kéo và rơ-moóc chồng ở chỗ nối
     - [car, trailer]
     - [construction_vehicle, trailer]
+
+spec:                                 # thuộc tính theo spec của dự án (C2); nhãn nuScenes không có thuộc tính nên để trống
+  required_attributes: {}             # vd {Vehicle: [subtype], Pedestrian: [age_group, pose], Two-wheels: [rider_state]}
+  allowed_values: {}                  # vd {subtype: [car, van, truck, ...], Pedestrian.pose: [standing, sitting, bending]}
+                                      # bản đầy đủ theo spec giao thông VN: pointsnap/guidelines/spec-vn.yaml
 
 gate:
   max_errors: 0

@@ -160,7 +160,7 @@ def detect_heading_track(
     """Luật `heading.flip` và `heading.motion` trên mọi track."""
     findings: list[Finding] = []
     for boxes in group_by_track(cuboids).values():
-        active = [b for b in boxes if not b.outside]
+        active = [b for b in boxes if b.visible]
         if len(active) < 2:
             continue
         grp = config.group_for(active[0].label)

@@ -195,6 +195,31 @@ class NuScenesReader:
             raise ValueError(f"{ref.lidar_path}: số giá trị ({raw.size}) không chia hết cho {POINT_FIELDS}")
         return raw.reshape(-1, POINT_FIELDS)
 
+    def load_sweeps(self, ref: SampleRef, count: int) -> list[tuple[float, np.ndarray]]:
+        """Tối đa `count` lượt quét LiDAR trung gian (sweep) ngay trước keyframe: [(thời điểm, điểm (N, 3))], điểm đã
+        đổi về hệ LiDAR của keyframe, sweep gần keyframe nhất trước.
+
+        LiDAR quay 20 Hz, keyframe 2 Hz: giữa hai keyframe có 9 sweep. Vật đang chạy bị kéo vệt qua các sweep, nên người
+        dùng phải bỏ điểm của vật theo vị trí nội suy tại thời điểm từng sweep (`detectors.floating`).
+        """
+        sample_data = self._table("sample_data")
+        world_to_key = invert_pose(ref.sensor_to_world)
+        chunks: list[tuple[float, np.ndarray]] = []
+        token = sample_data[ref.lidar_token]["prev"]
+        while token and len(chunks) < count:
+            record = sample_data[token]
+            path = self.dataroot / record["filename"]
+            if not path.is_file():
+                break  # bản tải về thiếu sweep: dùng những gì có
+            raw = np.fromfile(path, dtype=np.float32)
+            if raw.size % POINT_FIELDS:
+                break
+            points = raw.reshape(-1, POINT_FIELDS)[:, :3].astype(np.float64)
+            matrix = world_to_key @ self._sensor_to_world(record)
+            chunks.append((record["timestamp"] / 1e6, points @ matrix[:3, :3].T + matrix[:3, 3]))
+            token = record["prev"]
+        return chunks
+
     def frame_data(self, ref: SampleRef, with_points: bool = True) -> FrameData:
         points = self.load_points(ref) if with_points else np.empty((0, POINT_FIELDS), dtype=np.float32)
         return FrameData(
@@ -269,3 +294,7 @@ class NuScenesFrames:
 
     def frame_data(self, frame: int, with_points: bool = True) -> FrameData:
         return self.reader.frame_data(self.refs[frame], with_points=with_points)
+
+    def ground_sweeps(self, frame: int, sweeps: int) -> list[tuple[float, np.ndarray]]:
+        """`sweeps` lượt quét LiDAR trung gian trước keyframe, hệ LiDAR của keyframe: [(thời điểm, điểm (N, 3))]."""
+        return self.reader.load_sweeps(self.refs[frame], sweeps)

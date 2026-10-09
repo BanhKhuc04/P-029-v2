@@ -37,6 +37,13 @@ class RulesConfig:
     track_jump: bool = True
     track_split_id: bool = True
     track_long_interpolation: bool = True
+    heading_flip: bool = True
+    heading_motion: bool = True
+    heading_points: bool = True
+    fit_empty: bool = True
+    fit_outside: bool = True
+    fit_loose: bool = True
+    fit_overlap: bool = True
 
 
 @dataclass(frozen=True)
@@ -52,6 +59,8 @@ class FloatingConfig:
     single_warning_m: float = 0.15
     single_error_m: float = 0.30
     min_track_boxes: int = 2
+    sweeps: int = 0
+    """Số lượt quét LiDAR trung gian gộp thêm trước keyframe để đo mặt đất (C1, mặt đất v2); 0 = chỉ keyframe."""
 
 
 @dataclass(frozen=True)
@@ -115,6 +124,87 @@ class TrackConfig:
 
 
 @dataclass(frozen=True)
+class HeadingGroupConfig:
+    classes: tuple[str, ...]
+    min_speed_mps: float
+    """Chỉ so hướng box với hướng chuyển động khi vật chạy nhanh hơn mức này."""
+    motion_warning_deg: float
+    motion_error_deg: float
+    flip_warning_deg: float
+    flip_error_deg: float
+    yaw_rate_max_dps: float
+    """Tốc độ quay tối đa hợp lý (độ / giây): hướng đổi chậm hơn mức này giữa hai keyframe không bị coi là lật."""
+
+
+@dataclass(frozen=True)
+class HeadingPointsConfig:
+    classes: tuple[str, ...]
+    min_points: int
+    min_aspect: float
+    warning_deg: float
+    error_deg: float
+    max_range_m: float
+
+
+def _default_heading_groups() -> dict[str, HeadingGroupConfig]:
+    return {
+        "vehicle": HeadingGroupConfig(("car", "truck", "bus", "trailer", "construction_vehicle"),
+                                      2.0, 60.0, 135.0, 45.0, 75.0, 60.0),
+        "two_wheeler": HeadingGroupConfig(("motorcycle", "bicycle"), 1.5, 60.0, 135.0, 45.0, 75.0, 90.0),
+        "pedestrian": HeadingGroupConfig(("pedestrian",), 1.0, 90.0, 150.0, 120.0, 170.0, 180.0),
+    }
+
+
+@dataclass(frozen=True)
+class HeadingConfig:
+    """Sai hướng box (C1, spec 4.2: hướng box trùng hướng chuyển động chính; đứng yên thì theo trục dài)."""
+
+    groups: Mapping[str, HeadingGroupConfig] = dataclasses.field(default_factory=_default_heading_groups)
+    min_motion_m: float = 1.0
+    """Quãng đường tối thiểu giữa hai keyframe lân cận để ước lượng hướng chuyển động."""
+    points: HeadingPointsConfig = dataclasses.field(default_factory=lambda: HeadingPointsConfig(
+        ("car", "truck", "bus", "trailer"), 60, 1.6, 15.0, 30.0, 40.0))
+
+    def group_for(self, label: str) -> HeadingGroupConfig | None:
+        for group in self.groups.values():
+            if label in group.classes:
+                return group
+        return None
+
+
+@dataclass(frozen=True)
+class FitConfig:
+    """Box vẽ lệch khỏi vật (C1, spec 4.2: bao trọn vật thể, không dư thừa quá mức; không gán box khi quá ít điểm)."""
+
+    empty_max_points: int = 0
+    """Box có số điểm LiDAR <= mức này (và không đánh `occluded`) là box rỗng: Lỗi."""
+    sparse_warning_points: int = 0
+    """Box có ít điểm hơn mức này: Cảnh báo "quá ít điểm" (spec 4.2). 0 = tắt, đợi chốt P-009."""
+    outside_margin_m: float = 0.5
+    outside_margin_rel: float = 0.25
+    """Vùng xét nới mỗi phía max(`outside_margin_m`, `outside_margin_rel` × cạnh box): xe dài thò ra xa hơn."""
+    outside_min_points: int = 30
+    outside_warning_ratio: float = 0.5
+    outside_error_ratio: float = 0.7
+    ground_clearance_m: float = 0.25
+    loose_min_points: int = 40
+    loose_max_range_m: float = 30.0
+    loose_warning_m: float = 0.5
+    loose_error_m: float = 1.0
+    overlap_warning: float = 0.2
+    overlap_error: float = 0.5
+    overlap_classes: tuple[str, ...] = (
+        "car", "truck", "bus", "trailer", "construction_vehicle", "motorcycle", "bicycle", "pedestrian",
+    )
+    """Chỉ xét chồng box giữa hai class trong danh sách này (vật cản nhỏ như cọc tiêu, rào chắn hay đặt sát nhau)."""
+    overlap_allowed_pairs: tuple[tuple[str, str], ...] = (
+        ("pedestrian", "pedestrian"), ("pedestrian", "bicycle"), ("pedestrian", "motorcycle"),
+        ("pedestrian", "car"), ("pedestrian", "truck"), ("pedestrian", "construction_vehicle"),
+        ("bicycle", "bicycle"), ("motorcycle", "motorcycle"), ("bicycle", "motorcycle"), ("truck", "trailer"), ("car", "trailer"), ("construction_vehicle", "trailer"),
+    )
+
+
+@dataclass(frozen=True)
 class GateConfig:
     max_errors: int
     max_warnings: int
@@ -128,6 +218,8 @@ class Config:
     track: TrackConfig
     gate: GateConfig
     rules: RulesConfig = dataclasses.field(default_factory=RulesConfig)
+    heading: HeadingConfig = dataclasses.field(default_factory=HeadingConfig)
+    fit: FitConfig = dataclasses.field(default_factory=FitConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -235,8 +327,91 @@ def _parse_rules(r: _Reader) -> RulesConfig:
         track_jump=r.boolean("track_jump"),
         track_split_id=r.boolean("track_split_id"),
         track_long_interpolation=r.boolean("track_long_interpolation"),
+        **{name: r.boolean(name) for name in _NEW_RULES if name in r.keys()},
     )
     r.finish()
+    return cfg
+
+
+_NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
+              "fit_overlap")
+"""Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
+
+
+def _parse_heading(r: _Reader) -> HeadingConfig:
+    gr = r.section("groups")
+    groups: dict[str, HeadingGroupConfig] = {}
+    seen: dict[str, str] = {}
+    for name in gr.keys():
+        g = gr.section(name)
+        group = HeadingGroupConfig(
+            classes=g.strings("classes"),
+            min_speed_mps=g.number("min_speed_mps", 0.0),
+            motion_warning_deg=g.number("motion_warning_deg", 0.0),
+            motion_error_deg=g.number("motion_error_deg", 0.0),
+            flip_warning_deg=g.number("flip_warning_deg", 0.0),
+            flip_error_deg=g.number("flip_error_deg", 0.0),
+            yaw_rate_max_dps=g.number("yaw_rate_max_dps", 0.0),
+        )
+        g.finish()
+        for low, high in (("motion_warning_deg", "motion_error_deg"), ("flip_warning_deg", "flip_error_deg")):
+            _require_order(f"heading.groups.{name}", getattr(group, low), getattr(group, high), low, high)
+            if getattr(group, high) > 180:
+                raise ConfigError(f"'heading.groups.{name}.{high}' phải <= 180")
+        for label in group.classes:
+            if label in seen:
+                raise ConfigError(f"Class '{label}' nằm trong cả nhóm '{seen[label]}' và '{name}' của heading")
+            seen[label] = name
+        groups[name] = group
+    gr.finish()
+    pr = r.section("points")
+    points = HeadingPointsConfig(
+        classes=pr.strings("classes"),
+        min_points=pr.integer("min_points", 3),
+        min_aspect=pr.number("min_aspect", 1.0),
+        warning_deg=pr.number("warning_deg", 0.0),
+        error_deg=pr.number("error_deg", 0.0),
+        max_range_m=pr.number("max_range_m", 0.0),
+    )
+    pr.finish()
+    _require_order("heading.points", points.warning_deg, points.error_deg, "warning_deg", "error_deg")
+    if points.error_deg > 45:
+        raise ConfigError("'heading.points.error_deg' phải <= 45 (lệch trục chỉ đo được trong khoảng 0–45°)")
+    cfg = HeadingConfig(groups=groups, min_motion_m=r.number("min_motion_m", 0.0), points=points)
+    r.finish()
+    return cfg
+
+
+def _parse_fit(r: _Reader) -> FitConfig:
+    pairs_raw = r._take("overlap_allowed_pairs")
+    if (not isinstance(pairs_raw, list)
+            or not all(isinstance(p, list) and len(p) == 2 and all(isinstance(v, str) and v for v in p)
+                       for p in pairs_raw)):
+        raise ConfigError(f"'fit.overlap_allowed_pairs' phải là danh sách cặp class [a, b], nhận {pairs_raw!r}")
+    cfg = FitConfig(
+        empty_max_points=r.integer("empty_max_points", 0),
+        sparse_warning_points=r.integer("sparse_warning_points", 0),
+        outside_margin_m=r.number("outside_margin_m", 0.0),
+        outside_margin_rel=r.number("outside_margin_rel", 0.0),
+        outside_min_points=r.integer("outside_min_points", 1),
+        outside_warning_ratio=r.number("outside_warning_ratio", 0.0),
+        outside_error_ratio=r.number("outside_error_ratio", 0.0),
+        ground_clearance_m=r.number("ground_clearance_m", 0.0),
+        loose_min_points=r.integer("loose_min_points", 1),
+        loose_max_range_m=r.number("loose_max_range_m", 0.0),
+        loose_warning_m=r.number("loose_warning_m", 0.0),
+        loose_error_m=r.number("loose_error_m", 0.0),
+        overlap_warning=r.number("overlap_warning", 0.0),
+        overlap_error=r.number("overlap_error", 0.0),
+        overlap_classes=r.strings("overlap_classes"),
+        overlap_allowed_pairs=tuple((a, b) for a, b in pairs_raw),
+    )
+    r.finish()
+    for low, high in (("outside_warning_ratio", "outside_error_ratio"), ("loose_warning_m", "loose_error_m"),
+                      ("overlap_warning", "overlap_error")):
+        _require_order("fit", getattr(cfg, low), getattr(cfg, high), low, high)
+    if cfg.outside_error_ratio > 1 or cfg.overlap_error > 1:
+        raise ConfigError("'fit.outside_error_ratio' và 'fit.overlap_error' phải <= 1")
     return cfg
 
 
@@ -252,6 +427,7 @@ def _parse_floating(r: _Reader) -> FloatingConfig:
         ring_inner_m=r.number("ring_inner_m", 0.0),
         ring_outer_m=r.number("ring_outer_m", 0.0),
         min_ground_points=r.integer("min_ground_points", 1),
+        **({"sweeps": r.integer("sweeps", 0)} if "sweeps" in r.keys() else {}),
     )
     r.finish()
     _require_order("floating", cfg.warning_m, cfg.error_m, "warning_m", "error_m")
@@ -397,6 +573,8 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         track=_parse_track(r.section("track")),
         gate=_parse_gate(r.section("gate")),
         rules=rules,
+        heading=_parse_heading(r.section("heading")) if "heading" in r.keys() else HeadingConfig(),
+        fit=_parse_fit(r.section("fit")) if "fit" in r.keys() else FitConfig(),
     )
     r.finish()
     return cfg

@@ -16,6 +16,13 @@ rules:                                # bật / tắt từng luật theo guideli
   track_jump: true
   track_split_id: true
   track_long_interpolation: true
+  heading_flip: true                  # C1: hướng box đổi đột ngột giữa hai keyframe (lật 180°, xoay nhầm)
+  heading_motion: true                # C1: hướng box ngược / lệch hướng chuyển động của track
+  heading_points: true                # C1: trục box lệch trục của cụm điểm LiDAR
+  fit_empty: true                     # C1: box không có điểm LiDAR nào
+  fit_outside: true                   # C1: nhiều điểm của vật nằm ngoài box (box nhỏ / lệch)
+  fit_loose: true                     # C1: mặt box nhìn thấy được cách xa các điểm của vật (box dư)
+  fit_overlap: true                   # C1: hai box chồng lên nhau (vẽ trùng)
 
 floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
@@ -28,6 +35,7 @@ floating:                             # lơ lửng / lún đất (B3); kiểm ch
   ring_inner_m: 0.1                   # vành đai lấy điểm ground: từ mép footprint + 0.1 m
   ring_outer_m: 0.8                   # ... tới mép footprint + 0.8 m
   min_ground_points: 15               # ít hơn: ghi "thiếu bằng chứng" ở mức Thông tin
+  sweeps: 4                           # mặt đất v2 (C1): gộp thêm N lượt quét LiDAR trước keyframe để đo mặt đất
 
 size:
   class_range:                        # kiểu 1: bất thường so với class
@@ -92,6 +100,71 @@ track:
     enabled: true
     min_frames: 2
     min_motion_m: 1.0
+
+heading:                              # sai hướng box (C1), spec 4.2: hướng box trùng hướng chuyển động chính
+  min_motion_m: 1.0                   # quãng đường tối thiểu giữa 2 keyframe lân cận để tin hướng chuyển động
+  groups:
+    vehicle:
+      classes: [car, truck, bus, trailer, construction_vehicle]
+      min_speed_mps: 2.0              # chạy chậm hơn (đỗ, lùi xe) thì không so với hướng chuyển động
+      motion_warning_deg: 60          # hướng box lệch hướng chuyển động > 60°: Cảnh báo
+      motion_error_deg: 135           # > 135° (box ngược chiều xe chạy): Lỗi
+      flip_warning_deg: 45            # hướng đổi đột ngột giữa 2 keyframe > 45° (vượt tốc độ quay hợp lý): Cảnh báo
+      flip_error_deg: 75              # > 75° (xoay ngang, lật đầu box): Lỗi
+      yaw_rate_max_dps: 60            # xe quay tối đa ~60°/s: khoảng cách keyframe dài thì nới ngưỡng lật
+    two_wheeler:
+      classes: [motorcycle, bicycle]
+      min_speed_mps: 1.5
+      motion_warning_deg: 60
+      motion_error_deg: 135
+      flip_warning_deg: 45
+      flip_error_deg: 75
+      yaw_rate_max_dps: 90
+    pedestrian:                       # người xoay người nhanh và hay đứng yên: ngưỡng rộng
+      classes: [pedestrian]
+      min_speed_mps: 1.0
+      motion_warning_deg: 90
+      motion_error_deg: 150
+      flip_warning_deg: 120
+      flip_error_deg: 170
+      yaw_rate_max_dps: 180
+  points:                             # so trục box với trục cụm điểm (khớp hình chữ L), so với các frame khác của track
+    classes: [car, truck, bus, trailer]  # xe công trình có cần, gầu làm cụm điểm không vuông: không xét
+    min_points: 60                    # cần đủ điểm của vật
+    min_aspect: 1.6                   # box đủ dài so với bề ngang thì trục mới rõ
+    warning_deg: 15
+    error_deg: 30
+    max_range_m: 40.0
+
+fit:                                  # box vẽ lệch khỏi vật (C1), spec 4.2: bao trọn vật thể, không dư thừa
+  empty_max_points: 0                 # box có <= 0 điểm LiDAR (không đánh occluded): Lỗi "box rỗng"
+  sparse_warning_points: 0            # > 0: Cảnh báo box có ít điểm hơn mức này ("không nên gán", chờ chốt P-009)
+  outside_margin_m: 0.5               # xét điểm trong box nới mỗi phía max(0.5 m, 25% cạnh box), bỏ điểm mặt đất,
+  outside_margin_rel: 0.25            # điểm của box khác, và điểm không nối liền với điểm trong box
+  outside_min_points: 30              # cần ít nhất 30 điểm của vật nằm ngoài box
+  outside_warning_ratio: 0.5          # > 50% điểm của vật (nối liền với điểm trong box) nằm ngoài box: Cảnh báo
+  outside_error_ratio: 0.7            # > 70%: Lỗi (box nhỏ hoặc lệch hẳn khỏi vật)
+  ground_clearance_m: 0.25            # điểm thấp hơn đáy box + 0.25 m coi là mặt đất
+  loose_min_points: 40                # box dư: chỉ xét box gần, nhiều điểm
+  loose_max_range_m: 30.0
+  loose_warning_m: 0.5                # mặt box quay về phía LiDAR cách điểm gần nhất của vật > 0.5 m: Cảnh báo
+  loose_error_m: 1.0
+  overlap_warning: 0.2                # phần chồng / diện tích box nhỏ hơn (nhìn từ trên) > 20%: Cảnh báo
+  overlap_error: 0.5                  # > 50% (gần như vẽ trùng một vật hai lần): Lỗi
+  overlap_classes: [car, truck, bus, trailer, construction_vehicle, motorcycle, bicycle, pedestrian]
+  overlap_allowed_pairs:              # spec 4.3B: người đứng sát nhau / cạnh xe được phép chồng box
+    - [pedestrian, pedestrian]
+    - [pedestrian, bicycle]
+    - [pedestrian, motorcycle]
+    - [pedestrian, car]               # người lên / xuống xe
+    - [pedestrian, truck]             # người đứng trên thùng xe (spec 4.3B)
+    - [pedestrian, construction_vehicle]
+    - [bicycle, bicycle]              # xe đạp / xe máy đỗ sát nhau (bãi xe, vỉa hè) hay chồng box
+    - [motorcycle, motorcycle]
+    - [bicycle, motorcycle]
+    - [truck, trailer]                # đầu kéo và rơ-moóc chồng ở chỗ nối
+    - [car, trailer]
+    - [construction_vehicle, trailer]
 
 gate:
   max_errors: 0

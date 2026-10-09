@@ -129,10 +129,13 @@ class ErrorType(Enum):
     FLOATING = "floating"
     SIZE = "size"
     TRACK = "track"
+    HEADING = "heading"
+    FIT = "fit"
 
     @property
     def label_vi(self) -> str:
-        return {"floating": "Lơ lửng / lún", "size": "Sai kích thước", "track": "Đứt track"}[self.value]
+        return {"floating": "Lơ lửng / lún", "size": "Sai kích thước", "track": "Đứt track",
+                "heading": "Sai hướng box", "fit": "Box lệch khỏi vật"}[self.value]
 
 
 @dataclass(frozen=True)

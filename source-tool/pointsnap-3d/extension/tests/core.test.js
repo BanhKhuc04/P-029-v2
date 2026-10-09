@@ -88,3 +88,21 @@ test('matchFindings ghép mục của lần quét với cờ trên CVAT', () => 
   ];
   assert.deepEqual(core.matchFindings(findings, flag), [0, 3]);
 });
+
+test('parseFlag nhận luật sai hướng box và box lệch (C1)', () => {
+  const cases = {
+    'heading.flip': 'Hướng box ngược đầu (lật box) 180° so với keyframe gần nhất của phần còn lại của track (frame 3); đổi hướng nhanh bất thường (ngưỡng 75°)',
+    'heading.motion': 'Hướng box ngược chiều 178° so với hướng chuyển động của vật (10.0 m/s, frame 2–4; ngưỡng 135°)',
+    'heading.points': 'Trục box lệch 25° so với trục của cụm điểm LiDAR của vật (ngưỡng 15°)',
+    'fit.empty': 'Box không có điểm LiDAR nào (0 điểm): vẽ vào chỗ trống, hoặc vật bị che thì đánh dấu occluded',
+    'fit.outside': '40/60 điểm của vật (67%) nằm ngoài box, nhiều nhất phía đầu (tới 50 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 50%)',
+    'fit.loose': 'Mặt đầu của box cách điểm gần nhất của vật 80 cm dù nhìn thấy rõ từ LiDAR: box dư so với vật (ngưỡng 50 cm)',
+    'fit.overlap': 'Box chồng 90% diện tích lên box car (track 2): nghi vẽ trùng một vật hoặc hai box lấn nhau (ngưỡng 50%)',
+  };
+  for (const [rule, text] of Object.entries(cases)) {
+    const items = core.parseFlag(`[Lỗi] ${text}`);
+    assert.equal(items.length, 1, rule);
+    assert.equal(items[0].rule, rule);
+    assert.notEqual(items[0].tip, core.parseFlag('[Lỗi] câu lạ')[0].tip, rule);
+  }
+});

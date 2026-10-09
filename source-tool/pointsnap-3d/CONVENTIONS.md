@@ -60,7 +60,7 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | Nhãn `sample_annotation` | `translation` = tâm box, **hệ toàn cục**; `size` = **[width, length, height]**; `rotation` = quaternion **[w, x, y, z]**, hệ toàn cục |
 | Đổi nhãn về hệ LiDAR | toàn cục → xe thu (`ego_pose` của `sample_data` LIDAR_TOP) → cảm biến (`calibrated_sensor`) |
 | Point cloud `.pcd.bin` | `float32`, 5 giá trị mỗi điểm: x, y, z, intensity, ring index. Không phải PCD chuẩn, phải chuyển đổi |
-| Tần số keyframe | 2 Hz, cách nhau ≈ 0,5 giây. Chỉ dùng keyframe của `LIDAR_TOP`, bỏ sweep |
+| Tần số keyframe | 2 Hz, cách nhau ≈ 0,5 giây. Box và point cloud dùng keyframe của `LIDAR_TOP`. Riêng luật lơ lửng / lún (mặt đất v2, C1) gộp thêm `floating.sweeps` lượt quét trung gian (20 Hz) ngay trước keyframe, đổi về hệ LiDAR của keyframe và bỏ điểm nằm trong box nội suy theo thời điểm từng sweep |
 | Thứ tự frame | Đi theo chuỗi `first_sample_token` → `next` của cảnh; frame đánh số từ 0 |
 | Track id | Số thứ tự của `instance` trong bảng `instance.json`: cố định giữa các lần chạy và giữa các cảnh |
 | Class | Ánh xạ category nuScenes sang 10 class của task theo bảng chuẩn của bài toán detection nuScenes (`CATEGORY_TO_LABEL` trong `reader.py`). Category khác (động vật, xe cấp cứu, xe đẩy, xe lăn, vật cản rời, giá để xe…) bị bỏ qua |
@@ -78,13 +78,20 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | `track.jump` | Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai keyframe lân cận |
 | `track.split_id` | Đứt track | Track kết thúc rồi một track cùng class bắt đầu ngay gần đó |
 | `track.long_interpolation` | Đứt track | Đoạn dài chỉ có box nội suy trong khi đối tượng di chuyển (B5b) |
+| `heading.flip` | Sai hướng box | Hướng box (hệ toàn cục) đổi giữa hai keyframe nhanh hơn tốc độ quay hợp lý: lật đầu, xoay ngang (C1) |
+| `heading.motion` | Sai hướng box | Hướng box lệch / ngược hướng chuyển động khi vật chạy nhanh hơn `min_speed_mps` (C1, spec 4.2) |
+| `heading.points` | Sai hướng box | Trục box lệch trục cụm điểm LiDAR (khớp hình chữ L), so với các frame khác của track (C1) |
+| `fit.empty` | Box lệch khỏi vật | Vùng quanh box quét rõ nhưng trong box không có điểm nào trên mặt đất; box `occluded` thì bỏ qua (C1) |
+| `fit.outside` | Box lệch khỏi vật | Nhiều điểm của vật (nối liền với điểm trong box) nằm ngoài box: box nhỏ hoặc lệch (C1) |
+| `fit.loose` | Box lệch khỏi vật | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật quá xa: box dư (C1) |
+| `fit.overlap` | Box lệch khỏi vật | Hai box cùng frame chồng nhau (phần chung / box nhỏ hơn), trừ cặp class được phép (C1) |
 
 Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu thông báo luôn có số đo cụ thể, ví dụ *"Đáy box cách mặt đất 22 cm"*.
 
 ## 5. Cấu hình và bí mật
 
 - Ngưỡng nằm trong `pointsnap/config.yaml`. Muốn thử ngưỡng khác: tạo file chỉ chứa phần cần đổi, chạy `pointsnap --config <file> ...`. Khóa gõ sai bị báo lỗi ngay.
-- Bật / tắt luật (`rules:`): cho phép tắt/bật từng luật (`floating`, `size_class_range`, `size_in_track`, `track_jump`, `track_split_id`, `track_long_interpolation`). Bộ quét bỏ qua detector khi toàn bộ luật của nó bị tắt và lọc bỏ finding bị vô hiệu hóa khỏi kết quả.
+- Bật / tắt luật (`rules:`): cho phép tắt/bật từng luật (`floating`, `size_class_range`, `size_in_track`, `track_jump`, `track_split_id`, `track_long_interpolation`; từ C1 thêm `heading_flip`, `heading_motion`, `heading_points`, `fit_empty`, `fit_outside`, `fit_loose`, `fit_overlap`). Bộ quét bỏ qua detector khi toàn bộ luật của nó bị tắt và lọc bỏ finding bị vô hiệu hóa khỏi kết quả. File cấu hình / guideline cũ không có khóa của luật C1 thì luật đó coi là bật; thiếu mục `heading:` hoặc `fit:` thì dùng ngưỡng mặc định.
 - Cấu hình dự án (A11): lưu trữ tại `~/.pointsnap/projects/<slug>/` (`project.json`, `secret.json`, `guideline.yaml`, `runs/`).
 - Token CVAT: lưu riêng trong `secret.json` hoặc biến môi trường `CVAT_TOKEN`; không ghi token trong file cấu hình hay `guideline.yaml`. API không bao giờ trả token ra ngoài.
 - Thứ tự ưu tiên của URL CVAT, từ thấp tới cao: `config.yaml` mặc định → biến môi trường `CVAT_URL` → file `--config`. Trong giao diện Web, URL cấu hình ở dự án (`project.json`) luôn có độ ưu tiên cao nhất cho dự án đó.

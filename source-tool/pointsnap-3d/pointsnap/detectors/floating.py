@@ -16,11 +16,13 @@ Hai cách dùng:
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import TYPE_CHECKING, Iterable, Sequence
 
 import numpy as np
 
+from pointsnap.core.geometry import invert_pose, points_in_cuboid
 from pointsnap.core.ground import GroundEstimate, OtherBoxPoints, estimate_ground_for_box, ring_ground_for_box
 from pointsnap.core.model import ErrorType, Finding, Severity, group_by_frame
 
@@ -123,21 +125,100 @@ def detect_floating(
     return findings
 
 
+SWEEP_BOX_MARGIN_M = 0.3
+"""Bỏ điểm sweep nằm trong box nội suy nới 30 cm: vật đang chạy không để lại vệt thân xe quanh box."""
+
+
+def _yaw_of(matrix: np.ndarray) -> float:
+    return math.atan2(matrix[1, 0], matrix[0, 0])
+
+
+def _boxes_at(alpha: float, previous: dict, current: dict) -> list[Cuboid]:
+    """Vị trí box tại thời điểm giữa frame trước (`alpha` = 0) và frame hiện tại (`alpha` = 1), hệ frame hiện tại."""
+    boxes = []
+    for key in set(previous) | set(current):
+        a, b = previous.get(key), current.get(key)
+        if a is None or b is None:
+            boxes.append(a or b)
+            continue
+        center = tuple(np.asarray(a.center) + (np.asarray(b.center) - np.asarray(a.center)) * alpha)
+        yaw = a.yaw + math.remainder(b.yaw - a.yaw, 2 * math.pi) * alpha
+        boxes.append(b.replace(center=center, yaw=yaw))
+    return boxes
+
+
+def static_sweep_points(
+    frames, frame: int, boxes: Sequence[Cuboid], previous_boxes: Sequence[Cuboid], sweeps: int,
+) -> np.ndarray:
+    """Điểm các lượt quét trung gian trước `frame` (hệ của frame), đã bỏ điểm của mọi vật có box.
+
+    Vị trí box tại thời điểm từng sweep được nội suy tuyến tính giữa box ở frame trước (đổi sang hệ frame hiện tại bằng
+    pose xe thu) và box ở frame hiện tại; vật chỉ có ở một trong hai frame thì dùng box đó. Không có pose hay frame
+    trước thì dùng box của frame hiện tại.
+    """
+    chunks = frames.ground_sweeps(frame, sweeps)
+    if not chunks:
+        return np.empty((0, 3))
+    now = frames.frame_data(frame, with_points=False)
+    current = {(b.track_id if b.track_id is not None else ("shape", i)): b for i, b in enumerate(boxes)}
+    previous: dict = {}
+    t_prev = None
+    if previous_boxes and now.sensor_to_world is not None:
+        before = frames.frame_data(frame - 1, with_points=False)
+        if before.sensor_to_world is not None and before.timestamp is not None and now.timestamp is not None:
+            to_now = invert_pose(now.sensor_to_world) @ before.sensor_to_world
+            turn = _yaw_of(to_now)
+            for b in previous_boxes:
+                if b.track_id is not None:
+                    center = tuple(to_now[:3, :3] @ np.asarray(b.center) + to_now[:3, 3])
+                    previous[b.track_id] = b.replace(center=center, yaw=b.yaw + turn)
+            t_prev = before.timestamp
+    kept = []
+    for timestamp, points in chunks:
+        if t_prev is not None and now.timestamp is not None and now.timestamp > t_prev:
+            alpha = min(1.0, max(0.0, (timestamp - t_prev) / (now.timestamp - t_prev)))
+            moving = _boxes_at(alpha, previous, current)
+        else:
+            moving = list(boxes)
+        keep = np.ones(len(points), dtype=bool)
+        for box in moving:
+            reach = max(box.dims[:2]) + SWEEP_BOX_MARGIN_M
+            near = np.flatnonzero((np.abs(points[:, 0] - box.center[0]) <= reach)
+                                  & (np.abs(points[:, 1] - box.center[1]) <= reach))
+            if len(near):
+                keep[near[points_in_cuboid(points[near], box, margin=SWEEP_BOX_MARGIN_M)]] = False
+        kept.append(points[keep])
+    return np.concatenate(kept)
+
+
 def estimate_scene_ground(
     cuboids: Iterable[Cuboid], frames: FrameSource, config: FloatingConfig,
 ) -> list[tuple[Cuboid, GroundEstimate]]:
-    """Mặt đất sát từng box tiếp đất (không `outside`); đọc point cloud mỗi frame một lần."""
+    """Mặt đất sát từng box tiếp đất (không `outside`); đọc point cloud mỗi frame một lần.
+
+    `config.sweeps` > 0 và nguồn frame có `ground_sweeps` (nuScenes, bản xuất CVAT): gộp thêm các lượt quét LiDAR trung
+    gian trước keyframe, đã bỏ điểm của vật theo vị trí box nội suy, để vành đai quanh box có nhiều điểm mặt đất hơn
+    (mặt đất v2).
+    """
     classes = set(config.classes)
+    use_sweeps = config.sweeps > 0 and hasattr(frames, "ground_sweeps")
+    by_frame = group_by_frame(c for c in cuboids if not c.outside)
+    # Sweep chỉ lặp lại các chỗ keyframe đã thấy: giữ yêu cầu bằng chứng tương đương keyframe (theo mật độ điểm).
+    min_points = config.min_ground_points * (1 + config.sweeps) if use_sweeps else config.min_ground_points
     results: list[tuple[Cuboid, GroundEstimate]] = []
-    for frame, boxes in group_by_frame(c for c in cuboids if not c.outside).items():
+    for frame, boxes in by_frame.items():
         if not any(b.label in classes for b in boxes):
             continue
-        cloud = OtherBoxPoints(frames.frame_data(frame).points, boxes)
+        points = np.asarray(frames.frame_data(frame).points, dtype=np.float64)[:, :3]
+        if use_sweeps:
+            extra = static_sweep_points(frames, frame, boxes, by_frame.get(frame - 1, []), config.sweeps)
+            points = np.concatenate([points, extra])
+        cloud = OtherBoxPoints(points, boxes)
         for index, box in enumerate(boxes):
             if box.label in classes:
                 results.append((box, ring_ground_for_box(
                     cloud.without_others(index), box, ring_inner_m=config.ring_inner_m,
-                    ring_outer_m=config.ring_outer_m, min_ground_points=config.min_ground_points,
+                    ring_outer_m=config.ring_outer_m, min_ground_points=min_points,
                 )))
     return results
 

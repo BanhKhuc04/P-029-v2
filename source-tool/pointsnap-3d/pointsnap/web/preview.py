@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -95,13 +96,22 @@ def load_reviews(run_dir: Path) -> dict[str, str]:
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
+_REVIEWS_LOCK = threading.Lock()
+
+
 def save_review(run_dir: Path, index: int, verdict: str | None) -> dict[str, str]:
-    """Ghi kết luận xem tay của một mục (`ok` = đúng là lỗi, `fp` = báo nhầm, `None` = bỏ)."""
-    # ponytail: đọc-ghi cả file, không khóa; đủ cho một người dùng giao diện local.
-    reviews = load_reviews(run_dir)
-    if verdict is None:
-        reviews.pop(str(index), None)
-    else:
-        reviews[str(index)] = verdict
-    (run_dir / "reviews.json").write_text(json.dumps(reviews, indent=2), encoding="utf-8")
-    return reviews
+    """Ghi kết luận xem tay của một mục (`ok` = đúng là lỗi, `fp` = báo nhầm, `None` = bỏ).
+
+    Khóa đọc-sửa-ghi để hai yêu cầu cùng lúc (bấm phím nhanh, nhiều tab, extension) không ghi đè nhau;
+    ghi ra file tạm rồi thay thế để file không bao giờ bị ghi dở.
+    """
+    with _REVIEWS_LOCK:
+        reviews = load_reviews(run_dir)
+        if verdict is None:
+            reviews.pop(str(index), None)
+        else:
+            reviews[str(index)] = verdict
+        tmp = run_dir / "reviews.json.tmp"
+        tmp.write_text(json.dumps(reviews, indent=2), encoding="utf-8")
+        os.replace(tmp, run_dir / "reviews.json")
+        return reviews

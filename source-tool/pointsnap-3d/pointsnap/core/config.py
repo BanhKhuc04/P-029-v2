@@ -48,6 +48,8 @@ class RulesConfig:
     track_occluded_long: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
+    track_static_shift: bool = True
+    heading_static: bool = True
 
 
 @dataclass(frozen=True)
@@ -214,6 +216,21 @@ class FitConfig:
 
 
 @dataclass(frozen=True)
+class StaticConfig:
+    """Vật đứng yên: box dịch / xoay giữa các keyframe trong hệ toàn cục (C3, lớp 1 của Box Verifier)."""
+
+    max_spread_m: float = 0.10
+    """Các keyframe còn lại của track tụ trong khoảng này (p90, hệ toàn cục) thì coi vật đứng yên."""
+    min_keyframes: int = 4
+    shift_warning_m: float = 0.20
+    shift_error_m: float = 0.50
+    yaw_warning_deg: float = 4.0
+    yaw_error_deg: float = 10.0
+    yaw_excluded_classes: tuple[str, ...] = ("pedestrian", "Pedestrian", "Animal")
+    """Người, động vật đứng yên vẫn xoay người: không xét hướng."""
+
+
+@dataclass(frozen=True)
 class SpecConfig:
     """Thuộc tính bắt buộc và giá trị cho phép theo spec của dự án (C2, spec 3.1.2–3.1.3)."""
 
@@ -240,6 +257,7 @@ class Config:
     heading: HeadingConfig = dataclasses.field(default_factory=HeadingConfig)
     fit: FitConfig = dataclasses.field(default_factory=FitConfig)
     spec: SpecConfig = dataclasses.field(default_factory=SpecConfig)
+    static: StaticConfig = dataclasses.field(default_factory=StaticConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -354,7 +372,8 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
-              "fit_overlap", "track_reuse_id", "track_occluded_long", "attr_missing", "attr_invalid")
+              "fit_overlap", "track_reuse_id", "track_occluded_long", "attr_missing", "attr_invalid",
+              "track_static_shift", "heading_static")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
 
 
@@ -399,6 +418,24 @@ def _parse_heading(r: _Reader) -> HeadingConfig:
         raise ConfigError("'heading.points.error_deg' phải <= 45 (lệch trục chỉ đo được trong khoảng 0–45°)")
     cfg = HeadingConfig(groups=groups, min_motion_m=r.number("min_motion_m", 0.0), points=points)
     r.finish()
+    return cfg
+
+
+def _parse_static(r: _Reader) -> StaticConfig:
+    cfg = StaticConfig(
+        max_spread_m=r.number("max_spread_m", 0.0),
+        min_keyframes=r.integer("min_keyframes", 3),
+        shift_warning_m=r.number("shift_warning_m", 0.0),
+        shift_error_m=r.number("shift_error_m", 0.0),
+        yaw_warning_deg=r.number("yaw_warning_deg", 0.0),
+        yaw_error_deg=r.number("yaw_error_deg", 0.0),
+        yaw_excluded_classes=r.strings("yaw_excluded_classes"),
+    )
+    r.finish()
+    _require_order("static", cfg.shift_warning_m, cfg.shift_error_m, "shift_warning_m", "shift_error_m")
+    _require_order("static", cfg.yaw_warning_deg, cfg.yaw_error_deg, "yaw_warning_deg", "yaw_error_deg")
+    if cfg.yaw_error_deg > 90:
+        raise ConfigError("'static.yaw_error_deg' phải <= 90")
     return cfg
 
 
@@ -617,6 +654,7 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         heading=_parse_heading(r.section("heading")) if "heading" in r.keys() else HeadingConfig(),
         fit=_parse_fit(r.section("fit")) if "fit" in r.keys() else FitConfig(),
         spec=_parse_spec(r.section("spec")) if "spec" in r.keys() else SpecConfig(),
+        static=_parse_static(r.section("static")) if "static" in r.keys() else StaticConfig(),
     )
     r.finish()
     return cfg

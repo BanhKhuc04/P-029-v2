@@ -25,13 +25,16 @@
     'track.reuse_id': 'Vật chỉ bị che tạm thời (≤ 6 frame) thì bỏ outside và bật occluded; vắng lâu hơn thì tách phần sau thành track mới (spec 4.4.3–4.4.5).',
     'track.occluded_long': 'Che khuất quá 6 frame: kết thúc track (Switch outside) và tạo track mới khi vật xuất hiện lại, trừ khi chắc chắn là cùng vật (spec 4.4.5).',
     'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
-    'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.'
+    'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.',
+    'track.static_shift': 'Vật đứng yên: kéo box về trùng vị trí ở các keyframe khác của track (hoặc copy box từ keyframe đúng).',
+    'heading.static': 'Vật đứng yên: xoay box về cùng hướng với các keyframe khác của track.'
   };
 
   // Công tắc luật trong tab Guideline (khóa `rules:` của cấu hình); C1 thêm 7 luật sai hướng / box lệch.
   const RULE_IDS = ['floating', 'size_class_range', 'size_in_track', 'track_jump', 'track_split_id',
     'track_long_interpolation', 'heading_flip', 'heading_motion', 'heading_points', 'fit_empty', 'fit_outside',
-    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'attr_missing', 'attr_invalid'];
+    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'attr_missing', 'attr_invalid',
+    'track_static_shift', 'heading_static'];
 
   const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
 
@@ -88,6 +91,10 @@
       case 'heading.motion':
       case 'heading.points':
         return `${Math.round(n)}°`;
+      case 'heading.static':
+        return `${fixed(n, 1)}°`;
+      case 'track.static_shift':
+        return `${Math.round(n * 100)} cm`;
       case 'fit.outside':
       case 'fit.overlap':
         return `${Math.round(n * 100)}%`;
@@ -1168,6 +1175,8 @@
     if (f.rule === 'track.occluded_long') return 'Che khuất quá lâu';
     if (f.rule === 'attr.missing') return 'Thiếu thuộc tính bắt buộc';
     if (f.rule === 'attr.invalid') return 'Thuộc tính sai giá trị';
+    if (f.rule === 'track.static_shift') return 'Vật đứng yên: box dịch';
+    if (f.rule === 'heading.static') return 'Vật đứng yên: box xoay';
     return f.message ? f.message.split(';')[0] : 'Phát hiện bất thường';
   }
 

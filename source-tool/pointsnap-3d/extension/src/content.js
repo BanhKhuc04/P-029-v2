@@ -33,6 +33,8 @@
     'track.occluded_long': 'Che khuất quá lâu',
     'attr.missing': 'Thiếu thuộc tính',
     'attr.invalid': 'Thuộc tính sai giá trị',
+    'track.static_shift': 'Vật đứng yên: box dịch',
+    'heading.static': 'Vật đứng yên: box xoay',
   };
 
   // ---------------------------------------------------------------- trạng thái

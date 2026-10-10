@@ -89,6 +89,8 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | `track.reuse_id` | Đứt track | Track đã kết thúc bằng `outside` rồi lại có box (spec 4.4.3–4.4.4). Mức Cảnh báo (C2) |
 | `track.occluded_long` | Đứt track | `occluded` liên tục quá `track.max_occluded_frames` (6) frame (spec 4.4.5). Mức Cảnh báo (C2) |
 | `attr.missing` | Thiếu / sai thuộc tính | Thiếu thuộc tính bắt buộc theo `spec.required_attributes` (spec 3.1.3). Mức Lỗi (C2) |
+| `track.static_shift` | Đứt track | Vật đứng yên (các keyframe khác tụ trong 10 cm, hệ toàn cục) mà box ở một keyframe lệch > 20 cm (C3) |
+| `heading.static` | Sai hướng box | Vật đứng yên mà hướng box ở một keyframe lệch > 4° (modulo 180°); không xét người, động vật (C3) |
 | `attr.invalid` | Thiếu / sai thuộc tính | Giá trị ngoài `spec.allowed_values` (khóa `thuộc_tính` hoặc `Class.thuộc_tính`). Mức Lỗi (C2) |
 
 **Box `occluded`** (thuộc tính `occluded` của CVAT, `Cuboid.occluded`): vật không nhìn thấy, vị trí do người gán ước

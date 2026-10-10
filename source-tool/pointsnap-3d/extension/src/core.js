@@ -27,12 +27,16 @@
     'track.occluded_long': 'Che khuất quá 6 frame: kết thúc track (Switch outside) và tạo track mới khi vật xuất hiện lại, trừ khi chắc chắn là cùng vật (spec 4.4.5).',
     'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
     'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.',
+    'track.static_shift': 'Vật đứng yên: kéo box về trùng vị trí ở các keyframe khác của track (hoặc copy box từ keyframe đúng).',
+    'heading.static': 'Vật đứng yên: xoay box về cùng hướng với các keyframe khác của track.',
   };
   const SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
   const DEFAULT_FIX_TIP = 'Kiểm tra lại box và nhãn theo hướng dẫn gán nhãn của dự án.';
 
   // Cờ trên CVAT chỉ chứa câu thông báo, nên nhận luật từ mẫu câu của từng bộ phát hiện.
   const RULE_PATTERNS = [
+    ['track.static_shift', /^Vật đứng yên \(các keyframe khác/i],
+    ['heading.static', /^Vật đứng yên nhưng hướng box/i],
     ['heading.flip', /đổi hướng nhanh bất thường/i],
     ['heading.motion', /so với hướng chuyển động/i],
     ['heading.points', /trục của cụm điểm/i],

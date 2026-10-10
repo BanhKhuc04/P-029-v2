@@ -26,6 +26,7 @@ from pointsnap.core.model import (
 from pointsnap.detectors.attributes import detect_attribute_errors
 from pointsnap.detectors.fit import fit_findings_for_frame, outside_findings, overlap_findings
 from pointsnap.detectors.floating import detect_floating_scene
+from pointsnap.detectors.static import detect_static_errors
 from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
 from pointsnap.detectors.size import detect_size
 from pointsnap.detectors.track import detect_track_errors
@@ -215,6 +216,13 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
     return findings
 
 
+def check_static(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Box dịch / xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
+    sensor_to_world, _ = _poses(job, frames)
+    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=config.rules.track_static_shift,
+                                rotate=config.rules.heading_static)
+
+
 def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
     return detect_attribute_errors(job.cuboids, config.spec)
@@ -223,6 +231,7 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
 _RULE_SWITCH = {
     "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long",
     "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
+    "track.static_shift": "track_static_shift", "heading.static": "heading_static",
     "heading.flip": "heading_flip", "heading.motion": "heading_motion", "heading.points": "heading_points",
     "fit.empty": "fit_empty", "fit.outside": "fit_outside", "fit.loose": "fit_loose", "fit.overlap": "fit_overlap",
 }
@@ -255,6 +264,7 @@ DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_heading,
     check_box_points,
     check_attributes,
+    check_static,
 )
 
 
@@ -290,6 +300,8 @@ def scan_cuboids(
             active_detectors.append(check_box_points)
         if r.attr_missing or r.attr_invalid:
             active_detectors.append(check_attributes)
+        if r.track_static_shift or r.heading_static:
+            active_detectors.append(check_static)
 
     findings: list[Finding] = []
     for detector in active_detectors:

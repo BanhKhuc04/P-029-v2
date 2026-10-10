@@ -29,11 +29,28 @@ từ cảnh test, nếu không số liệu bị rò).
 
 ## 2. Huấn luyện
 
-Script mẫu `scripts/train_critic_example.py` (PointNet nhỏ ~60 nghìn tham số, chạy được trên RTX 3050 4 GB hoặc CPU):
+Script mẫu `scripts/train_critic_example.py` (PointNet nhỏ ~53 nghìn tham số, chạy được trên RTX 3050 4 GB hoặc CPU):
 
 ```bash
-python scripts/train_critic_example.py --data data/critic --epochs 20 --out models/critic.pt
+python scripts/train_critic_example.py --data data/critic --epochs 30 --out models/critic.pt
 ```
+
+Script để riêng **cảnh cuối** (theo tên file, đổi bằng `--val-scenes`) làm cảnh kiểm tra, giữ model có loss kiểm tra thấp
+nhất, rồi in ngưỡng gợi ý `critic.min_logit_rise` / `critic.error_logit_rise` để điền vào guideline (mục 4).
+
+**Bài học từ lần huấn luyện đầu (10/10).** Model đầu tiên báo sai 0,8% box chuẩn trên cảnh đã học nhưng **30%** trên cảnh
+mới (AUC 0,97 → 0,88): học thuộc. Ba nguyên nhân và cách đã sửa trong script:
+
+| Nguyên nhân | Cách sửa |
+|---|---|
+| Kiểm tra chia ngẫu nhiên theo mẫu: một box sinh 20 mẫu nên có mặt ở cả hai tập, không thấy học thuộc | Kiểm tra theo **cảnh** |
+| Mẫu giữ nguyên luôn mang đúng kích thước gốc: model nhớ kích thước của ~3 600 box thay vì nhìn điểm | Model bỏ 3 cột kích thước tuyệt đối (`--use-dims` để bật lại) |
+| Ít dữ liệu (4 – 5 cảnh) | Lật trái / phải, trước / sau, rung điểm; dropout; weight decay 1e-3 |
+
+Sau khi sửa, trên cảnh để riêng vẫn còn ~20% box chuẩn có xác suất sai > 0.7: model lệch đều theo từng vật / cảnh. Vì vậy
+luật `critic.box` so **logit của box với trung vị các frame khác của cùng track** (như các luật khác của PointSnap): ở mức
+0,5% box chuẩn bị báo, bắt được 35% box dời > 0,3 m, 33% box xoay > 10°, 27% box sai kích thước > 0,3 m (scene-0916 để
+riêng). Muốn tốt hơn nữa thì cần **thêm dữ liệu** (nuScenes trainval, dữ liệu Việt Nam đã gán).
 
 ### Huấn luyện trên Google Colab (GPU miễn phí)
 
@@ -75,7 +92,9 @@ Trong guideline của dự án (tab Guideline → YAML, hoặc file `--config`):
 critic:
   model: D:/models/critic.pt
   min_points: 20          # chỉ chấm box có ≥ 20 điểm của vật
-  min_probability: 0.7    # xác suất sai ≥ 0.7: Cảnh báo
+  min_logit_rise: 4.4     # box thuộc track: logit sai cao hơn trung vị các frame khác của track > 4.4: Cảnh báo
+  error_logit_rise: 6.0   # > 6.0: Lỗi  (hai số này lấy từ dòng "Ngưỡng gợi ý" của script huấn luyện)
+  min_probability: 0.7    # box lẻ không thuộc track: xác suất sai ≥ 0.7: Cảnh báo
   error_probability: 0.9  # ≥ 0.9: Lỗi
 ```
 

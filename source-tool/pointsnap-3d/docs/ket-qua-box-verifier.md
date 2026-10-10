@@ -83,13 +83,31 @@ Cùng mức báo nhầm ~1 / 100 box, tỉ lệ bắt (trên box nhìn thấy đ
 Nhận xét: tín hiệu ảnh 2D thô (một model COCO, khung chiếu 8 góc) có ích như bằng chứng thứ hai nhưng chưa đủ chắc để
 tự đứng. Hướng tốt hơn là đưa đặc trưng ảnh vào Box Critic (lớp 3) để model tự học cách kết hợp với điểm LiDAR.
 
-## 4. Lớp 3 — Box Critic (nhóm tự huấn luyện)
+## 4. Lớp 3 — Box Critic
 
 Đã có: `pointsnap critic-data` (box làm nhiễu có đáp án, 256 điểm + 20 đặc trưng mỗi mẫu; 5 cảnh tinh chỉnh,
-20 mẫu / box), `scripts/train_critic_example.py`, notebook Colab `scripts/colab_train_critic.ipynb`, luật
-`critic.box` nạp TorchScript qua `critic.model` và báo kèm gợi ý sửa. Đã thử đầu-cuối: huấn luyện 3 epoch trên
-scene-0757, nạp vào bộ quét, ra `critic.box` kèm gợi ý. Model thật chưa huấn luyện nên chưa có số liệu; cách làm và
-cách đo: [box-critic.md](box-critic.md).
+20 mẫu / box = 72 560 mẫu), `scripts/train_critic_example.py`, notebook Colab `scripts/colab_train_critic.ipynb`, luật
+`critic.box` nạp TorchScript qua `critic.model`, báo kèm gợi ý sửa. Model không nằm trong repo; guideline mặc định
+`critic.model: ""` (tắt).
+
+**Lần huấn luyện đầu** (Colab, script bản đầu): học thuộc. Box chuẩn bị báo sai 0,8% trên cảnh đã học nhưng 30% trên cảnh
+mới; quét 5 cảnh kiểm tra báo **9,45 / 100 box** trên nhãn sạch. Nguyên nhân và cách sửa: [box-critic.md](box-critic.md)
+mục 2 (kiểm tra theo cảnh, bỏ kích thước tuyệt đối, tăng dữ liệu, và luật so logit với trung vị track).
+
+**Sau khi sửa** (huấn luyện lại trên 4 cảnh tinh chỉnh, ngưỡng chọn trên scene-0916 để riêng, đo trên 5 cảnh kiểm tra —
+[báo cáo](eval-box-verifier/kiem-tra-box-critic.md)):
+
+| Lỗi chèn | Box Verifier không Box Critic | **+ Box Critic** |
+|---|---|---|
+| Co / phóng x0,7 · x1,3 | 9% · 0% | **27% · 12%** |
+| Dời 0,3 / 0,5 / 1,0 m | 44% / 36% / 29% | 44% / **64%** / 29% |
+| Xoay 15° / 30° | 29% / 27% | **36% / 55%** |
+| Nhảy 0,5 m | 55% | **73%** |
+| Báo nhầm Cảnh báo / Lỗi trên 100 box | 3,67 / 0,57 | 3,86 / 0,62 (`critic.box` 0,18 / 0,06) |
+| Phân mức đúng | 100% | 100% |
+
+Box Critic là lớp duy nhất bắt được box co / phóng (luật theo điểm LiDAR chỉ bắt khi lệch rõ trên vật lớn). Chỉ 4 – 5 cảnh
+huấn luyện nên còn yếu; thêm dữ liệu (nuScenes trainval, dữ liệu Việt Nam) là hướng cải thiện chính.
 
 ## 5. Lớp 4 — học từ kết luận người duyệt
 

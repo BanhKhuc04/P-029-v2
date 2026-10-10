@@ -578,6 +578,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Recall xoay 15° / 30°** | — | 7% / 9% → **29% / 27%** |
 | **Recall nhảy vị trí 0,5 / 1,0 m** | — | 45% / 50% → **55% / 75%** |
 | **Recall co / phóng box x0,7 · x1,3** | — | 9% · 0% (chưa cải thiện) |
+| **Thêm Box Critic** (model nhóm huấn luyện, `critic.model`) | — | co / phóng 27% · 12%, dời 0,5 m 64%, xoay 30° 55%, nhảy 0,5 m 73%; báo nhầm 3,86 · 0,62 |
 | **Phân mức đúng** | ≥ 80% | 100% ✅ |
 
 **Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.

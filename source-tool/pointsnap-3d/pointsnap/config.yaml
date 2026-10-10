@@ -213,8 +213,10 @@ camera:                               # đối chiếu ảnh camera (C3); cần 
 critic:                               # Box Critic do nhóm tự huấn luyện (C3, lớp 3); xem docs/box-critic.md
   model: ""                           # đường dẫn TorchScript .pt; để trống thì không chạy
   min_points: 20
-  min_probability: 0.7                # xác suất sai ≥ 0.7: Cảnh báo; ≥ 0.9: Lỗi
+  min_probability: 0.7                # box không thuộc track: xác suất sai ≥ 0.7: Cảnh báo; ≥ 0.9: Lỗi
   error_probability: 0.9
+  min_logit_rise: 4.4                 # box thuộc track: logit sai cao hơn trung vị các frame khác của track > 4.4: Cảnh báo
+  error_logit_rise: 6.0               # > 6.0: Lỗi
 
 learning:                             # học từ kết luận Đúng / Báo nhầm của người duyệt (C3); `pointsnap learn`
   adjust_severity: false              # true: hạ mục Cảnh báo có độ tin cậy thấp xuống Thông tin

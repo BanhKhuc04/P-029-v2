@@ -139,34 +139,63 @@ def _load(path: str) -> _Model:
 
 
 def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> list[Finding]:
-    """Luật `critic.box`: model TorchScript nhận (points (B, 256, 4), meta (B, M)), trả (logit sai (B,), sửa (B, 7))."""
+    """Luật `critic.box`: model TorchScript nhận (points (B, 256, 4), meta (B, M)), trả (logit sai (B,), sửa (B, 7)).
+
+    Box thuộc track được so với **chính các frame khác của track** (logit và gợi ý sửa trừ trung vị của track), như các
+    luật khác của PointSnap: model huấn luyện trên ít cảnh lệch đều theo từng vật / cảnh (trên cảnh để riêng, 20% box
+    chuẩn có xác suất sai > 0.7), so theo track thì độ lệch đó triệt tiêu. Box lẻ (shape) dùng xác suất thô.
+    """
     import torch
 
     model = _load(cfg.model).module
     rng = np.random.default_rng(0)
-    findings: list[Finding] = []
+    scored: list[tuple[Cuboid, float, np.ndarray]] = []
     for frame, boxes in group_by_frame(c for c in cuboids if c.visible).items():
-        items = box_point_sets(frames.frame_data(frame).points, boxes, margin=0.5, clearance=0.25, margin_rel=0.25)
-        batch = [box_features(i.local, i.box, i.range_m, rng) for i in items if i.num_object_points >= cfg.min_points]
-        kept = [i for i in items if i.num_object_points >= cfg.min_points]
-        if not batch:
+        items = [i for i in box_point_sets(frames.frame_data(frame).points, boxes, margin=0.5, clearance=0.25,
+                                           margin_rel=0.25) if i.num_object_points >= cfg.min_points]
+        if not items:
             continue
+        batch = [box_features(i.local, i.box, i.range_m, rng) for i in items]
         with torch.inference_mode():
             logit, delta = model(torch.from_numpy(np.stack([b[0] for b in batch])),
                                  torch.from_numpy(np.stack([b[1] for b in batch])))
-        probs = torch.sigmoid(logit).numpy()
-        for item, p, d in zip(kept, probs, delta.numpy()):
+        scored.extend(zip((i.box for i in items), logit.numpy().astype(float), delta.numpy()))
+
+    by_track: dict[int, list[tuple[Cuboid, float, np.ndarray]]] = {}
+    for row in scored:
+        if row[0].track_id is not None:
+            by_track.setdefault(row[0].track_id, []).append(row)
+    findings: list[Finding] = []
+    for box, lg, d in scored:
+        others = [r for r in by_track.get(box.track_id, []) if r[0].frame != box.frame] if box.track_id is not None else []
+        if len(others) >= 2:
+            ref_logit = float(np.median([r[1] for r in others]))
+            rise = lg - ref_logit
+            if rise <= cfg.min_logit_rise:
+                continue
+            fix = d - np.median(np.stack([r[2] for r in others]), axis=0)
+            severity = Severity.ERROR if rise > cfg.error_logit_rise else Severity.WARNING
+            value, threshold = rise, cfg.min_logit_rise
+            why = (f"điểm sai cao hơn các frame khác của track {rise:.1f} (ngưỡng {cfg.min_logit_rise:g}; "
+                   f"xác suất {_sigmoid(lg):.0%})")
+        else:
+            p = _sigmoid(lg)
             if p < cfg.min_probability:
                 continue
-            box = item.box
-            fix = (f"dời ({d[0]:+.2f}, {d[1]:+.2f}, {d[2]:+.2f}) m, kích thước ({d[3]:+.2f}, {d[4]:+.2f}, {d[5]:+.2f}) m, "
-                   f"xoay {math.degrees(d[6]):+.1f}°")
-            findings.append(Finding(
-                error_type=ErrorType.FIT, rule="critic.box",
-                severity=Severity.ERROR if p >= cfg.error_probability else Severity.WARNING,
-                frame=box.frame, label=box.label, track_id=box.track_id, source_id=box.source_id, value=float(p),
-                threshold=cfg.min_probability,
-                message=f"Box Critic: box nghi vẽ sai (xác suất {p:.0%}); gợi ý sửa: {fix}",
-                details={"suggested_fix": dict(zip(TARGETS, map(float, d)))},
-            ))
+            fix = d
+            severity = Severity.ERROR if p >= cfg.error_probability else Severity.WARNING
+            value, threshold = p, cfg.min_probability
+            why = f"xác suất {p:.0%}"
+        text = (f"dời ({fix[0]:+.2f}, {fix[1]:+.2f}, {fix[2]:+.2f}) m, kích thước ({fix[3]:+.2f}, {fix[4]:+.2f}, "
+                f"{fix[5]:+.2f}) m, xoay {math.degrees(fix[6]):+.1f}°")
+        findings.append(Finding(
+            error_type=ErrorType.FIT, rule="critic.box", severity=severity, frame=box.frame, label=box.label,
+            track_id=box.track_id, source_id=box.source_id, value=float(value), threshold=threshold,
+            message=f"Box Critic: box nghi vẽ sai ({why}); gợi ý sửa: {text}",
+            details={"suggested_fix": dict(zip(TARGETS, map(float, fix))), "logit": lg},
+        ))
     return findings
+
+
+def _sigmoid(x: float) -> float:
+    return 1.0 / (1.0 + math.exp(-x))

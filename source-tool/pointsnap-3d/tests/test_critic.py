@@ -100,3 +100,38 @@ def test_critic_findings_with_scripted_model(tmp_path):
 
     few = critic_findings([box], _Frames(box), CriticConfig(model=str(path), min_points=100_000))
     assert few == []
+
+
+def test_critic_track_relative(tmp_path):
+    """Box thuộc track: so logit với trung vị các frame khác của track, gợi ý sửa cũng trừ trung vị của track."""
+    torch = pytest.importorskip("torch")
+
+    class MeanX(torch.nn.Module):
+        """Logit = 20 × trung bình x (hệ box chuẩn hoá) của điểm trong box + 3: lệch đều 3 ở mọi box (như model lệch
+        theo cảnh), box dời khỏi vật thì trung bình x đổi."""
+
+        def forward(self, points: torch.Tensor, meta: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            inside = points[:, :, 3]
+            mean_x = (points[:, :, 0] * inside).sum(1) / inside.sum(1).clamp(min=1.0)
+            delta = torch.zeros(points.shape[0], 7)
+            delta[:, 0] = -mean_x
+            return 20.0 * mean_x.abs() + 3.0, delta
+
+    path = tmp_path / "critic.pt"
+    torch.jit.script(MeanX()).save(str(path))
+    truth = _car(yaw=0.0)
+    frames = _Frames(truth)
+
+    class _Same:
+        def frame_data(self, frame):
+            return frames.frame_data(0)
+
+    track = [truth.replace(frame=f) for f in range(5)]
+    cfg = CriticConfig(model=str(path), min_points=20, min_logit_rise=4.0, error_logit_rise=6.0)
+    # Logit thô ~3 (xác suất 95%) ở mọi frame nhưng không frame nào khác track: không báo.
+    assert critic_findings(track, _Same(), cfg) == []
+    track[2] = track[2].replace(center=(truth.center[0] + 1.5, truth.center[1], truth.center[2]))
+    findings = critic_findings(track, _Same(), cfg)
+    assert [f.frame for f in findings] == [2]
+    assert "cao hơn các frame khác của track" in findings[0].message
+    assert findings[0].details["suggested_fix"]["dx"] > 0  # gợi ý dời về phía vật (âm của độ lệch trung bình x)

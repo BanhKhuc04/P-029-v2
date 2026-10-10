@@ -302,6 +302,11 @@ class CriticConfig:
     min_points: int = 20
     min_probability: float = 0.7
     error_probability: float = 0.9
+    """Box không thuộc track (shape): báo theo xác suất sai thô ≥ `min_probability` / `error_probability`."""
+    min_logit_rise: float = 4.4
+    error_logit_rise: float = 6.0
+    """Box thuộc track: logit "box sai" cao hơn trung vị các frame khác của track quá mức này thì báo Cảnh báo / Lỗi.
+    Đo trên cảnh để riêng scene-0916: 4.4 ≈ 0,5% box chuẩn bị báo, 6.0 < 0,3%."""
 
 
 @dataclass(frozen=True)
@@ -553,9 +558,12 @@ def _parse_critic(r: _Reader) -> CriticConfig:
         raise ConfigError(f"'critic.model' phải là đường dẫn (chuỗi, để trống nếu chưa có), nhận {model!r}")
     cfg = CriticConfig(model=model, min_points=r.integer("min_points", 1),
                        min_probability=r.number("min_probability", 0.0),
-                       error_probability=r.number("error_probability", 0.0))
+                       error_probability=r.number("error_probability", 0.0),
+                       min_logit_rise=r.number("min_logit_rise", 0.0),
+                       error_logit_rise=r.number("error_logit_rise", 0.0))
     r.finish()
     _require_order("critic", cfg.min_probability, cfg.error_probability, "min_probability", "error_probability")
+    _require_order("critic", cfg.min_logit_rise, cfg.error_logit_rise, "min_logit_rise", "error_logit_rise")
     return cfg
 
 

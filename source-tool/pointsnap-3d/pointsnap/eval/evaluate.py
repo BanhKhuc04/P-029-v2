@@ -32,7 +32,7 @@ RULES_FOR = {
     "floating": ("floating",),
     "size_in_track": ("size.in_track", "size.class_range"),
     "size_class_range": ("size.class_range", "size.in_track"),
-    "track_jump": ("track.jump", "track.static_shift", "cam.mismatch"),
+    "track_jump": ("track.jump", "track.static_shift", "cam.mismatch", "critic.box"),
     "track_split_id": ("track.split_id",),
     "track_interpolation": ("track.long_interpolation",),
     "heading_rotate": ("heading.flip", "heading.points", "heading.motion", "heading.static", "critic.box"),

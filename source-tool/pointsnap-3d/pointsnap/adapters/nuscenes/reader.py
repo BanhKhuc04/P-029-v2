@@ -19,6 +19,9 @@ import numpy as np
 
 from pointsnap.core.geometry import invert_pose, pose_matrix
 from pointsnap.core.model import Cuboid, FrameData
+from pointsnap.datasets.taxonomy import spec_label
+
+TAXONOMIES = ("nuscenes", "spec-vn")
 
 LIDAR_CHANNEL = "LIDAR_TOP"
 POINT_FIELDS = 5
@@ -73,12 +76,18 @@ class NuScenesReader:
     `dataroot` là thư mục chứa `samples/`, `sweeps/` và thư mục bảng (`v1.0-mini/`).
     `min_lidar_points`: bỏ các box có ít điểm LiDAR hơn số này. Mặc định 1, tức bỏ box không có điểm
     nào: người gán nhãn không thấy được các box đó trên point cloud.
+    `taxonomy`: `nuscenes` (10 class của bài toán detection nuScenes, mặc định) hoặc `spec-vn` (5 class + thuộc tính
+    theo spec gán nhãn giao thông Việt Nam, `datasets.taxonomy`).
     """
 
-    def __init__(self, dataroot: str | Path, version: str = "v1.0-mini", min_lidar_points: int = 1) -> None:
+    def __init__(self, dataroot: str | Path, version: str = "v1.0-mini", min_lidar_points: int = 1,
+                 taxonomy: str = "nuscenes") -> None:
+        if taxonomy not in TAXONOMIES:
+            raise ValueError(f"taxonomy phải là một trong {TAXONOMIES}, nhận {taxonomy!r}")
         self.dataroot = Path(dataroot)
         self.version = version
         self.min_lidar_points = min_lidar_points
+        self.taxonomy = taxonomy
         self._table_dir = self.dataroot / version
         if not self._table_dir.is_dir():
             raise FileNotFoundError(f"Không thấy thư mục bảng nuScenes: {self._table_dir}")
@@ -195,6 +204,31 @@ class NuScenesReader:
             raise ValueError(f"{ref.lidar_path}: số giá trị ({raw.size}) không chia hết cho {POINT_FIELDS}")
         return raw.reshape(-1, POINT_FIELDS)
 
+    def load_sweeps(self, ref: SampleRef, count: int) -> list[tuple[float, np.ndarray]]:
+        """Tối đa `count` lượt quét LiDAR trung gian (sweep) ngay trước keyframe: [(thời điểm, điểm (N, 3))], điểm đã
+        đổi về hệ LiDAR của keyframe, sweep gần keyframe nhất trước.
+
+        LiDAR quay 20 Hz, keyframe 2 Hz: giữa hai keyframe có 9 sweep. Vật đang chạy bị kéo vệt qua các sweep, nên người
+        dùng phải bỏ điểm của vật theo vị trí nội suy tại thời điểm từng sweep (`detectors.floating`).
+        """
+        sample_data = self._table("sample_data")
+        world_to_key = invert_pose(ref.sensor_to_world)
+        chunks: list[tuple[float, np.ndarray]] = []
+        token = sample_data[ref.lidar_token]["prev"]
+        while token and len(chunks) < count:
+            record = sample_data[token]
+            path = self.dataroot / record["filename"]
+            if not path.is_file():
+                break  # bản tải về thiếu sweep: dùng những gì có
+            raw = np.fromfile(path, dtype=np.float32)
+            if raw.size % POINT_FIELDS:
+                break
+            points = raw.reshape(-1, POINT_FIELDS)[:, :3].astype(np.float64)
+            matrix = world_to_key @ self._sensor_to_world(record)
+            chunks.append((record["timestamp"] / 1e6, points @ matrix[:3, :3].T + matrix[:3, 3]))
+            token = record["prev"]
+        return chunks
+
     def frame_data(self, ref: SampleRef, with_points: bool = True) -> FrameData:
         points = self.load_points(ref) if with_points else np.empty((0, POINT_FIELDS), dtype=np.float32)
         return FrameData(
@@ -232,7 +266,13 @@ class NuScenesReader:
 
     def _to_cuboid(self, annotation: dict[str, Any], frame: int, world_to_sensor: np.ndarray) -> Cuboid | None:
         category = self.category_of(annotation)
-        label = CATEGORY_TO_LABEL.get(category)
+        extra: dict[str, str] = {}
+        if self.taxonomy == "spec-vn":
+            attribute_names = [self._table("attribute")[t]["name"] for t in annotation.get("attribute_tokens", [])]
+            mapped = spec_label(category, attribute_names)
+            label, extra = mapped if mapped is not None else (None, {})
+        else:
+            label = CATEGORY_TO_LABEL.get(category)
         if label is None or annotation["num_lidar_pts"] < self.min_lidar_points:
             return None
         box_to_sensor = world_to_sensor @ pose_matrix(annotation["translation"], annotation["rotation"])
@@ -252,6 +292,7 @@ class NuScenesReader:
                 "num_lidar_pts": annotation["num_lidar_pts"],
                 # Góc giữa trục z của box và trục z của LiDAR. Core coi box chỉ có yaw nên bỏ phần nghiêng này.
                 "tilt_rad": math.acos(max(-1.0, min(1.0, rotation[2, 2]))),
+                **extra,
             },
         )
 
@@ -269,3 +310,7 @@ class NuScenesFrames:
 
     def frame_data(self, frame: int, with_points: bool = True) -> FrameData:
         return self.reader.frame_data(self.refs[frame], with_points=with_points)
+
+    def ground_sweeps(self, frame: int, sweeps: int) -> list[tuple[float, np.ndarray]]:
+        """`sweeps` lượt quét LiDAR trung gian trước keyframe, hệ LiDAR của keyframe: [(thời điểm, điểm (N, 3))]."""
+        return self.reader.load_sweeps(self.refs[frame], sweeps)

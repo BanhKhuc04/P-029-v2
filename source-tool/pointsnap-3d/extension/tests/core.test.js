@@ -88,3 +88,25 @@ test('matchFindings ghép mục của lần quét với cờ trên CVAT', () => 
   ];
   assert.deepEqual(core.matchFindings(findings, flag), [0, 3]);
 });
+
+test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám spec (C2)', () => {
+  const cases = {
+    'heading.flip': 'Hướng box ngược đầu (lật box) 180° so với keyframe gần nhất của phần còn lại của track (frame 3); đổi hướng nhanh bất thường (ngưỡng 75°)',
+    'heading.motion': 'Hướng box ngược chiều 178° so với hướng chuyển động của vật (10.0 m/s, frame 2–4; ngưỡng 135°)',
+    'heading.points': 'Trục box lệch 25° so với trục của cụm điểm LiDAR của vật (ngưỡng 15°)',
+    'fit.empty': 'Box không có điểm LiDAR nào (0 điểm): vẽ vào chỗ trống, hoặc vật bị che thì đánh dấu occluded',
+    'fit.outside': '40/60 điểm của vật (67%) nằm ngoài box, nhiều nhất phía đầu (tới 50 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 50%)',
+    'fit.loose': 'Mặt đầu của box cách điểm gần nhất của vật 80 cm dù nhìn thấy rõ từ LiDAR: box dư so với vật (ngưỡng 50 cm)',
+    'fit.overlap': 'Box chồng 90% diện tích lên box car (track 2): nghi vẽ trùng một vật hoặc hai box lấn nhau (ngưỡng 50%)',
+    'track.reuse_id': 'Track đã kết thúc (outside) ở frame 2 rồi xuất hiện lại ở frame 4 sau 2 frame vắng: vật chỉ bị che tạm thời thì bỏ outside, đánh dấu occluded (spec 4.4.5)',
+    'track.occluded_long': 'Box đánh occluded 8 frame liền (frame 1–8), quá 6 frame: spec 4.4.5 chỉ dùng occluded cho che khuất tạm thời',
+    'attr.missing': 'Vehicle thiếu thuộc tính bắt buộc `subtype` (2 keyframe, từ frame 0); spec 3.1.3: không chắc thì chọn other',
+    'attr.invalid': "Thuộc tính `pose` = 'walking' không có trong danh sách cho phép (standing, sitting, bending) (frame 0)",
+  };
+  for (const [rule, text] of Object.entries(cases)) {
+    const items = core.parseFlag(`[Lỗi] ${text}`);
+    assert.equal(items.length, 1, rule);
+    assert.equal(items[0].rule, rule);
+    assert.notEqual(items[0].tip, core.parseFlag('[Lỗi] câu lạ')[0].tip, rule);
+  }
+});

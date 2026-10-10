@@ -22,6 +22,17 @@
     'track.jump': 'Nhảy vị trí',
     'track.split_id': 'Nghi tách ID',
     'track.long_interpolation': 'Nội suy dài',
+    'heading.flip': 'Hướng đổi đột ngột',
+    'heading.motion': 'Ngược hướng chuyển động',
+    'heading.points': 'Lệch trục cụm điểm',
+    'fit.empty': 'Box rỗng',
+    'fit.outside': 'Điểm của vật ngoài box',
+    'fit.loose': 'Box dư',
+    'fit.overlap': 'Hai box chồng nhau',
+    'track.reuse_id': 'Dùng lại track sau outside',
+    'track.occluded_long': 'Che khuất quá lâu',
+    'attr.missing': 'Thiếu thuộc tính',
+    'attr.invalid': 'Thuộc tính sai giá trị',
   };
 
   // ---------------------------------------------------------------- trạng thái

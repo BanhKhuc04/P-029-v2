@@ -160,6 +160,25 @@ Mở cùng lúc web PointSnap và tab CVAT đang mở **đúng job** của lần
 |---|---|---|
 | **TC-60** | Từ kết quả KHÔNG ĐẠT với guideline **mặc định**: sửa trong CVAT **mọi box mức Lỗi** và đủ số Cảnh báo để còn ≤ ngưỡng → quét + gắn cờ → `pointsnap gate` | Gate **ĐẠT** mà **không** nới ngưỡng. Ghi số Lỗi / Cảnh báo trước và sau |
 
+### 5.7. Luật giai đoạn 3: sai hướng box, box lệch, bám spec
+
+Dùng job scene-0061 (task tạo **lại** bằng bản `to-cvat` mới) và guideline mặc định. Mỗi ca sửa 1 box trên CVAT, Save,
+quét lại, ghi mục tool báo, rồi **hoàn tác** (Ctrl+Z, Save) trước khi sang ca sau.
+
+| Mã | Làm | Mong đợi |
+|---|---|---|
+| **TC-70** | Chọn một ô tô đang chạy, ở **một** keyframe xoay box 180° (mũi tên đỏ quay ngược) | `heading.flip` mức Lỗi ở đúng frame đó |
+| **TC-71** | Cùng xe, xoay 90° ở một keyframe | `heading.flip` mức Lỗi (xoay ngang) |
+| **TC-72** | Ô tô đỗ gần xe thu (< 20 m, nhiều điểm): xoay box 25° | `heading.points` (Cảnh báo) ở frame đó |
+| **TC-73** | Kéo box một ô tô gần sang ngang ~1 m khỏi xe | `fit.outside` hoặc `fit.loose` (và/hoặc `track.jump`) ở frame đó |
+| **TC-74** | Vẽ thêm một box ô tô chồng lên đúng xe đã có box (track mới) | `fit.overlap` mức Lỗi ở frame đó |
+| **TC-75** | Vẽ một box ô tô vào chỗ trống trên mặt đường gần xe thu | `fit.empty` (Cảnh báo) |
+| **TC-76** | Một track: bật **Switch outside** ở frame k, rồi tắt lại ở frame k+3 (track xuất hiện lại) | `track.reuse_id` (Cảnh báo), gợi ý dùng occluded |
+| **TC-77** | Một track: bật **occluded** cho 10 frame liên tiếp | `track.occluded_long` (Cảnh báo) |
+| **TC-78** | `pointsnap nuscenes --taxonomy spec-vn to-cvat --scene scene-0061 --out D:/data/cvat-vn --upload`, mở job | Label `Vehicle`, `Two-wheels`, `Pedestrian`, `Obstacle`; box có thuộc tính `subtype` / `rider_state` / `age_group` / `pose` / `type` |
+| **TC-79** | Dự án mới cho job TC-78 → tab Guideline → YAML: thay toàn bộ nội dung bằng `pointsnap/guidelines/spec-vn.yaml` → lưu → quét | Lưu được (phần thiếu lấy từ mặc định); không có `attr.*`; số Lỗi / Cảnh báo cùng cỡ với job nuScenes |
+| **TC-80** | Guideline của TC-79: thêm thuộc tính `color` vào `spec.required_attributes.Vehicle`, rồi bỏ `sitting` khỏi `spec.allowed_values.pose` → lưu → quét | `attr.missing` (mỗi track Vehicle một mục, mức Lỗi); `attr.invalid` ở người đang ngồi (nếu có) |
+
 ## 6. Chuẩn xem tay cảnh báo (precision thật)
 
 1. **Chỉ xem đúng loại được giao** (`floating`, `size.*` hoặc `track.*`). Loại được giao có ít hơn 20 mục Lỗi /
@@ -186,13 +205,13 @@ Mở cùng lúc web PointSnap và tab CVAT đang mở **đúng job** của lần
 | | | | | | | | |
 
 ## Tổng quan
-Đạt: x · Lỗi: y · Chưa làm đủ: z · Không làm được: w (trên tổng 46 ca)
+Đạt: x · Lỗi: y · Chưa làm đủ: z · Không làm được: w (trên tổng 57 ca)
 
 ## Kết quả từng ca
 | Mã | Kết quả (Đạt / Lỗi / Chưa làm đủ / Không làm được) | Mã lỗi | Bằng chứng |
 |---|---|---|---|
 | TC-01 | | | |
-| ... đủ TC-01 – 06, 10 – 29, 30 – 35, 40 – 48, 50 – 53, 60 | | | |
+| ... đủ TC-01 – 06, 10 – 29, 30 – 35, 40 – 48, 50 – 53, 60, 70 – 80 | | | |
 
 ## Lỗi
 ### <TÊN>-01: ...
@@ -212,7 +231,7 @@ Mở cùng lúc web PointSnap và tab CVAT đang mở **đúng job** của lần
 ## 8. Tự kiểm trước khi mở PR
 
 - [ ] Phần đầu đủ 8 mục; commit có trên GitHub; CVAT ghi **một** phiên bản.
-- [ ] Đủ 46 ca; không ca nào để trống.
+- [ ] Đủ 57 ca; không ca nào để trống.
 - [ ] Mọi ca **Đạt** đều đã làm đủ bước và có bằng chứng theo mục 3; ca 📷 có ảnh.
 - [ ] Mọi ca **Lỗi** có mã lỗi; mọi mã lỗi có bước làm nguyên văn và tái hiện được.
 - [ ] Xem tay: đúng loại được giao, lấy từ trên xuống, có số đo tool báo, precision tính riêng cho loại đó.

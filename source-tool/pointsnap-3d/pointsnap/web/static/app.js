@@ -14,8 +14,24 @@
     'size.in_track': 'Kiểm tra kích thước box so với các frame khác của cùng track; điều chỉnh lại box bất thường.',
     'track.jump': 'Kéo box về đúng vị trí vật ở frame này, hoặc kiểm tra có bị gán nhầm sang vật khác không.',
     'track.split_id': 'Kiểm tra hai track nối tiếp nhau; nếu là cùng một đối tượng thì hợp nhất ID track.',
-    'track.long_interpolation': 'Chèn thêm keyframe vào giữa khoảng nội suy dài để box bám sát chuyển động của vật.'
+    'track.long_interpolation': 'Chèn thêm keyframe vào giữa khoảng nội suy dài để box bám sát chuyển động của vật.',
+    'heading.flip': 'Xoay box về cùng hướng với các keyframe lân cận của track; bật Cuboid orientation và cho mũi tên đỏ chỉ đầu vật.',
+    'heading.motion': 'Xoay box cho mũi tên đỏ (Cuboid orientation) trùng hướng vật đang chạy (spec 4.2). Xe lùi thật thì bỏ qua.',
+    'heading.points': 'Xoay box cho các cạnh song song với thân vật trên point cloud (nhìn từ Top view).',
+    'fit.empty': 'Xóa box nếu không có vật; vật bị che khuất tạm thời thì đánh dấu occluded thay vì để box rỗng.',
+    'fit.outside': 'Nới hoặc dời box cho bao trọn các điểm của vật (spec 4.2), đối chiếu Top / Side / Front view.',
+    'fit.loose': 'Kéo mặt box về sát các điểm của vật ở phía được nhìn rõ, không để dư khoảng trống.',
+    'fit.overlap': 'Kiểm tra hai box có cùng là một vật không: vẽ trùng thì xóa box thừa; hai vật sát nhau thì thu box cho khỏi lấn.',
+    'track.reuse_id': 'Vật chỉ bị che tạm thời (≤ 6 frame) thì bỏ outside và bật occluded; vắng lâu hơn thì tách phần sau thành track mới (spec 4.4.3–4.4.5).',
+    'track.occluded_long': 'Che khuất quá 6 frame: kết thúc track (Switch outside) và tạo track mới khi vật xuất hiện lại, trừ khi chắc chắn là cùng vật (spec 4.4.5).',
+    'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
+    'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.'
   };
+
+  // Công tắc luật trong tab Guideline (khóa `rules:` của cấu hình); C1 thêm 7 luật sai hướng / box lệch.
+  const RULE_IDS = ['floating', 'size_class_range', 'size_in_track', 'track_jump', 'track_split_id',
+    'track_long_interpolation', 'heading_flip', 'heading_motion', 'heading_points', 'fit_empty', 'fit_outside',
+    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'attr_missing', 'attr_invalid'];
 
   const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
 
@@ -68,6 +84,23 @@
         return `${Math.round(n)} frame`;
       case 'track.jump':
         return (f.message || '').includes('m/s') ? `${fixed(n, 1)} m/s` : `${fixed(n, 2)} m`;
+      case 'heading.flip':
+      case 'heading.motion':
+      case 'heading.points':
+        return `${Math.round(n)}°`;
+      case 'fit.outside':
+      case 'fit.overlap':
+        return `${Math.round(n * 100)}%`;
+      case 'fit.loose':
+        return `${Math.round(n * 100)} cm`;
+      case 'fit.empty':
+        return `${Math.round(n)} điểm`;
+      case 'track.reuse_id':
+      case 'track.occluded_long':
+        return `${Math.round(n)} frame`;
+      case 'attr.missing':
+      case 'attr.invalid':
+        return `${Math.round(n)} keyframe`;
       default:
         return `${fixed(n, 2)} m`;
     }
@@ -1124,6 +1157,17 @@
     if (f.rule === 'track.jump') return 'Track nhảy vị trí';
     if (f.rule === 'track.split_id') return 'Nghi tách ID track';
     if (f.rule === 'track.long_interpolation') return 'Khoảng nội suy dài';
+    if (f.rule === 'heading.flip') return 'Hướng box đổi đột ngột';
+    if (f.rule === 'heading.motion') return 'Hướng box lệch hướng chuyển động';
+    if (f.rule === 'heading.points') return 'Trục box lệch cụm điểm';
+    if (f.rule === 'fit.empty') return 'Box rỗng';
+    if (f.rule === 'fit.outside') return 'Điểm của vật nằm ngoài box';
+    if (f.rule === 'fit.loose') return 'Box dư so với vật';
+    if (f.rule === 'fit.overlap') return 'Hai box chồng nhau';
+    if (f.rule === 'track.reuse_id') return 'Dùng lại track sau khi kết thúc';
+    if (f.rule === 'track.occluded_long') return 'Che khuất quá lâu';
+    if (f.rule === 'attr.missing') return 'Thiếu thuộc tính bắt buộc';
+    if (f.rule === 'attr.invalid') return 'Thuộc tính sai giá trị';
     return f.message ? f.message.split(';')[0] : 'Phát hiện bất thường';
   }
 
@@ -1420,8 +1464,7 @@
   function populateGuidelineForm(cfg) {
     // 1. Toggles luật
     const rules = cfg.rules || {};
-    const ruleIds = ['floating', 'size_class_range', 'size_in_track', 'track_jump', 'track_split_id', 'track_long_interpolation'];
-    ruleIds.forEach((id) => {
+    RULE_IDS.forEach((id) => {
       const enabled = rules[id] !== false;
       const sw = document.getElementById(`rule-${id.replace(/_/g, '-')}`);
       const lbl = document.getElementById(`label-rule-${id.replace(/_/g, '-')}`);
@@ -1525,14 +1568,9 @@
         payload = { yaml: document.getElementById('guideline-yaml-textarea').value };
       } else {
         // Thu thập dữ liệu từ Form
-        const rules = {
-          floating: document.getElementById('rule-floating').getAttribute('aria-checked') === 'true',
-          size_class_range: document.getElementById('rule-size-class-range').getAttribute('aria-checked') === 'true',
-          size_in_track: document.getElementById('rule-size-in-track').getAttribute('aria-checked') === 'true',
-          track_jump: document.getElementById('rule-track-jump').getAttribute('aria-checked') === 'true',
-          track_split_id: document.getElementById('rule-track-split-id').getAttribute('aria-checked') === 'true',
-          track_long_interpolation: document.getElementById('rule-track-long-interpolation').getAttribute('aria-checked') === 'true',
-        };
+        const rules = Object.fromEntries(RULE_IDS.map((id) => [
+          id, document.getElementById(`rule-${id.replace(/_/g, '-')}`).getAttribute('aria-checked') === 'true',
+        ]));
 
         const gate = {
           max_errors: parseInt(document.getElementById('gate-max-errors').value, 10) || 0,

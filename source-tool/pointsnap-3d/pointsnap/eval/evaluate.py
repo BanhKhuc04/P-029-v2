@@ -1,4 +1,4 @@
-"""Đánh giá ba bộ phát hiện bằng lỗi chèn giả trên nhãn chuẩn nuScenes (việc B6, mục 8 của đề xuất).
+"""Đánh giá các bộ phát hiện bằng lỗi chèn giả trên nhãn chuẩn nuScenes (việc B6, mục 8 của đề xuất).
 
 Với mỗi cảnh:
 1. Quét nhãn chuẩn chưa chèn lỗi → báo động giả trên nhãn sạch (số mục / 100 box theo từng mức).
@@ -23,7 +23,7 @@ import numpy as np
 
 from pointsnap.adapters.nuscenes import NuScenesReader
 from pointsnap.core.config import Config
-from pointsnap.core.model import Cuboid, Finding, Severity, add_outside_markers
+from pointsnap.core.model import Cuboid, Finding, Severity, add_track_markers
 from pointsnap.core.scanner import actionable, scan_cuboids
 from pointsnap.core.synthetic import InjectedError, inject_dataset
 
@@ -35,12 +35,20 @@ RULES_FOR = {
     "track_jump": ("track.jump",),
     "track_split_id": ("track.split_id",),
     "track_interpolation": ("track.long_interpolation",),
+    "heading_rotate": ("heading.flip", "heading.points", "heading.motion"),
+    "heading_reverse": ("heading.motion", "heading.flip"),
+    "fit_shift": ("fit.outside", "fit.loose", "fit.empty"),
+    "fit_scale": ("fit.outside", "fit.loose"),
+    "fit_duplicate": ("fit.overlap",),
 }
 CATEGORY = {"floating": "floating", "size_in_track": "size", "size_class_range": "size",
-            "track_jump": "track", "track_split_id": "track", "track_interpolation": "track"}
+            "track_jump": "track", "track_split_id": "track", "track_interpolation": "track",
+            "heading_rotate": "heading", "heading_reverse": "heading",
+            "fit_shift": "fit", "fit_scale": "fit", "fit_duplicate": "fit"}
+CATEGORIES = ("floating", "size", "track", "heading", "fit")
 
 # Mức chèn được dùng để tính "phân mức đúng" (mục 8.2): phải báo ở mức Lỗi.
-LARGE = {("floating", "0.4"), ("size_in_track", "0.3"), ("track_jump", "4.0")}
+LARGE = {("floating", "0.4"), ("size_in_track", "0.3"), ("track_jump", "4.0"), ("heading_rotate", "180")}
 
 
 def magnitude_key(error: InjectedError) -> str:
@@ -55,6 +63,12 @@ def magnitude_key(error: InjectedError) -> str:
         return f"{float(error.magnitude):.1f}"
     if error.error_type == "track_interpolation":
         return f"{int(error.magnitude)}"
+    if error.error_type in ("heading_rotate", "heading_reverse"):
+        return f"{float(error.magnitude):.0f}"
+    if error.error_type == "fit_shift":
+        return f"{float(error.magnitude):.1f}"
+    if error.error_type == "fit_scale":
+        return f"x{float(error.magnitude):g}"
     return "-"
 
 
@@ -70,9 +84,11 @@ def matches(error: InjectedError, finding: Finding) -> bool:
     kind = error.error_type
     if kind == "track_split_id":
         return finding.track_id == error.injected_value and finding.frame == error.frame
+    if kind == "fit_duplicate":
+        return finding.frame == error.frame and finding.track_id in (error.track_id, error.injected_value)
     if finding.track_id != error.track_id:
         return False
-    if kind == "size_class_range":
+    if kind in ("size_class_range", "heading_reverse"):
         return True
     if kind == "track_interpolation":
         next_keyframe = finding.details.get("next_keyframe", finding.frame + 1)
@@ -104,6 +120,7 @@ class SceneStats:
     clean: dict[str, int] = field(default_factory=dict)  # "rule|severity" -> số mục trên nhãn sạch
     findings_total: dict[str, int] = field(default_factory=dict)  # category -> số finding (Cảnh báo+) sau chèn
     findings_matched: dict[str, int] = field(default_factory=dict)  # category -> số finding khớp một lỗi chèn
+    findings_on_injected: dict[str, int] = field(default_factory=dict)  # category -> số finding nằm trên box bị chèn lỗi
     scan_seconds: float = 0.0
 
 
@@ -114,10 +131,62 @@ def _expected_value(error: InjectedError) -> float | None:
         return float(error.magnitude)
     if error.error_type == "track_jump":
         return float(error.magnitude)
+    if error.error_type == "heading_rotate":
+        return float(error.magnitude)
     return None
 
 
+def _world_speeds(track: list[Cuboid], frames) -> list[float]:
+    """Tốc độ (m/s) giữa các keyframe liền nhau của track, trong hệ toàn cục."""
+    speeds = []
+    for a, b in zip(track, track[1:]):
+        da, db = (frames.frame_data(x.frame, with_points=False) for x in (a, b))
+        wa, wb = (d.sensor_to_world @ np.array([*x.center, 1.0]) for d, x in ((da, a), (db, b)))
+        dt = (db.timestamp - da.timestamp) if db.timestamp and da.timestamp else 0.5 * (b.frame - a.frame)
+        speeds.append(float(np.linalg.norm(wb[:2] - wa[:2])) / dt if dt > 0 else 0.0)
+    return speeds
+
+
+def on_injected_box(error: InjectedError, finding: Finding) -> bool:
+    """Finding nằm trên box (hoặc track, với lỗi cả track) bị chèn lỗi, bất kể luật nào báo.
+
+    Ví dụ dời box 1 m: luật nhảy vị trí và luật box lệch đều báo đúng box sai, nên không tính là báo nhầm.
+    """
+    if finding.severity is Severity.INFO:
+        return False
+    tracks = {error.track_id}
+    if error.error_type in ("track_split_id", "fit_duplicate"):
+        tracks.add(error.injected_value)
+    if finding.track_id not in tracks:
+        return False
+    if error.frame is None or error.error_type in ("size_class_range", "heading_reverse", "track_split_id"):
+        return True
+    if error.error_type == "track_interpolation":
+        return abs(finding.frame - int(error.frame)) <= int(error.magnitude) + 1
+    return finding.frame == error.frame
+
+
 def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], config: Config, frames) -> bool:
+    kind = error.error_type
+    if kind.startswith(("heading", "fit")):
+        track = sorted((b for b in clean_boxes if b.track_id == error.track_id and not b.outside),
+                       key=lambda b: b.frame)
+        box = next((b for b in track if b.frame == error.frame), None)
+        points = int(box.attrs.get("num_lidar_pts", 0)) if box is not None else 0
+        group = config.heading.group_for(label)
+        if kind == "heading_reverse":
+            return group is not None and any(v >= group.min_speed_mps for v in _world_speeds(track, frames))
+        if kind == "heading_rotate":
+            by_flip = group is not None and float(error.magnitude) > group.flip_warning_deg and len(track) >= 2
+            pc = config.heading.points
+            by_points = (label in pc.classes and points >= pc.min_points and box is not None
+                         and box.length >= pc.min_aspect * box.width and float(error.magnitude) % 90 > pc.warning_deg
+                         and 90 - float(error.magnitude) % 90 > pc.warning_deg)
+            return by_flip or by_points
+        if kind == "fit_duplicate":
+            return (label in config.fit.overlap_classes
+                    and frozenset((label, label)) not in {frozenset(p) for p in config.fit.overlap_allowed_pairs})
+        return points >= config.fit.outside_min_points
     if error.error_type == "floating":
         return label in config.floating.classes
     if error.error_type == "size_in_track":
@@ -143,10 +212,11 @@ def no_evidence_frames(findings: Iterable[Finding]) -> dict[int | None, set[int]
 
 def evaluate_scene(
     reader: NuScenesReader, scene: str, config: Config, rounds: int = 10, seed: int = 0, error_rate: float = 0.10,
+    catalog: str = "core",
 ) -> tuple[SceneStats, list[ErrorOutcome]]:
     frames = reader.frames(scene)
-    clean_boxes = add_outside_markers(reader.annotations(scene), frames.num_frames)
-    num_boxes = sum(1 for b in clean_boxes if not b.outside)
+    clean_boxes = add_track_markers(reader.annotations(scene), frames.num_frames)
+    num_boxes = sum(1 for b in clean_boxes if b.visible)  # không tính box occluded do add_track_markers thêm
 
     started = time.perf_counter()
     clean_findings = scan_cuboids(clean_boxes, config, frames)
@@ -160,8 +230,10 @@ def evaluate_scene(
     outcomes: list[ErrorOutcome] = []
     total: dict[str, int] = defaultdict(int)
     matched_count: dict[str, int] = defaultdict(int)
+    on_injected: dict[str, int] = defaultdict(int)
     for rnd in range(rounds):
-        injected_boxes, errors = inject_dataset(clean_boxes, seed=seed + rnd, error_rate=error_rate, offset=rnd * 7)
+        injected_boxes, errors = inject_dataset(clean_boxes, seed=seed + rnd, error_rate=error_rate, offset=rnd * 7,
+                                                catalog=catalog)
         findings = actionable(scan_cuboids(injected_boxes, config, frames))
         used: set[int] = set()
         for error in errors:
@@ -186,8 +258,10 @@ def evaluate_scene(
             category = f.error_type.value
             total[category] += 1
             matched_count[category] += i in used
+            on_injected[category] += i in used or any(on_injected_box(e, f) for e in errors)
     stats.findings_total = dict(total)
     stats.findings_matched = dict(matched_count)
+    stats.findings_on_injected = dict(on_injected)
     return stats, outcomes
 
 
@@ -224,13 +298,14 @@ def summarize(stats: Sequence[SceneStats], outcomes: Sequence[ErrorOutcome]) -> 
         recall[f"{kind}|{mag}"] = row
 
     precision = {}
-    for category in ("floating", "size", "track"):
+    for category in CATEGORIES:
         tot = sum(s.findings_total.get(category, 0) for s in stats)
         hit = sum(s.findings_matched.get(category, 0) for s in stats)
-        precision[category] = {"findings": tot, "matched": hit}
+        any_hit = sum(s.findings_on_injected.get(category, 0) for s in stats)
+        precision[category] = {"findings": tot, "matched": hit, "on_injected": any_hit}
 
     accuracy = {}
-    for kind, unit in (("floating", 100.0), ("size_in_track", 100.0), ("track_jump", 1.0)):
+    for kind, unit in (("floating", 100.0), ("size_in_track", 100.0), ("track_jump", 1.0), ("heading_rotate", 1.0)):
         errs = [abs(abs(o.measured) - abs(o.expected)) * unit for o in outcomes
                 if o.error_type == kind and o.detected and o.measured is not None and o.expected is not None]
         accuracy[kind] = {"n": len(errs), "median_abs_error": float(np.median(errs)) if errs else None}
@@ -266,7 +341,9 @@ def to_markdown(summary: dict[str, Any], title: str) -> str:
     lines += ["", "## Recall trên lỗi chèn giả", "",
               "Bắt được = báo đúng box / track bằng luật cùng loại, mức Cảnh báo trở lên.", "",
               "Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đất; kích thước trong track: trừ người đi bộ) "
-              "và, với khoảng nội suy, đối tượng dịch > min_motion_m trong đoạn bị xóa.", "",
+              "và, với khoảng nội suy, đối tượng dịch > min_motion_m trong đoạn bị xóa. Sai hướng: xoay đủ lớn để luật "
+              "lật hướng xét, hoặc box đủ điểm để so với cụm điểm; ngược cả track: vật có lúc chạy nhanh hơn min_speed. "
+              "Box lệch: box có ít nhất outside_min_points điểm (theo nhãn chuẩn).", "",
               "| Kiểu lỗi | Mức chèn | Số lỗi | Bắt được | Bắt được (thuộc phạm vi) | Báo ở mức Lỗi "
               "| Bắt được (box có đủ điểm mặt đất) |",
               "|---|---|---|---|---|---|---|"]
@@ -277,35 +354,41 @@ def to_markdown(summary: dict[str, Any], title: str) -> str:
                      f"{_pct(row['detected_applicable'], row['n_applicable'])} | "
                      f"{_pct(row['as_error'], row['n'])} | {extra} |")
     large = summary["large_as_error"]
-    lines += ["", f"**Phân mức đúng** (Z 40 cm, kích thước 30%, nhảy 4 m báo ở mức Lỗi; lỗi thuộc phạm vi, có bằng chứng): "
+    lines += ["", f"**Phân mức đúng** (Z 40 cm, kích thước 30%, nhảy 4 m, lật box 180° báo ở mức Lỗi; lỗi thuộc phạm vi, có bằng chứng): "
                   f"{_pct(large['as_error'], large['n'])} (mục tiêu ≥ 80%)"]
 
     lines += ["", "## Precision sau khi chèn lỗi", "",
               "Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó có cả lỗi thật của nhãn chuẩn, cần xem tay "
-              "(việc T2) trước khi chốt.", "", "| Loại | Finding (Cảnh báo+) | Khớp lỗi chèn | Precision |", "|---|---|---|---|"]
+              "(việc T2) trước khi chốt. Cột cuối tính cả finding nằm trên box bị chèn lỗi loại khác (vd dời box 1 m: "
+              "luật box lệch báo đúng box sai dù lỗi chèn thuộc loại nhảy vị trí).", "",
+              "| Loại | Finding (Cảnh báo+) | Khớp lỗi chèn cùng loại | Precision | Trên box bị chèn lỗi bất kỳ |",
+              "|---|---|---|---|---|"]
     for category, row in summary["precision"].items():
-        lines.append(f"| {category} | {row['findings']} | {row['matched']} | {_pct(row['matched'], row['findings'])} |")
+        lines.append(f"| {category} | {row['findings']} | {row['matched']} | {_pct(row['matched'], row['findings'])} | "
+                     f"{_pct(row.get('on_injected', row['matched']), row['findings'])} |")
 
     acc = summary["measurement_accuracy"]
     lines += ["", "## Độ chính xác của số đo (trung vị sai số tuyệt đối)", "", "| Kiểu lỗi | Số mẫu | Sai số |", "|---|---|---|"]
-    for kind, unit in (("floating", "cm"), ("size_in_track", "điểm %"), ("track_jump", "m")):
+    for kind, unit in (("floating", "cm"), ("size_in_track", "điểm %"), ("track_jump", "m"), ("heading_rotate", "°")):
+        if kind not in acc:
+            continue
         value = acc[kind]["median_abs_error"]
         lines.append(f"| {kind} | {acc[kind]['n']} | {value:.2f} {unit} |" if value is not None else f"| {kind} | 0 | — |")
 
     seconds = summary["scan_seconds"]
-    lines += ["", "## Hiệu năng", "", "Thời gian quét nhãn sạch (đọc point cloud + 3 bộ phát hiện), mỗi cảnh:", ""]
+    lines += ["", "## Hiệu năng", "", "Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:", ""]
     lines += [f"- {scene}: {sec:.1f} s" for scene, sec in seconds.items()]
     return "\n".join(lines) + "\n"
 
 
 def run_evaluation(
     reader: NuScenesReader, scenes: Sequence[str], config: Config, out_dir: str | Path, rounds: int = 10,
-    seed: int = 0, title: str = "Kết quả đánh giá PointSnap 3D", progress=print,
+    seed: int = 0, title: str = "Kết quả đánh giá PointSnap 3D", progress=print, catalog: str = "all",
 ) -> dict[str, Any]:
     stats: list[SceneStats] = []
     outcomes: list[ErrorOutcome] = []
     for scene in scenes:
-        s, o = evaluate_scene(reader, scene, config, rounds=rounds, seed=seed)
+        s, o = evaluate_scene(reader, scene, config, rounds=rounds, seed=seed, catalog=catalog)
         stats.append(s)
         outcomes.extend(o)
         progress(f"{scene}: {s.boxes} box, {len(o)} lỗi chèn, bắt được {sum(x.detected for x in o)}")

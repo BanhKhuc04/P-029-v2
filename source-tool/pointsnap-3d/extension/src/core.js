@@ -16,12 +16,34 @@
     'track.jump': 'Kéo box về đúng vị trí vật ở frame này, hoặc kiểm tra có bị gán nhầm sang vật khác không.',
     'track.split_id': 'Kiểm tra hai track nối tiếp nhau; nếu là cùng một đối tượng thì hợp nhất ID track.',
     'track.long_interpolation': 'Chèn thêm keyframe vào giữa khoảng nội suy dài để box bám sát chuyển động của vật.',
+    'heading.flip': 'Xoay box về cùng hướng với các keyframe lân cận của track; bật Cuboid orientation và cho mũi tên đỏ chỉ đầu vật.',
+    'heading.motion': 'Xoay box cho mũi tên đỏ (Cuboid orientation) trùng hướng vật đang chạy (spec 4.2). Xe lùi thật thì bỏ qua.',
+    'heading.points': 'Xoay box cho các cạnh song song với thân vật trên point cloud (nhìn từ Top view).',
+    'fit.empty': 'Xóa box nếu không có vật; vật bị che khuất tạm thời thì đánh dấu occluded thay vì để box rỗng.',
+    'fit.outside': 'Nới hoặc dời box cho bao trọn các điểm của vật (spec 4.2), đối chiếu Top / Side / Front view.',
+    'fit.loose': 'Kéo mặt box về sát các điểm của vật ở phía được nhìn rõ, không để dư khoảng trống.',
+    'fit.overlap': 'Kiểm tra hai box có cùng là một vật không: vẽ trùng thì xóa box thừa; hai vật sát nhau thì thu box cho khỏi lấn.',
+    'track.reuse_id': 'Vật chỉ bị che tạm thời (≤ 6 frame) thì bỏ outside và bật occluded; vắng lâu hơn thì tách phần sau thành track mới (spec 4.4.3–4.4.5).',
+    'track.occluded_long': 'Che khuất quá 6 frame: kết thúc track (Switch outside) và tạo track mới khi vật xuất hiện lại, trừ khi chắc chắn là cùng vật (spec 4.4.5).',
+    'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
+    'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.',
   };
   const SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
   const DEFAULT_FIX_TIP = 'Kiểm tra lại box và nhãn theo hướng dẫn gán nhãn của dự án.';
 
   // Cờ trên CVAT chỉ chứa câu thông báo, nên nhận luật từ mẫu câu của từng bộ phát hiện.
   const RULE_PATTERNS = [
+    ['heading.flip', /đổi hướng nhanh bất thường/i],
+    ['heading.motion', /so với hướng chuyển động/i],
+    ['heading.points', /trục của cụm điểm/i],
+    ['fit.empty', /^Box (không có|chỉ có) .*điểm LiDAR/i],
+    ['fit.outside', /nằm ngoài box/i],
+    ['fit.loose', /box dư so với vật/i],
+    ['fit.overlap', /^Box chồng .* diện tích/i],
+    ['track.reuse_id', /đã kết thúc \(outside\)/i],
+    ['track.occluded_long', /đánh occluded \d+ frame liền/i],
+    ['attr.missing', /thiếu thuộc tính bắt buộc/i],
+    ['attr.invalid', /không có trong danh sách cho phép/i],
     ['floating.no_evidence', /thiếu bằng chứng/i],
     ['floating', /\((lơ lửng|lún)\)|so với mặt đất/i],
     ['size.class_range', /bất thường so với class/i],

@@ -322,6 +322,11 @@ class OtherBoxPoints:
         count[self._inside[index]] -= 1
         return self.points[count == 0]
 
+    def belongs_to_others(self, index: int, idx: np.ndarray) -> np.ndarray:
+        """Mask cho các điểm có chỉ số `idx` thuộc ít nhất một box khác ngoài box thứ `index`."""
+        own = np.isin(idx, self._inside[index])
+        return (self._count[idx] - own) > 0
+
 
 def estimate_ground_for_frame(
     points: np.ndarray,

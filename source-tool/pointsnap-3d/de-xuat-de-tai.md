@@ -15,6 +15,8 @@
 - **Thời gian thực hiện:**
   - **Giai đoạn 1 (06/10 – 09/10/2026, 4 ngày):** phát hiện + cảnh báo trên CVAT, công cụ đánh giá, giao diện web. **Đã xong.**
   - **Giai đoạn 2 (10/10 – 11/10/2026, gia hạn đến cuối tuần):** extension cho CVAT, giảm báo nhầm, sửa lỗi từ đợt test.
+  - **Giai đoạn 3 (11/10 – 17/10/2026, gia hạn thêm 1 tuần, nộp 18/10):** bám *Annotation Specification* gán nhãn 3D giao
+    thông VN: sai hướng box, box lệch khỏi vật, track và thuộc tính theo spec, mặt đất v2 ([mục 4.7](#47-bám-spec-gán-nhãn-giai-đoạn-3)).
 - **Dữ liệu:** **nuScenes v1.0-mini** (bộ dữ liệu công khai) — xem [mục 2.1](#21-dữ-liệu-nuscenes-v10-mini)
 - **Môi trường triển khai & kiểm chứng:** CVAT 2.77 Docker chạy local (`localhost:8080`)
 - **Liên kết backlog nội bộ:** [P-010](../../problem-backlog.md#p-010), [P-011](../../problem-backlog.md#p-011)
@@ -33,6 +35,7 @@
 | Rồi mới mở rộng sang auto-correction | Tự sửa vẫn nằm ở [Hướng phát triển](#11-hướng-phát-triển), làm theo lộ trình 4 bước: hoàn thiện phát hiện → gợi ý sửa → sửa một chạm có người duyệt → tự sửa khi độ tin cậy cao. Đến hết giai đoạn 2, tool không sửa box nào |
 | — | Giai đoạn 1 rút còn **4 ngày**; **Việt Anh và Huy làm sản phẩm**, **Khánh, Chiến, Hân viết báo cáo và test** (mục 7) |
 | — | **08/10:** gia hạn đến cuối tuần → thêm giai đoạn 2 (10–11/10): extension cho CVAT để annotator **duyệt lỗi ngay trong CVAT, không tải lại trang**, giảm báo nhầm, sửa lỗi người test báo |
+| — | **10/10:** gia hạn thêm 1 tuần, nhận *Annotation Specification* của dự án → giai đoạn 3: mọi luật mới phải trỏ được tới một điều khoản đo được của spec (mục 4.7); vẫn **chỉ phát hiện và cảnh báo**, không gắn mô hình học máy vào luồng chính |
 
 ---
 
@@ -65,12 +68,20 @@ Reviewer hiện phải soi thủ công từng frame để tìm các lỗi này.
 - Giảm báo nhầm lơ lửng/lún và nâng phát hiện nhảy 4 m để đạt chỉ tiêu mục 8.
 - Sửa các lỗi trong bảng tổng hợp của đợt test (`docs/test/tong-hop-loi.md`).
 
-**Ngoài phạm vi (cả hai giai đoạn):**
+**Giai đoạn 3 — gia hạn (11–17/10):**
+- **Sai hướng box** (spec 4.2): lật / xoay ngang giữa hai keyframe, ngược hướng chuyển động, trục box lệch trục cụm điểm.
+- **Box lệch khỏi vật** (spec 4.2): box rỗng, điểm của vật nằm ngoài box, box dư, hai box chồng nhau (vẽ trùng).
+- **Track theo spec 4.4**: đoạn vắng ngắn là `occluded` chứ không phải `outside`; dùng lại track sau khi kết thúc; occluded quá 6 frame.
+- **Thuộc tính theo spec 3.1.3**: thiếu thuộc tính bắt buộc, giá trị ngoài danh sách; kích thước theo class + thuộc tính.
+- **Bộ class spec-vn** cho demo (Vehicle, Two-wheels, Pedestrian, Animal, Obstacle) và guideline mẫu theo spec.
+- **Mặt đất v2**: gộp lượt quét LiDAR trung gian, bỏ vệt vật đang chạy.
+
+**Ngoài phạm vi (cả ba giai đoạn):**
 - Mọi chức năng sửa box: gợi ý sửa, `fix --z`, `fix --size`, `restore`, áp dụng hàng loạt — xem [Hướng phát triển](#11-hướng-phát-triển).
 - Sửa mã nguồn hay build lại CVAT; đọc / ghi trạng thái nội bộ của trang CVAT; Issue (CVAT chỉ có cho job 2D), webhook.
 - Bộ "lỗi thật" (tự gán nhãn lại một cảnh), lệnh `diff`, phép đo thời gian review có / không có tool ở quy mô đội.
 - Đọc point cloud qua API của CVAT (tool đọc từ thư mục nuScenes trên máy).
-- Thêm luật: ngược yaw 180°, box rỗng, chồng lấn, thiếu thuộc tính; cảnh báo sót đối tượng; Pre-Box, detector 3D.
+- Cảnh báo sót đối tượng; Pre-Box, detector 3D (cần mô hình học máy). Giai đoạn 3 đã thêm ngược yaw, box rỗng, chồng lấn, thiếu thuộc tính.
 - Tự động duyệt hay tự động nộp job; thay thế reviewer.
 - Server dùng chung, đăng nhập nhiều người, cơ sở dữ liệu: giao diện web chỉ chạy local, lưu file trong `~/.pointsnap`.
 
@@ -232,6 +243,36 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 | **Kiểu 3 — Khoảng nội suy dài** | ≥ 2 frame liên tiếp chỉ có box nội suy trong khi đối tượng dịch chuyển > 1 m → nên thêm keyframe |
 | **Chống báo động giả** | Kiểu 2 và kiểu 3 chỉ ở mức Cảnh báo; không có vị trí xe thu thì nhảy vị trí chỉ báo Cảnh báo |
 
+#### d) Sai hướng box (giai đoạn 3)
+
+Spec 4.2: *hướng box trùng với hướng chuyển động chính; vật đứng yên thì theo trục dài nhất*. Hướng box đổi sang hệ toàn
+cục bằng pose xe thu trước khi so.
+
+| Luật | Định nghĩa | Ngưỡng Cảnh báo / Lỗi (xe) |
+|---|---|---|
+| `heading.flip` | Cắt track tại chỗ hướng đổi giữa hai keyframe nhanh hơn tốc độ quay hợp lý (xe 60°/s, xe hai bánh 90°/s, người 180°/s); đoạn dài nhất là chuẩn, mọi box ở đoạn khác bị báo | 45° / 75° (xoay ngang, lật đầu) |
+| `heading.motion` | Vật chạy nhanh hơn `min_speed` (xe 2 m/s): hướng box so với hướng di chuyển giữa hai keyframe lân cận; xe lùi chậm không bị xét | 60° / 135° (ngược chiều) |
+| `heading.points` | Trục box so với hướng hình chữ nhật khớp cụm điểm LiDAR nhất (khớp hình chữ L, Zhang et al. 2017), rồi so với trung vị của track để bỏ phần lệch do hình dạng vật; chỉ xe 4 bánh dài, ≥ 60 điểm, < 40 m | 15° / 30° |
+
+#### e) Box lệch khỏi vật (giai đoạn 3)
+
+Spec 4.2: *box bao trọn toàn bộ vật thể, không dư thừa quá mức; không gán box khi vật quá ít điểm*. Điểm của vật = điểm
+trong box nới max(0,5 m, 25% cạnh), bỏ mặt đất và điểm của box khác, chỉ giữ điểm **nối liền** (loang theo lưới 0,3 m)
+với điểm trong / sát box, để cây, tường, cột bên cạnh không bị tính.
+
+| Luật | Định nghĩa | Ngưỡng |
+|---|---|---|
+| `fit.empty` | Vùng quanh box quét rõ (đo được mặt đất) mà trong box không có điểm nào cao hơn đáy; box `occluded` bỏ qua | Cảnh báo |
+| `fit.outside` | Tỉ lệ điểm của vật nằm ngoài box, **so với trung vị các frame khác của track** (người mang đồ, cây sát xe làm tỉ lệ cao đều cả track); cần ≥ 30 điểm ngoài | cao hơn > 50% / > 70% |
+| `fit.loose` | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật (box gần < 30 m, ≥ 40 điểm) | > 50 cm / > 100 cm |
+| `fit.overlap` | Phần chung nhìn từ trên / diện tích box nhỏ hơn, cùng chồng theo chiều cao; trừ cặp class được phép (người sát nhau, xe máy đỗ sát nhau, đầu kéo – rơ-moóc…) | > 20% / > 50% |
+
+#### Mặt đất v2 (giai đoạn 3)
+
+Gộp 4 lượt quét LiDAR trung gian (20 Hz) trước keyframe vào vành đai đo mặt đất. Vị trí mọi box được nội suy theo thời
+điểm từng lượt quét để bỏ điểm của vật (nếu không, vệt thân xe đang chạy bị coi là mặt đất: thử trước khi bỏ, báo nhầm
+Lỗi tăng từ 0,32 lên 2,30 / 100 box). Yêu cầu bằng chứng nhân theo số lượt quét vì lượt quét chỉ lặp lại chỗ keyframe đã thấy.
+
 ### 4.2. 📋 Báo cáo, cờ lỗi & cổng kiểm tra
 
 - **Báo cáo HTML / CSV** cho mỗi lần quét: ba mức Lỗi / Cảnh báo / Thông tin; mỗi dòng ghi số đo cụ thể (ví dụ *"Đáy box cách mặt đất 15 cm; cao hơn 26 cm so với các frame khác của track"*) kèm link **mở đúng box** trên CVAT.
@@ -352,6 +393,33 @@ extension/                     # Manifest V3, Chrome / Edge
 - Tắt PointSnap: E1–E5 vẫn chạy.
 - Lỗi console còn lại là của CVAT (404 user-agreements, 503 lambda).
 
+### 4.7. Bám spec gán nhãn (giai đoạn 3)
+
+Mỗi luật kiểm một điều khoản **đo được bằng số** của *Annotation Specification* (spec). Điều khoản cần phán đoán ngữ nghĩa
+(người trong xe, vật quá nhỏ để cán qua, phân loại subtype) vẫn do reviewer kiểm.
+
+| Điều khoản spec | Nội dung | Luật PointSnap |
+|---|---|---|
+| 3.1.3 | Thuộc tính bắt buộc khi object thuộc phạm vi; giá trị theo danh sách | `attr.missing`, `attr.invalid` (`spec:` trong guideline) |
+| 3.1.2 | Phân loại chi tiết bằng thuộc tính (`subtype`, `rider_state`, …) | Kích thước tra theo `Class/thuộc tính` (`size.key_attributes`) |
+| 4.2 | Box bao trọn vật thể, không dư thừa quá mức | `size.class_range`, `size.in_track`, `fit.outside`, `fit.loose` |
+| 4.2 | Hướng box trùng hướng chuyển động; đứng yên theo trục dài | `heading.flip`, `heading.motion`, `heading.points` |
+| 4.2 | Đáy box đặt trên mặt tiếp xúc, không cao bất thường | `floating` (mặt đất v2) |
+| 4.2 | Không gán box khi vật quá ít điểm | `fit.empty` (+ `sparse_warning_points` khi chốt P-009) |
+| 4.3B, 4.3E | Nhóm người / động vật sát nhau: gán từng con, box được phép chồng | `fit.overlap` với `overlap_allowed_pairs` |
+| 4.4.1–4.4.2 | Giữ track_id ổn định, không nhảy, không tách | `track.jump`, `track.split_id`, `track.long_interpolation` |
+| 4.4.3–4.4.4 | Sau khi kết thúc (outside) không gán tiếp; xuất hiện lại phải là track mới | `track.reuse_id` |
+| 4.4.5, CVAT | Che khuất dùng `occluded`, tối đa 6 frame | `track.occluded_long`; box occluded không kiểm hình học |
+
+**Bộ class spec-vn** (`pointsnap nuscenes --taxonomy spec-vn …`): ánh xạ category và thuộc tính nuScenes sang 5 class của
+spec (vd `vehicle.bus.rigid` → `Vehicle/subtype=bus`, `vehicle.motorcycle` + `cycle.with_rider` →
+`Two-wheels/rider_state=with_rider`, `pedestrian.sitting_lying_down` → `Pedestrian/pose=sitting`). Guideline mẫu
+`pointsnap/guidelines/spec-vn.yaml` khai báo thuộc tính bắt buộc, giá trị cho phép, khoảng kích thước theo
+`Class/thuộc tính` (khoảng chưa có dữ liệu VN ghi rõ là ước lượng).
+
+**Lưu ý về spec:** 3.1.2 xếp `Stroller` là `vehicle.subtype` nhưng 4.3B nói xe nôi gán là `obstacle`; giá trị `contruction`
+viết sai chính tả nhưng giữ nguyên để khớp danh sách của spec. Hai điểm này nên hỏi lại BTC.
+
 ---
 
 ## 5. KIẾN TRÚC, HIỆU NĂNG & CHI PHÍ
@@ -412,6 +480,17 @@ tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 
 **Thứ tự cắt nếu trễ:** E6 → E5 (giữ E1–E4 vì chạy chỉ nhờ cờ trên box) → giảm báo nhầm (giữ số liệu A10, ghi rõ chưa đạt). **Không cắt:** sửa lỗi nặng từ đợt test, video demo, báo cáo.
 
+### 7.4. Giai đoạn 3 (11–17/10, nộp 18/10)
+
+Chi tiết từng người: [giao-viec/tuan-gia-han.md](giao-viec/tuan-gia-han.md). Code của C1 (sai hướng, box lệch, mặt đất
+v2) và C2 (bám spec) đã xong trong PR giai đoạn 3; tuần này review, test TC-70 – 80, xem tay, chốt số liệu, video, báo cáo.
+
+| Cổng | Khi | Điều kiện |
+|---|---|---|
+| **G6** | 12/10 | PR giai đoạn 3 merge; task CVAT tạo lại theo spec 4.4 chạy được |
+| **G7** | 15/10 | Số liệu cuối trên 5 cảnh kiểm tra, precision xem tay luật mới; báo nhầm tổng ≤ 2 / ≤ 0,5 trên 100 box |
+| **G8** | 17/10 | Test xong, video, báo cáo, slide |
+
 ### 7.3. Phân công
 
 | Thành viên | Vai trò | Giai đoạn 1 | Giai đoạn 2 |
@@ -460,6 +539,20 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Precision xem tay** | ≥ 70% mỗi loại | ⏳ đợt test (duyệt nhanh tự tính) |
 | **Hiệu năng** | < 2 phút / cảnh | ~3–4 giây / job 39 frame ✅ |
 | **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | **7 giây** cho 35 frame lỗi, 0 lần tải lại trang; mở từng link: 11–12,7 giây mỗi lần (≈ 8,6 phút cho 43 mục) ✅ |
+
+**Giai đoạn 3 (10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-giai-doan-3.md](docs/ket-qua-giai-doan-3.md).
+
+| Chỉ số | Mục tiêu | Giai đoạn 3 |
+|---|---|---|
+| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 (từ 3,80 · 0,85); cảnh tinh chỉnh 1,92 · 0,35 ✅. Lơ lửng / lún còn 2,41 · 0,31 |
+| **Recall lật box 180° / xoay 90°** | ≥ 90% | 100% · 100% ✅; báo ở mức Lỗi 93% · 88% |
+| **Recall ngược chiều cả track** (xe chạy ≥ 2 m/s) | ≥ 90% | 100% (2/2), ít mẫu |
+| **Recall vẽ trùng** | ≥ 80% | 100% (5/5) ✅ |
+| **Recall box dời ≥ 0,5 m / co ×0,7** (vật ≥ 30 điểm) | — | 20–33% / 25%: chỉ bắt lệch rõ; lệch nhỏ do `track.jump`, `size.in_track` |
+| **Báo nhầm của luật lật hướng / ngược chiều** | — | 0 trên 10 cảnh ✅ |
+| **Recall nhảy vị trí 2 m / 4 m** | ≥ 90% | 100% / 100% ✅ |
+| **Phân mức đúng** | ≥ 80% | 100% ✅ |
+| **Hiệu năng** | < 2 phút / cảnh | 5–35 giây / cảnh ✅ (gộp 4 sweep) |
 
 **Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.
 
@@ -521,7 +614,7 @@ Theo góp ý mentor: hoàn thiện phát hiện trước, rồi mở rộng sang
 **Mở rộng khác:**
 - Đọc point cloud qua API của CVAT để dùng với mọi task, không cần thư mục nuScenes; gộp sweeps LiDAR cho mặt đất dày điểm hơn.
 - Bộ lỗi thật (tự gán nhãn lại một cảnh) + lệnh `diff`; đo thời gian review thực tế.
-- Thêm luật: ngược yaw 180°, box rỗng / quá ít điểm, chồng lấn, thiếu thuộc tính; cảnh báo sót đối tượng; Pre-Box Generator.
+- Cảnh báo sót đối tượng và "ý kiến thứ hai" từ mô hình phát hiện 3D huấn luyện sẵn (CenterPoint / PointPillars), chỉ ở mức Thông tin; Pre-Box Generator. (Ngược yaw, box rỗng, chồng lấn, thiếu thuộc tính: xong ở giai đoạn 3.)
 - Adapter cho nền tảng và bộ dữ liệu khác (Segments.ai, Label Studio; KITTI, Waymo Open); chạy trên CVAT và dữ liệu thật của tổ chức.
 - Webhook tự quét khi job chuyển sang bước review; bảng chất lượng theo annotator.
 

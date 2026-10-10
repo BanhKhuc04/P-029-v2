@@ -1,4 +1,4 @@
-"""Lệnh `pointsnap eval`: đánh giá ba bộ phát hiện bằng lỗi chèn giả trên nuScenes (việc B6)."""
+"""Lệnh `pointsnap eval`: đánh giá các bộ phát hiện bằng lỗi chèn giả trên nuScenes (việc B6)."""
 
 from __future__ import annotations
 
@@ -26,6 +26,8 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     ev.add_argument("--rounds", type=int, default=10, help="số vòng chèn lỗi mỗi cảnh (mặc định: 10)")
     ev.add_argument("--seed", type=int, default=0, help="seed của bộ chèn lỗi (mặc định: 0)")
     ev.add_argument("--out", type=Path, default=Path("out/eval"), help="thư mục ghi kết quả (mặc định: out/eval)")
+    ev.add_argument("--errors", choices=("core", "c1", "all"), default="all",
+                    help="bộ lỗi chèn: core = 6 loại của mục 8.1, c1 = sai hướng và box lệch, all = cả hai (mặc định)")
 
 
 def run(args: argparse.Namespace, config: Config) -> int:
@@ -38,8 +40,8 @@ def run(args: argparse.Namespace, config: Config) -> int:
     label = " ".join(args.scenes)
     try:
         reader = NuScenesReader(args.dataroot)
-        run_evaluation(reader, scenes, config, args.out, rounds=args.rounds, seed=args.seed,
-                       title=f"Kết quả đánh giá PointSnap 3D ({label}, {args.rounds} vòng chèn lỗi)")
+        run_evaluation(reader, scenes, config, args.out, rounds=args.rounds, seed=args.seed, catalog=args.errors,
+                       title=f"Kết quả đánh giá PointSnap 3D ({label}, {args.rounds} vòng chèn lỗi, bộ lỗi {args.errors})")
     except (FileNotFoundError, KeyError, ValueError) as exc:
         print(f"Lỗi: {exc}", file=sys.stderr)
         return 3

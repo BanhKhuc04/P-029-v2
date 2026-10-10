@@ -1,7 +1,7 @@
 """Bộ quét kiểm tra chất lượng nhãn 3D (việc A5).
 
-Nối ba bộ phát hiện của `pointsnap.detectors` (lơ lửng / lún, kích thước, đứt track) và điều phối việc quét một job
-(việc A6). `check_size_manual_ranges` / `check_size_in_track` là luật kích thước cũ của A5, giữ để tương thích.
+Nối các bộ phát hiện của `pointsnap.detectors` (lơ lửng / lún, kích thước, đứt track; từ C1 thêm sai hướng box và box
+lệch khỏi vật) và điều phối việc quét một job (việc A6). `check_size_manual_ranges` / `check_size_in_track` là luật kích thước cũ của A5, giữ để tương thích.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from typing import Callable, Iterable, Sequence
 import numpy as np
 
 from pointsnap.adapters.cvat.reader import JobData
+from pointsnap.core.box_points import box_point_sets
 from pointsnap.core.config import Config
 from pointsnap.core.model import (
     Cuboid,
@@ -19,9 +20,13 @@ from pointsnap.core.model import (
     Finding,
     FrameSource,
     Severity,
+    group_by_frame,
     group_by_track,
 )
+from pointsnap.detectors.attributes import detect_attribute_errors
+from pointsnap.detectors.fit import fit_findings_for_frame, outside_findings, overlap_findings
 from pointsnap.detectors.floating import detect_floating_scene
+from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
 from pointsnap.detectors.size import detect_size
 from pointsnap.detectors.track import detect_track_errors
 
@@ -154,12 +159,73 @@ def check_size(job: JobData, config: Config, frames: FrameSource | None = None) 
 
 def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Đứt track (B5, `detectors.track`). Có `frames` thì dùng pose xe thu và thời điểm thật của từng frame."""
-    sensor_to_world = timestamps = None
-    if frames is not None:
-        data = {f: frames.frame_data(f, with_points=False) for f in sorted({c.frame for c in job.cuboids})}
-        sensor_to_world = {f: d.sensor_to_world for f, d in data.items() if d.sensor_to_world is not None} or None
-        timestamps = {f: d.timestamp for f, d in data.items() if d.timestamp is not None} or None
+    sensor_to_world, timestamps = _poses(job, frames)
     return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps)
+
+
+def _poses(job: JobData, frames: FrameSource | None):
+    if frames is None:
+        return None, None
+    data = {f: frames.frame_data(f, with_points=False) for f in sorted({c.frame for c in job.cuboids})}
+    sensor_to_world = {f: d.sensor_to_world for f, d in data.items() if d.sensor_to_world is not None} or None
+    timestamps = {f: d.timestamp for f, d in data.items() if d.timestamp is not None} or None
+    return sensor_to_world, timestamps
+
+
+def check_heading(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Sai hướng box theo track (C1, `detectors.heading`): lật hướng giữa hai keyframe, lệch hướng chuyển động."""
+    sensor_to_world, timestamps = _poses(job, frames)
+    return detect_heading_track(job.cuboids, config.heading, config.track.keyframe_interval_s, sensor_to_world,
+                                timestamps, flip=config.rules.heading_flip, motion=config.rules.heading_motion)
+
+
+def _typed_label(box: Cuboid, config: Config) -> str:
+    """`Class/giá trị thuộc tính phân loại` (size.key_attributes, vd `Vehicle/truck`), hoặc `Class` nếu không có."""
+    attr = config.size.key_attributes.get(box.label)
+    value = box.attrs.get(attr) if attr else None
+    return f"{box.label}/{value}" if value not in (None, "") else box.label
+
+
+def check_box_points(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Luật dựa trên điểm LiDAR của từng vật (C1): trục box so với cụm điểm, box rỗng / nhỏ / lệch / dư; box chồng nhau.
+
+    Box chồng nhau không cần point cloud nên vẫn chạy khi không có `frames`.
+    """
+    r = config.rules
+    findings: list[Finding] = []
+    measures = []
+    outside = []
+    for frame, boxes in group_by_frame(c for c in job.cuboids if c.visible).items():
+        if r.fit_overlap:
+            findings.extend(overlap_findings(boxes, config.fit, typed=lambda b: _typed_label(b, config)))
+        if frames is None or not (r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose):
+            continue
+        points = frames.frame_data(frame).points
+        items = box_point_sets(points, boxes, margin=config.fit.outside_margin_m,
+                               clearance=config.fit.ground_clearance_m, margin_rel=config.fit.outside_margin_rel)
+        frame_findings, frame_outside = fit_findings_for_frame(items, config.fit, points[:, :3], empty=r.fit_empty,
+                                                               outside=r.fit_outside, loose=r.fit_loose)
+        findings.extend(frame_findings)
+        outside.extend(frame_outside)
+        if r.heading_points:
+            measures.extend((item.box, dev) for item in items
+                            if (dev := heading_points_measure(item, config.heading.points)) is not None)
+    findings.extend(heading_points_findings(measures, config.heading.points))
+    findings.extend(outside_findings(outside, config.fit))
+    return findings
+
+
+def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
+    return detect_attribute_errors(job.cuboids, config.spec)
+
+
+_RULE_SWITCH = {
+    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long",
+    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
+    "heading.flip": "heading_flip", "heading.motion": "heading_motion", "heading.points": "heading_points",
+    "fit.empty": "fit_empty", "fit.outside": "fit_outside", "fit.loose": "fit_loose", "fit.overlap": "fit_overlap",
+}
 
 
 def is_rule_enabled(rule: str, config: Config) -> bool:
@@ -177,6 +243,8 @@ def is_rule_enabled(rule: str, config: Config) -> bool:
         return r.track_split_id
     if rule == "track.long_interpolation":
         return r.track_long_interpolation
+    if rule in _RULE_SWITCH:
+        return getattr(r, _RULE_SWITCH[rule])
     return True
 
 
@@ -184,6 +252,9 @@ DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_floating,
     check_size,
     check_track,
+    check_heading,
+    check_box_points,
+    check_attributes,
 )
 
 
@@ -210,8 +281,15 @@ def scan_cuboids(
             active_detectors.append(check_floating)
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
-        if r.track_jump or r.track_split_id or r.track_long_interpolation:
+        if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
+                or r.track_occluded_long):
             active_detectors.append(check_track)
+        if r.heading_flip or r.heading_motion:
+            active_detectors.append(check_heading)
+        if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:
+            active_detectors.append(check_box_points)
+        if r.attr_missing or r.attr_invalid:
+            active_detectors.append(check_attributes)
 
     findings: list[Finding] = []
     for detector in active_detectors:

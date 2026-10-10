@@ -4,6 +4,9 @@
 (spec 3.1.3, 4.2, 4.4), có số liệu đánh giá cho mọi luật mới, demo trên task CVAT có bộ nhãn theo spec. **Nộp 18/10.**
 
 Vẫn giữ góp ý của mentor: **chỉ phát hiện và cảnh báo**, không tự sửa box; không gắn mô hình học máy vào luồng chính.
+Box Verifier (C3) có dùng model (Mask R-CNN huấn luyện sẵn, Box Critic nhóm tự huấn luyện) nhưng chỉ thêm bằng chứng mức
+Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false`, `critic.model: ""`); **cần hỏi lại mentor** trước khi
+đưa vào demo.
 
 ## Đã xong (code, PR "Giai đoạn 3")
 
@@ -16,6 +19,10 @@ Vẫn giữ góp ý của mentor: **chỉ phát hiện và cảnh báo**, không
 | C2 | Luật **thiếu / sai thuộc tính** `attr.missing`, `attr.invalid` (spec 3.1.3); kích thước theo **Class/thuộc tính** | — |
 | C2 | Bộ class **spec-vn** (`--taxonomy spec-vn`) + guideline mẫu `pointsnap/guidelines/spec-vn.yaml` | Demo trên task có label Vehicle / Two-wheels / Pedestrian / Animal / Obstacle |
 | — | Web, extension, báo cáo, chèn lỗi giả và `pointsnap eval --errors c1` cho mọi luật mới | Số liệu: `docs/ket-qua-giai-doan-3.md` |
+| C3 | **Box Verifier** lớp 1: box dịch / xoay của vật đứng yên trong hệ toàn cục (`track.static_shift`, `heading.static`) | Cảnh kiểm tra: box dời 0,3 m 0% → 44%, xoay 15° 7% → 29%, nhảy 1 m 50% → 75% |
+| C3 | Lớp 2: đối chiếu ảnh camera (`cam.mismatch`, `cam.class`, `cam.missing`), Mask R-CNN huấn luyện sẵn | Thông tin là chính; bắt thêm ít (4/400 lỗi chèn) |
+| C3 | Lớp 3: Box Critic — dữ liệu (`pointsnap critic-data`), script + notebook Kaggle, chỗ cắm `critic.model` | Chờ nhóm huấn luyện |
+| C3 | Lớp 4: học từ kết luận Đúng / Báo nhầm (nút *Học từ kết luận*, `pointsnap learn`) | Chờ ≥ 40 kết luận thật |
 
 ## Việc của từng người
 
@@ -23,6 +30,9 @@ Vẫn giữ góp ý của mentor: **chỉ phát hiện và cảnh báo**, không
 - [ ] Review và merge PR giai đoạn 3; tạo **lại** task scene-0061 bằng `to-cvat` mới (đoạn vắng thành occluded).
 - [ ] Tạo task spec-vn: `pointsnap nuscenes --taxonomy spec-vn to-cvat --scene scene-0061 --out D:/data/cvat-vn --upload`.
 - [ ] Cập nhật CAI-DAT.md: bước tạo token **bỏ tích Read-only** (lỗi CHIEN-01), bước tạo task spec-vn.
+- [ ] Huấn luyện **Box Critic** trên Kaggle theo `docs/box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
+      `critic.model`, đo `pointsnap eval --scenes test --errors all` so với không có Box Critic.
+- [ ] Hỏi mentor về việc dùng model làm bằng chứng phụ (Box Verifier lớp 2, 3).
 - [ ] Sửa các lỗi trong `docs/test/tong-hop-loi.md` được giao.
 
 ### Đặng Văn Huy · thuật toán
@@ -41,6 +51,9 @@ Vẫn giữ góp ý của mentor: **chỉ phát hiện và cảnh báo**, không
 - [ ] Xem tay **20 mục mỗi luật mới** (`heading.*`, `fit.*`) trên scene-0061 theo mục 6 của chuẩn kiểm thử; precision
       riêng từng luật.
 - [ ] Cập nhật `docs/danh-gia.md` bằng `docs/ket-qua-giai-doan-3.md` và kết quả xem tay.
+- [ ] Ghi kết luận **Đúng / Báo nhầm** trên web cho các mục đã xem (≥ 40 mục, có cả hai loại), bấm *Học từ kết luận*
+      (tab Lịch sử): precision ước lượng từng luật dùng cho báo cáo, lớp 4 Box Verifier dùng cho lần quét sau.
+- [ ] Xem tay 20 mục `cam.missing` (ảnh thấy vật mà không có box 3D) trên cảnh kiểm tra: sót thật hay model ảnh nhận nhầm.
 
 ### Vũ Bảo Khánh · báo cáo
 - [ ] Thêm vào báo cáo và slide **bảng truy vết spec ↔ luật** (mục 4.7 của đề xuất): mỗi luật kiểm điều khoản nào.

@@ -95,14 +95,21 @@ def export_dataset(reader, scenes: Sequence[str], out_dir: str | Path, samples_p
         boxes = [b for b in add_track_markers(reader.annotations(scene), frames.num_frames) if b.visible]
         rows = {"points": [], "meta": [], "is_error": [], "target": [], "track_id": [], "frame": []}
         for frame, frame_boxes in group_by_frame(boxes).items():
-            points = frames.frame_data(frame).points
+            points = np.asarray(frames.frame_data(frame).points)
             for index, box in enumerate(frame_boxes):
                 if int(box.attrs.get("num_lidar_pts", min_points)) < min_points:
                     continue
+                # Mọi phép đo đều cục bộ quanh box (vành đai mặt đất ≤ 1,5 m): cắt sẵn vùng quanh box một lần để
+                # mỗi mẫu không phải xét cả frame.
+                reach = max(box.dims) + 3.0
+                near = (np.abs(points[:, 0] - box.center[0]) <= reach) & (np.abs(points[:, 1] - box.center[1]) <= reach)
+                local_points = points[near]
+                others = [b for j, b in enumerate(frame_boxes) if j != index
+                          and math.hypot(b.center[0] - box.center[0], b.center[1] - box.center[1]) <= reach + max(b.dims)]
                 for _ in range(samples_per_box):
                     noisy, target, wrong = _perturb(box, rng)
-                    others = [b for j, b in enumerate(frame_boxes) if j != index]
-                    item = box_point_sets(points, [noisy, *others], margin=0.5, clearance=0.25, margin_rel=0.25)[0]
+                    item = box_point_sets(local_points, [noisy, *others], margin=0.5, clearance=0.25,
+                                          margin_rel=0.25)[0]
                     cloud, meta = box_features(item.local, noisy, item.range_m, rng)
                     for key, value in (("points", cloud), ("meta", meta), ("is_error", wrong), ("target", target),
                                        ("track_id", box.track_id if box.track_id is not None else -1),

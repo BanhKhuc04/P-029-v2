@@ -1,0 +1,82 @@
+# Box Critic — lớp 3 của Box Verifier (nhóm tự huấn luyện)
+
+Box Critic là model nhỏ học cách nhìn một box giống người duyệt: nhìn điểm LiDAR quanh box và đặc trưng của box, trả
+lời **box có sai không** và **cần sửa bao nhiêu**. PointSnap đã có sẵn hai đầu: xuất dữ liệu huấn luyện và chỗ cắm model.
+Phần huấn luyện để nhóm tự làm và cải tiến.
+
+## 1. Xuất dữ liệu
+
+```bash
+pointsnap critic-data --scenes tuning --samples-per-box 6 --out data/critic
+```
+
+Mỗi box nhãn chuẩn nhìn thấy được (≥ 10 điểm LiDAR) sinh `samples-per-box` mẫu: 35% giữ nguyên, còn lại làm nhiễu ngẫu
+nhiên (dời ngang ≤ 0,6 m, nâng / hạ ≤ 0,3 m, co / phóng ≤ 25% từng chiều, xoay ≤ 30°). Điểm LiDAR được lấy quanh **box
+đã làm nhiễu** đúng như bộ quét thấy (bỏ mặt đất, điểm của box khác, chỉ giữ điểm nối liền với vật).
+
+File `data/critic/<cảnh>.npz`:
+
+| Mảng | Shape | Ý nghĩa |
+|---|---|---|
+| `points` | (N, 256, 4) | 256 điểm của vật: x, y, z hệ box đã nhiễu **chia nửa kích thước box**, cờ 1 nếu điểm nằm trong box |
+| `meta` | (N, 20) | dài, rộng, cao (m), khoảng cách / 50, log(1 + số điểm), one-hot 15 class (`pointsnap.critic.CLASSES`) |
+| `is_error` | (N,) | 1 nếu nhiễu vượt dung sai (dời > 15 cm, Z > 8 cm, kích thước > 6%, hướng > 4°) |
+| `target` | (N, 7) | sửa từ box nhiễu về box chuẩn: dx, dy, dz (m, hệ box nhiễu), dl, dw, dh (m), dyaw (rad) |
+| `track_id`, `frame` | (N,) | để chia tập theo track, xem lại mẫu |
+
+**Chia tập:** huấn luyện trên `--scenes tuning`, giữ nguyên 5 cảnh `test` để đo bằng `pointsnap eval` (không xuất dữ liệu
+từ cảnh test, nếu không số liệu bị rò).
+
+## 2. Huấn luyện
+
+Script mẫu `scripts/train_critic_example.py` (PointNet nhỏ ~60 nghìn tham số, chạy được trên RTX 3050 4 GB hoặc CPU):
+
+```bash
+python scripts/train_critic_example.py --data data/critic --epochs 20 --out models/critic.pt
+```
+
+### Huấn luyện trên Kaggle (GPU miễn phí)
+
+Kaggle cho GPU T4 / P100 16 GB (khoảng 30 giờ / tuần), đủ cho mạng lớn hơn và nhiều dữ liệu hơn RTX 3050 4 GB.
+
+1. Trên máy: `pointsnap critic-data --scenes tuning --samples-per-box 20 --out critic-data`, rồi chép
+   `scripts/train_critic_example.py` vào `critic-data/`.
+2. Kaggle → *Datasets → New Dataset*, tải lên thư mục `critic-data/`, để **Private**: giấy phép nuScenes không cho phân
+   phối lại; dữ liệu Việt Nam của nhóm cũng để Private.
+3. *Code → New Notebook → File → Import Notebook* với `scripts/kaggle_train_critic.ipynb`, *Add Input* dataset vừa tạo, bật
+   GPU, *Run All*. Notebook huấn luyện rồi kiểm tra file `critic.pt` đúng hợp đồng (mục 3).
+4. Tải `critic.pt` ở tab *Output* về máy, khai `critic.model` (mục 4), đo bằng `pointsnap eval --scenes test`.
+
+Hướng cải tiến gợi ý:
+- Thêm dữ liệu: `--samples-per-box` lớn hơn, thêm cảnh nuScenes trainval, rồi dữ liệu Việt Nam đã gán.
+- Thêm **ảnh**: đặc trưng ảnh vùng chiếu (backbone ảnh có sẵn) nối vào `meta`; giữ đúng thứ tự đầu vào ở cả hai đầu.
+- Thêm **lỗi thật**: mục người duyệt đánh *Đúng là lỗi* (lớp 4) làm ví dụ khó.
+- Thay PointNet bằng PointNet++ / DGCNN khi có GPU mạnh hơn.
+
+## 3. Hợp đồng của model
+
+PointSnap nạp file **TorchScript** và gọi:
+
+```python
+logit, delta = model(points, meta)   # points: float32 (B, 256, 4), meta: float32 (B, 20)
+# logit: (B,) — sigmoid(logit) là xác suất box sai
+# delta: (B, 7) — dx, dy, dz, dl, dw, dh, dyaw như `target`
+```
+
+Đặc trưng do `pointsnap.critic.box_features` tạo, dùng chung cho xuất dữ liệu và lúc quét. Đổi đặc trưng thì đổi ở hàm
+này và xuất lại dữ liệu.
+
+## 4. Dùng trong PointSnap
+
+Trong guideline của dự án (tab Guideline → YAML, hoặc file `--config`):
+
+```yaml
+critic:
+  model: D:/models/critic.pt
+  min_points: 20          # chỉ chấm box có ≥ 20 điểm của vật
+  min_probability: 0.7    # xác suất sai ≥ 0.7: Cảnh báo
+  error_probability: 0.9  # ≥ 0.9: Lỗi
+```
+
+Luật `critic.box` báo kèm **gợi ý sửa** dạng *"dời (+0.32, −0.05, +0.00) m, kích thước (…), xoay +3.1°"*. Tool không tự
+sửa box. Đo hiệu quả bằng `pointsnap eval --scenes test` (luật `critic.box` được tính cho lỗi chèn dời / co / xoay box).

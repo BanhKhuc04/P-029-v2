@@ -81,6 +81,17 @@ py -3.11 -m venv .venv
 pip install -e ".[dev]"
 ```
 
+**Không bắt buộc: đối chiếu ảnh camera** (luật `cam.*`, lớp 2 của Box Verifier). Cần PyTorch; máy có GPU NVIDIA cài bản
+CUDA (khoảng 2,5 GB), không có GPU thì bỏ qua bước này, các luật còn lại vẫn chạy:
+
+```powershell
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+pip install -e ".[vision]"
+```
+
+Lần quét đầu tải model Mask R-CNN (~180 MB) và chạy khoảng 1 phút cho một cảnh 40 frame × 6 ảnh (RTX 3050); kết quả được lưu
+đệm ở `~/.pointsnap/cache/det2d`, các lần quét sau chỉ đọc lại.
+
 > PowerShell báo *"running scripts is disabled"* khi `activate`: chạy một lần
 > `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, rồi `activate` lại.
 > Linux / macOS: `python3.11 -m venv .venv` và `source .venv/bin/activate`.

@@ -100,3 +100,15 @@ def test_manual_range_must_be_ordered():
 def test_missing_file_gives_clear_error(tmp_path):
     with pytest.raises(ConfigError, match="Không mở được"):
         load_config(tmp_path / "nope.yaml", env={})
+
+
+def test_camera_mismatch_severity_parsing(tmp_path):
+    from pointsnap.core.config import ConfigError, load_config
+
+    path = tmp_path / "g.yaml"
+    path.write_text("camera:\n  mismatch_severity: warning\n", encoding="utf-8")
+    assert load_config(path).camera.mismatch_severity == "warning"
+    assert load_config(None).camera.mismatch_severity == "info"
+    path.write_text("camera:\n  mismatch_severity: error\n", encoding="utf-8")
+    with pytest.raises(ConfigError):
+        load_config(path)

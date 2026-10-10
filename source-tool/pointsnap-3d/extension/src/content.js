@@ -35,6 +35,10 @@
     'attr.invalid': 'Thuộc tính sai giá trị',
     'track.static_shift': 'Vật đứng yên: box dịch',
     'heading.static': 'Vật đứng yên: box xoay',
+    'cam.mismatch': 'Box lệch vật trên ảnh',
+    'cam.class': 'Ảnh camera thấy class khác',
+    'cam.missing': 'Ảnh thấy vật chưa có box',
+    'critic.box': 'Box Critic nghi box sai',
   };
 
   // ---------------------------------------------------------------- trạng thái

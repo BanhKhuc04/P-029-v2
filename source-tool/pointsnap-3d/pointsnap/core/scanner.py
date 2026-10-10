@@ -223,6 +223,43 @@ def check_static(job: JobData, config: Config, frames: FrameSource | None = None
                                 rotate=config.rules.heading_static)
 
 
+_DETECTOR = None
+
+
+def _detector():
+    global _DETECTOR
+    if _DETECTOR is None:
+        from pointsnap.vision.detector2d import Detector2D
+
+        _DETECTOR = Detector2D()
+    return _DETECTOR
+
+
+def check_camera(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Đối chiếu box 3D với ảnh camera (C3, `detectors.camera`). Cần ảnh camera và PyTorch; không có thì bỏ qua."""
+    if frames is None or not hasattr(frames, "camera_views") or not config.camera.active():
+        return []
+    from pointsnap.detectors.camera import camera_findings, collect_observations
+
+    r = config.rules
+    observations, missing = collect_observations(job.cuboids, frames, _detector(), config.camera)
+    findings = camera_findings(observations, config.camera, mismatch=r.cam_mismatch, wrong_class=r.cam_class)
+    return findings + (missing if r.cam_missing else [])
+
+
+def check_critic(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Box Critic (C3, lớp 3): chỉ chạy khi guideline khai `critic.model` và có PyTorch."""
+    if frames is None or not config.critic.model:
+        return []
+    from pointsnap.vision.detector2d import available
+
+    if not available():
+        return []
+    from pointsnap.critic import critic_findings
+
+    return critic_findings(job.cuboids, frames, config.critic)
+
+
 def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
     return detect_attribute_errors(job.cuboids, config.spec)
@@ -232,6 +269,8 @@ _RULE_SWITCH = {
     "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long",
     "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
     "track.static_shift": "track_static_shift", "heading.static": "heading_static",
+    "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
+    "critic.box": "critic_box",
     "heading.flip": "heading_flip", "heading.motion": "heading_motion", "heading.points": "heading_points",
     "fit.empty": "fit_empty", "fit.outside": "fit_outside", "fit.loose": "fit_loose", "fit.overlap": "fit_overlap",
 }
@@ -265,6 +304,8 @@ DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_box_points,
     check_attributes,
     check_static,
+    check_camera,
+    check_critic,
 )
 
 
@@ -302,6 +343,10 @@ def scan_cuboids(
             active_detectors.append(check_attributes)
         if r.track_static_shift or r.heading_static:
             active_detectors.append(check_static)
+        if r.cam_mismatch or r.cam_class or r.cam_missing:
+            active_detectors.append(check_camera)
+        if r.critic_box:
+            active_detectors.append(check_critic)
 
     findings: list[Finding] = []
     for detector in active_detectors:

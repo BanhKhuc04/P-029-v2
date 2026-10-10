@@ -50,6 +50,10 @@ class RulesConfig:
     attr_invalid: bool = True
     track_static_shift: bool = True
     heading_static: bool = True
+    cam_mismatch: bool = True
+    cam_class: bool = True
+    cam_missing: bool = True
+    critic_box: bool = True
 
 
 @dataclass(frozen=True)
@@ -230,6 +234,86 @@ class StaticConfig:
     """Người, động vật đứng yên vẫn xoay người: không xét hướng."""
 
 
+def _default_camera_groups() -> dict[str, tuple[str, ...]]:
+    return {
+        "vehicle": ("car", "truck", "bus", "trailer", "construction_vehicle", "Vehicle"),
+        "two_wheeler": ("motorcycle", "bicycle", "Two-wheels"),
+        "person": ("pedestrian", "Pedestrian"),
+        "animal": ("Animal",),
+    }
+
+
+@dataclass(frozen=True)
+class CameraConfig:
+    """Đối chiếu box 3D với ảnh camera (C3, lớp 2 của Box Verifier; cần PyTorch, `pip install -e ".[vision]"`)."""
+
+    enabled: str = "auto"
+    """`auto`: chạy khi có PyTorch + GPU (CPU chạy được nhưng chậm); `true` / `false`: bật / tắt hẳn."""
+    min_score: float = 0.5
+    min_inside: float = 0.85
+    max_depth_m: float = 50.0
+    min_box_px: float = 25.0
+    max_occlusion: float = 0.3
+    min_track_observations: int = 2
+    min_brightness: float = 90.0
+    """Frame có trung vị độ sáng các ảnh camera (xám 0–255) dưới mức này thì bỏ qua: model COCO kém tin cậy ban đêm.
+    Trên nuScenes mini: frame ngày 100–114, frame đêm 20–88."""
+    min_mask_iou: float = 0.05
+    """Vật trên ảnh phải chồng khung chiếu ít nhất chừng này (IoU) mới coi là cùng vật; không thì bỏ (model 2D sót vật)."""
+    mask_rise_warning: float = 0.2
+    """`cam.mismatch`: tỉ lệ mặt nạ vật nằm ngoài khung chiếu cao hơn trung vị các frame khác của track quá mức này."""
+    mismatch_severity: str = "info"
+    """Mức của `cam.mismatch`: `info` (mặc định, bằng chứng phụ) hoặc `warning`. Đo trên nuScenes: bật ở mức Cảnh báo chỉ
+    bắt thêm 4/400 lỗi chèn mà tăng báo nhầm 0,24 (tuning) / 0,75 (test) trên 100 box."""
+    class_min_observations: int = 3
+    class_vote: float = 0.6
+    class_min_score: float = 0.7
+    missing_min_score: float = 0.85
+    missing_min_px: float = 40.0
+    missing_min_points: int = 15
+    groups: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=_default_camera_groups)
+    """Nhóm vật trên ảnh (person / two_wheeler / vehicle / animal) → các class nhãn 3D thuộc nhóm đó."""
+
+    def group_of(self, label: str) -> str | None:
+        for group, labels in self.groups.items():
+            if label in labels:
+                return group
+        return None
+
+    def tracked_groups(self) -> set[str]:
+        return {g for g, labels in self.groups.items() if labels}
+
+    def active(self) -> bool:
+        if self.enabled == "false":
+            return False
+        from pointsnap.vision import detector2d
+
+        if self.enabled == "true":
+            return detector2d.available()
+        return detector2d.cuda_available()
+
+
+@dataclass(frozen=True)
+class CriticConfig:
+    """Box Critic do nhóm tự huấn luyện (C3, lớp 3; `docs/box-critic.md`). `model` rỗng thì không chạy."""
+
+    model: str = ""
+    """Đường dẫn file TorchScript (.pt)."""
+    min_points: int = 20
+    min_probability: float = 0.7
+    error_probability: float = 0.9
+
+
+@dataclass(frozen=True)
+class LearningConfig:
+    """Dùng kết luận của người duyệt (C3, lớp 4): độ tin cậy luôn hiện; hạ mức chỉ khi bật `adjust_severity`."""
+
+    adjust_severity: bool = False
+    downgrade_below: float = 0.15
+    """Mục Cảnh báo có độ tin cậy dưới mức này (và luật đã có đủ kết luận) thì hạ xuống Thông tin."""
+    min_rule_reviews: int = 20
+
+
 @dataclass(frozen=True)
 class SpecConfig:
     """Thuộc tính bắt buộc và giá trị cho phép theo spec của dự án (C2, spec 3.1.2–3.1.3)."""
@@ -258,6 +342,9 @@ class Config:
     fit: FitConfig = dataclasses.field(default_factory=FitConfig)
     spec: SpecConfig = dataclasses.field(default_factory=SpecConfig)
     static: StaticConfig = dataclasses.field(default_factory=StaticConfig)
+    camera: CameraConfig = dataclasses.field(default_factory=CameraConfig)
+    learning: LearningConfig = dataclasses.field(default_factory=LearningConfig)
+    critic: CriticConfig = dataclasses.field(default_factory=CriticConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -373,7 +460,8 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
               "fit_overlap", "track_reuse_id", "track_occluded_long", "attr_missing", "attr_invalid",
-              "track_static_shift", "heading_static")
+              "track_static_shift", "heading_static", "cam_mismatch", "cam_class", "cam_missing",
+              "critic_box")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
 
 
@@ -436,6 +524,47 @@ def _parse_static(r: _Reader) -> StaticConfig:
     _require_order("static", cfg.yaw_warning_deg, cfg.yaw_error_deg, "yaw_warning_deg", "yaw_error_deg")
     if cfg.yaw_error_deg > 90:
         raise ConfigError("'static.yaw_error_deg' phải <= 90")
+    return cfg
+
+
+def _parse_camera(r: _Reader) -> CameraConfig:
+    enabled = r._take("enabled")
+    enabled = {True: "true", False: "false"}.get(enabled, enabled)
+    if enabled not in ("auto", "true", "false"):
+        raise ConfigError(f"'camera.enabled' phải là auto, true hoặc false, nhận {enabled!r}")
+    numbers = {name: r.number(name, 0.0) for name in (
+        "min_score", "min_inside", "max_depth_m", "min_box_px", "max_occlusion", "min_brightness", "min_mask_iou",
+        "mask_rise_warning", "class_vote", "class_min_score", "missing_min_score", "missing_min_px")}
+    integers = {name: r.integer(name, 1) for name in (
+        "min_track_observations", "class_min_observations", "missing_min_points")}
+    severity = r._take("mismatch_severity") if "mismatch_severity" in r.keys() else "info"
+    if severity not in ("info", "warning"):
+        raise ConfigError(f"'camera.mismatch_severity' phải là info hoặc warning, nhận {severity!r}")
+    gr = r.section("groups")
+    groups = {name: gr.strings(name) for name in gr.keys()}
+    gr.finish()
+    r.finish()
+    return CameraConfig(enabled=enabled, groups=groups, mismatch_severity=severity, **numbers, **integers)
+
+
+def _parse_critic(r: _Reader) -> CriticConfig:
+    model = r._take("model")
+    if not isinstance(model, str):
+        raise ConfigError(f"'critic.model' phải là đường dẫn (chuỗi, để trống nếu chưa có), nhận {model!r}")
+    cfg = CriticConfig(model=model, min_points=r.integer("min_points", 1),
+                       min_probability=r.number("min_probability", 0.0),
+                       error_probability=r.number("error_probability", 0.0))
+    r.finish()
+    _require_order("critic", cfg.min_probability, cfg.error_probability, "min_probability", "error_probability")
+    return cfg
+
+
+def _parse_learning(r: _Reader) -> LearningConfig:
+    cfg = LearningConfig(adjust_severity=r.boolean("adjust_severity"), downgrade_below=r.number("downgrade_below", 0.0),
+                         min_rule_reviews=r.integer("min_rule_reviews", 1))
+    r.finish()
+    if cfg.downgrade_below >= 1:
+        raise ConfigError("'learning.downgrade_below' phải < 1")
     return cfg
 
 
@@ -655,6 +784,9 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         fit=_parse_fit(r.section("fit")) if "fit" in r.keys() else FitConfig(),
         spec=_parse_spec(r.section("spec")) if "spec" in r.keys() else SpecConfig(),
         static=_parse_static(r.section("static")) if "static" in r.keys() else StaticConfig(),
+        camera=_parse_camera(r.section("camera")) if "camera" in r.keys() else CameraConfig(),
+        learning=_parse_learning(r.section("learning")) if "learning" in r.keys() else LearningConfig(),
+        critic=_parse_critic(r.section("critic")) if "critic" in r.keys() else CriticConfig(),
     )
     r.finish()
     return cfg

@@ -91,6 +91,10 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | `attr.missing` | Thiếu / sai thuộc tính | Thiếu thuộc tính bắt buộc theo `spec.required_attributes` (spec 3.1.3). Mức Lỗi (C2) |
 | `track.static_shift` | Đứt track | Vật đứng yên (các keyframe khác tụ trong 10 cm, hệ toàn cục) mà box ở một keyframe lệch > 20 cm (C3) |
 | `heading.static` | Sai hướng box | Vật đứng yên mà hướng box ở một keyframe lệch > 4° (modulo 180°); không xét người, động vật (C3) |
+| `cam.mismatch` | Box lệch khỏi vật | Phần mặt nạ vật cùng nhóm trên ảnh camera (Mask R-CNN) nằm ngoài khung chiếu 8 góc box cao hơn trung vị các frame khác của track > 20 điểm %; model ảnh không thấy vật thì bỏ qua; frame ban đêm bỏ qua. Mức Thông tin (`camera.mismatch_severity`) (C3, cần PyTorch) |
+| `cam.class` | Thiếu / sai thuộc tính | Ở đa số (≥ 60%) lần nhìn rõ, vật trên ảnh trùng khung chiếu thuộc nhóm khác với nhãn (người / xe hai bánh / xe / động vật). Mức Cảnh báo (C3) |
+| `cam.missing` | Box lệch khỏi vật | Ảnh thấy vật chắc chắn (điểm ≥ 0.85, cao ≥ 40 px, ≥ 15 điểm LiDAR) mà không có box 3D chiếu tới. Mức Thông tin, không gắn cờ CVAT (C3) |
+| `critic.box` | Box lệch khỏi vật | Box Critic (model nhóm tự huấn luyện, `critic.model`) cho xác suất box sai ≥ 0.7, kèm gợi ý sửa (C3, `docs/box-critic.md`) |
 | `attr.invalid` | Thiếu / sai thuộc tính | Giá trị ngoài `spec.allowed_values` (khóa `thuộc_tính` hoặc `Class.thuộc_tính`). Mức Lỗi (C2) |
 
 **Box `occluded`** (thuộc tính `occluded` của CVAT, `Cuboid.occluded`): vật không nhìn thấy, vị trí do người gán ước

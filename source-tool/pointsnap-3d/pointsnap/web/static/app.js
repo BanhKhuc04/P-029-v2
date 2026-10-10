@@ -27,14 +27,18 @@
     'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
     'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.',
     'track.static_shift': 'Vật đứng yên: kéo box về trùng vị trí ở các keyframe khác của track (hoặc copy box từ keyframe đúng).',
-    'heading.static': 'Vật đứng yên: xoay box về cùng hướng với các keyframe khác của track.'
+    'heading.static': 'Vật đứng yên: xoay box về cùng hướng với các keyframe khác của track.',
+    'cam.mismatch': 'Mở ảnh camera của frame, so khung box với vật: dời / chỉnh kích thước box cho khớp vật (đối chiếu cả point cloud).',
+    'cam.class': 'Xem vật trên ảnh camera: nhãn sai thì đổi class cho cả track; ảnh nhận nhầm (vật bị che, phản chiếu) thì bỏ qua.',
+    'cam.missing': 'Mở ảnh camera và point cloud của frame: có vật thật mà chưa gán thì vẽ thêm box (spec: gán mọi vật trong vùng quan tâm).',
+    'critic.box': 'Box Critic nghi box sai: xem gợi ý sửa (dời / kích thước / xoay) trong chi tiết, đối chiếu point cloud rồi chỉnh tay.'
   };
 
   // Công tắc luật trong tab Guideline (khóa `rules:` của cấu hình); C1 thêm 7 luật sai hướng / box lệch.
   const RULE_IDS = ['floating', 'size_class_range', 'size_in_track', 'track_jump', 'track_split_id',
     'track_long_interpolation', 'heading_flip', 'heading_motion', 'heading_points', 'fit_empty', 'fit_outside',
     'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'attr_missing', 'attr_invalid',
-    'track_static_shift', 'heading_static'];
+    'track_static_shift', 'heading_static', 'cam_mismatch', 'cam_class', 'cam_missing', 'critic_box'];
 
   const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
 
@@ -95,6 +99,11 @@
         return `${fixed(n, 1)}°`;
       case 'track.static_shift':
         return `${Math.round(n * 100)} cm`;
+      case 'cam.mismatch':
+      case 'cam.class':
+      case 'cam.missing':
+      case 'critic.box':
+        return `${Math.round(n * 100)}%`;
       case 'fit.outside':
       case 'fit.overlap':
         return `${Math.round(n * 100)}%`;
@@ -308,6 +317,7 @@
 
     // 5. Tab Kết quả (Results)
     document.getElementById('btn-re-flag-cvat').addEventListener('click', handleReFlagScan);
+    document.getElementById('btn-learn').addEventListener('click', handleLearn);
     document.getElementById('filter-search-box').addEventListener('input', () => {
       state.findingsPage = 1;
       renderFindingsTable();
@@ -1120,6 +1130,8 @@
 
     document.getElementById('detail-measured-val').textContent = formatMeasure(f, f.value, true);
     document.getElementById('detail-threshold-val').textContent = formatMeasure(f, f.threshold);
+    document.getElementById('detail-confidence-val').textContent =
+      f.confidence === null || f.confidence === undefined ? 'chưa học' : `${Math.round(f.confidence * 100)}%`;
     document.getElementById('detail-message-desc').textContent = f.message || '—';
 
     // Gợi ý cách sửa từ từ điển A13
@@ -1148,6 +1160,7 @@
     document.getElementById('detail-track-class-val').textContent = '—';
     document.getElementById('detail-measured-val').textContent = '—';
     document.getElementById('detail-threshold-val').textContent = '—';
+    document.getElementById('detail-confidence-val').textContent = '—';
     document.getElementById('detail-message-desc').textContent = '—';
     document.getElementById('detail-fix-hint').textContent = '—';
     document.getElementById('detail-btn-cvat-link').style.display = 'none';
@@ -1177,6 +1190,10 @@
     if (f.rule === 'attr.invalid') return 'Thuộc tính sai giá trị';
     if (f.rule === 'track.static_shift') return 'Vật đứng yên: box dịch';
     if (f.rule === 'heading.static') return 'Vật đứng yên: box xoay';
+    if (f.rule === 'cam.mismatch') return 'Box lệch vật trên ảnh';
+    if (f.rule === 'cam.class') return 'Ảnh camera thấy class khác';
+    if (f.rule === 'cam.missing') return 'Ảnh thấy vật chưa có box';
+    if (f.rule === 'critic.box') return 'Box Critic nghi box sai';
     return f.message ? f.message.split(';')[0] : 'Phát hiện bất thường';
   }
 
@@ -1709,6 +1726,25 @@
   }
 
   // --- 6. Tab Lịch sử (History View - LichSu.dc.html) ---
+  async function handleLearn() {
+    if (!state.currentSlug) return;
+    const btn = document.getElementById('btn-learn');
+    setButtonBusy(btn, 'Đang học…');
+    try {
+      const res = await fetch(`/api/projects/${encodeURIComponent(state.currentSlug)}/learn`, { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Không học được');
+      const data = await res.json();
+      const box = document.getElementById('learn-report');
+      box.textContent = data.report;
+      box.style.display = 'block';
+      showToast('Đã học từ kết luận đã duyệt; áp dụng từ lần quét sau.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setButtonIdle(btn);
+    }
+  }
+
   async function loadHistoryTab() {
     if (!state.currentSlug) return;
     try {

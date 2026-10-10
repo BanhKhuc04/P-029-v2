@@ -86,7 +86,7 @@ tự đứng. Hướng tốt hơn là đưa đặc trưng ảnh vào Box Critic 
 ## 4. Lớp 3 — Box Critic (nhóm tự huấn luyện)
 
 Đã có: `pointsnap critic-data` (box làm nhiễu có đáp án, 256 điểm + 20 đặc trưng mỗi mẫu; 5 cảnh tinh chỉnh,
-20 mẫu / box), `scripts/train_critic_example.py`, notebook Kaggle `scripts/kaggle_train_critic.ipynb`, luật
+20 mẫu / box), `scripts/train_critic_example.py`, notebook Colab `scripts/colab_train_critic.ipynb`, luật
 `critic.box` nạp TorchScript qua `critic.model` và báo kèm gợi ý sửa. Đã thử đầu-cuối: huấn luyện 3 epoch trên
 scene-0757, nạp vào bộ quét, ra `critic.box` kèm gợi ý. Model thật chưa huấn luyện nên chưa có số liệu; cách làm và
 cách đo: [box-critic.md](box-critic.md).

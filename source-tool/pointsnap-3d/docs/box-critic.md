@@ -35,17 +35,18 @@ Script mẫu `scripts/train_critic_example.py` (PointNet nhỏ ~60 nghìn tham s
 python scripts/train_critic_example.py --data data/critic --epochs 20 --out models/critic.pt
 ```
 
-### Huấn luyện trên Kaggle (GPU miễn phí)
+### Huấn luyện trên Google Colab (GPU miễn phí)
 
-Kaggle cho GPU T4 / P100 16 GB (khoảng 30 giờ / tuần), đủ cho mạng lớn hơn và nhiều dữ liệu hơn RTX 3050 4 GB.
+Colab cho GPU T4 16 GB, đủ cho mạng lớn hơn và nhiều dữ liệu hơn RTX 3050 4 GB.
 
-1. Trên máy: `pointsnap critic-data --scenes tuning --samples-per-box 20 --out critic-data`, rồi chép
-   `scripts/train_critic_example.py` vào `critic-data/`.
-2. Kaggle → *Datasets → New Dataset*, tải lên thư mục `critic-data/`, để **Private**: giấy phép nuScenes không cho phân
-   phối lại; dữ liệu Việt Nam của nhóm cũng để Private.
-3. *Code → New Notebook → File → Import Notebook* với `scripts/kaggle_train_critic.ipynb`, *Add Input* dataset vừa tạo, bật
-   GPU, *Run All*. Notebook huấn luyện rồi kiểm tra file `critic.pt` đúng hợp đồng (mục 3).
-4. Tải `critic.pt` ở tab *Output* về máy, khai `critic.model` (mục 4), đo bằng `pointsnap eval --scenes test`.
+1. Trên máy: `pointsnap critic-data --scenes tuning --samples-per-box 20 --out critic-data`, chép
+   `scripts/train_critic_example.py` vào `critic-data/`, nén thành `critic-data.zip`.
+2. Tải `critic-data.zip` lên **My Drive** của mình, không chia sẻ công khai (giấy phép nuScenes không cho phân phối lại;
+   dữ liệu Việt Nam của nhóm cũng vậy).
+3. Mở [colab.research.google.com](https://colab.research.google.com) → *File → Upload notebook* →
+   `scripts/colab_train_critic.ipynb`; *Runtime → Change runtime type → T4 GPU*; chạy lần lượt các ô.
+4. Notebook kiểm tra `critic.pt` đúng hợp đồng (mục 3), lưu vào My Drive và tải về máy. Khai `critic.model` (mục 4), đo
+   bằng `pointsnap eval --scenes test`.
 
 Hướng cải tiến gợi ý:
 - Thêm dữ liệu: `--samples-per-box` lớn hơn, thêm cảnh nuScenes trainval, rồi dữ liệu Việt Nam đã gán.

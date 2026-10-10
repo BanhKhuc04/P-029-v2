@@ -276,7 +276,7 @@ Bốn lớp, mỗi lớp thêm một nguồn bằng chứng; tool vẫn **chỉ 
 |---|---|---|---|
 | 1. Hình học theo thời gian | Vị trí / hướng box trong **hệ toàn cục** qua các keyframe | `track.static_shift`, `heading.static`: vật đứng yên (các keyframe khác tụ trong 10 cm) mà một keyframe dịch > 20 cm / xoay > 4° | Xong, mặc định bật |
 | 2. Ảnh camera | Chiếu box lên 6 ảnh, so với **mặt nạ vật** của Mask R-CNN (COCO, huấn luyện sẵn) | `cam.mismatch` (Thông tin), `cam.class` (Cảnh báo), `cam.missing` (Thông tin); frame ban đêm bỏ qua | Xong; tự bật khi có PyTorch + GPU |
-| 3. Box Critic | Model PointNet học từ box làm nhiễu có đáp án | `critic.box` kèm gợi ý sửa | Có dữ liệu, script / notebook Kaggle, chỗ cắm; **nhóm tự huấn luyện** ([docs/box-critic.md](docs/box-critic.md)) |
+| 3. Box Critic | Model PointNet học từ box làm nhiễu có đáp án | `critic.box` kèm gợi ý sửa | Có dữ liệu, script / notebook Colab, chỗ cắm; **nhóm tự huấn luyện** ([docs/box-critic.md](docs/box-critic.md)) |
 | 4. Học từ kết luận | Kết luận Đúng / Báo nhầm của người duyệt | Độ tin cậy từng mục; tuỳ chọn hạ Cảnh báo kém tin cậy | Xong; cần ≥ 40 kết luận để dùng mô hình |
 
 Lớp 2 đo được nhưng yếu: trên cảnh tinh chỉnh chỉ bắt thêm 4/400 lỗi chèn so với luật LiDAR, báo nhầm tăng 0,24 – 0,75

@@ -21,7 +21,7 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 | — | Web, extension, báo cáo, chèn lỗi giả và `pointsnap eval --errors c1` cho mọi luật mới | Số liệu: `docs/ket-qua-giai-doan-3.md` |
 | C3 | **Box Verifier** lớp 1: box dịch / xoay của vật đứng yên trong hệ toàn cục (`track.static_shift`, `heading.static`) | Cảnh kiểm tra: box dời 0,3 m 0% → 44%, xoay 15° 7% → 29%, nhảy 1 m 50% → 75% |
 | C3 | Lớp 2: đối chiếu ảnh camera (`cam.mismatch`, `cam.class`, `cam.missing`), Mask R-CNN huấn luyện sẵn | Thông tin là chính; bắt thêm ít (4/400 lỗi chèn) |
-| C3 | Lớp 3: Box Critic — dữ liệu (`pointsnap critic-data`), script + notebook Kaggle, chỗ cắm `critic.model` | Chờ nhóm huấn luyện |
+| C3 | Lớp 3: Box Critic — dữ liệu (`pointsnap critic-data`), script + notebook Colab, chỗ cắm `critic.model` | Chờ nhóm huấn luyện |
 | C3 | Lớp 4: học từ kết luận Đúng / Báo nhầm (nút *Học từ kết luận*, `pointsnap learn`) | Chờ ≥ 40 kết luận thật |
 
 ## Việc của từng người
@@ -30,7 +30,7 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 - [ ] Review và merge PR giai đoạn 3; tạo **lại** task scene-0061 bằng `to-cvat` mới (đoạn vắng thành occluded).
 - [ ] Tạo task spec-vn: `pointsnap nuscenes --taxonomy spec-vn to-cvat --scene scene-0061 --out D:/data/cvat-vn --upload`.
 - [ ] Cập nhật CAI-DAT.md: bước tạo token **bỏ tích Read-only** (lỗi CHIEN-01), bước tạo task spec-vn.
-- [ ] Huấn luyện **Box Critic** trên Kaggle theo `docs/box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
+- [ ] Huấn luyện **Box Critic** trên Google Colab theo `docs/box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
       `critic.model`, đo `pointsnap eval --scenes test --errors all` so với không có Box Critic.
 - [ ] Hỏi mentor về việc dùng model làm bằng chứng phụ (Box Verifier lớp 2, 3).
 - [ ] Sửa các lỗi trong `docs/test/tong-hop-loi.md` được giao.

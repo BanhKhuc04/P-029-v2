@@ -11,6 +11,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urljoin, urlsplit
 
 import requests
 
@@ -34,29 +35,49 @@ class CvatClient:
         if not token:
             raise CvatError("Thiếu token CVAT: đặt biến môi trường CVAT_TOKEN")
         self.url = url.rstrip("/")
+        parts = urlsplit(self.url)
+        if parts.scheme not in ("http", "https") or not parts.hostname or parts.username or parts.password or parts.query or parts.fragment:
+            raise CvatError("URL CVAT phải là HTTP(S), không chứa tài khoản, query hoặc fragment")
         self.timeout = timeout
         self.session = session or requests.Session()
         # CVAT chỉ trả JSON với media type riêng (CVATAPIRenderer); "application/json" bị từ chối với HTTP 406.
         self.session.headers.update({"Authorization": f"{auth_scheme} {token}", "Accept": ACCEPT})
 
     def _request(self, method: str, path: str, *, expected: tuple[int, ...] = (200,), **kwargs: Any) -> Any:
-        url = path if path.startswith("http") else f"{self.url}/api/{path.lstrip('/')}"
+        url = urljoin(f"{self.url}/api/", path)
+        def origin(value: str) -> tuple:
+            parts = urlsplit(value)
+            return parts.scheme, parts.hostname, parts.port or (443 if parts.scheme == "https" else 80)
+        parts = urlsplit(url)
+        if origin(url) != origin(self.url) or parts.username or parts.password:
+            raise CvatError("URL phân trang khác origin CVAT; không gửi token")
         try:
-            response = self.session.request(method, url, timeout=self.timeout, **kwargs)
+            response = self.session.request(method, url, timeout=self.timeout, allow_redirects=False, **kwargs)
         except requests.RequestException as exc:
             raise CvatError(f"Không kết nối được CVAT tại {self.url}: {exc}") from exc
         if response.status_code not in expected:
             raise CvatError(f"{method} {url} → HTTP {response.status_code}: {response.text[:500]}")
-        return response.json() if response.content else {}
+        try:
+            return response.json() if response.content else {}
+        except ValueError as exc:
+            raise CvatError(f"{method} {url}: CVAT trả JSON không hợp lệ") from exc
 
     def _get_all(self, path: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         """GET một danh sách có phân trang, gom mọi trang."""
         results: list[dict[str, Any]] = []
         page = self._request("GET", path, params={**params, "page_size": 500})
+        visited: set[str] = set()
         while True:
+            if not isinstance(page, dict) or not isinstance(page.get("results"), list):
+                raise CvatError(f"GET {path}: danh sách phân trang không hợp lệ")
             results.extend(page.get("results", []))
             if not page.get("next"):
                 return results
+            if not isinstance(page["next"], str):
+                raise CvatError(f"GET {path}: URL phân trang không hợp lệ")
+            if page["next"] in visited:
+                raise CvatError(f"GET {path}: URL phân trang lặp lại")
+            visited.add(page["next"])
             page = self._request("GET", page["next"])
 
     # --- Thông tin máy chủ ------------------------------------------------------------------------

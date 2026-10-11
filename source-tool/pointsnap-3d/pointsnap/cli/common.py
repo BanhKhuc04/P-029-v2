@@ -34,7 +34,7 @@ def frames_for_job(
     Trả về `(frames, thông báo)`; `frames` là `None` khi không tìm được hoặc frame không khớp, khi đó luật lơ lửng /
     lún bị bỏ qua và luật đứt track chỉ báo mức Cảnh báo.
     """
-    path = manifest or find_manifest(job.task_id, export_dirs(custom_export_dirs))
+    path = manifest or find_manifest(job.task_id, export_dirs(custom_export_dirs), url=job.url or None)
     skipped = ("bỏ qua luật lơ lửng / lún và hướng/fit dùng LiDAR; "
                "luật chuyển động dùng tọa độ từng frame khi thiếu pose; gate kiểm tra dữ liệu theo luật đang bật")
     if path is None:

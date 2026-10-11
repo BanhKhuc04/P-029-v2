@@ -23,6 +23,7 @@ from pointsnap.adapters.cvat.client import CvatClient
 from pointsnap.adapters.cvat.shapes import PITCH_ATTR, ROLL_ATTR, points_to_geometry
 from pointsnap.adapters.nuscenes.reader import NuScenesReader, SampleRef
 from pointsnap.core.model import Cuboid, FrameData
+from pointsnap.core.geometry import validate_pose
 
 
 
@@ -31,6 +32,7 @@ class LabelInfo:
     id: int
     name: str
     attribute_names: Mapping[int, str]
+    attribute_mutable: Mapping[int, bool] = field(default_factory=dict)
     """`spec_id` → tên thuộc tính."""
 
     @property
@@ -44,6 +46,7 @@ def labels_from_api(labels: Iterable[Mapping[str, Any]]) -> dict[int, LabelInfo]
             id=label["id"],
             name=label["name"],
             attribute_names={a["id"]: a["name"] for a in label.get("attributes", [])},
+            attribute_mutable={a["id"]: bool(a["mutable"]) for a in label.get("attributes", []) if "mutable" in a},
         )
         for label in labels
     }
@@ -54,10 +57,10 @@ def _attribute_values(values: Iterable[Mapping[str, Any]], label: LabelInfo) -> 
 
 
 def _to_cuboid(shape: Mapping[str, Any], label: LabelInfo, track_id: int | None, base_attrs: Mapping[str, str]) -> Cuboid:
-    geometry = points_to_geometry(shape["points"])
-    attrs: dict[str, Any] = {**base_attrs, **_attribute_values(shape.get("attributes", []), label)}
-    attrs.update({ROLL_ATTR: geometry["roll"], PITCH_ATTR: geometry["pitch"], "occluded": bool(shape.get("occluded"))})
     try:
+        geometry = points_to_geometry(shape["points"])
+        attrs: dict[str, Any] = {**base_attrs, **_attribute_values(shape.get("attributes", []), label)}
+        attrs.update({ROLL_ATTR: geometry["roll"], PITCH_ATTR: geometry["pitch"], "occluded": bool(shape.get("occluded"))})
         return Cuboid(
             center=geometry["center"],
             dims=geometry["dims"],
@@ -90,8 +93,9 @@ def annotations_to_cuboids(data: Mapping[str, Any], labels: Mapping[int, LabelIn
     for track in data.get("tracks", []):
         label = labels[track["label_id"]]
         track_attrs = _attribute_values(track.get("attributes", []), label)
-        for shape in track.get("shapes", []):
+        for shape in sorted(track.get("shapes", []), key=lambda s: s["frame"]):
             if shape.get("type") == "cuboid":
+                track_attrs.update(_attribute_values(shape.get("attributes", []), label))
                 cuboids.append(_to_cuboid(shape, label, track["id"], track_attrs))
     return sorted(cuboids, key=lambda c: (c.frame, c.track_id if c.track_id is not None else -1, c.source_id or 0))
 
@@ -125,7 +129,45 @@ class ManifestFrames:
         self.manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
         self.reader = NuScenesReader(dataroot or self.manifest["dataroot"], version=self.manifest["version"])
         by_token = {ref.sample_token: ref for ref in self.reader.samples(self.manifest["scene"])}
-        self._refs: dict[int, SampleRef] = {f["frame"]: by_token[f["sample_token"]] for f in self.manifest["frames"]}
+        frames = self.manifest["frames"]
+        count = len(by_token)
+        if (self.manifest.get("num_frames", count) != count or len(frames) != count
+                or {f["frame"] for f in frames} != set(range(count))
+                or len({f["file"] for f in frames}) != count):
+            raise ValueError("manifest: số lượng, số frame hoặc tên file trùng/không khớp cảnh")
+        self._refs: dict[int, SampleRef] = {}
+        for item in frames:
+            ref = by_token.get(item["sample_token"])
+            if ref is None or ref.frame != item["frame"]:
+                raise ValueError("manifest: sample_token không khớp thứ tự frame của cảnh")
+            self._refs[item["frame"]] = ref
+        transform = self.manifest.get("transform")
+        if self.manifest.get("coordinate_system") == "ego" and transform is None:
+            raise ValueError("manifest: hệ ego cần transform để không ghép điểm LiDAR với box đã quay")
+        if transform is not None:
+            mat = np.asarray(transform, dtype=np.float64)
+            if mat.shape != (3, 3):
+                raise ValueError("manifest: transform phải là ma trận quay 3×3")
+            pose = np.eye(4)
+            pose[:3, :3] = mat
+            try:
+                validate_pose(pose)
+            except ValueError as exc:
+                raise ValueError(f"manifest: transform không hợp lệ: {exc}") from exc
+            if not np.allclose(mat[2], [0, 0, 1], atol=1e-6, rtol=0):
+                raise ValueError("manifest: transform phải giữ trục z lên của core")
+        for item in frames:
+            ref = self._refs[item["frame"]]
+            if "timestamp" in item and not np.isclose(item["timestamp"], ref.timestamp, atol=1e-6, rtol=0):
+                raise ValueError("manifest: timestamp không khớp dataset hiện tại")
+            if "sensor_to_world" in item:
+                rot = np.eye(4)
+                if transform is not None:
+                    rot[:3, :3] = np.asarray(transform)
+                expected = ref.sensor_to_world @ rot.T
+                stored = np.asarray(item["sensor_to_world"], dtype=np.float64)
+                if stored.shape != (4, 4) or not np.allclose(stored, expected, atol=1e-6, rtol=0):
+                    raise ValueError("manifest: pose không khớp dataset/transform hiện tại")
 
     @property
     def file_names(self) -> list[str]:
@@ -166,7 +208,7 @@ class ManifestFrames:
 
 
 
-def find_manifest(task_id: int, search_dirs: Iterable[str | Path]) -> Path | None:
+def find_manifest(task_id: int, search_dirs: Iterable[str | Path], url: str | None = None) -> Path | None:
     """Tìm `manifest.json` của bản xuất đã tạo task `task_id` (`cvat_task.json` nằm cạnh, do `to-cvat --upload` ghi).
 
     Mỗi thư mục trong `search_dirs` là nơi chứa các bản xuất (`<dir>/<scene>/cvat_task.json`) hoặc chính một bản xuất.
@@ -181,6 +223,8 @@ def find_manifest(task_id: int, search_dirs: Iterable[str | Path]) -> Path | Non
             except (OSError, ValueError):
                 continue
             manifest = info_path.parent / "manifest.json"
+            if url and str(info.get("url", "")).rstrip('/') != url.rstrip('/'):
+                continue
             if info.get("task_id") == task_id and manifest.is_file():
                 return manifest
     return None
@@ -196,6 +240,7 @@ class JobData:
     labels: dict[int, LabelInfo]
     cuboids: list[Cuboid]
     frame_names: list[str] = field(default_factory=list)
+    raw_annotations: dict[str, Any] | None = None
 
     def frame_url(
         self,
@@ -222,4 +267,5 @@ def load_job(client: CvatClient, job_id: int) -> JobData:
         labels=labels,
         cuboids=annotations_to_cuboids(data, labels),
         frame_names=[f["name"] for f in meta.get("frames", [])],
+        raw_annotations=data,
     )

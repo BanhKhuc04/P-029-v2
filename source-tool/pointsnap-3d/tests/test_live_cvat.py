@@ -12,7 +12,7 @@ import pytest
 import fake_nuscenes
 from pointsnap.adapters.cvat.client import CvatClient
 from pointsnap.adapters.cvat.reader import ManifestFrames, load_job
-from pointsnap.adapters.cvat.writer import flag_job_errors
+from pointsnap.adapters.cvat.writer import flag_job_errors, clear_job_errors, verify_geometry_preserved
 from pointsnap.adapters.nuscenes import NuScenesReader
 from pointsnap.cli.main import load_dotenv
 from pointsnap.core.config import load_config
@@ -97,3 +97,45 @@ def _assert_same_geometry(before, after):
         assert a.center == pytest.approx(b.center, abs=1e-6)
         assert a.dims == pytest.approx(b.dims, abs=1e-6)
         assert a.yaw == pytest.approx(b.yaw, abs=1e-6)
+
+
+def test_flag_tilted_shapes_preserves_all_other_annotations(tmp_path, client):
+    """Kiểm shape lẻ, roll/pitch, attrs và idempotency trên API thật; chỉ task thử riêng."""
+    import copy
+    reader = NuScenesReader(fake_nuscenes.build(tmp_path / 'nuscenes'))
+    export = export_scene(reader, 'scene-0001', tmp_path / 'out')
+    info = upload_scene(client, export, 'PointSnap live test shape/tilt (tự xóa)', 'pointsnap_error')
+    try:
+        [job_id] = info['job_ids']
+        labels = client.task_labels(info['task_id'])
+        label = next(l for l in labels if l['name'] == 'car')
+        reviewed = next(a['id'] for a in label['attributes'] if a['name'] == 'reviewed')
+        client.patch_job_annotations(job_id, {'shapes': [{'type': 'cuboid', 'label_id': label['id'],
+            'frame': 1, 'points': [20, 0, 1, .1, -.2, .3, 4, 2, 1.5] + [0.] * 7,
+            'occluded': True, 'rotation': 0, 'z_order': 0, 'attributes': [{'spec_id': reviewed, 'value': 'true'}]}]}, action='create')
+        before = load_job(client, job_id)
+        target = next(b for b in before.cuboids if b.track_id is None)
+        finding = Finding(error_type=ErrorType.SIZE, rule='size.in_track', severity=Severity.ERROR,
+                          frame=target.frame, label=target.label, source_id=target.source_id, message='Ca shape lẻ')
+        first = flag_job_errors(client, before, [finding])
+        after = load_job(client, job_id)
+        verify_geometry_preserved(before.cuboids, after.cuboids)
+        tilted = next(b for b in after.cuboids if b.track_id is None)
+        assert tilted.attrs['reviewed'] == 'true'
+        assert (tilted.attrs['cvat_rx'], tilted.attrs['cvat_ry']) == (.1, -.2)
+        again = flag_job_errors(client, after, [Finding(error_type=finding.error_type, rule=finding.rule,
+            severity=finding.severity, frame=tilted.frame, label=tilted.label, source_id=tilted.source_id, message=finding.message)])
+        assert (first.flagged, again.flagged, again.cleared, again.unmatched) == (1, 0, 0, 0)
+        assert clear_job_errors(client, load_job(client, job_id)) == 1
+        final = load_job(client, job_id)
+        verify_geometry_preserved(before.cuboids, final.cuboids)
+        def without_ids_and_flags(raw):
+            result = copy.deepcopy(raw)
+            for shape in [*result['shapes'], *(s for t in result['tracks'] for s in t['shapes'])]:
+                shape.pop('id', None)
+                shape['attributes'] = [a for a in shape['attributes'] if a['spec_id'] not in {
+                    attr['id'] for l in labels for attr in l['attributes'] if attr['name'] == 'pointsnap_error'}]
+            return result
+        assert without_ids_and_flags(before.raw_annotations) == without_ids_and_flags(final.raw_annotations)
+    finally:
+        client.delete_task(info['task_id'])

@@ -1,8 +1,8 @@
 # 02 — Review core, hình học và detector
 
-**Nhánh:** `review/2026-10-10/02-core-detectors`.
-**Trạng thái:** chưa thực hiện review phần 02.
-**Đầu ra sẽ tạo:** `02-report.md`, ma trận luật/dữ liệu, ca biên có đáp án và findings thuật toán.
+**Nhánh:** `review/02-core-detectors`.
+**Trạng thái:** đã hoàn tất review phần 02; tiếp nối phần 01 tại `1c3a761`.
+**Kết quả:** [Bàn giao ngắn](02-handoff.md) · [Báo cáo](02-report.md) · [Ma trận luật/dữ liệu](02-rule-matrix.md) · [Bằng chứng kiểm tra](evidence/02/test-results.md). **317 pytest và 7 Node đạt; 0 skip.**
 
 Áp dụng [quy trình chung](README.md), [mẫu báo cáo](report-template.md). Đường dẫn code tính từ tool root. Đọc invariant và quyết định coverage từ phần 01; ghi SHA tài liệu đã tham khảo.
 
@@ -62,7 +62,7 @@ Kiểm tra luật đo đúng đại lượng theo CONVENTIONS, xử lý đúng �
 | R02-15 | JobData và danh sách Cuboid, thay thứ tự input | Kết quả tương đương khi hợp đồng cho phép; sort_key ổn định, không mutation input ngoài dự kiến |
 | R02-16 | Finding info, warning, error và gate threshold | Info không actionable; gate và mức findings nhất quán; coverage bàn giao 04 |
 
-Tất cả ca ở trạng thái Chưa chạy cho đến khi có dòng kết quả trong báo cáo.
+Kết quả 16 ca đã được ghi trong báo cáo, kèm mức kiểm tra và giới hạn. Kết quả test không thay thế precision xem tay hoặc nghiệm thu UI.
 
 ## 6. Lệnh kiểm tra tập trung
 
@@ -82,9 +82,9 @@ Ma trận luật cần có cột: rule, nguồn yêu cầu/spec, công thức, d
 
 ## 8. Bàn giao và hoàn tất
 
-- [ ] Mọi luật được scanner gọi đã có dòng ma trận và kết quả/giới hạn.
-- [ ] Ca tọa độ/đơn vị/occlusion và rule toggles có đáp án độc lập.
-- [ ] Findings có vị trí đúng, điều kiện tái hiện và test sau sửa.
-- [ ] Cấu hình/threshold thay đổi có lý do, dataset tuning và mã commit; chuyển đánh giá held-out cho 07.
-- [ ] Gap chuyển đổi/pose/data chuyển cho 03; gate coverage và thông báo chuyển cho 04/05.
-- [ ] `02-report.md` nêu rõ phần đã đọc, đã chạy, chưa kiểm dữ liệu thật và findings còn mở.
+- [x] 18 mã luật có dòng ma trận, dữ liệu cần và giới hạn.
+- [x] Ca tọa độ/đơn vị/occlusion và 17 rule switches có đáp án độc lập.
+- [x] Findings có vị trí, điều kiện tái hiện và test sau sửa.
+- [x] Không đổi ngưỡng phát hiện; sửa validation và giữ lý do/commit. Đánh giá held-out bàn giao 07.
+- [x] Hợp đồng pose/data bàn giao 03; metadata biên job/coverage bàn giao 04/05.
+- [x] Có `02-report.md`, test thật đã chạy và giới hạn precision/UI được ghi rõ; không còn finding mở trong phạm vi 02.

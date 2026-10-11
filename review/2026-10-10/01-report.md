@@ -54,7 +54,7 @@ CVAT ở thư mục cha `cvat-develop` là dependency ngoài kho P-029. Không c
 | R01-02 | Truy vết P-010/P-011/P-012 và G0–G8, tách code khỏi nghiệm thu | Đạt | Mục 4; EV-01-003–007 |
 | R01-03 | CLI, Web, extension, API report local được phân biệt; `diff` trả 3 vì chưa triển khai | Đạt | tests/test_cli; ledger L01/L02/L16 |
 | R01-04 | Sáu nhóm detector và switches: floating, size, track, heading, fit, attributes | Đạt | scanner/check_*; R01-02; EV-01-005/007 |
-| R01-05 | Dims/yaw/pose/frame đối chiếu convention; chuyển +90°, manifest và roll/pitch được truy vết | Đạt | architecture mục 5; test reader thật và CVAT live |
+| R01-05 | Dims/yaw/pose/frame đối chiếu convention; chuyển theo LIDAR_TO_EGO_ROT, manifest và roll/pitch được truy vết | Đạt | architecture mục 5; test reader thật và CVAT live; dấu quay được đính chính trong phần 02 |
 | R01-06 | GET nhãn, snapshot, reports, PATCH flag theo tùy chọn; người dùng tự sửa hình học | Đạt | L03/L08/L09; 2 ca CVAT live |
 | R01-07 | Thiếu LiDAR/pose/ground evidence không còn gate ĐẠT theo cấu hình mặc định | Đạt sau sửa | RV-01-001/003; EV-01-003/004/007 |
 | R01-08 | Out/export vs ~/.pointsnap vs state memory phân biệt; done không có nghĩa gate passed | Đạt | architecture mục 3/5; Web persist test |
@@ -172,7 +172,7 @@ Mã vị trí runtime dưới đây theo `099d5b7`, test live theo `7eb5421`; đ
 | Gate thiếu dữ liệu | KHÔNG ĐẠT nếu gap được nhận diện theo luật bật; có no_evidence thì chặn. Scan vẫn cung cấp phần findings đã kiểm | 04/05/07 |
 | Rule chủ động tắt | ĐẠT chỉ theo config; không chứng nhận phần tắt; không thêm bypass “allow partial” mặc định | 02/04/06 |
 | Coverage bảo thủ | Kiểm cấp job/source/pose và no_evidence; không phải tỷ lệ mọi box/luật, không chứng nhận class ngoài phạm vi | 02/07: rà từng rule applicability/low-point/timestamp fallback |
-| Frame/world invariants | Convention hiện có, +90° và metadata khớp reader; giữ roll/pitch và geometry khi PATCH | 02/03 |
+| Frame/world invariants | Convention hiện có, LIDAR_TO_EGO_ROT và metadata khớp reader; giữ roll/pitch và geometry khi PATCH | 02/03 |
 | API report local | Có `passed` và danh sách checks riêng trong untracked api.py; trước khi công bố cần dùng chung coverage/gate và đủ 6 nhóm luật | 04/06/08 |
 | Local Docker/launcher | Ngoài nội dung push phần 01; không chứng nhận cài máy trắng dựa vào container đang chạy | 08 |
 | Hình học/precision | NuScenes reader/ground và CVAT API pass không chứng nhận precision hoặc threshold ground <5 cm | 02/07 |

@@ -22,7 +22,7 @@ PointSnap 3D đọc job 3D cuboid qua REST API của CVAT, tìm 3 loại lỗi t
 
 | Lỗi | Tool đo gì | Cảnh báo / Lỗi (mặc định) |
 |---|---|---|
-| Lơ lửng / lún | Khoảng cách đáy box tới mặt đất ước lượng cục bộ quanh box | > 10 cm / > 20 cm |
+| Lơ lửng / lún | Chênh lệch đáy−ground so với trung vị các frame khác của track; ít bằng chứng theo track thì đo tuyệt đối | Track: > 12 cm / > 22 cm (Lỗi còn cần độ lệch tuyệt đối > 15 cm); box lẻ/ít mẫu: > 15 cm / > 30 cm |
 | Sai kích thước | l, w, h so với khoảng thường gặp của class; độ lệch so với trung vị của track | Theo class; > max(10 cm, 5%) / > max(30 cm, 15%) |
 | Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai frame bên cạnh; track kết thúc rồi track cùng class bắt đầu ngay gần đó; đoạn dài chỉ có box nội suy; dùng lại track sau `outside`, `occluded` quá 6 frame (spec 4.4) | Xe: 1 m / 2 m; tách ID, luật spec chỉ Cảnh báo |
 | Sai hướng box (giai đoạn 3) | Hướng box đổi đột ngột giữa hai keyframe; lệch / ngược hướng chuyển động; trục box lệch trục cụm điểm LiDAR (spec 4.2) | Lật / xoay > 45° / > 75°; ngược chiều > 60° / > 135° |

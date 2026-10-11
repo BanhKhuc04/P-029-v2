@@ -108,7 +108,7 @@ flowchart TD
 | Biên | Invariant / persistence | Chỗ kiểm sâu tiếp theo |
 |---|---|---|
 | Cuboid | mét, `(length,width,height)`, length theo x local, yaw radian `[-π,π)`, z lên, tâm hình học | 02/03: geometry/model/shapes |
-| nuScenes → CVAT | xoay +90° quanh z cho point cloud và cuboid; manifest giữ transform, sample token và tên frame | 03: vòng chuyển/đọc lại trên dữ liệu thật |
+| nuScenes → CVAT | theo LIDAR_TO_EGO_ROT: `(x,y,z) → (y,-x,z)`, yaw − π/2 (−90°); manifest giữ transform, sample token và tên frame | 03: vòng chuyển/đọc lại trên dữ liệu thật |
 | CVAT points | 16 số, center/rotation/scale; roll/pitch giữ trong attrs khi ghi ngược | 03: bảo toàn nhãn/PATCH trên task thử |
 | Frame/ID | zero based, tên PCD sắp lexicographical, thứ tự task phải khớp manifest; PATCH có thể tạo lại ID | 03/05: đọc lại/quét lại trước link tới box |
 | outside/occluded | outside kết thúc đoạn; occluded không kiểm hình học; gap theo `add_track_markers`, spec 4.4 | 02/03: từng luật và case biên |

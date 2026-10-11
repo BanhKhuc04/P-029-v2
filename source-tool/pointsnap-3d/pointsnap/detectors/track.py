@@ -34,13 +34,20 @@ END_FACTOR = 1.5
 """Ở hai đầu đoạn vị trí được ngoại suy (kém chắc hơn nội suy): ngưỡng nhảy nhân thêm hệ số này."""
 
 
-def _end_factor(horizon: float) -> float:
+STATIC_RADIUS_M = 1.0
+"""Track có mọi vị trí trong bán kính này quanh trung vị được coi là vật đứng yên."""
+
+
+def _end_factor(horizon: float, moving: bool = True) -> float:
     """Hệ số ngưỡng ở đầu / cuối track. `horizon` = khoảng ngoại suy / khoảng giữa hai box dùng để ước lượng vận tốc.
 
-    Sai số vận tốc nhân lên theo khoảng ngoại suy: box đầu ở frame 1 mà hai box kế tiếp ở frame 5, 6 thì vị trí dự đoán
-    kém chắc gấp ~4 lần. Trên 5 cảnh tinh chỉnh, 8 / 12 báo nhầm `track.jump` ở hai đầu track là ca này; nhân ngưỡng theo
-    `horizon` bỏ 7 mục (cả 4 mục mức Lỗi) mà không mất lỗi nhảy chèn nào (100 vòng chèn lỗi).
+    Vật đang chạy: sai số vận tốc nhân lên theo khoảng ngoại suy (box đầu ở frame 1 mà hai box kế tiếp ở frame 5, 6 thì vị
+    trí dự đoán kém chắc gấp ~4 lần), nên ngưỡng nhân theo `horizon`. Trên 5 cảnh tinh chỉnh, 8 / 12 báo nhầm `track.jump`
+    ở hai đầu track là ca này. Vật đứng yên (`moving` = False): vận tốc ~0 nên ngoại suy xa vẫn chắc, giữ `END_FACTOR` —
+    trên job 2 (scene-0061) ba cọc tiêu bị dời ở đầu track mà Chiến xem tay xác nhận là lỗi thật vẫn được báo.
     """
+    if not moving:
+        return END_FACTOR
     return END_FACTOR * max(1.0, horizon)
 
 
@@ -86,7 +93,8 @@ def _segments(track_boxes: Sequence[Cuboid]) -> list[list[Cuboid]]:
     return [s for s in segments if s]
 
 
-def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -> tuple[float, float] | None:
+def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int,
+                  moving: bool = True) -> tuple[float, float] | None:
     """Độ lệch (x, y) của box `order[i]` so với vị trí dự đoán từ các box lân cận trong `order`, không dùng chính nó.
 
     Box ở giữa: nội suy tuyến tính theo thời gian. Box ở đầu / cuối: ngoại suy từ hai box kế tiếp.
@@ -104,7 +112,7 @@ def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -
     a, b = (order[1], order[2]) if i == 0 else (order[n - 2], order[n - 3])
     dt = times[a] - times[b]
     ratio = (times[k] - times[a]) / dt if dt != 0 else 1.0
-    return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), _end_factor(abs(ratio))
+    return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), _end_factor(abs(ratio), moving)
 
 
 def _speed(xy: np.ndarray, times: np.ndarray, pair: list[int]) -> float:
@@ -125,7 +133,8 @@ def _segment_jumps(
 ) -> list[Finding]:
     n = len(segment)
     order = list(range(n))
-    raw = [_loo_residual(xy, times, order, i) for i in order]
+    moving = bool(np.max(np.linalg.norm(xy - np.median(xy, axis=0), axis=1)) > STATIC_RADIUS_M) if n else True
+    raw = [_loo_residual(xy, times, order, i, moving) for i in order]
     score = [_normalized(r) for r in raw]
     findings: list[Finding] = []
 
@@ -144,7 +153,7 @@ def _segment_jumps(
         for c in range(max(0, k - 1), min(n, end + 2)):
             rest = [i for i in order if i != c]
             window = [j for j, i in enumerate(rest) if k - 2 <= i <= end + 2]
-            remaining = max((_normalized(_loo_residual(xy, times, rest, j)) for j in window), default=0.0)
+            remaining = max((_normalized(_loo_residual(xy, times, rest, j, moving)) for j in window), default=0.0)
             speed = _speed(xy, times, rest) if len(rest) == 2 else 0.0
             candidate = (remaining, speed, -score[c], c)
             if best is None or candidate < best:

@@ -139,3 +139,17 @@ def test_track_jump_end_box_far_from_next_keyframes_needs_more(track_config):
     near = [Cuboid(center=(x, 0.0, 0.0), dims=(4.5, 1.8, 1.6), yaw=0, label="car", frame=f, track_id=1)
             for f, x in ((4, 12.5), (5, 20.0), (6, 25.0), (7, 30.0))]
     assert [f.frame for f in detect_track_jumps_for_track(near, track_config)] == [4]
+
+
+def test_track_jump_static_object_far_end_still_flagged(track_config):
+    """Vật đứng yên (cọc tiêu) bị dời 0,6 m ở box đầu, box kế tiếp ở xa 5 frame: vận tốc ~0 nên ngoại suy vẫn chắc,
+    không nới ngưỡng theo khoảng ngoại suy — vẫn báo (xe đang chạy cùng độ lệch thì không, xem test trên)."""
+    import dataclasses
+
+    from pointsnap.core.config import TrackGroupConfig
+
+    cfg = dataclasses.replace(track_config, groups={**track_config.groups, "static": TrackGroupConfig(
+        classes=("traffic_cone",), jump_warning_m=0.3, jump_error_m=0.6, v_max_mps=1.0, split_max_dist_m=0.5)})
+    cone = [Cuboid(center=(x, 5.0, 0.0), dims=(0.4, 0.4, 0.8), yaw=0, label="traffic_cone", frame=f, track_id=1)
+            for f, x in ((13, 10.6), (18, 10.0), (19, 10.02), (20, 9.99))]
+    assert [f.frame for f in detect_track_jumps_for_track(cone, cfg)] == [13]

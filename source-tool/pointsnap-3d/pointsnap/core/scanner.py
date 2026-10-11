@@ -311,6 +311,11 @@ def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None)
     enabled_cloud = [name for name in cloud_rules if getattr(config.rules, name)]
     if frames is None and enabled_cloud and any(c.visible for c in job.cuboids):
         gaps.append("Kiểm tra một phần: thiếu point cloud cho luật " + ", ".join(enabled_cloud))
+    elif frames is not None and enabled_cloud:
+        visible_frames = sorted({c.frame for c in job.cuboids if c.visible})
+        empty = [frame for frame in visible_frames if len(frames.frame_data(frame, with_points=True).points) == 0]
+        if empty:
+            gaps.append(f"Kiểm tra một phần: point cloud rỗng ở {len(empty)} frame cho luật " + ", ".join(enabled_cloud))
 
     enabled_pose = [name for name in pose_rules if getattr(config.rules, name)
                     and (name != "track_long_interpolation" or config.track.long_interpolation.enabled)]

@@ -54,6 +54,21 @@ def test_disabled_rules_do_not_require_lidar_or_pose():
     assert gate_verdict(scan_cuboids(job, config), config.gate) == (True, [])
 
 
+@pytest.mark.parametrize("rule", ["heading_points", "fit_empty", "fit_outside", "fit_loose"])
+def test_empty_cloud_blocks_enabled_lidar_rules_even_without_floating(rule):
+    config = load_config(env={})
+    config = dataclasses.replace(config, rules=dataclasses.replace(config.rules, **{
+        field.name: field.name == rule for field in dataclasses.fields(config.rules)
+    }))
+    frames = FlatGround()
+    frames.points = np.empty((0, 3))
+    job = job_data()
+    gaps = scan_coverage_gaps(job, config, frames)
+    passed, reasons = gate_verdict(scan_cuboids(job, config, frames), config.gate, coverage_gaps=gaps)
+    assert not passed
+    assert any("point cloud" in reason and rule in reason for reason in reasons)
+
+
 def test_sparse_ground_blocks_gate_without_becoming_a_cvat_error_flag():
     frames = FlatGround()
     frames.points = np.empty((0, 3))

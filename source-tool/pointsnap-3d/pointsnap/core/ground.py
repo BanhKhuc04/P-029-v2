@@ -197,7 +197,7 @@ def estimate_ground_for_box(
         return GroundEstimate(status="no_evidence", num_ground_points=0)
 
     # Lọc thô XY trong bán kính mở rộng
-    max_half = max(cuboid.dims[:2]) / 2.0 + ring_outer_m + 0.5
+    max_half = math.hypot(cuboid.length / 2 + ring_outer_m, cuboid.width / 2 + ring_outer_m)
     dx = np.abs(pts[:, 0] - cuboid.center[0])
     dy = np.abs(pts[:, 1] - cuboid.center[1])
     nearby_mask = (dx <= max_half) & (dy <= max_half)
@@ -274,7 +274,7 @@ def ring_ground_for_box(
     `points` nên đã bỏ điểm thuộc các box khác (`OtherBoxPoints`), nếu không thân xe bên cạnh bị tính là đất.
     """
     pts = np.asarray(points, dtype=np.float64)[:, :3]
-    reach = max(cuboid.dims[:2]) / 2.0 + ring_outer_m + 0.1
+    reach = math.hypot(cuboid.length / 2 + ring_outer_m, cuboid.width / 2 + ring_outer_m)
     near = pts[(np.abs(pts[:, 0] - cuboid.center[0]) <= reach) & (np.abs(pts[:, 1] - cuboid.center[1]) <= reach)]
     if len(near) == 0:
         return GroundEstimate(status="no_evidence")
@@ -309,7 +309,7 @@ class OtherBoxPoints:
         self._count = np.zeros(len(self.points), dtype=np.int32)
         self._inside: list[np.ndarray] = []
         for cuboid in cuboids:
-            reach = max(cuboid.dims) / 2.0 + margin
+            reach = math.hypot(cuboid.length / 2 + margin, cuboid.width / 2 + margin)
             idx = np.flatnonzero((np.abs(self.points[:, 0] - cuboid.center[0]) <= reach)
                                  & (np.abs(self.points[:, 1] - cuboid.center[1]) <= reach))
             idx = idx[points_in_cuboid(self.points[idx], cuboid, margin=margin)] if len(idx) else idx

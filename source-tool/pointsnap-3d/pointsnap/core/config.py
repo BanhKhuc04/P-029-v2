@@ -7,6 +7,7 @@ Cấu hình mặc định nằm ở `pointsnap/config.yaml`. File người dùng
 from __future__ import annotations
 
 import dataclasses
+import math
 import os
 from dataclasses import dataclass
 from importlib import resources
@@ -275,6 +276,8 @@ class _Reader:
         value = self._take(key)
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ConfigError(f"'{self._path}.{key}' phải là số, nhận {value!r}")
+        if not math.isfinite(value):
+            raise ConfigError(f"'{self._path}.{key}' phải là số hữu hạn, nhận {value!r}")
         if minimum is not None and value < minimum:
             raise ConfigError(f"'{self._path}.{key}' phải >= {minimum}, nhận {value}")
         return float(value)
@@ -308,7 +311,8 @@ class _Reader:
     def min_max(self, key: str) -> tuple[float, float]:
         value = self._take(key)
         if (not isinstance(value, list) or len(value) != 2
-                or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value)):
+                or not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+                           for v in value)):
             raise ConfigError(f"'{self._path}.{key}' phải là [min, max], nhận {value!r}")
         _require_order(f"{self._path}.{key}", value[0], value[1], "min", "max")
         return float(value[0]), float(value[1])
@@ -533,6 +537,8 @@ def _parse_size(r: _Reader) -> SizeConfig:
 
 def _parse_track(r: _Reader) -> TrackConfig:
     keyframe_interval_s = r.number("keyframe_interval_s", 0.0)
+    if keyframe_interval_s == 0:
+        raise ConfigError("'track.keyframe_interval_s' phải > 0")
     gr = r.section("groups")
     groups: dict[str, TrackGroupConfig] = {}
     seen: dict[str, str] = {}

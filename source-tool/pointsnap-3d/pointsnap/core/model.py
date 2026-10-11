@@ -15,7 +15,7 @@ from typing import Any, Iterable, Mapping, Protocol
 
 import numpy as np
 
-from pointsnap.core.geometry import normalize_angle
+from pointsnap.core.geometry import normalize_angle, validate_pose
 
 Vec3 = tuple[float, float, float]
 
@@ -114,6 +114,17 @@ class FrameData:
     timestamp: float | None = None
     source_ref: str | None = None
 
+    def __post_init__(self) -> None:
+        points = np.asarray(self.points)
+        if (points.ndim != 2 or points.shape[1] < 3
+                or points.dtype.kind not in "fiu" or not np.isfinite(points[:, :3]).all()):
+            raise ValueError("Point cloud phải có shape (N, >=3) và tọa độ x/y/z hữu hạn")
+        object.__setattr__(self, "points", points)
+        if self.sensor_to_world is not None:
+            object.__setattr__(self, "sensor_to_world", validate_pose(self.sensor_to_world))
+        if self.timestamp is not None and not math.isfinite(self.timestamp):
+            raise ValueError("Timestamp phải là số hữu hạn (giây)")
+
 
 class FrameSource(Protocol):
     """Nguồn point cloud và pose theo frame (ví dụ `ManifestFrames` của adapter CVAT, `NuScenesFrames`)."""
@@ -173,7 +184,8 @@ class Finding:
 
     def sort_key(self) -> tuple:
         track = self.track_id if self.track_id is not None else -1
-        return (self.severity.rank, self.error_type.value, self.frame, track, self.rule)
+        source = self.source_id if self.source_id is not None else -1
+        return (self.severity.rank, self.error_type.value, self.frame, track, self.rule, self.label, source)
 
 
 def group_by_track(cuboids: Iterable[Cuboid]) -> dict[int, list[Cuboid]]:

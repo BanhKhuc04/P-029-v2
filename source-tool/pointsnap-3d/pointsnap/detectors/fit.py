@@ -206,7 +206,10 @@ def overlap_findings(
     allowed = {frozenset(p) for p in cfg.overlap_allowed_pairs}
     typed = typed or (lambda box: box.label)
     findings: list[Finding] = []
-    active = [b for b in boxes if b.visible]
+    active = sorted((b for b in boxes if b.visible), key=lambda b: (
+        b.frame, b.track_id if b.track_id is not None else -1,
+        b.source_id if b.source_id is not None else -1, b.label, b.center, b.dims, b.yaw,
+    ))
     for a, b in combinations(active, 2):
         reach = (math.hypot(a.length, a.width) + math.hypot(b.length, b.width)) / 2.0
         if math.hypot(a.center[0] - b.center[0], a.center[1] - b.center[1]) > reach:

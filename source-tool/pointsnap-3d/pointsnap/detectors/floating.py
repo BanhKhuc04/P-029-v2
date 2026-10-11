@@ -38,7 +38,7 @@ def detect_floating_for_box(
     seed: int | None = 42,
 ) -> Finding | None:
     """Kiểm tra lỗi lơ lửng / lún đất cho một box 3D."""
-    if cuboid.outside or cuboid.label not in config.classes:
+    if not cuboid.visible or cuboid.label not in config.classes:
         return None
 
     est: GroundEstimate = estimate_ground_for_box(

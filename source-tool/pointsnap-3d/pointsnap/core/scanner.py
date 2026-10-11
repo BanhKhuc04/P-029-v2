@@ -160,7 +160,9 @@ def check_size(job: JobData, config: Config, frames: FrameSource | None = None) 
 def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Đứt track (B5, `detectors.track`). Có `frames` thì dùng pose xe thu và thời điểm thật của từng frame."""
     sensor_to_world, timestamps = _poses(job, frames)
-    return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps)
+    return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps,
+                               stop_frame=getattr(job, "stop_frame", None),
+                               class_key=lambda box: _typed_label(box, config))
 
 
 def _poses(job: JobData, frames: FrameSource | None):

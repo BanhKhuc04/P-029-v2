@@ -416,6 +416,9 @@ Mỗi luật kiểm một điều khoản **đo được bằng số** của *An
 | Điều khoản spec | Nội dung | Luật PointSnap |
 |---|---|---|
 | 3.1.3 | Thuộc tính bắt buộc khi object thuộc phạm vi; giá trị theo danh sách | `attr.missing`, `attr.invalid` (`spec:` trong guideline) |
+| 3.1.2, 4.3B/C | Thuộc tính đúng với vật (tư thế, nhóm tuổi, có người lái) | `attr.height` (C6) |
+| 4.3B | Không gán người bên trong xe | `spec.inside` (C6) |
+| 4.3C | Người lái nằm trong box xe hai bánh | `spec.rider_double` (C6) |
 | 3.1.2 | Phân loại chi tiết bằng thuộc tính (`subtype`, `rider_state`, …) | Kích thước tra theo `Class/thuộc tính` (`size.key_attributes`) |
 | 4.2 | Box bao trọn vật thể, không dư thừa quá mức | `size.class_range`, `size.in_track`, `fit.outside`, `fit.loose` |
 | 4.2 | Hướng box trùng hướng chuyển động; đứng yên theo trục dài | `heading.flip`, `heading.motion`, `heading.points` |

@@ -47,6 +47,9 @@ class RulesConfig:
     track_reuse_id: bool = True
     track_occluded_long: bool = True
     track_id_swap: bool = True
+    attr_height: bool = True
+    spec_inside: bool = True
+    spec_rider_double: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
     track_static_shift: bool = True
@@ -335,6 +338,15 @@ class SpecConfig:
     """Class → các thuộc tính bắt buộc, vd `Vehicle: [subtype]`."""
     allowed_values: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=dict)
     """Thuộc tính (hoặc `Class.thuộc_tính`) → các giá trị cho phép."""
+    attribute_height: Mapping[str, tuple[float, float]] = dataclasses.field(default_factory=dict)
+    """`attr.height` (C6): `Class/giá trị[/giá trị…]` → [min, max] chiều cao box (m), vd `Pedestrian/standing/adult`.
+    Khóa khớp khi box mang đủ các giá trị; nhiều khóa khớp thì lấy khóa cụ thể nhất."""
+    inside_forbidden: tuple[tuple[str, str], ...] = ()
+    """`spec.inside` (C6, spec 4.3B): cặp [vật bên trong, vật bao] không được gán lồng nhau, vd [Pedestrian, Vehicle]."""
+    inside_min_lift_m: float = 0.6
+    """Đáy vật bên trong cao hơn đáy vật bao từ mức này trở lên (đứng trên nóc / thùng xe) thì không tính là bên trong."""
+    rider_double: tuple[tuple[str, str], ...] = ()
+    """`spec.rider_double` (C6, spec 4.3C): cặp [box đã gồm người lái, box người], vd [Two-wheels/with_rider, Pedestrian]."""
 
 
 @dataclass(frozen=True)
@@ -472,7 +484,8 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
-              "fit_overlap", "track_reuse_id", "track_occluded_long", "track_id_swap", "attr_missing", "attr_invalid",
+              "fit_overlap", "track_reuse_id", "track_occluded_long", "track_id_swap", "attr_height", "spec_inside",
+              "spec_rider_double", "attr_missing", "attr_invalid",
               "track_static_shift", "heading_static", "cam_mismatch", "cam_class", "cam_missing",
               "critic_box")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
@@ -594,8 +607,25 @@ def _parse_spec(r: _Reader) -> SpecConfig:
         section.finish()
         return result
 
+    def pairs(key: str) -> tuple[tuple[str, str], ...]:
+        if key not in r.keys():
+            return ()
+        raw = r._take(key)
+        if (not isinstance(raw, list) or not all(isinstance(p, list) and len(p) == 2
+                                                 and all(isinstance(v, str) and v for v in p) for p in raw)):
+            raise ConfigError(f"'spec.{key}' phải là danh sách cặp [a, b], nhận {raw!r}")
+        return tuple((a, b) for a, b in raw)
+
+    heights: dict[str, tuple[float, float]] = {}
+    if "attribute_height" in r.keys():
+        hr = r.section("attribute_height")
+        heights = {key: hr.min_max(key) for key in hr.keys()}
+        hr.finish()
     cfg = SpecConfig(required_attributes=mapping_of_lists("required_attributes"),
-                     allowed_values=mapping_of_lists("allowed_values"))
+                     allowed_values=mapping_of_lists("allowed_values"), attribute_height=heights,
+                     inside_forbidden=pairs("inside_forbidden"),
+                     inside_min_lift_m=r.number("inside_min_lift_m", 0.0) if "inside_min_lift_m" in r.keys() else 0.6,
+                     rider_double=pairs("rider_double"))
     r.finish()
     return cfg
 

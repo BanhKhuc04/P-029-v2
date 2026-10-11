@@ -679,6 +679,39 @@
 
                 <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
                   <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Thuộc tính lệch chiều cao <span class="mono" style="font-size: 12px; color: var(--text-3);">attr_height</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Thuộc tính không khớp chiều cao box (tư thế, nhóm tuổi, có người lái)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-attr-height" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Thuộc tính lệch chiều cao" id="rule-attr-height" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Người bên trong xe <span class="mono" style="font-size: 12px; color: var(--text-3);">spec_inside</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Box người nằm trong box xe (spec 4.3B)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-spec-inside" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Người bên trong xe" id="rule-spec-inside" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Người lái bị gán 2 lần <span class="mono" style="font-size: 12px; color: var(--text-3);">spec_rider_double</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Box người chồng lên xe hai bánh with_rider (spec 4.3C)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-spec-rider-double" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Người lái bị gán 2 lần" id="rule-spec-rider-double" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
                     <div style="font-weight: 500;">Vật đứng yên: box dịch <span class="mono" style="font-size: 12px; color: var(--text-3);">track_static_shift</span></div>
                     <div style="font-size: 13px; color: var(--text-2);">Box ở một keyframe lệch khỏi vị trí chung của vật đỗ</div>
                   </div>

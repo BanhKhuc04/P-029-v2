@@ -267,12 +267,16 @@ def check_critic(job: JobData, config: Config, frames: FrameSource | None = None
 
 def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
-    return detect_attribute_errors(job.cuboids, config.spec)
+    from pointsnap.detectors.attributes import detect_attribute_height, detect_spec_geometry
+
+    return (detect_attribute_errors(job.cuboids, config.spec) + detect_attribute_height(job.cuboids, config.spec)
+            + detect_spec_geometry(job.cuboids, config.spec))
 
 
 _RULE_SWITCH = {
     "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
-    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
+    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid", "attr.height": "attr_height",
+    "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double",
     "track.static_shift": "track_static_shift", "heading.static": "heading_static",
     "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
     "critic.box": "critic_box",
@@ -344,7 +348,7 @@ def scan_cuboids(
             active_detectors.append(check_heading)
         if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:
             active_detectors.append(check_box_points)
-        if r.attr_missing or r.attr_invalid:
+        if r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double:
             active_detectors.append(check_attributes)
         if r.track_static_shift or r.heading_static:
             active_detectors.append(check_static)

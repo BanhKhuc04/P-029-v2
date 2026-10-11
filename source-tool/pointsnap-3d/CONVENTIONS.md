@@ -116,3 +116,7 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - `floating.no_evidence` giữ mức Thông tin, không ghi cờ lỗi hình học vào CVAT, nhưng chặn gate vì chưa đủ bằng chứng mặt đất. Các mục Thông tin khác không tự động chặn gate.
 - Luật tắt không yêu cầu dữ liệu; `fit.overlap`, kích thước, thuộc tính và luật vòng đời track có thể chạy không cần LiDAR. ĐẠT chỉ có nghĩa đạt ngưỡng trong cấu hình đã dùng, không chứng nhận sót đối tượng hoặc mọi box đã được kiểm đủ.
 - CLI: 0 = ĐẠT; 1 = vượt ngưỡng hoặc thiếu dữ liệu đã xác định; 3 = lỗi đọc/quét dữ liệu. Web lưu `gate_passed`, `gate_reasons`, `coverage_gaps` trong `summary.json`. Báo cáo cũ không được đánh giá lại tự động.
+
+### Bổ sung coverage khi review lại ba nhánh
+
+FrameSource có mặt nhưng point cloud rỗng ở frame có box nhìn thấy vẫn là thiếu dữ liệu cho các luật LiDAR đang bật. Gate chặn cả khi floating tắt; không dùng sự tồn tại của nguồn frame thay cho bằng chứng có điểm.

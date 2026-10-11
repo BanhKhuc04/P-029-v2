@@ -54,7 +54,7 @@ CVAT ở thư mục cha `cvat-develop` là dependency ngoài kho P-029. Không c
 | R01-02 | Truy vết P-010/P-011/P-012 và G0–G8, tách code khỏi nghiệm thu | Đạt | Mục 4; EV-01-003–007 |
 | R01-03 | CLI, Web, extension, API report local được phân biệt; `diff` trả 3 vì chưa triển khai | Đạt | tests/test_cli; ledger L01/L02/L16 |
 | R01-04 | Sáu nhóm detector và switches: floating, size, track, heading, fit, attributes | Đạt | scanner/check_*; R01-02; EV-01-005/007 |
-| R01-05 | Dims/yaw/pose/frame đối chiếu convention; chuyển +90°, manifest và roll/pitch được truy vết | Đạt | architecture mục 5; test reader thật và CVAT live |
+| R01-05 | Dims/yaw/pose/frame đối chiếu convention; chuyển theo LIDAR_TO_EGO_ROT, manifest và roll/pitch được truy vết | Đạt | architecture mục 5; test reader thật và CVAT live |
 | R01-06 | GET nhãn, snapshot, reports, PATCH flag theo tùy chọn; người dùng tự sửa hình học | Đạt | L03/L08/L09; 2 ca CVAT live |
 | R01-07 | Thiếu LiDAR/pose/ground evidence không còn gate ĐẠT theo cấu hình mặc định | Đạt sau sửa | RV-01-001/003; EV-01-003/004/007 |
 | R01-08 | Out/export vs ~/.pointsnap vs state memory phân biệt; done không có nghĩa gate passed | Đạt | architecture mục 3/5; Web persist test |
@@ -172,7 +172,7 @@ Mã vị trí runtime dưới đây theo `099d5b7`, test live theo `7eb5421`; đ
 | Gate thiếu dữ liệu | KHÔNG ĐẠT nếu gap được nhận diện theo luật bật; có no_evidence thì chặn. Scan vẫn cung cấp phần findings đã kiểm | 04/05/07 |
 | Rule chủ động tắt | ĐẠT chỉ theo config; không chứng nhận phần tắt; không thêm bypass “allow partial” mặc định | 02/04/06 |
 | Coverage bảo thủ | Kiểm cấp job/source/pose và no_evidence; không phải tỷ lệ mọi box/luật, không chứng nhận class ngoài phạm vi | 02/07: rà từng rule applicability/low-point/timestamp fallback |
-| Frame/world invariants | Convention hiện có, +90° và metadata khớp reader; giữ roll/pitch và geometry khi PATCH | 02/03 |
+| Frame/world invariants | Convention hiện có, LIDAR_TO_EGO_ROT và metadata khớp reader; giữ roll/pitch và geometry khi PATCH | 02/03 |
 | API report local | Có `passed` và danh sách checks riêng trong untracked api.py; trước khi công bố cần dùng chung coverage/gate và đủ 6 nhóm luật | 04/06/08 |
 | Local Docker/launcher | Ngoài nội dung push phần 01; không chứng nhận cài máy trắng dựa vào container đang chạy | 08 |
 | Hình học/precision | NuScenes reader/ground và CVAT API pass không chứng nhận precision hoặc threshold ground <5 cm | 02/07 |
@@ -183,8 +183,18 @@ Mã vị trí runtime dưới đây theo `099d5b7`, test live theo `7eb5421`; đ
 
 ## 8. Kết luận bàn giao
 
-Phần 01 đã hoàn tất ở phạm vi yêu cầu/kiến trúc. **8 findings đã sửa; 0 findings mở trong phần 01.** Các gap cần review sâu được bàn giao rõ ở mục 7, không được hiểu là sản phẩm đã sẵn sàng phát hành.
+Phần 01 đã hoàn tất ở phạm vi yêu cầu/kiến trúc. **9 findings đã sửa; 0 findings mở trong phần 01.** Các gap cần review sâu được bàn giao rõ ở mục 7, không được hiểu là sản phẩm đã sẵn sàng phát hành.
 
-Kết quả mới nhất: **252 Python tests passed, 0 skipped; 7 Node tests passed**. 2 test live đã tạo/xóa task thử; kiểm tra sau chạy tìm `PointSnap live test` trả **0 task còn lại**. 1 warning Starlette/httpx được ghi lại, không tắt hoặc thêm dependency để che warning.
+Kết quả ban đầu: **252 Python tests passed, 0 skipped; 7 Node tests passed**. 2 test live đã tạo/xóa task thử; kiểm tra sau chạy tìm `PointSnap live test` trả **0 task còn lại**. 1 warning Starlette/httpx được ghi lại, không tắt hoặc thêm dependency để che warning.
 
 Nhánh giao cho người mở pull request: **`review/01-overview-architecture`**. Code và tài liệu tách commit; chỉ stage file liên quan. `.env`, dataset, output, snapshot và các file local khác được giữ ngoài commit.
+
+## 9. Kiểm lại sau khi hoàn tất ba nhánh
+
+### RV-01-009 — cloud rỗng khi tắt floating vẫn cho gate ĐẠT
+
+- **P1 / Đã xác minh.** `core.scanner.scan_coverage_gaps`: FrameSource tồn tại nhưng points rỗng chưa được tính là thiếu dữ liệu. Khi floating tắt, heading_points/fit_empty/fit_outside/fit_loose có thể không có finding và gate trả ĐẠT.
+- Trước sửa: 4 failed, 13 deselected in 0.74s; đủ 4 luật có ca tái hiện độc lập.
+- Sửa: đọc points của frame nhìn thấy và báo coverage gap nếu rỗng, chỉ cho luật cần LiDAR đang bật. Lỗi đọc frame vẫn chuyển caller xử lý runtime.
+- Commit sửa `0727c15`; kiểm lại nhánh 01: **256 passed, 0 skipped, 1 warning in 22.96s**; bật CVAT và dataset thật. Bản sửa được đưa sang 02/03 theo chuỗi dependency.
+- Đính chính dấu quay trong kiến trúc/tài liệu: ma trận thực tế là −90°, không phải +90°. Đây là sửa diễn giải, không đổi code hình học.

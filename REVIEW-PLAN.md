@@ -7,9 +7,9 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 - Mã nguồn gốc: `origin/main`, commit `5dcc97f` (merge PR #37).
 - Các nhánh dưới đây cùng dùng mã nguồn gốc và một commit tài liệu chung. Commit tài liệu chỉ thêm kế hoạch/hướng dẫn/kiểm kê; kết quả và sửa lỗi sau này được commit riêng trên từng nhánh.
 - Thực hiện theo thứ tự 01 → 08. Đây là thứ tự review; các nhánh độc lập, không tự chứa kết quả của nhánh trước.
-- Trạng thái hiện tại: **01 đang thực hiện; 02–08 chưa thực hiện**. Phần 01 đã kiểm kê 184 file nền, chạy đạt 19 test tập trung và kiểm tra gate thiếu LiDAR bằng dữ liệu giả; chưa hoàn tất báo cáo review.
+- Trạng thái hiện tại: **Phần 01 hoàn tất trên nhánh này**; báo cáo các phần tiếp theo ở nhánh tương ứng. Review lại bổ sung guard cloud rỗng, suite phần 01 đạt 256 pytest + 7 Node.
 - Mỗi phần ghi kết quả vào `review/2026-10-10/NN-report.md` trên nhánh tương ứng. Chỉ commit file của phần đó bằng đường dẫn cụ thể.
-- Nhánh hiện tại sau khi chuẩn bị: `review/2026-10-10/01-overview-architecture`.
+- Nhánh kết quả phần 01: `review/01-overview-architecture` (không có ngày).
 - Các nhánh được tạo cục bộ. Khi cần đưa kết quả lên GitHub, push từng nhánh và mở PR riêng.
 
 ## Bộ hướng dẫn chi tiết

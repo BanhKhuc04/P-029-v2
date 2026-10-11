@@ -424,6 +424,7 @@ Mỗi luật kiểm một điều khoản **đo được bằng số** của *An
 | 4.2 | Hướng box trùng hướng chuyển động; đứng yên theo trục dài | `heading.flip`, `heading.motion`, `heading.points` |
 | 4.2 | Đáy box đặt trên mặt tiếp xúc, không cao bất thường | `floating` (mặt đất v2) |
 | 4.2 | Không gán box khi vật quá ít điểm | `fit.empty` (+ `sparse_warning_points` khi chốt P-009) |
+| 4.2 | Nên gán box khi vật rõ trong point cloud | `lidar.missing` (C7: cụm LiDAR di chuyển không có box), `cam.missing` (ảnh) |
 | 4.3B, 4.3E | Nhóm người / động vật sát nhau: gán từng con, box được phép chồng | `fit.overlap` với `overlap_allowed_pairs` |
 | 4.4.1–4.4.2 | Giữ track_id ổn định, không nhảy, không tách | `track.jump`, `track.split_id`, `track.long_interpolation` |
 | 4.4.6 | Không nối các vật khác nhau thành một track | `track.id_swap` (C5) |
@@ -645,7 +646,7 @@ Theo góp ý mentor: hoàn thiện phát hiện trước, rồi mở rộng sang
 **Mở rộng khác:**
 - Đọc point cloud qua API của CVAT để dùng với mọi task, không cần thư mục nuScenes; gộp sweeps LiDAR cho mặt đất dày điểm hơn.
 - Bộ lỗi thật (tự gán nhãn lại một cảnh) + lệnh `diff`; đo thời gian review thực tế.
-- Cảnh báo sót đối tượng và "ý kiến thứ hai" từ mô hình phát hiện 3D huấn luyện sẵn (CenterPoint / PointPillars), chỉ ở mức Thông tin; Pre-Box Generator. (Ngược yaw, box rỗng, chồng lấn, thiếu thuộc tính: xong ở giai đoạn 3.)
+- Sót đối tượng **đứng yên** (cần ảnh camera xác nhận) và "ý kiến thứ hai" từ mô hình phát hiện 3D huấn luyện sẵn (CenterPoint / PointPillars); Pre-Box Generator từ cụm `lidar.missing`. (Sót vật **di chuyển**: xong ở C7.) (Ngược yaw, box rỗng, chồng lấn, thiếu thuộc tính: xong ở giai đoạn 3.)
 - Adapter cho nền tảng và bộ dữ liệu khác (Segments.ai, Label Studio; KITTI, Waymo Open); chạy trên CVAT và dữ liệu thật của tổ chức.
 - Webhook tự quét khi job chuyển sang bước review; bảng chất lượng theo annotator.
 

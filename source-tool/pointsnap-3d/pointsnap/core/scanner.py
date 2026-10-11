@@ -252,6 +252,15 @@ def check_camera(job: JobData, config: Config, frames: FrameSource | None = None
     return findings + (missing if r.cam_missing else [])
 
 
+def check_missing(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Sót đối tượng bằng LiDAR (C7, `detectors.missing`). Cần point cloud và pose xe thu."""
+    if frames is None:
+        return []
+    from pointsnap.detectors.missing import detect_missing_objects
+
+    return detect_missing_objects(job.cuboids, frames, config.missing)[0]
+
+
 def check_critic(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Box Critic (C3, lớp 3): chỉ chạy khi guideline khai `critic.model` và có PyTorch."""
     if frames is None or not config.critic.model:
@@ -276,7 +285,7 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
 _RULE_SWITCH = {
     "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
     "attr.missing": "attr_missing", "attr.invalid": "attr_invalid", "attr.height": "attr_height",
-    "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double",
+    "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double", "lidar.missing": "lidar_missing",
     "track.static_shift": "track_static_shift", "heading.static": "heading_static",
     "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
     "critic.box": "critic_box",
@@ -315,6 +324,7 @@ DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_static,
     check_camera,
     check_critic,
+    check_missing,
 )
 
 
@@ -356,6 +366,8 @@ def scan_cuboids(
             active_detectors.append(check_camera)
         if r.critic_box:
             active_detectors.append(check_critic)
+        if r.lidar_missing:
+            active_detectors.append(check_missing)
 
     findings: list[Finding] = []
     for detector in active_detectors:

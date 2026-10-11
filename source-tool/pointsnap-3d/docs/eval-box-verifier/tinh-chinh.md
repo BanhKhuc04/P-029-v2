@@ -1,5 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (tuning, 10 vòng chèn lỗi, bộ lỗi all)
-> Guideline mặc định sau C5 (ngưỡng lơ lửng / lún 15 cm, sửa tình huống thực tế). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md) và [C5](../giao-viec/C5-tinh-huong-thuc-te.md).
+> Guideline mặc định sau C7 (ngưỡng lơ lửng / lún 15 cm, C5, C7 `lidar.missing`). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md), [C5](../giao-viec/C5-tinh-huong-thuc-te.md), [sót đối tượng](../ket-qua-sot-doi-tuong.md).
 
 Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box nhãn chuẩn
 
@@ -19,12 +19,13 @@ Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box n
 | `floating` | warning | 68 | 0.79 |
 | `heading.points` | warning | 11 | 0.13 |
 | `heading.static` | error | 1 | 0.01 |
+| `lidar.missing` | warning | 1 | 0.01 |
 | `size.class_range` | error | 2 | 0.02 |
 | `size.class_range` | warning | 2 | 0.02 |
 | `track.jump` | error | 4 | 0.05 |
 | `track.jump` | warning | 9 | 0.10 |
 | `track.static_shift` | warning | 6 | 0.07 |
-| **Tổng** | warning | | **1.36** (mục tiêu ≤ 2.0) |
+| **Tổng** | warning | | **1.38** (mục tiêu ≤ 2.0) |
 | **Tổng** | error | | **0.36** (mục tiêu ≤ 0.5) |
 
 ## Recall trên lỗi chèn giả
@@ -78,7 +79,7 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 | size | 106 | 59 | 56% (59/106) | 65% (69/106) |
 | track | 295 | 85 | 29% (85/295) | 37% (108/295) |
 | heading | 212 | 59 | 28% (59/212) | 36% (76/212) |
-| fit | 346 | 7 | 2% (7/346) | 25% (85/346) |
+| fit | 356 | 7 | 2% (7/356) | 24% (85/356) |
 
 ## Độ chính xác của số đo (trung vị sai số tuyệt đối)
 
@@ -93,8 +94,8 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:
 
-- scene-0061: 22.9 s
-- scene-0553: 10.1 s
-- scene-0757: 5.4 s
-- scene-0916: 18.2 s
-- scene-1094: 13.5 s
+- scene-0061: 26.6 s
+- scene-0553: 11.5 s
+- scene-0757: 6.4 s
+- scene-0916: 17.6 s
+- scene-1094: 13.9 s

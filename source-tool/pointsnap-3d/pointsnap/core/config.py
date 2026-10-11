@@ -50,6 +50,7 @@ class RulesConfig:
     attr_height: bool = True
     spec_inside: bool = True
     spec_rider_double: bool = True
+    lidar_missing: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
     track_static_shift: bool = True
@@ -305,6 +306,31 @@ class CameraConfig:
 
 
 @dataclass(frozen=True)
+class MissingConfig:
+    """Sót đối tượng bằng LiDAR (C7, `detectors.missing`; spec 4.2 NÊN gán vật rõ trong point cloud)."""
+
+    min_range_m: float = 3.0
+    max_range_m: float = 40.0
+    box_margin_m: float = 0.3
+    """Bỏ điểm trong box nhãn nới chừng này."""
+    cell_m: float = 0.25
+    min_points: int = 15
+    min_points_per_cell: float = 1.2
+    """Mật độ điểm / ô của cụm: nhiễu mưa, bụi ~1; mặt vật thật bị nhiều tia LiDAR quét chồng nên dày hơn."""
+    max_bottom_m: float = 0.6
+    """Chân cụm (p2 độ cao trên mặt đất) không cao hơn mức này: vật đứng trên đường, không phải tán cây / biển báo."""
+    max_persistence: float = 0.4
+    """Tỉ lệ ô của cụm vẫn có điểm sau / trước 1 giây quá mức này thì coi là vật đứng yên (tường, cây, cột): bỏ."""
+    first_gate_m: float = 7.0
+    link_gate_m: float = 2.0
+    min_frames: int = 3
+    min_motion_m: float = 3.0
+    min_motion_person_m: float = 1.5
+    """Cụm cỡ người đi chậm: dời ≥ mức này nhưng cần thêm 1 keyframe."""
+    keyframe_interval_s: float = 0.5
+
+
+@dataclass(frozen=True)
 class CriticConfig:
     """Box Critic do nhóm tự huấn luyện (C3, lớp 3; `docs/box-critic.md`). `model` rỗng thì không chạy."""
 
@@ -370,6 +396,7 @@ class Config:
     camera: CameraConfig = dataclasses.field(default_factory=CameraConfig)
     learning: LearningConfig = dataclasses.field(default_factory=LearningConfig)
     critic: CriticConfig = dataclasses.field(default_factory=CriticConfig)
+    missing: MissingConfig = dataclasses.field(default_factory=MissingConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -485,7 +512,7 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
               "fit_overlap", "track_reuse_id", "track_occluded_long", "track_id_swap", "attr_height", "spec_inside",
-              "spec_rider_double", "attr_missing", "attr_invalid",
+              "spec_rider_double", "lidar_missing", "attr_missing", "attr_invalid",
               "track_static_shift", "heading_static", "cam_mismatch", "cam_class", "cam_missing",
               "critic_box")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
@@ -572,6 +599,16 @@ def _parse_camera(r: _Reader) -> CameraConfig:
     gr.finish()
     r.finish()
     return CameraConfig(enabled=enabled, groups=groups, mismatch_severity=severity, **numbers, **integers)
+
+
+def _parse_missing(r: _Reader) -> MissingConfig:
+    values = {}
+    for f in dataclasses.fields(MissingConfig):
+        if f.name not in r.keys():
+            continue
+        values[f.name] = r.integer(f.name, 1) if f.type in ("int", int) else r.number(f.name, 0.0)
+    r.finish()
+    return MissingConfig(**values)
 
 
 def _parse_critic(r: _Reader) -> CriticConfig:
@@ -836,6 +873,7 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         camera=_parse_camera(r.section("camera")) if "camera" in r.keys() else CameraConfig(),
         learning=_parse_learning(r.section("learning")) if "learning" in r.keys() else LearningConfig(),
         critic=_parse_critic(r.section("critic")) if "critic" in r.keys() else CriticConfig(),
+        missing=_parse_missing(r.section("missing")) if "missing" in r.keys() else MissingConfig(),
     )
     r.finish()
     return cfg

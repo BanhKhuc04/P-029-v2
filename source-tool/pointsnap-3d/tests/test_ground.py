@@ -254,9 +254,11 @@ def test_estimate_ground_for_frame():
 def test_estimate_ground_real_nuscenes():
     """Kiểm thử trên dữ liệu nuScenes thật nếu có (việc B2 kiểm chứng ~200 box)."""
     from pathlib import Path
+    import os
     from pointsnap.adapters.nuscenes import NuScenesReader
 
-    data_dir = Path(__file__).resolve().parent.parent / "data" / "nuscenes"
+    data_dir = Path(os.environ.get("NUSCENES_ROOT") or
+                    Path(__file__).resolve().parent.parent / "data" / "nuscenes")
     if not (data_dir / "v1.0-mini").is_dir():
         pytest.skip("Chưa có dữ liệu nuScenes v1.0-mini local")
 

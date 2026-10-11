@@ -1,4 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (test, 10 vòng chèn lỗi, bộ lỗi all)
+> Guideline mặc định sau C3 (ngưỡng Cảnh báo lơ lửng / lún 15 cm). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md).
 
 Cảnh: scene-0103, scene-0655, scene-0796, scene-1077, scene-1100 · 5440 box nhãn chuẩn
 
@@ -14,7 +15,7 @@ Cảnh: scene-0103, scene-0655, scene-0796, scene-1077, scene-1100 · 5440 box n
 | `fit.outside` | warning | 1 | 0.02 |
 | `floating.no_evidence` | info | 387 | 7.11 |
 | `floating` | error | 17 | 0.31 |
-| `floating` | warning | 131 | 2.41 |
+| `floating` | warning | 85 | 1.56 |
 | `heading.points` | error | 4 | 0.07 |
 | `heading.points` | warning | 5 | 0.09 |
 | `heading.static` | error | 1 | 0.02 |
@@ -25,7 +26,7 @@ Cảnh: scene-0103, scene-0655, scene-0796, scene-1077, scene-1100 · 5440 box n
 | `track.jump` | warning | 12 | 0.22 |
 | `track.split_id` | warning | 1 | 0.02 |
 | `track.static_shift` | warning | 8 | 0.15 |
-| **Tổng** | warning | | **3.67** (mục tiêu ≤ 2.0) |
+| **Tổng** | warning | | **2.83** (mục tiêu ≤ 2.0) |
 | **Tổng** | error | | **0.57** (mục tiêu ≤ 0.5) |
 
 ## Recall trên lỗi chèn giả
@@ -75,7 +76,7 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 | Loại | Finding (Cảnh báo+) | Khớp lỗi chèn cùng loại | Precision | Trên box bị chèn lỗi bất kỳ |
 |---|---|---|---|---|
-| floating | 1513 | 7 | 0% (7/1513) | 4% (56/1513) |
+| floating | 1044 | 7 | 1% (7/1044) | 4% (45/1044) |
 | size | 326 | 60 | 18% (60/326) | 25% (81/326) |
 | track | 338 | 67 | 20% (67/338) | 27% (92/338) |
 | heading | 280 | 79 | 28% (79/280) | 37% (104/280) |
@@ -94,8 +95,8 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:
 
-- scene-0103: 29.8 s
-- scene-0655: 26.3 s
-- scene-0796: 11.1 s
-- scene-1077: 8.8 s
-- scene-1100: 12.9 s
+- scene-0103: 23.6 s
+- scene-0655: 25.6 s
+- scene-0796: 11.6 s
+- scene-1077: 10.1 s
+- scene-1100: 14.2 s

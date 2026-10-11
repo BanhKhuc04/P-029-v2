@@ -220,7 +220,7 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 |---|---|
 | **Đại lượng đo** | `d = z_đáy_box − z_mặt_đất_cục_bộ`. d > 0 là lơ lửng, d < 0 là lún |
 | **Cách đo mặt đất** | Lấy điểm trong **vành đai 0,1–0,8 m** quanh footprint, bỏ điểm thuộc box khác, lọc điểm thấp theo lưới (min-Z), lấy **trung vị**. Không dùng điểm dưới gầm xe |
-| **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **12 cm** → Cảnh báo; > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
+| **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **15 cm** → Cảnh báo (12 cm đến C3); > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
 | **Áp dụng cho** | Class tiếp đất: ô tô, xe tải, xe buýt, rơ-moóc, xe công trình, người, xe đạp, xe máy |
 | **Chống báo động giả** | Vành đai < 15 điểm mặt đất → "thiếu bằng chứng" (Thông tin), gộp một mục cho mỗi track |
 | **Kiểm chứng ground** | Tiêu chí tuyệt đối ban đầu (trung vị \|d\| < 5 cm, 90% < 10 cm) **không đạt** trên nhãn chuẩn (trung vị 7,9 cm, p90 22,2 cm) do LiDAR thưa và chính nhãn chuẩn; sau khi đổi sang so với track, độ lệch trên nhãn sạch còn trung vị 3,4 cm, p90 14,7 cm — `docs/kiem-chung-ground.md` |
@@ -573,7 +573,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 
 | Chỉ số | Mục tiêu | Giai đoạn 3 → Box Verifier |
 |---|---|---|
-| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 → 3,67 · 0,57; cảnh tinh chỉnh 1,92 · 0,35 → 1,99 · 0,36 ✅ |
+| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 → **2,83 · 0,57** (ngưỡng lơ lửng / lún 12 → 15 cm); cảnh tinh chỉnh 1,92 · 0,35 → 1,36 · 0,36 ✅ |
 | **Recall box dời 0,3 / 0,5 / 1,0 m** (mọi lỗi chèn) | — | 0% / 14% / 7% → **44% / 36% / 29%** |
 | **Recall xoay 15° / 30°** | — | 7% / 9% → **29% / 27%** |
 | **Recall nhảy vị trí 0,5 / 1,0 m** | — | 45% / 50% → **55% / 75%** |

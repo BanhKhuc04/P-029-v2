@@ -36,7 +36,7 @@ rules:                                # bật / tắt từng luật theo guideli
 
 floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
-  warning_m: 0.12                     # |d − trung vị d của các box khác trong track| > 12 cm: Cảnh báo (B7)
+  warning_m: 0.15                     # |d − trung vị d của các box khác trong track| > 15 cm: Cảnh báo (B7; 12 → 15 cm ở C3)
   error_m: 0.22                       # > 22 cm: Lỗi, nếu |d| tuyệt đối cũng > error_min_abs_m
   error_min_abs_m: 0.15
   single_warning_m: 0.15              # box lẻ / track ít box có bằng chứng: so |d| tuyệt đối

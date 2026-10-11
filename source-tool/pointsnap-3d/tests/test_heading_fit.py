@@ -301,4 +301,3 @@ def test_inject_dataset_catalogs():
                                           "fit_duplicate"}
     with pytest.raises(ValueError):
         inject_dataset(boxes, catalog="nope")
-

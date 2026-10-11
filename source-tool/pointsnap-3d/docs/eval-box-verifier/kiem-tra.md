@@ -1,5 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (test, 10 vòng chèn lỗi, bộ lỗi all)
-> Guideline mặc định sau C3 (ngưỡng Cảnh báo lơ lửng / lún 15 cm). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md).
+> Guideline mặc định sau C5 (ngưỡng lơ lửng / lún 15 cm, sửa tình huống thực tế). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md) và [C5](../giao-viec/C5-tinh-huong-thuc-te.md).
 
 Cảnh: scene-0103, scene-0655, scene-0796, scene-1077, scene-1100 · 5440 box nhãn chuẩn
 
@@ -48,9 +48,9 @@ Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đấ
 | floating | 0.2 | 20 | 10% (2/20) | 11% (2/19) | 5% (1/20) | 100% (2/2) |
 | floating | 0.4 | 21 | 19% (4/21) | 24% (4/17) | 19% (4/21) | 100% (4/4) |
 | heading_reverse | 180 | 6 | 33% (2/6) | 100% (2/2) | 33% (2/6) |  |
-| heading_rotate | 15 | 14 | 29% (4/14) | — | 21% (3/14) |  |
+| heading_rotate | 15 | 14 | 14% (2/14) | — | 7% (1/14) |  |
 | heading_rotate | 180 | 14 | 93% (13/14) | 100% (13/13) | 93% (13/14) |  |
-| heading_rotate | 30 | 11 | 27% (3/11) | 100% (1/1) | 27% (3/11) |  |
+| heading_rotate | 30 | 11 | 18% (2/11) | 100% (1/1) | 18% (2/11) |  |
 | heading_rotate | 60 | 8 | 88% (7/8) | 100% (7/7) | 50% (4/8) |  |
 | heading_rotate | 90 | 8 | 100% (8/8) | 100% (7/7) | 100% (8/8) |  |
 | size_class_range | other_class | 14 | 100% (14/14) | 100% (14/14) | 100% (14/14) |  |
@@ -79,7 +79,7 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 | floating | 1044 | 7 | 1% (7/1044) | 4% (45/1044) |
 | size | 326 | 60 | 18% (60/326) | 25% (81/326) |
 | track | 338 | 67 | 20% (67/338) | 27% (92/338) |
-| heading | 280 | 79 | 28% (79/280) | 37% (104/280) |
+| heading | 277 | 76 | 27% (76/277) | 36% (101/277) |
 | fit | 272 | 9 | 3% (9/272) | 25% (67/272) |
 
 ## Độ chính xác của số đo (trung vị sai số tuyệt đối)
@@ -95,8 +95,8 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:
 
-- scene-0103: 23.6 s
-- scene-0655: 25.6 s
-- scene-0796: 11.6 s
-- scene-1077: 10.1 s
-- scene-1100: 14.2 s
+- scene-0103: 19.5 s
+- scene-0655: 15.2 s
+- scene-0796: 5.2 s
+- scene-1077: 5.0 s
+- scene-1100: 8.5 s

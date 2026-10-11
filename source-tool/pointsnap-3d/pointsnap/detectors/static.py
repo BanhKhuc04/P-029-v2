@@ -77,7 +77,7 @@ def detect_static_errors(
                              f"lệch {distance * 100:.0f} cm so với vị trí chung (ngưỡng {threshold * 100:.0f} cm)"),
                     details={"spread_m": spread, "distance_m": distance},
                 ))
-            if not rotate or box.label in cfg.yaw_excluded_classes:
+            if not rotate or yaw_excluded(box, cfg.yaw_excluded_classes):
                 continue
             deviation = _axial_diff_deg(headings[i], _axial_mean(headings[rest]))
             if deviation > cfg.yaw_warning_deg:
@@ -92,3 +92,10 @@ def detect_static_errors(
                     details={"spread_m": spread, "deviation_deg": deviation},
                 ))
     return findings
+
+
+def yaw_excluded(box: Cuboid, classes: Sequence[str]) -> bool:
+    """Box thuộc class (hoặc `Class/giá trị thuộc tính`, vd `Obstacle/traffic cone`) không xét hướng."""
+    if box.label in classes:
+        return True
+    return any(f"{box.label}/{v}" in classes for v in box.attrs.values() if isinstance(v, str))

@@ -99,6 +99,7 @@ test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám 
     'fit.loose': 'Mặt đầu của box cách điểm gần nhất của vật 80 cm dù nhìn thấy rõ từ LiDAR: box dư so với vật (ngưỡng 50 cm)',
     'fit.overlap': 'Box chồng 90% diện tích lên box car (track 2): nghi vẽ trùng một vật hoặc hai box lấn nhau (ngưỡng 50%)',
     'track.reuse_id': 'Track đã kết thúc (outside) ở frame 2 rồi xuất hiện lại ở frame 4 sau 2 frame vắng: vật chỉ bị che tạm thời thì bỏ outside, đánh dấu occluded (spec 4.4.5)',
+    'track.id_swap': 'Track 1 và track 2 đổi chỗ nhau ở frame 6: vị trí mỗi box khớp quỹ đạo của track kia (lệch 0.05 m, giữ nguyên ID lệch 2.40 m): nghi gán nhầm ID, kiểm tra hai track từ frame này (spec 4.4.6)',
     'track.occluded_long': 'Box đánh occluded 8 frame liền (frame 1–8), quá 6 frame: spec 4.4.5 chỉ dùng occluded cho che khuất tạm thời',
     'attr.missing': 'Vehicle thiếu thuộc tính bắt buộc `subtype` (2 keyframe, từ frame 0); spec 3.1.3: không chắc thì chọn other',
     'attr.invalid': "Thuộc tính `pose` = 'walking' không có trong danh sách cho phép (standing, sitting, bending) (frame 0)",

@@ -23,6 +23,7 @@
     'fit.loose': 'Kéo mặt box về sát các điểm của vật ở phía được nhìn rõ, không để dư khoảng trống.',
     'fit.overlap': 'Kiểm tra hai box có cùng là một vật không: vẽ trùng thì xóa box thừa; hai vật sát nhau thì thu box cho khỏi lấn.',
     'track.reuse_id': 'Vật chỉ bị che tạm thời (≤ 6 frame) thì bỏ outside và bật occluded; vắng lâu hơn thì tách phần sau thành track mới (spec 4.4.3–4.4.5).',
+    'track.id_swap': 'Hai vật bị nối nhầm ID: tách lại từ frame bị đổi, mỗi đoạn về đúng track của vật (đối chiếu quỹ đạo, ảnh camera).',
     'track.occluded_long': 'Che khuất quá 6 frame: kết thúc track (Switch outside) và tạo track mới khi vật xuất hiện lại, trừ khi chắc chắn là cùng vật (spec 4.4.5).',
     'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
     'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.',
@@ -37,7 +38,7 @@
   // Công tắc luật trong tab Guideline (khóa `rules:` của cấu hình); C1 thêm 7 luật sai hướng / box lệch.
   const RULE_IDS = ['floating', 'size_class_range', 'size_in_track', 'track_jump', 'track_split_id',
     'track_long_interpolation', 'heading_flip', 'heading_motion', 'heading_points', 'fit_empty', 'fit_outside',
-    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'attr_missing', 'attr_invalid',
+    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'track_id_swap', 'attr_missing', 'attr_invalid',
     'track_static_shift', 'heading_static', 'cam_mismatch', 'cam_class', 'cam_missing', 'critic_box'];
 
   const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
@@ -112,6 +113,8 @@
       case 'fit.empty':
         return `${Math.round(n)} điểm`;
       case 'track.reuse_id':
+      case 'track.id_swap':
+        return `${fixed(n, 2)} m`;
       case 'track.occluded_long':
         return `${Math.round(n)} frame`;
       case 'attr.missing':
@@ -1186,6 +1189,7 @@
     if (f.rule === 'fit.overlap') return 'Hai box chồng nhau';
     if (f.rule === 'track.reuse_id') return 'Dùng lại track sau khi kết thúc';
     if (f.rule === 'track.occluded_long') return 'Che khuất quá lâu';
+    if (f.rule === 'track.id_swap') return 'Nghi đổi nhầm ID';
     if (f.rule === 'attr.missing') return 'Thiếu thuộc tính bắt buộc';
     if (f.rule === 'attr.invalid') return 'Thuộc tính sai giá trị';
     if (f.rule === 'track.static_shift') return 'Vật đứng yên: box dịch';

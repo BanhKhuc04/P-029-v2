@@ -251,7 +251,7 @@ cục bằng pose xe thu trước khi so.
 | Luật | Định nghĩa | Ngưỡng Cảnh báo / Lỗi (xe) |
 |---|---|---|
 | `heading.flip` | Cắt track tại chỗ hướng đổi giữa hai keyframe nhanh hơn tốc độ quay hợp lý (xe 60°/s, xe hai bánh 90°/s, người 180°/s); đoạn dài nhất là chuẩn, mọi box ở đoạn khác bị báo | 45° / 75° (xoay ngang, lật đầu) |
-| `heading.motion` | Vật chạy nhanh hơn `min_speed` (xe 2 m/s): hướng box so với hướng di chuyển giữa hai keyframe lân cận; xe lùi chậm không bị xét | 60° / 135° (ngược chiều) |
+| `heading.motion` | Vật chạy nhanh hơn `min_speed` (xe 2 m/s): hướng box so với hướng di chuyển giữa hai keyframe lân cận; xe chậm hơn không bị xét; box ngược cả đoạn khi xe ≤ 3 m/s: một Cảnh báo "có thể đang lùi" (C5) | 60° / 135° (ngược chiều) |
 | `heading.points` | Trục box so với hướng hình chữ nhật khớp cụm điểm LiDAR nhất (khớp hình chữ L, Zhang et al. 2017), rồi so với trung vị của track để bỏ phần lệch do hình dạng vật; chỉ xe 4 bánh dài, ≥ 60 điểm, < 40 m | 15° / 30° |
 
 #### e) Box lệch khỏi vật (giai đoạn 3)
@@ -423,6 +423,7 @@ Mỗi luật kiểm một điều khoản **đo được bằng số** của *An
 | 4.2 | Không gán box khi vật quá ít điểm | `fit.empty` (+ `sparse_warning_points` khi chốt P-009) |
 | 4.3B, 4.3E | Nhóm người / động vật sát nhau: gán từng con, box được phép chồng | `fit.overlap` với `overlap_allowed_pairs` |
 | 4.4.1–4.4.2 | Giữ track_id ổn định, không nhảy, không tách | `track.jump`, `track.split_id`, `track.long_interpolation` |
+| 4.4.6 | Không nối các vật khác nhau thành một track | `track.id_swap` (C5) |
 | 4.4.3–4.4.4 | Sau khi kết thúc (outside) không gán tiếp; xuất hiện lại phải là track mới | `track.reuse_id` |
 | 4.4.5, CVAT | Che khuất dùng `occluded`, tối đa 6 frame | `track.occluded_long`; box occluded không kiểm hình học |
 

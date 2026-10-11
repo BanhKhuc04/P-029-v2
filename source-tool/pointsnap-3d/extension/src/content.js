@@ -31,6 +31,7 @@
     'fit.overlap': 'Hai box chồng nhau',
     'track.reuse_id': 'Dùng lại track sau outside',
     'track.occluded_long': 'Che khuất quá lâu',
+    'track.id_swap': 'Nghi đổi nhầm ID',
     'attr.missing': 'Thiếu thuộc tính',
     'attr.invalid': 'Thuộc tính sai giá trị',
     'track.static_shift': 'Vật đứng yên: box dịch',

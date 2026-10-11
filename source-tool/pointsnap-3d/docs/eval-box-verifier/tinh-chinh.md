@@ -1,5 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (tuning, 10 vòng chèn lỗi, bộ lỗi all)
-> Guideline mặc định sau C3 (ngưỡng Cảnh báo lơ lửng / lún 15 cm). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md).
+> Guideline mặc định sau C5 (ngưỡng lơ lửng / lún 15 cm, sửa tình huống thực tế). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md) và [C5](../giao-viec/C5-tinh-huong-thuc-te.md).
 
 Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box nhãn chuẩn
 
@@ -46,10 +46,10 @@ Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đấ
 | floating | 0.2 | 24 | 21% (5/24) | 25% (5/20) | 4% (1/24) | 100% (5/5) |
 | floating | 0.4 | 27 | 7% (2/27) | 10% (2/21) | 7% (2/27) | 100% (2/2) |
 | heading_reverse | 180 | 8 | 25% (2/8) | 50% (2/4) | 25% (2/8) |  |
-| heading_rotate | 15 | 15 | 33% (5/15) | — | 33% (5/15) |  |
+| heading_rotate | 15 | 15 | 20% (3/15) | — | 20% (3/15) |  |
 | heading_rotate | 180 | 17 | 71% (12/17) | 100% (12/12) | 71% (12/17) |  |
-| heading_rotate | 30 | 13 | 62% (8/13) | 67% (2/3) | 62% (8/13) |  |
-| heading_rotate | 60 | 11 | 73% (8/11) | 100% (6/6) | 36% (4/11) |  |
+| heading_rotate | 30 | 13 | 54% (7/13) | 67% (2/3) | 54% (7/13) |  |
+| heading_rotate | 60 | 11 | 64% (7/11) | 100% (6/6) | 27% (3/11) |  |
 | heading_rotate | 90 | 9 | 44% (4/9) | 100% (3/3) | 44% (4/9) |  |
 | size_class_range | other_class | 15 | 100% (15/15) | 100% (15/15) | 100% (15/15) |  |
 | size_class_range | x0.6 | 13 | 100% (13/13) | 100% (13/13) | 38% (5/13) |  |
@@ -77,7 +77,7 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 | floating | 897 | 9 | 1% (9/897) | 3% (28/897) |
 | size | 106 | 59 | 56% (59/106) | 65% (69/106) |
 | track | 295 | 85 | 29% (85/295) | 37% (108/295) |
-| heading | 221 | 63 | 29% (63/221) | 36% (80/221) |
+| heading | 212 | 59 | 28% (59/212) | 36% (76/212) |
 | fit | 346 | 7 | 2% (7/346) | 25% (85/346) |
 
 ## Độ chính xác của số đo (trung vị sai số tuyệt đối)
@@ -93,8 +93,8 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:
 
-- scene-0061: 26.3 s
-- scene-0553: 16.9 s
-- scene-0757: 9.0 s
-- scene-0916: 28.8 s
-- scene-1094: 21.7 s
+- scene-0061: 22.9 s
+- scene-0553: 10.1 s
+- scene-0757: 5.4 s
+- scene-0916: 18.2 s
+- scene-1094: 13.5 s

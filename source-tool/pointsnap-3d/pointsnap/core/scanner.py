@@ -155,7 +155,12 @@ def check_floating(job: JobData, config: Config, frames: FrameSource | None = No
 
 def check_size(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Sai kích thước theo class và trong track (B4, `detectors.size`)."""
-    return detect_size(job.cuboids, config.size)
+    findings = detect_size(job.cuboids, config.size)
+    if frames is not None:
+        from pointsnap.detectors.size import relax_filled_oversize
+
+        findings = relax_filled_oversize(findings, job.cuboids, frames, config.size.cargo_classes)
+    return findings
 
 
 def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -266,7 +271,7 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
 
 
 _RULE_SWITCH = {
-    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long",
+    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
     "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
     "track.static_shift": "track_static_shift", "heading.static": "heading_static",
     "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
@@ -333,7 +338,7 @@ def scan_cuboids(
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
         if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
-                or r.track_occluded_long):
+                or r.track_occluded_long or r.track_id_swap):
             active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)

@@ -46,6 +46,7 @@ class RulesConfig:
     fit_overlap: bool = True
     track_reuse_id: bool = True
     track_occluded_long: bool = True
+    track_id_swap: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
     track_static_shift: bool = True
@@ -103,6 +104,9 @@ class SizeConfig:
     key_attributes: Mapping[str, str] = dataclasses.field(default_factory=dict)
     """Class → thuộc tính phân loại chi tiết (spec 3.1.2, vd `Vehicle: subtype`): khoảng kích thước tra theo khóa
     `Class/giá trị` (vd `Vehicle/bus`), không có thì theo `Class`."""
+    cargo_classes: tuple[str, ...] = ("motorcycle", "bicycle", "Two-wheels", "Vehicle/Tricycle")
+    """Class hay chở hàng cồng kềnh (C5): "lớn bất thường" mà điểm LiDAR phủ kín chiều đó thì hạ Lỗi xuống Cảnh báo.
+    Ghi `Class` hoặc `Class/thuộc tính`."""
 
 
 @dataclass(frozen=True)
@@ -149,6 +153,9 @@ class HeadingGroupConfig:
     flip_error_deg: float
     yaw_rate_max_dps: float
     """Tốc độ quay tối đa hợp lý (độ / giây): hướng đổi chậm hơn mức này giữa hai keyframe không bị coi là lật."""
+    reverse_max_mps: float = 0.0
+    """Box ngược chiều chuyển động ở gần hết đoạn mà vật chạy không nhanh hơn mức này: có thể đang lùi thật → Cảnh báo
+    thay vì Lỗi (C5). 0 = không xét."""
 
 
 @dataclass(frozen=True)
@@ -164,7 +171,7 @@ class HeadingPointsConfig:
 def _default_heading_groups() -> dict[str, HeadingGroupConfig]:
     return {
         "vehicle": HeadingGroupConfig(("car", "truck", "bus", "trailer", "construction_vehicle"),
-                                      2.0, 60.0, 135.0, 45.0, 75.0, 60.0),
+                                      2.0, 60.0, 135.0, 45.0, 75.0, 60.0, 3.0),
         "two_wheeler": HeadingGroupConfig(("motorcycle", "bicycle"), 1.5, 60.0, 135.0, 45.0, 75.0, 90.0),
         "pedestrian": HeadingGroupConfig(("pedestrian",), 1.0, 90.0, 150.0, 120.0, 170.0, 180.0),
     }
@@ -230,8 +237,9 @@ class StaticConfig:
     shift_error_m: float = 0.50
     yaw_warning_deg: float = 4.0
     yaw_error_deg: float = 10.0
-    yaw_excluded_classes: tuple[str, ...] = ("pedestrian", "Pedestrian", "Animal")
-    """Người, động vật đứng yên vẫn xoay người: không xét hướng."""
+    yaw_excluded_classes: tuple[str, ...] = ("pedestrian", "Pedestrian", "Animal", "traffic_cone")
+    """Người, động vật đứng yên vẫn xoay người; vật tròn / đối xứng (cọc tiêu) hướng box không có nghĩa: không xét hướng.
+    Ghi `Class` hoặc `Class/giá trị thuộc tính` (vd `Obstacle/traffic cone`)."""
 
 
 def _default_camera_groups() -> dict[str, tuple[str, ...]]:
@@ -464,7 +472,7 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
-              "fit_overlap", "track_reuse_id", "track_occluded_long", "attr_missing", "attr_invalid",
+              "fit_overlap", "track_reuse_id", "track_occluded_long", "track_id_swap", "attr_missing", "attr_invalid",
               "track_static_shift", "heading_static", "cam_mismatch", "cam_class", "cam_missing",
               "critic_box")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
@@ -484,6 +492,7 @@ def _parse_heading(r: _Reader) -> HeadingConfig:
             flip_warning_deg=g.number("flip_warning_deg", 0.0),
             flip_error_deg=g.number("flip_error_deg", 0.0),
             yaw_rate_max_dps=g.number("yaw_rate_max_dps", 0.0),
+            reverse_max_mps=g.number("reverse_max_mps", 0.0) if "reverse_max_mps" in g.keys() else 0.0,
         )
         g.finish()
         for low, high in (("motion_warning_deg", "motion_error_deg"), ("flip_warning_deg", "flip_error_deg")):
@@ -701,8 +710,10 @@ def _parse_size(r: _Reader) -> SizeConfig:
         kr = r.section("key_attributes")
         key_attributes = {label: kr.string(label) for label in kr.keys()}
         kr.finish()
+    cargo = r.strings("cargo_classes") if "cargo_classes" in r.keys() else SizeConfig.cargo_classes
     r.finish()
-    return SizeConfig(class_range=class_range, manual_ranges=manual, in_track=in_track, key_attributes=key_attributes)
+    return SizeConfig(class_range=class_range, manual_ranges=manual, in_track=in_track, key_attributes=key_attributes,
+                      cargo_classes=cargo)
 
 
 def _parse_track(r: _Reader) -> TrackConfig:

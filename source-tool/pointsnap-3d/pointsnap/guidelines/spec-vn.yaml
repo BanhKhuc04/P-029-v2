@@ -41,6 +41,7 @@ size:
     Animal/other:             {length: [0.2, 3.2],   width: [0.1, 1.2],   height: [0.2, 2.0]}
     Obstacle/traffic cone:    {length: [0.35, 0.69], width: [0.36, 0.96], height: [0.55, 1.33]}  # (nuScenes) 72 cọc tiêu
     Obstacle/traffic barrier: {length: [0.40, 0.76], width: [1.73, 3.36], height: [0.90, 1.35]}  # (nuScenes) 75 rào chắn
+  cargo_classes: [Two-wheels, Vehicle/Tricycle]   # C5: xe máy / xe ba gác chở hàng cồng kềnh
   in_track:
     excluded_classes: [Pedestrian, Animal]   # tư thế thay đổi nên kích thước dao động là bình thường
 
@@ -81,6 +82,7 @@ heading:
       flip_warning_deg: 45
       flip_error_deg: 75
       yaw_rate_max_dps: 60
+      reverse_max_mps: 3.0            # xe lùi chậm: Cảnh báo thay vì Lỗi (C5)
     two_wheeler:
       classes: [Two-wheels]
       min_speed_mps: 1.5
@@ -99,6 +101,15 @@ heading:
       yaw_rate_max_dps: 180
   points:
     classes: [Vehicle]
+
+static:
+  yaw_excluded_classes:               # C5: không xét hướng box của vật đứng yên
+    - Pedestrian                      # đứng yên vẫn xoay người
+    - Animal
+    - Obstacle/traffic cone           # tròn / đối xứng: hướng box không có nghĩa
+    - Obstacle/sack
+    - Obstacle/trash_bag
+    - Obstacle/brick
 
 fit:
   overlap_classes: [Vehicle, Two-wheels, Pedestrian, Animal]

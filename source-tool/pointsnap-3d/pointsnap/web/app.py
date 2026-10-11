@@ -238,7 +238,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
     def _validate_run_id(run_id: str) -> None:
         """Điểm nhỏ 3: chặn path traversal qua run_id độc hại (vd: ../../etc/passwd)."""
-        if not _RUN_ID_RE.match(run_id):
+        if not _RUN_ID_RE.fullmatch(run_id):
             raise HTTPException(
                 status_code=400,
                 detail=f"run_id không hợp lệ: '{run_id}'. Định dạng: YYYYMMDD-HHMMSS-job<id>.",

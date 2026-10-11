@@ -55,6 +55,8 @@ class ReviewRequest(BaseModel):
 
 
 class FocusRequest(BaseModel):
+    track_id: int | None = Field(default=None, ge=0)
+    source_id: int | None = Field(default=None, ge=0)
     """Lệnh từ web: tab CVAT có extension đang mở job này hãy chuyển tới frame và làm sáng box của mục này."""
 
     job_id: int = Field(gt=0)

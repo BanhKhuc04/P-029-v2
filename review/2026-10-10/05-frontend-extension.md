@@ -1,7 +1,7 @@
 # 05 — Review giao diện Web và extension CVAT
 
-**Nhánh:** `review/2026-10-10/05-frontend-extension`.
-**Trạng thái:** chưa thực hiện kiểm tra giao diện/extension trong đợt này.
+**Nhánh:** `review/05-frontend-extension`.
+**Trạng thái:** đã review/sửa ngày11/10; Web thật +logic extension đạt, ca MV3 cần Chrome/Edge còn bị chặn. Xem [báo cáo](05-report.md), [bàn giao](05-handoff.md).
 **Đầu ra sẽ tạo:** `05-report.md`, bảng hành trình người dùng, ảnh bằng chứng và findings UX/chức năng.
 
 Áp dụng [quy trình chung](README.md), [mẫu báo cáo](report-template.md), `docs/test/CHUAN-KIEM-THU.md`. Đường dẫn code tính từ tool root. Các test Node/TestClient là bằng chứng logic, ca trình duyệt cần thao tác riêng.

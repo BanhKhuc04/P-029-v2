@@ -395,7 +395,7 @@
                 <span id="scan-progress-percent" class="mono" style="font-size: 13px; color: var(--text-2);">0%</span>
               </div>
               <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px;">
-                <div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tiến độ quét" class="progress-bar-track">
+                <div id="scan-progress-region" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tiến độ quét" class="progress-bar-track">
                   <div id="scan-progress-bar" class="progress-bar-fill"></div>
                 </div>
                 <div id="scan-loader" class="scan-loader" hidden></div>
@@ -883,7 +883,7 @@
   <!-- ==================== MODALS ==================== -->
   <!-- Modal Tạo dự án mới -->
   <div id="modal-create-proj" class="modal-overlay">
-    <div class="modal-dialog">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="Tạo dự án">
       <div class="modal-header">
         <h3>Tạo dự án kiểm tra mới</h3>
         <button class="modal-close-btn" data-close="modal-create-proj" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></button>
@@ -926,7 +926,7 @@
 
   <!-- Modal Xác nhận Xóa dự án (Bắt buộc gõ lại tên) -->
   <div id="modal-delete-proj" class="modal-overlay">
-    <div class="modal-dialog">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="Xóa dự án">
       <div class="modal-header">
         <h3 style="color: var(--error);">Xác nhận xóa dự án</h3>
         <button class="modal-close-btn" data-close="modal-delete-proj" aria-label="Đóng"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3 L11 11 M11 3 L3 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg></button>

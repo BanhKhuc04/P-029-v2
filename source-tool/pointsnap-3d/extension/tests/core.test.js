@@ -55,9 +55,10 @@ test('collectFlags đọc cờ từ shape lẻ và keyframe của track', () => 
   const flags = core.collectFlags(annotations, specs);
   assert.deepEqual(flags.map((f) => [f.frame, f.kind, f.objectId, f.severity]), [
     [3, 'track', 9, 'error'],
+    [4, 'track', 9, 'error'],
     [7, 'shape', 5, 'warning'],
   ]);
-  assert.deepEqual(core.flaggedFrames(flags), [3, 7]);
+  assert.deepEqual(core.flaggedFrames(flags), [3, 4, 7]);
 });
 
 test('stepFrame đi tới / lui giữa các frame có cờ', () => {

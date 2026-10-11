@@ -15,7 +15,7 @@ from pointsnap.adapters.cvat.writer import flag_job_errors, save_snapshot
 from pointsnap.cli.common import frames_for_job
 from pointsnap.core.gate import gate_verdict
 from pointsnap.core.model import Finding, Severity
-from pointsnap.core.scanner import actionable, scan_cuboids
+from pointsnap.core.scanner import actionable, scan_coverage_gaps, scan_cuboids
 from pointsnap.report.csv_rep import generate_csv_report
 from pointsnap.report.html import generate_html_report
 from pointsnap.web.projects import ProjectError, ProjectManager
@@ -136,7 +136,8 @@ class ScanRunner:
             generate_csv_report(job, findings, run_dir / "report.csv")
 
             # 5. Đánh giá Gate
-            passed, reasons = gate_verdict(findings, config.gate)
+            coverage_gaps = scan_coverage_gaps(job, config, frames)
+            passed, reasons = gate_verdict(findings, config.gate, coverage_gaps=coverage_gaps)
 
             # 6. Gắn cờ lỗi lên CVAT nếu được yêu cầu
             flag_summary: dict[str, int] | None = None
@@ -183,6 +184,7 @@ class ScanRunner:
                 "num_info": counts["info"],
                 "gate_passed": passed,
                 "gate_reasons": reasons,
+                "coverage_gaps": coverage_gaps,
                 "flagged": flag,
                 "flag_summary": flag_summary,
                 "note": note,

@@ -1,7 +1,7 @@
 """Kiểm thử tích hợp End-to-End trọn vẹn quy trình PointSnap 3D (việc A6).
 
 Kịch bản end-to-end:
-1. Đọc job từ CVAT và point cloud (`JobData`).
+1. Đọc job từ CVAT giả (`JobData`); cấu hình tắt luật LiDAR vì fixture không có point cloud.
 2. Quét phát hiện lỗi (`scan_cuboids`).
 3. Xuất báo cáo HTML + CSV và tự động lưu bản chụp JSON.
 4. Gắn cờ lỗi lên CVAT (`flag_job_errors`).
@@ -14,6 +14,7 @@ Kịch bản end-to-end:
 import json
 from pathlib import Path
 import pytest
+import yaml
 
 from pointsnap.adapters.cvat.client import CvatClient
 from pointsnap.adapters.cvat.reader import (
@@ -113,9 +114,14 @@ def test_full_end_to_end_workflow(tmp_path, monkeypatch):
     monkeypatch.setenv("CVAT_URL", "http://cvat.local:8080")
 
     out_dir = tmp_path / "out"
+    # Ca này kiểm size/report/PATCH. Dữ liệu LiDAR/pose có ca riêng trong test_gate_coverage.
+    rules = {name: False for name in ("floating", "heading_points", "fit_empty", "fit_outside", "fit_loose")}
+    config_path = tmp_path / "no-lidar.yaml"
+    config_path.write_text(yaml.safe_dump({"rules": rules}), encoding="utf-8")
+    command = ["--config", str(config_path)]
 
     # Bước 1 & 2: Quét job 100 và gắn cờ lỗi
-    code_scan = main(["scan", "--job", "100", "--flag", "--out", str(out_dir)])
+    code_scan = main(command + ["scan", "--job", "100", "--flag", "--out", str(out_dir)])
     assert code_scan == EXIT_OK
 
     # Xác nhận các file kết quả đã sinh
@@ -138,7 +144,7 @@ def test_full_end_to_end_workflow(tmp_path, monkeypatch):
     assert "pointsnap_error" not in car_box.attrs or not car_box.attrs["pointsnap_error"]
 
     # Bước 4: Kiểm tra cổng gate -> KHÔNG ĐẠT (exit code 1) do có lỗi xe bus
-    code_gate_failed = main(["gate", "--job", "100"])
+    code_gate_failed = main(command + ["gate", "--job", "100"])
     assert code_gate_failed == EXIT_GATE_FAILED
 
     # Bước 5: Giả lập reviewer/annotator sửa lỗi (hoặc xóa cờ lỗi)
@@ -149,5 +155,5 @@ def test_full_end_to_end_workflow(tmp_path, monkeypatch):
     session.raw_annos["shapes"][0]["points"] = pts(0, l=12.0, w=2.8, h=3.2)
 
     # Bước 6: Kiểm tra lại cổng gate -> ĐẠT (exit code 0)
-    code_gate_passed = main(["gate", "--job", "100"])
+    code_gate_passed = main(command + ["gate", "--job", "100"])
     assert code_gate_passed == EXIT_OK

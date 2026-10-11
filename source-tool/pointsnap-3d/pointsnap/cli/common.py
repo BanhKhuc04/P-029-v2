@@ -35,7 +35,8 @@ def frames_for_job(
     lún bị bỏ qua và luật đứt track chỉ báo mức Cảnh báo.
     """
     path = manifest or find_manifest(job.task_id, export_dirs(custom_export_dirs))
-    skipped = "bỏ qua luật lơ lửng / lún, luật đứt track chỉ báo mức Cảnh báo"
+    skipped = ("bỏ qua luật lơ lửng / lún và hướng/fit dùng LiDAR; "
+               "luật chuyển động dùng tọa độ từng frame khi thiếu pose; gate kiểm tra dữ liệu theo luật đang bật")
     if path is None:
         return None, (f"Không tìm thấy manifest.json của task {job.task_id} ({skipped}). "
                       "Chỉ đường dẫn bằng --manifest hoặc cấu hình thư mục bản xuất.")

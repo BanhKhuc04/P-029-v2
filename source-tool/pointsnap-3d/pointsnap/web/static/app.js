@@ -662,12 +662,15 @@
     if (sum.gate_passed) {
       gateBanner.className = 'gate-banner-strip pass';
       gateTitle.textContent = 'Đạt cổng kiểm soát';
-      gateDesc.textContent = `${sum.num_errors ?? 0} Lỗi · ${sum.num_warnings ?? 0} Cảnh báo. Các chỉ số đều nằm trong ngưỡng quy định.`;
+      gateDesc.textContent = `${sum.num_errors ?? 0} Lỗi · ${sum.num_warnings ?? 0} Cảnh báo. Đạt ngưỡng của các luật đang bật.`;
     } else {
       gateBanner.className = 'gate-banner-strip fail';
       gateTitle.textContent = 'Không đạt cổng kiểm soát';
       const reasons = sum.gate_reasons && sum.gate_reasons.length > 0 ? sum.gate_reasons.join(' · ') : 'Vượt ngưỡng cho phép';
-      gateDesc.textContent = `${reasons}. Sửa các mục Lỗi trên CVAT rồi quét lại.`;
+      const partial = (sum.gate_reasons || []).some(reason => reason.startsWith('Kiểm tra một phần:'));
+      gateDesc.textContent = partial
+        ? `${reasons}. Bổ sung dữ liệu cần thiết, kiểm tra các box thiếu bằng chứng rồi quét lại.`
+        : `${reasons}. Sửa các mục Lỗi trên CVAT rồi quét lại.`;
     }
 
     // Thẻ số lượng (Stats Grid)

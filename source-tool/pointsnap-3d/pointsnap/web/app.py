@@ -353,7 +353,9 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             if not source_url and snapshot.is_file():
                 from pointsnap.web.storage import read_json
                 source_url = read_json(snapshot).get("meta", {}).get("url")
-            if source_url and not _same_cvat(source_url, pm.get_project(slug)["cvat_url"]):
+            if not source_url:
+                raise HTTPException(status_code=409, detail="Lần quét cũ thiếu nguồn CVAT; hãy quét mới trước khi gắn cờ")
+            if not _same_cvat(source_url, pm.get_project(slug)["cvat_url"]):
                 raise HTTPException(status_code=409, detail="URL CVAT đã đổi; hãy quét mới trước khi gắn cờ")
             job_id = prev_run.get("job_id")
             if not job_id:

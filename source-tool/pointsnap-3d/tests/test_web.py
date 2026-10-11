@@ -376,6 +376,7 @@ def test_flag_scan_creates_rescan_run(mock_home: Path, client: TestClient):
         "num_warnings": 1,
         "gate_passed": False,
         "flagged": False,
+        "cvat_url": "http://localhost:8080",
     }
     (run_dir / "summary.json").write_text(json.dumps(summary_data), encoding="utf-8")
 

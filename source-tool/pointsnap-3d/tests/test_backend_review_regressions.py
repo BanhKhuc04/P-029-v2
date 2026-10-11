@@ -282,6 +282,13 @@ def test_old_run_cannot_flag_job_on_changed_server(client):
     client.app.state.runner._executor.submit.assert_not_called()
 
 
+def test_legacy_run_without_source_url_cannot_flag(client):
+    run_files(client)
+    client.app.state.runner._executor.submit = Mock()
+    assert client.post(f"/api/projects/a/scans/{RUN}/flag").status_code == 409
+    client.app.state.runner._executor.submit.assert_not_called()
+
+
 @pytest.mark.parametrize("location", ["check", "tasks", "scan"])
 def test_cvat_error_never_exposes_project_token(client, monkeypatch, caplog, location):
     from pointsnap.adapters.cvat.client import CvatError

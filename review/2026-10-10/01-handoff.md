@@ -5,7 +5,7 @@
 ## 1. Đọc theo thứ tự
 
 1. Trang này: thay đổi và lý do trong vài phút.
-2. [Báo cáo phần 01](01-report.md): 14 ca review, 8 findings, truy vết yêu cầu và giới hạn.
+2. [Báo cáo phần 01](01-report.md): 14 ca review, 9 findings, truy vết yêu cầu và giới hạn.
 3. [Kiến trúc](01-architecture.md): 3 sơ đồ, 17 quan hệ được đối chiếu với code.
 4. [Bằng chứng kiểm tra](evidence/01/test-results.md): lệnh chạy, môi trường và kết quả trước/sau.
 
@@ -14,6 +14,7 @@
 | Thay đổi | Lý do |
 |---|---|
 | Gate chặn khi thiếu LiDAR/pose/bằng chứng ground | Không được kết luận ĐẠT khi các luật đang bật chưa đủ dữ liệu để kiểm |
+| Gate chặn cả nguồn cloud rỗng | Bốn luật heading/fit không được kết luận ĐẠT chỉ vì có FrameSource khi tắt floating |
 | Gate đếm đúng generator | Trước đây lượt đếm lỗi tiêu thụ generator, khiến cảnh báo bị bỏ sót |
 | Gate CLI trả mã 3 khi lỗi đọc frame | Người dùng và script cần nhận lỗi runtime rõ ràng, không bị văng traceback |
 | Web lưu thiếu dữ liệu và hiển thị hướng dẫn phù hợp | Người dùng cần biết phải bổ sung dữ liệu hay sửa nhãn |
@@ -25,7 +26,7 @@
 
 ## 3. Kết quả kiểm tra
 
-- **252 test Python đạt, 0 bỏ qua**: gồm cả 6 test trước đây skip, chạy với nuScenes mini thật và CVAT Docker 2.78.1.
+- **256 test Python đạt, 0 bỏ qua**: gồm 4 ca cloud rỗng bổ sung khi review lại và cả 6 test trước đây skip, chạy với nuScenes mini thật và CVAT Docker 2.78.1.
 - **7 test Node extension đạt**; cú pháp JS và `git diff --check` đạt.
 - Có **1 cảnh báo Starlette/httpx** của môi trường; không có test lỗi.
 - Các task CVAT thử đã tự xóa; kiểm tra sau chạy còn **0 task thử**.
@@ -34,7 +35,7 @@
 ## 4. Lấy nhánh và xem thay đổi
 
 ```bash
-git fetch origin
+git fetch origin refs/heads/review/01-overview-architecture:refs/remotes/origin/review/01-overview-architecture
 git switch --track origin/review/01-overview-architecture
 git diff origin/main...HEAD --stat
 ```
@@ -59,13 +60,13 @@ Review lại yêu cầu và kiến trúc PointSnap; sửa các kết luận ch�
 - Sửa tài liệu trạng thái, số liệu lịch sử, recall 0/0; bổ sung báo cáo và sơ đồ có bằng chứng code.
 
 ## Kiểm tra
-- Python: 252 passed, 0 skipped; Node: 7 passed.
+- Python: 256 passed, 0 skipped; Node: 7 passed.
 - CVAT Docker 2.78.1 + nuScenes mini thật; các task thử đã xóa.
 - Cú pháp JS và git diff --check đạt; 1 warning Starlette/httpx của môi trường.
 
 ## Phạm vi
 - Mốc main: 5dcc97f; có commit 22a01f5 chứa bộ hướng dẫn 8 phần đã chuẩn bị trước.
-- Phần 01 có 14 ca review hoàn tất và 8 findings đã sửa.
+- Phần 01 có 14 ca review hoàn tất và 9 findings đã sửa.
 - Chưa nghiệm thu UI bằng mắt, precision xem tay, eval nhiều vòng hoặc cài máy trắng; bàn giao phần 02–08.
 - Không kèm token/dataset/output hoặc Docker/API local chưa theo dõi.
 

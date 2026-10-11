@@ -2,7 +2,7 @@
 
 **Nhánh:** `review/02-core-detectors`.
 **Trạng thái:** đã hoàn tất review phần 02; tiếp nối phần 01 tại `1c3a761`.
-**Kết quả:** [Bàn giao ngắn](02-handoff.md) · [Báo cáo](02-report.md) · [Ma trận luật/dữ liệu](02-rule-matrix.md) · [Bằng chứng kiểm tra](evidence/02/test-results.md). **317 pytest và 7 Node đạt; 0 skip.**
+**Kết quả:** [Bàn giao ngắn](02-handoff.md) · [Báo cáo](02-report.md) · [Ma trận luật/dữ liệu](02-rule-matrix.md) · [Bằng chứng kiểm tra](evidence/02/test-results.md). **321 pytest và 7 Node đạt; 0 skip.**
 
 Áp dụng [quy trình chung](README.md), [mẫu báo cáo](report-template.md). Đường dẫn code tính từ tool root. Đọc invariant và quyết định coverage từ phần 01; ghi SHA tài liệu đã tham khảo.
 

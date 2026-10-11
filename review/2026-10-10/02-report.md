@@ -111,3 +111,10 @@ Fallback timestamp giả định lấy mẫu đều theo cấu hình. Cuboid lis
 Review phần 02 đã hoàn tất; **15 nhóm findings đã sửa, không có finding mở trong phạm vi đã review**. Các lỗi gây rework có ca đáp án độc lập chứng minh trước/sau. Kết quả cuối: **317 test Python và 7 test Node đạt; 0 test bị bỏ qua**.
 
 Nhánh **`review/02-core-detectors`** tiếp nối phần 01. Nếu phần 01 chưa merge, người nhận mở PR với base `review/01-overview-architecture` để chỉ thấy diff phần 02; sau khi phần 01 merge có thể chuyển base sang `main`. Không tạo hoặc merge PR trong lượt này theo yêu cầu bàn giao.
+
+## 8. Kiểm lại cả ba nhánh
+
+- Đọc lại diff core/detector và đối chiếu keyframe/subtype, world/local/time, median modulo 90°, biên điểm, switches và tính ổn định finding. Không phát hiện lỗi mới trong các thay đổi detector phần 02 ở lượt kiểm này.
+- Nhận guard cloud rỗng của phần 01 `0727c15` qua merge `744acfe`; four-rule regression không phụ thuộc floating. Finding chính là RV-01-009, không tạo mã trùng ở phần 02.
+- Suite đúng nhánh sau merge: **321 passed, 0 skipped, 1 warning in 23.49s**; CVAT/nuScenes thật bật. 317 là số của lượt hoàn tất phần 02 ban đầu, 4 ca mới thuộc dependency phần 01.
+- Nhánh 01 hiện đã đính chính dấu quay −90°; dependency mới có trong lịch sử nhánh 02, không force-push/rebase. Người mở PR vẫn chọn base review/01-overview-architecture khi chưa merge.

@@ -10,8 +10,8 @@ Tiền tố nhánh hướng dẫn ban đầu: `review/2026-10-10/`. Nhánh kết
 
 | Thứ tự | Nhánh | Hướng dẫn | Trạng thái review |
 |---|---|---|---|
-| 01 | `review/01-overview-architecture` | [Yêu cầu và kiến trúc](01-overview-architecture.md) | Hoàn tất phần 01; 252 pytest + 7 Node đạt; [bàn giao](01-handoff.md) |
-| 02 | `review/02-core-detectors` | [Core và detector](02-core-detectors.md) | Hoàn tất phần 02; 317 pytest + 7 Node đạt; [bàn giao](02-handoff.md) |
+| 01 | `review/01-overview-architecture` | [Yêu cầu và kiến trúc](01-overview-architecture.md) | Hoàn tất phần 01; 256 pytest + 7 Node đạt; [bàn giao](01-handoff.md) |
+| 02 | `review/02-core-detectors` | [Core và detector](02-core-detectors.md) | Hoàn tất phần 02; 321 pytest + 7 Node đạt; [bàn giao](02-handoff.md) |
 | 03 | `03-data-cvat-integrations` | [Dữ liệu và CVAT](03-data-cvat-integrations.md) | Chưa thực hiện |
 | 04 | `04-backend-cli-reports` | [Backend, CLI và báo cáo](04-backend-cli-reports.md) | Chưa thực hiện |
 | 05 | `05-frontend-extension` | [Giao diện và extension](05-frontend-extension.md) | Chưa thực hiện |

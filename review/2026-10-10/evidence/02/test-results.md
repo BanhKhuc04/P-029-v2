@@ -89,3 +89,13 @@ git diff --check: exit 0
 ```
 
 Đủ 16 mã R02-01–16, 15 findings RV-02-001–015 và 18 rule trong ma trận. Các liên kết nội bộ tồn tại; code fences cân bằng.
+
+## EV-02-007 — review lại ba nhánh
+
+Cùng lệnh suite EV-02-003, thêm guard/four-rule regression RV-01-009 theo dependency (merge 744acfe).
+
+```text
+321 passed, 0 skipped, 1 warning in 23.49s (exit 0)
+```
+
+Đã đọc lại diff riêng phần 02; không tìm thêm lỗi mới trong thay đổi detector. Không coi các lỗi adapter/writer ở bản cũ là đã được sửa trong 02: chúng được xử lý ở phần 03 theo đúng phạm vi và cần merge 03 để dùng các bản sửa đó.

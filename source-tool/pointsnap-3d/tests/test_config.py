@@ -112,3 +112,17 @@ def test_camera_mismatch_severity_parsing(tmp_path):
     path.write_text("camera:\n  mismatch_severity: error\n", encoding="utf-8")
     with pytest.raises(ConfigError):
         load_config(path)
+
+
+def test_camera_model_parsing(tmp_path):
+    from pointsnap.core.config import ConfigError, load_config
+
+    assert load_config(None).camera.model == "maskrcnn"
+    path = tmp_path / "g.yaml"
+    path.write_text("camera:\n  model: gdino-sam2\n", encoding="utf-8")
+    cfg = load_config(path)
+    assert cfg.camera.model == "gdino-sam2"
+    assert cfg.camera.group_of("traffic_cone") == "traffic_cone"
+    path.write_text("camera:\n  model: yolo\n", encoding="utf-8")
+    with pytest.raises(ConfigError):
+        load_config(path)

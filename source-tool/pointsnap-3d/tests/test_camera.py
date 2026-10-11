@@ -197,3 +197,63 @@ def test_camera_class_ignores_rider_on_two_wheeler():
     boxes = _track(label="bicycle", dims=(1.8, 0.6, 1.7))
     findings, _ = _scan(boxes, _Detector({b.frame: b for b in boxes}, name="person"))
     assert [f for f in findings if f.rule == "cam.class"] == []
+
+
+# --- Model ảnh theo từ khóa (Grounding DINO + SAM 2.1) ------------------------------------------------------
+
+
+def test_group_of_name_maps_coco_and_prompt_names():
+    from pointsnap.vision.detector2d import group_of_name
+
+    assert group_of_name("truck") == "vehicle"
+    assert group_of_name("traffic cone") == "traffic_cone"
+    assert group_of_name("construction vehicle") == "vehicle"
+    assert group_of_name("car truck") == "vehicle"  # Grounding DINO ghép hai từ khóa liền nhau
+    assert group_of_name("barrier traffic cone") == "barrier"  # lấy từ khóa đứng đầu
+    assert group_of_name("construction") == "vehicle"  # mảnh của "construction vehicle"
+    assert group_of_name("traffic light") is None
+    assert group_of_name("traffic") is None
+    assert group_of_name("") is None
+
+
+def test_detector_model_choice_and_cache_key(tmp_path):
+    import hashlib
+
+    from pointsnap.vision.detector2d import MODEL_NAME, Detector2D
+
+    with pytest.raises(ValueError):
+        Detector2D(cache_dir=tmp_path, model="yolo")
+    image = tmp_path / "a.jpg"
+    image.write_bytes(b"x")
+    old = Detector2D(cache_dir=tmp_path)
+    new = Detector2D(cache_dir=tmp_path, model="gdino-sam2")
+    stat = image.stat()
+    raw = f"{MODEL_NAME}|{image.resolve()}|{stat.st_size}|{int(stat.st_mtime)}|0.3"
+    assert old._key(image).name == f"{hashlib.sha1(raw.encode('utf-8')).hexdigest()}.npz"  # dùng lại bộ đệm cũ
+    assert new._key(image) != old._key(image)
+    assert {"traffic_cone", "barrier"} <= new.supported_groups
+    assert "traffic_cone" not in old.supported_groups
+
+
+def test_camera_skips_groups_the_model_cannot_see():
+    """Mask R-CNN COCO không có cọc tiêu: box cọc tiêu không được đối chiếu (không có bằng chứng), kể cả khi ảnh có
+    vật khác trùng khung."""
+    cone = [_car(frame=f, x=15.0 + f, label="traffic_cone", dims=(0.4, 0.4, 0.8)) for f in range(4)]
+
+    class _Coco(_Detector):
+        supported_groups = frozenset({"person", "two_wheeler", "vehicle", "animal"})
+
+    class _Open(_Detector):
+        supported_groups = frozenset({"person", "two_wheeler", "vehicle", "animal", "traffic_cone", "barrier"})
+
+    truth = {b.frame: b for b in cone}
+    coco_obs = []
+    open_obs = []
+    for frame in truth:
+        for cls, sink in ((_Coco, coco_obs), (_Open, open_obs)):
+            det = cls(truth, name="traffic cone")
+            det.frame = frame
+            obs, _ = collect_observations([truth[frame]], _Frames(frame + 1), det, CameraConfig())
+            sink += obs
+    assert coco_obs == []
+    assert len(open_obs) == 4 and all(o.iou > 0.5 for o in open_obs)

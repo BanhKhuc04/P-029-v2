@@ -92,6 +92,10 @@ pip install -e ".[vision]"
 Lần quét đầu tải model Mask R-CNN (~180 MB) và chạy khoảng 1 phút cho một cảnh 40 frame × 6 ảnh (RTX 3050); kết quả được lưu
 đệm ở `~/.pointsnap/cache/det2d`, các lần quét sau chỉ đọc lại.
 
+Tùy chọn: model ảnh theo từ khóa Grounding DINO + SAM 2.1 (`camera.model: gdino-sam2` trong guideline) nhận thêm cọc
+tiêu; lần đầu tải ~1 GB từ Hugging Face, chạy ~0,8 s / ảnh. Số liệu và ngưỡng cần đặt: `pointsnap-3d/docs/ket-qua-box-verifier.md`
+mục 3.1.
+
 > PowerShell báo *"running scripts is disabled"* khi `activate`: chạy một lần
 > `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, rồi `activate` lại.
 > Linux / macOS: `python3.11 -m venv .venv` và `source .venv/bin/activate`.

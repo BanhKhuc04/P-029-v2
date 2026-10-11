@@ -1,8 +1,8 @@
 """Bộ phát hiện đối chiếu box 3D với ảnh camera (việc C3, lớp 2 của Box Verifier).
 
 Mỗi box nhìn thấy được chiếu lên các ảnh camera của frame (`core.camera`), so với vật mà model 2D nhận ra trên ảnh
-(`vision.detector2d`, Mask R-CNN COCO). Chỉ xét box nằm gần trọn trong ảnh, đủ lớn, không quá xa và không bị box gần
-hơn che quá `max_occlusion`.
+(`vision.detector2d`: Mask R-CNN COCO, hoặc Grounding DINO + SAM 2.1 theo `camera.model`). Chỉ xét box thuộc nhóm vật
+model ảnh nhận được, nằm gần trọn trong ảnh, đủ lớn, không quá xa và không bị box gần hơn che quá `max_occlusion`.
 
 Khung chiếu của box 3D đúng vẫn lệch khung 2D một lượng ổn định theo vật (gương, phần khuất, góc nhìn), nên giống các luật
 khác của PointSnap, so **độ trùng (IoU) của box với IoU ở các frame khác của chính track**:
@@ -41,7 +41,8 @@ if TYPE_CHECKING:
 
 RIDER_PAIR = {"person", "two_wheeler"}
 """Người ngồi trên xe hai bánh: model ảnh hay tách ra / nhận nhầm hai nhóm này, không coi là sai class."""
-GROUP_VI = {"person": "người", "two_wheeler": "xe hai bánh", "vehicle": "xe", "animal": "động vật"}
+GROUP_VI = {"person": "người", "two_wheeler": "xe hai bánh", "vehicle": "xe", "animal": "động vật",
+            "traffic_cone": "cọc tiêu", "barrier": "rào chắn"}
 
 
 @dataclass(frozen=True)
@@ -114,6 +115,7 @@ def collect_observations(
     """Quan sát của mọi box trên mọi ảnh, và các mục `cam.missing`."""
     observations: list[Observation] = []
     missing: list[Finding] = []
+    supported = getattr(detector, "supported_groups", None)
     for frame, boxes in group_by_frame(c for c in cuboids if c.visible).items():
         data = frames.frame_data(frame)
         if data.sensor_to_world is None:
@@ -130,7 +132,8 @@ def collect_observations(
             for box, proj in projections:
                 group = cfg.group_of(box.label)
                 height = proj.box[3] - proj.box[1]
-                if (group is None or proj.inside_ratio < cfg.min_inside or proj.depth > cfg.max_depth_m
+                if (group is None or (supported is not None and group not in supported)
+                        or proj.inside_ratio < cfg.min_inside or proj.depth > cfg.max_depth_m
                         or height < cfg.min_box_px):
                     continue
                 nearer = [p.box for b, p in projections if b is not box and p.depth < proj.depth - 0.5]
@@ -141,16 +144,18 @@ def collect_observations(
                 pts = np.asarray(data.points, dtype=np.float64)[:, :3]
                 mat = np.asarray(data.sensor_to_world)
                 world_points = pts @ mat[:3, :3].T + mat[:3, 3]
-            missing.extend(_missing(frame, view, det, [p for _, p in projections], world_points, cfg))
+            missing.extend(_missing(frame, view, det, [p for _, p in projections], world_points, cfg, supported))
     return observations, missing
 
 
-def _missing(frame, view, det: Detections, projections: list[Projection], world_points, cfg: CameraConfig):
+def _missing(frame, view, det: Detections, projections: list[Projection], world_points, cfg: CameraConfig,
+             supported=None):
     findings = []
     groups = det.groups()
+    tracked = cfg.tracked_groups() if supported is None else cfg.tracked_groups() & set(supported)
     pixels = depth = None
     for b, g, s in zip(det.boxes, groups, det.scores):
-        if g is None or g not in cfg.tracked_groups() or s < cfg.missing_min_score:
+        if g is None or g not in tracked or s < cfg.missing_min_score:
             continue
         if b[3] - b[1] < cfg.missing_min_px:
             continue

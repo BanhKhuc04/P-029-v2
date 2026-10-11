@@ -1,8 +1,8 @@
 # 01 — Review yêu cầu, tổng quan và kiến trúc
 
-**Nhánh:** `review/2026-10-10/01-overview-architecture`.
-**Trạng thái:** đang thực hiện; mới có kiểm kê và kiểm tra ban đầu.
-**Đầu ra sẽ tạo:** `01-report.md`, sơ đồ hiện trạng, bảng truy vết yêu cầu và danh sách quyết định còn mở.
+**Nhánh bàn giao:** `review/01-overview-architecture`.
+**Trạng thái:** đã hoàn tất review phần 01; không đồng nghĩa nghiệm thu toàn sản phẩm.
+**Kết quả:** [Bàn giao ngắn](01-handoff.md) · [Báo cáo](01-report.md) · [Kiến trúc và sơ đồ](01-architecture.md) · [Bằng chứng kiểm tra](evidence/01/test-results.md).
 
 Đọc [quy trình chung](README.md) và [mẫu báo cáo](report-template.md) trước khi thực hiện. Đường dẫn code bên dưới tính từ tool root.
 
@@ -72,20 +72,20 @@ Trạng thái từng ca điền vào báo cáo; checklist này không tự đán
 python -m pytest -q tests/test_cli.py tests/test_scan_gate.py tests/test_scan_wiring.py
 ```
 
-**Bằng chứng đã có từ lượt trước, 10/10/2026:** trên Python 3.12.14, sau xử lý đường dẫn thư viện và thư mục tạm theo README chung, lệnh tương đương cho kết quả **19 passed in 1.52s**. Đây là 3 file test, không phải toàn bộ suite hoặc môi trường chuẩn Python 3.11.
+**Bằng chứng lịch sử từ lượt trước, 10/10/2026:** trên Python 3.12.14, sau xử lý đường dẫn thư viện và thư mục tạm theo README chung, lệnh tương đương cho kết quả **19 passed in 1.52s**. Kết quả mới ngày 11/10: **252 pytest passed, 0 skipped; 7 Node tests passed**, gồm cả CVAT 2.78.1 và nuScenes mini thật; xem báo cáo/bằng chứng ở trên.
 
 Kiểm tra dữ liệu giả đã chạy: dùng `car(0)`, `car(1, bottom=0.4)`, `car(2)` và `FlatGround` trong `tests/test_scan_wiring.py`; config mặc định với `env={}`. Có LiDAR: có `floating/error`, gate=False. Không LiDAR: findings=[], gate=True. Dữ liệu mặt đất giả cũng tạo finding `fit.empty`; đây là kiểm tra phạm vi thực thi luật, không đo precision detector trên dữ liệu thật.
 
-**Mục cần chốt, chưa sửa:** gate hiện đánh giá findings và chưa nhận thông tin coverage. Cần xác định kết luận ĐẠT khi thiếu dữ liệu có được dùng để nộp nhãn không, hoặc phải báo kiểm tra một phần. Chủ trì hợp đồng ở 01; triển khai/hiển thị ở 04/05; kiểm luật ở 02; hồi quy ở 07.
+**Đã chốt và sửa trong lượt 11/10:** gate nhận thông tin thiếu dữ liệu theo luật đang bật; thiếu LiDAR/pose hoặc có `floating.no_evidence` thì KHÔNG ĐẠT. Cấu hình chủ động tắt luật chỉ được kết luận trong phạm vi đó. Bản kiểm tra dữ liệu giả phía trên mô tả hành vi trước sửa; test hồi quy mới nằm ở `tests/test_gate_coverage.py`. Hợp đồng: CONVENTIONS mục 6; phần 04/05/07 tiếp tục sử dụng.
 
 ## 7. Bàn giao và điều kiện hoàn tất
 
-- [ ] Báo cáo có danh sách entry points, luồng thành công/lỗi và ledger quan hệ.
-- [ ] Có sơ đồ context, module và scan flow nhỏ, mọi edge có nguồn chứng minh.
-- [ ] Bảng yêu cầu ↔ module/test/bằng chứng không bỏ quên giai đoạn 3 hoặc extension.
-- [ ] Tài liệu mâu thuẫn được ghi finding với vị trí và phiên bản.
-- [ ] Kết luận gate thiếu dữ liệu và giới hạn product được ghi rõ để phần sau dùng.
-- [ ] 184 file nền được kiểm kê; có người/phần phụ trách kiểm sâu cho các file còn lại.
-- [ ] `01-report.md` được commit trên nhánh 01; findings còn mở có mã và nhánh tiếp nhận.
+- [x] Báo cáo có danh sách điểm khởi chạy, luồng thành công/lỗi và bảng bằng chứng quan hệ.
+- [x] Có sơ đồ bối cảnh, module và luồng quét; mọi cạnh có nguồn chứng minh.
+- [x] Bảng yêu cầu ↔ module/test/bằng chứng có giai đoạn 3 và extension.
+- [x] Tài liệu mâu thuẫn được ghi finding với vị trí và phiên bản.
+- [x] Kết luận gate thiếu dữ liệu và giới hạn sản phẩm được ghi rõ để phần sau dùng.
+- [x] 184 file nền được kiểm kê; có phần phụ trách kiểm sâu cho các file còn lại.
+- [x] Có `01-report.md` để commit trên nhánh bàn giao; không còn finding mở trong phần 01, các giới hạn được bàn giao cho phần tiếp theo.
 
 Kết quả cần đọc ở phần sau: bảng invariant cho 02/03, bản đồ entry points cho 04/05/06, giới hạn số liệu cho 07, các file local và snapshot tài liệu cho 08. Hoàn tất phần 01 không đồng nghĩa đã nghiệm thu toàn sản phẩm.

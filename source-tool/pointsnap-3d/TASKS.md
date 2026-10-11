@@ -1,5 +1,7 @@
 # PointSnap 3D — Bảng phân việc (4 ngày: 06/10 – 09/10/2026)
 
+> Đối chiếu 11/10/2026: các trạng thái bên dưới là ghi nhận của người phụ trách ở từng thời điểm. Mã nguồn có A14/A15 và C1/C2; trạng thái chờ review không tự chứng minh chưa có code, trạng thái xong không thay thế nghiệm thu. Kết quả kiểm tra hiện hành và phần chưa xác minh: [review phần 01](../../review/2026-10-10/01-report.md).
+
 Chia nhỏ [kế hoạch 4 ngày](de-xuat-de-tai.md#7-kế-hoạch-triển-khai-4-ngày-có-cổng-kiểm-soát) thành từng việc có người phụ trách, hạn, việc phụ thuộc và tiêu chí xong.
 Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhật cột **Trạng thái** mỗi khi bắt đầu hoặc xong một việc.
 

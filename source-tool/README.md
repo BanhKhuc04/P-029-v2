@@ -1,8 +1,8 @@
 # PointSnap 3D
 
-**Giải quyết:** [P-010](../problem-backlog.md#p-010) — khó căn đáy cuboid sát mặt đất, box lơ lửng / lún · [P-011](../problem-backlog.md#p-011) — lỗi 3D chỉ phát hiện ở khâu review thủ công, gây rework lớn
+**Giải quyết:** [P-010](../problem-backlog.md#p-010) — khó căn đáy cuboid sát mặt đất, box lơ lửng / lún · [P-011](../problem-backlog.md#p-011) — lỗi 3D chỉ phát hiện ở khâu review thủ công, gây rework lớn · [P-012](../problem-backlog.md#p-012) — duyệt tuần tự các box có cờ và ghi kết luận qua Web/extension.
 
-> **Trạng thái:** ✅ Đã hoàn thành trọn bộ sản phẩm và tích hợp end-to-end (G2). Xem [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md), [bảng phân việc](pointsnap-3d/TASKS.md) và [giao việc theo ngày](pointsnap-3d/giao-viec/).
+> **Trạng thái đối chiếu ngày 11/10/2026:** mã nguồn CLI, Web, extension và luật giai đoạn 3 đã có. Kết quả G2 trong nhật ký là bằng chứng lịch sử trên CVAT local; chưa đủ để kết luận toàn bộ sản phẩm đã nghiệm thu. `diff` chưa triển khai; test mock không chứng nhận CVAT thật hoặc thao tác trình duyệt. Xem [review phần 01](../review/2026-10-10/01-report.md), [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md) và [bảng phân việc](pointsnap-3d/TASKS.md).
 
 ## Pain point
 
@@ -91,7 +91,9 @@ pointsnap scan --job 12 --flag
 pointsnap gate --job 12
 ```
 
-`scan` / `gate` đọc point cloud từ thư mục nuScenes theo `manifest.json` của bản xuất `nuscenes to-cvat` (tự tìm theo id task trong `POINTSNAP_EXPORT_DIR` và `data/cvat`, hoặc chỉ thẳng bằng `--manifest`). Không tìm được thì tool in cảnh báo, bỏ luật lơ lửng / lún và luật đứt track dùng tọa độ của từng frame. `--flag` chỉ gắn cờ mục Lỗi / Cảnh báo.
+`scan` / `gate` đọc point cloud từ thư mục nuScenes theo `manifest.json` của bản xuất `nuscenes to-cvat` (tự tìm theo id task trong `POINTSNAP_EXPORT_DIR` và `data/cvat`, hoặc chỉ thẳng bằng `--manifest`). Không tìm được thì tool in cảnh báo, bỏ luật lơ lửng / lún và các luật heading/fit dùng LiDAR; `fit.overlap` vẫn chạy. Luật chuyển động thiếu pose dùng tọa độ từng frame, nên kết quả kém chắc. `--flag` chỉ gắn cờ mục Lỗi / Cảnh báo.
+
+**Ý nghĩa gate:** chỉ ĐẠT khi không vượt ngưỡng của các luật đang bật và không có thiếu dữ liệu đã được kiểm tra. Thiếu point cloud cho luật đang bật trên box nhìn thấy, thiếu pose cho luật track/hướng trên box thuộc track, hoặc có `floating.no_evidence` thì KHÔNG ĐẠT (mã 1), kèm lý do kiểm tra một phần. Lỗi đọc frame khi quét `gate` trả mã 3. Luật được chủ động tắt không yêu cầu dữ liệu; ĐẠT không chứng nhận những luật đó, đối tượng bị sót hoặc độ đúng tuyệt đối của nhãn.
 
 **Chạy thử không cần CVAT** (đọc thẳng nuScenes, cùng 3 bộ phát hiện):
 
@@ -109,12 +111,12 @@ Gán nhãn xong
   → pointsnap scan --job <id> --flag
   → Mở CVAT, tải lại trang (F5), lọc box theo pointsnap_error, sửa theo chỉ dẫn
   → pointsnap scan lại → pointsnap gate --job <id>
-  → ĐẠT thì nộp
+  → ĐẠT theo các luật đang bật + reviewer xác nhận phần tool không kiểm → nộp
 ```
 
 ## Đầu vào / đầu ra
 
-- **Vào:** job 3D cuboid trên CVAT (point cloud + nhãn dạng track), đọc trực tiếp qua REST API, **không cần export file**. Ngưỡng lấy từ `config.yaml`.
+- **Vào:** annotation cuboid (track và shape lẻ) đọc qua REST API CVAT, không cần export nhãn. Các luật LiDAR cần point cloud nuScenes cục bộ và manifest khớp thứ tự frame; hiện chưa tải point cloud từ API CVAT. Ngưỡng lấy từ `config.yaml`.
 - **Ra:**
   - Báo cáo **HTML**: chia mức Lỗi / Cảnh báo / Thông tin, nhóm theo track, mỗi dòng có số đo cụ thể và link mở thẳng frame trên CVAT.
   - File **CSV** cùng nội dung để thống kê.
@@ -124,7 +126,9 @@ Gán nhãn xong
 
 ## Đã thử trên
 
-Đã kiểm thử trên **nuScenes v1.0-mini** (10 cảnh, ~400 frame có nhãn): 5 cảnh để chỉnh ngưỡng, 5 cảnh để báo cáo kết quả. Chi tiết xem [`docs/danh-gia.md`](pointsnap-3d/docs/danh-gia.md).
+Các tài liệu lịch sử ghi kiểm thử trên **nuScenes v1.0-mini** (10 cảnh, ~400 frame có nhãn): 5 cảnh chỉnh ngưỡng, 5 cảnh báo cáo. Bảng dưới thuộc báo cáo cũ [`docs/danh-gia.md`](pointsnap-3d/docs/danh-gia.md), thiếu commit/config hash/seed nên không coi là đo lại trên phiên bản hiện hành.
+
+Snapshot giai đoạn 3 ngày 10/10/2026: **3,42 Cảnh báo và 0,55 Lỗi / 100 box** trên 5 cảnh kiểm tra (5 440 box), vẫn vượt mục tiêu ≤ 2 và ≤ 0,5. Xem [kết quả giai đoạn 3](pointsnap-3d/docs/ket-qua-giai-doan-3.md). Đây là đánh giá tự động; precision xem tay và metadata tái lập còn phải xác minh ở phần 07.
 
 | Chỉ số | Mục tiêu | Kết quả |
 |---|---|---|

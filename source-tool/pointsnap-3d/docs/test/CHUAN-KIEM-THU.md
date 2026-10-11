@@ -108,7 +108,7 @@ Chạy `pointsnap ui`.
 | **TC-22** | Tab **Guideline**: tắt luật `track_jump` → **Lưu thay đổi** → quét lại | Không còn mục `track.jump` |
 | **TC-23** | **Thêm class** mới vào khoảng kích thước, **xóa class `bicycle`** → lưu → F5 | Class mới còn, `bicycle` đã mất |
 | **TC-24** | Guideline → **YAML**: xóa một dấu `:` → lưu | Báo lỗi rõ ràng (ghi nguyên văn), **không** lưu |
-| **TC-25** | Đổi ngưỡng gate (vd 100 lỗi, 100 cảnh báo) → quét lại. Sau đó **Khôi phục mặc định** | Kết luận đổi sang ĐẠT; khôi phục xong quét lại thì về KHÔNG ĐẠT |
+| **TC-25** | Đổi ngưỡng gate (vd 100 lỗi, 100 cảnh báo) → quét lại. Sau đó **Khôi phục mặc định** | Khi đủ dữ liệu/bằng chứng cho luật đang bật: ĐẠT nếu số lỗi/cảnh báo trong ngưỡng; khôi phục về KHÔNG ĐẠT nếu vượt ngưỡng. Thiếu dữ liệu hoặc `floating.no_evidence` vẫn KHÔNG ĐẠT dù nới ngưỡng |
 | **TC-26** | Tạo dự án thứ hai với thư mục nuScenes **sai** → quét cùng job | Vẫn quét được, báo thiếu point cloud, bỏ qua luật lơ lửng / lún |
 | **TC-27** | **Xóa vĩnh viễn** dự án thứ hai | Phải gõ lại tên mới xóa được; dự án thứ nhất còn nguyên |
 | **TC-28** 📷 | Màn Kết quả → **Duyệt nhanh** | Hiện point cloud quanh box; `J` / `K` chuyển mục; `1` ghi Đúng là lỗi, `2` ghi Báo nhầm |
@@ -122,7 +122,7 @@ Tắt giao diện (Ctrl+C). Dùng guideline mặc định.
 |---|---|---|
 | **TC-30** | `pointsnap scan --job <job>` | Tạo HTML / CSV trong `out\`; số Lỗi / Cảnh báo **bằng** TC-15. Ghi cả hai |
 | **TC-31** | `pointsnap scan --job <job> --flag` | Dòng `Đã gắn cờ lỗi lên N box…`; N = số Lỗi + Cảnh báo |
-| **TC-32** | `pointsnap gate --job <job>`; `echo $LASTEXITCODE` | In KHÔNG ĐẠT kèm lý do, mã thoát 1. Với `--config` nới ngưỡng thì ĐẠT, mã thoát 0. Ghi cả hai mã |
+| **TC-32** | `pointsnap gate --job <job>`; `echo $LASTEXITCODE` | In KHÔNG ĐẠT kèm lý do, mã 1. Với `--config` nới ngưỡng và đủ dữ liệu/bằng chứng thì ĐẠT, mã 0; thiếu dữ liệu vẫn mã 1, lỗi đọc frame mã 3. Ghi config và từng mã |
 | **TC-33** | `pointsnap nuscenes scan --scene scene-0061` | Quét không cần CVAT; số Lỗi / Cảnh báo bằng TC-30 (khi nhãn CVAT chưa sửa) |
 | **TC-34** | `pointsnap diff a.json b.json` | Báo lệnh chưa có, mã thoát 3 (không văng traceback) |
 | **TC-35** | Chạy TC-30 trong **PowerShell mặc định** (không đặt `PYTHONIOENCODING`) | Tiếng Việt in đúng, không `UnicodeEncodeError` |
@@ -158,7 +158,7 @@ Mở cùng lúc web PointSnap và tab CVAT đang mở **đúng job** của lần
 
 | Mã | Làm | Mong đợi |
 |---|---|---|
-| **TC-60** | Từ kết quả KHÔNG ĐẠT với guideline **mặc định**: sửa trong CVAT **mọi box mức Lỗi** và đủ số Cảnh báo để còn ≤ ngưỡng → quét + gắn cờ → `pointsnap gate` | Gate **ĐẠT** mà **không** nới ngưỡng. Ghi số Lỗi / Cảnh báo trước và sau |
+| **TC-60** | Từ kết quả KHÔNG ĐẠT với guideline **mặc định**, đủ LiDAR/pose và không có `floating.no_evidence`: sửa mọi box mức Lỗi và đủ số Cảnh báo → quét + gắn cờ → `pointsnap gate` | Gate **ĐẠT** mà **không** nới ngưỡng. Ghi số Lỗi / Cảnh báo và tình trạng dữ liệu trước/sau. Thiếu bằng chứng phải ghi KHÔNG ĐẠT và phần reviewer còn phải xác minh |
 
 ### 5.7. Luật giai đoạn 3: sai hướng box, box lệch, bám spec
 

@@ -107,3 +107,12 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - `CVAT_AUTH_SCHEME`: `Bearer` (mặc định, dùng cho Personal Access Token tạo trong giao diện CVAT) hoặc `Token` (token cũ lấy từ `/api/auth/login`).
 - `NUSCENES_ROOT`: thư mục dữ liệu nuScenes, dùng làm mặc định cho `--dataroot`.
 - Không commit dữ liệu nuScenes, file `.pcd`, báo cáo hay bản chụp nhãn (đã có trong `.gitignore`).
+
+## 6. Gate và dữ liệu kiểm tra (review 01, 11/10/2026)
+
+- `gate_verdict` trả `(passed, reasons)`; caller CLI/Web truyền `coverage_gaps` do `scan_coverage_gaps` xác định theo luật đang bật. Hàm gate không tự đọc dataset.
+- Thiếu nguồn point cloud cho `floating`, `heading_points`, `fit_empty`, `fit_outside`, `fit_loose` trên job có box nhìn thấy: kiểm tra một phần, gate KHÔNG ĐẠT.
+- Thiếu pose ở bất kỳ frame có box nhìn thấy thuộc track khi bật `track_jump`, `track_split_id`, `track_long_interpolation` (và `track.long_interpolation.enabled`), `heading_flip` hoặc `heading_motion`: gate KHÔNG ĐẠT. Kiểm tra ở cấp job mang tính bảo thủ, không suy ra pose đủ chỉ vì có `FrameSource`.
+- `floating.no_evidence` giữ mức Thông tin, không ghi cờ lỗi hình học vào CVAT, nhưng chặn gate vì chưa đủ bằng chứng mặt đất. Các mục Thông tin khác không tự động chặn gate.
+- Luật tắt không yêu cầu dữ liệu; `fit.overlap`, kích thước, thuộc tính và luật vòng đời track có thể chạy không cần LiDAR. ĐẠT chỉ có nghĩa đạt ngưỡng trong cấu hình đã dùng, không chứng nhận sót đối tượng hoặc mọi box đã được kiểm đủ.
+- CLI: 0 = ĐẠT; 1 = vượt ngưỡng hoặc thiếu dữ liệu đã xác định; 3 = lỗi đọc/quét dữ liệu. Web lưu `gate_passed`, `gate_reasons`, `coverage_gaps` trong `summary.json`. Báo cáo cũ không được đánh giá lại tự động.

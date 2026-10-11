@@ -1,5 +1,7 @@
 # Nhật ký tuần 04 · 05/10 – 11/10/2026
 
+> **Snapshot cập nhật tới 08/10/2026**, giữ nguyên tiến độ và số liệu lịch sử dưới đây. Đối chiếu mã nguồn ngày 11/10: CLI/Web/extension và luật giai đoạn 3 đã có trên mốc `5dcc97f`; xem [review phần 01](../../review/2026-10-10/01-report.md). Không dùng các PR chờ merge hoặc tỷ lệ hoàn thành trong snapshot này để suy ra trạng thái hiện tại.
+
 **Lead tuần này:** @Vũ Bảo Khánh
 **Dữ liệu / task CVAT:** nuScenes v1.0-mini (10 cảnh) trên CVAT 2.77.0 chạy Docker local, dùng để làm tool **PointSnap 3D** trong 4 ngày 06/10 – 09/10 ([bản đề xuất](../../source-tool/pointsnap-3d/de-xuat-de-tai.md) · [bảng phân việc](../../source-tool/pointsnap-3d/TASKS.md) · [giao việc theo ngày](../../source-tool/pointsnap-3d/giao-viec/))
 

@@ -277,7 +277,7 @@ Lỗi tăng từ 0,32 lên 2,30 / 100 box). Yêu cầu bằng chứng nhân theo
 
 - **Báo cáo HTML / CSV** cho mỗi lần quét: ba mức Lỗi / Cảnh báo / Thông tin; mỗi dòng ghi số đo cụ thể (ví dụ *"Đáy box cách mặt đất 15 cm; cao hơn 26 cm so với các frame khác của track"*) kèm link **mở đúng box** trên CVAT.
 - **Gắn cờ** `pointsnap_error` lên box có Lỗi / Cảnh báo (ví dụ *"[Lỗi] Đáy box cách mặt đất 15 cm…"*); tự gỡ cờ khi box hết lỗi ở lần quét sau.
-- **Cổng kiểm soát:** ĐẠT / KHÔNG ĐẠT kèm lý do. Mặc định: 0 mục Lỗi, ≤ 10 Cảnh báo; chỉnh được theo dự án. CLI trả exit code 0 / 1.
+- **Cổng kiểm soát:** ĐẠT / KHÔNG ĐẠT kèm lý do. Mặc định: 0 mục Lỗi, ≤ 10 Cảnh báo; chỉnh được theo dự án. CLI trả exit code 0 / 1. Từ review 01 ngày 11/10/2026, thiếu point cloud/pose cho luật đang bật hoặc có `floating.no_evidence` cũng KHÔNG ĐẠT; lỗi đọc frame trả mã 3. ĐẠT chỉ áp dụng cho các luật trong cấu hình, xem [CONVENTIONS mục 6](CONVENTIONS.md#6-gate-và-dữ-liệu-kiểm-tra-review-01-11102026).
 - **Hiệu năng đo được:** quét job scene-0061 (39 frame, 3 333 box, có point cloud) ~3–4 giây trên laptop CPU.
 
 ### 4.3. 📏 Công cụ đánh giá
@@ -426,11 +426,11 @@ viết sai chính tả nhưng giữ nguyên để khớp danh sách của spec. 
 
 ```
 pointsnap/
-  core/               # thuần Python: Cuboid, hình học, mặt đất, cấu hình, gate. KHÔNG import CVAT
-  detectors/          # 3 bộ phát hiện: floating.py, size.py, track.py
+  core/               # Cuboid, hình học, mặt đất, cấu hình, gate; scanner hiện import JobData từ CVAT reader
+  detectors/          # floating, size, track, heading, fit, attributes (giai đoạn 1–3)
   adapters/cvat/      # REST: đọc nhãn, ghi cờ lỗi, bản chụp, manifest point cloud
   adapters/nuscenes/  # đọc thẳng nuScenes (bảng JSON, .pcd.bin, ảnh camera)
-  datasets/           # nuScenes → .pcd + task CVAT; chèn lỗi giả
+  datasets/           # nuScenes → .pcd + task CVAT; chèn lỗi giả ở core/synthetic.py
   eval/               # đánh giá trên lỗi chèn giả, chia cảnh tinh chỉnh / kiểm tra
   report/             # báo cáo HTML, CSV
   web/                # FastAPI + HTML/CSS/JS thuần: dự án, guideline, quét nền, duyệt nhanh
@@ -453,7 +453,7 @@ tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 
 **Hiện tại (CVAT Docker local + nuScenes v1.0-mini):** không phụ thuộc dữ liệu nội bộ, có nhãn chuẩn làm đáp án, người khác tái lập được (README + quy trình kiểm thử).
 
-**Khi chuyển sang CVAT và dữ liệu thật của tổ chức:** chỉ cần URL + token; chạy quét không gắn cờ trước; thống kê lại khoảng kích thước theo class trên dữ liệu thật và lưu vào guideline của dự án. Extension dùng được với mọi CVAT cùng phiên bản giao diện, không cần quyền quản trị server. Giới hạn hiện tại: point cloud đọc từ thư mục nuScenes trên máy (đọc qua API CVAT nằm ở hướng phát triển).
+**Khi chuyển sang CVAT và dữ liệu thật của tổ chức:** URL + token đủ để đọc annotation; các luật LiDAR còn cần nguồn point cloud/manifest tương thích trên máy. Dữ liệu ngoài nuScenes cần adapter tương ứng trước khi kiểm đủ hình học; đọc point cloud qua API CVAT nằm ở hướng phát triển. Chạy quét không gắn cờ trước, thống kê lại khoảng kích thước theo class và lưu vào guideline dự án. Extension cần xác minh trên phiên bản giao diện CVAT thực tế; không cần quyền quản trị server.
 
 ---
 

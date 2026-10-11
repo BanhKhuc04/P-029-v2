@@ -2,15 +2,15 @@
 
 Ngày lập: **10/10/2026, Asia/Saigon**. Mốc mã nguồn: **`5dcc97f1ffc1751d022e2474c0b50745e348af86`**.
 
-Đây là hướng dẫn thực hiện review và ghi kết quả. Các checklist chưa có kết quả vẫn mang trạng thái **Chưa chạy**. Bộ hướng dẫn được lưu chung trên 8 nhánh; kết quả và sửa đổi của từng phần được commit riêng trên nhánh phụ trách.
+Đây là hướng dẫn thực hiện review và ghi kết quả. Các checklist chưa có kết quả vẫn mang trạng thái **Chưa chạy**. Phần **01 đã hoàn tất ngày 11/10**, xem [bàn giao ngắn](01-handoff.md), [báo cáo](01-report.md) và [kiến trúc](01-architecture.md); nhánh bàn giao là `review/01-overview-architecture`, người nhận sẽ mở pull request. Kết quả này không đồng nghĩa hoàn tất các phần 02–08.
 
 ## 1. Chọn tài liệu theo nhánh
 
-Tiền tố nhánh: `review/2026-10-10/`.
+Tiền tố nhánh hướng dẫn ban đầu: `review/2026-10-10/`. Riêng nhánh kết quả phần 01 dùng tên không có ngày theo yêu cầu bàn giao.
 
 | Thứ tự | Nhánh | Hướng dẫn | Trạng thái review |
 |---|---|---|---|
-| 01 | `01-overview-architecture` | [Yêu cầu và kiến trúc](01-overview-architecture.md) | Đang thực hiện; có bằng chứng ban đầu |
+| 01 | `review/01-overview-architecture` | [Yêu cầu và kiến trúc](01-overview-architecture.md) | Hoàn tất phần 01; 252 pytest + 7 Node đạt; [bàn giao](01-handoff.md) |
 | 02 | `02-core-detectors` | [Core và detector](02-core-detectors.md) | Chưa thực hiện |
 | 03 | `03-data-cvat-integrations` | [Dữ liệu và CVAT](03-data-cvat-integrations.md) | Chưa thực hiện |
 | 04 | `04-backend-cli-reports` | [Backend, CLI và báo cáo](04-backend-cli-reports.md) | Chưa thực hiện |
@@ -108,4 +108,4 @@ Trạng thái finding: Mở → Đang xử lý → Đã sửa/chờ kiểm lại
 - Các Markdown links và đường dẫn file nguồn cụ thể được kiểm tra đều tồn tại trong checkout hiện tại; code fences cân bằng.
 - Inventory có đúng **184 file** của commit nền `5dcc97f`, không thiếu/thừa/trùng.
 
-Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Kết quả thực hiện 155 ca sẽ được ghi trong báo cáo từng nhánh; chúng đang chưa chạy, trừ bằng chứng ban đầu nêu riêng ở phần 01.
+Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Kết quả thực hiện 155 ca được ghi trong báo cáo từng nhánh; **14 ca của phần 01 đã hoàn tất**, 141 ca kế hoạch của phần 02–08 chưa có kết quả review riêng.

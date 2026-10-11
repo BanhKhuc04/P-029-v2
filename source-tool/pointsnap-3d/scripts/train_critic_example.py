@@ -14,7 +14,9 @@ Script in **ngưỡng gợi ý** để box chuẩn của cảnh kiểm tra bị 
 
 Chạy (cần PyTorch):
     pointsnap critic-data --scenes tuning --out data/critic
-    python scripts/train_critic_example.py --data data/critic --epochs 30 --out models/critic.pt
+    python scripts/train_critic_example.py --data data/critic --epochs 30 --ensemble 5 --out models/critic.pt
+`--ensemble 5` huấn luyện 5 model với seed khác nhau rồi lấy trung bình (xuất thành một file TorchScript, cùng hợp đồng):
+cùng cấu hình mà đổi seed, tỉ lệ bắt mẫu sai trên cảnh để riêng dao động 19 – 26%; trung bình 5 model ổn định ở ~31%.
 Rồi khai trong guideline:  critic: {model: models/critic.pt, min_probability: <ngưỡng gợi ý>}  và đo bằng
 pointsnap eval --scenes test
 """
@@ -72,6 +74,23 @@ def augment(pts: torch.Tensor, tgt: torch.Tensor) -> tuple[torch.Tensor, torch.T
     return pts, tgt
 
 
+class Ensemble(nn.Module):
+    """Trung bình logit và giá trị sửa của nhiều model huấn luyện với seed khác nhau: giảm phần lệch ngẫu nhiên theo
+    từng vật / cảnh mà một model đơn lẻ học thuộc. Cùng hợp đồng đầu vào / đầu ra với `BoxCritic`."""
+
+    def __init__(self, members: list[BoxCritic]):
+        super().__init__()
+        self.members = nn.ModuleList(members)
+
+    def forward(self, points: torch.Tensor, meta: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        logits, deltas = [], []
+        for m in self.members:
+            logit, delta = m(points, meta)
+            logits.append(logit)
+            deltas.append(delta)
+        return torch.stack(logits).mean(dim=0), torch.stack(deltas).mean(dim=0)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
@@ -79,10 +98,15 @@ def main() -> None:
     parser.add_argument("--batch", type=int, default=512)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-3)
+    parser.add_argument("--width", type=int, default=128, help="số đặc trưng sau lớp gộp max")
+    parser.add_argument("--dropout", type=float, default=0.3)
+    parser.add_argument("--ensemble", type=int, default=1, help="số model (seed khác nhau) lấy trung bình")
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--val-scenes", nargs="*", default=None,
                         help="tên file .npz (không đuôi) để kiểm tra; mặc định file cuối theo thứ tự tên")
     parser.add_argument("--use-dims", action="store_true", help="cho model thấy kích thước tuyệt đối (dễ học thuộc)")
     parser.add_argument("--target-fa", type=float, default=0.01, help="tỉ lệ box chuẩn bị báo để tính ngưỡng gợi ý")
+    parser.add_argument("--quiet", action="store_true", help="không in từng epoch")
     parser.add_argument("--out", type=Path, default=Path("models/critic.pt"))
     args = parser.parse_args()
 
@@ -98,11 +122,7 @@ def main() -> None:
     train = {k: torch.from_numpy(v.astype(np.float32)) for k, v in load(train_files).items()}
     val_raw = load(val_files)
     val = {k: torch.from_numpy(v.astype(np.float32)) for k, v in val_raw.items()}
-    model = BoxCritic(train["meta"].shape[1], use_dims=args.use_dims).to(device)
-    optim = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(optim, args.epochs)
     bce, smooth = nn.BCEWithLogitsLoss(), nn.SmoothL1Loss(reduction="none")
-    rng = np.random.default_rng(0)
 
     def batches(data, idx):
         for i in range(0, len(idx), args.batch):
@@ -114,45 +134,60 @@ def main() -> None:
         reg = (smooth(delta, tgt).mean(dim=1) * y).sum() / y.sum().clamp(min=1)
         return bce(logit, y) + reg
 
-    best, best_state, best_p = float("inf"), None, None
-    clean_val = (val["target"] == 0).all(dim=1).numpy()
-    for epoch in range(args.epochs):
-        model.train()
-        for pts, meta, y, tgt in batches(train, rng.permutation(len(train["is_error"]))):
-            pts, tgt = augment(pts, tgt)
-            logit, delta = model(pts, meta)
-            loss = losses(logit, delta, y, tgt)
-            optim.zero_grad()
-            loss.backward()
-            optim.step()
-        sched.step()
-        model.eval()
-        total, probs, logits, err = 0.0, [], [], []
+    def predict(model):
+        logits, deltas = [], []
         with torch.inference_mode():
-            for pts, meta, y, tgt in batches(val, np.arange(len(val["is_error"]))):
+            for pts, meta, _, _ in batches(val, np.arange(len(val["is_error"]))):
                 logit, delta = model(pts, meta)
-                total += float(losses(logit, delta, y, tgt)) * len(y)
-                probs.append(torch.sigmoid(logit).cpu())
                 logits.append(logit.cpu())
-                mask = y > 0
-                if mask.any():
-                    err.append((delta[mask][:, :2] - tgt[mask][:, :2]).norm(dim=1).cpu())
-        val_loss = total / len(val["is_error"])
-        p = torch.cat(probs).numpy()
-        y = val["is_error"].numpy()
-        shift_err = float(torch.cat(err).median()) if err else float("nan")
-        print(f"epoch {epoch + 1}: loss kiểm tra {val_loss:.3f}, accuracy {((p > 0.5) == y).mean():.3f}, "
-              f"box chuẩn bị báo (p>0.7) {(p[clean_val] > 0.7).mean():.1%}, mẫu sai bắt được (p>0.7) "
-              f"{(p[y == 1] > 0.7).mean():.1%}, sai số gợi ý dời {shift_err:.3f} m")
-        if val_loss < best:
-            best, best_p, best_logit = val_loss, p, torch.cat(logits).numpy()
-            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+                deltas.append(delta.cpu())
+        return torch.cat(logits), torch.cat(deltas)
 
-    model.load_state_dict(best_state)
-    y = val["is_error"].numpy()
+    clean_val = (val["target"] == 0).all(dim=1).numpy()
+    y_val = val["is_error"].numpy()
+
+    def train_one(seed: int) -> BoxCritic:
+        torch.manual_seed(seed)
+        rng = np.random.default_rng(seed)
+        model = BoxCritic(train["meta"].shape[1], width=args.width, use_dims=args.use_dims,
+                          dropout=args.dropout).to(device)
+        optim = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        sched = torch.optim.lr_scheduler.CosineAnnealingLR(optim, args.epochs)
+        best, best_state = float("inf"), None
+        for epoch in range(args.epochs):
+            model.train()
+            for pts, meta, y, tgt in batches(train, rng.permutation(len(train["is_error"]))):
+                pts, tgt = augment(pts, tgt)
+                logit, delta = model(pts, meta)
+                loss = losses(logit, delta, y, tgt)
+                optim.zero_grad()
+                loss.backward()
+                optim.step()
+            sched.step()
+            model.eval()
+            logit, delta = predict(model)
+            val_loss = float(losses(logit, delta, val["is_error"], val["target"]))
+            if not args.quiet:
+                p = torch.sigmoid(logit).numpy()
+                wrong = y_val == 1
+                shift_err = float((delta[wrong][:, :2] - val["target"][wrong][:, :2]).norm(dim=1).median())
+                print(f"[seed {seed}] epoch {epoch + 1}: loss kiểm tra {val_loss:.3f}, accuracy "
+                      f"{((p > 0.5) == y_val).mean():.3f}, box chuẩn bị báo (p>0.7) {(p[clean_val] > 0.7).mean():.1%}, "
+                      f"mẫu sai bắt được (p>0.7) {(p[wrong] > 0.7).mean():.1%}, sai số gợi ý dời {shift_err:.3f} m")
+            if val_loss < best:
+                best, best_state = val_loss, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+        model.load_state_dict(best_state)
+        print(f"[seed {seed}] loss kiểm tra tốt nhất {best:.3f}")
+        return model.eval()
+
+    members = [train_one(args.seed + i) for i in range(args.ensemble)]
+    model = members[0] if len(members) == 1 else Ensemble(members).eval()
+    logit, _ = predict(model)
+    best_logit = logit.numpy()
+    best_p = torch.sigmoid(logit).numpy()
     threshold = float(np.quantile(best_p[clean_val], 1 - args.target_fa))
-    print(f"model tốt nhất: loss kiểm tra {best:.3f}. Ngưỡng gợi ý critic.min_probability = {threshold:.2f} "
-          f"(box chuẩn cảnh kiểm tra bị báo {args.target_fa:.0%}; mẫu sai bắt được {(best_p[y == 1] > threshold).mean():.1%})")
+    print(f"Ngưỡng gợi ý critic.min_probability = {threshold:.2f} (box chuẩn cảnh kiểm tra bị báo {args.target_fa:.0%}; "
+          f"mẫu sai bắt được {(best_p[y_val == 1] > threshold).mean():.1%})")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     model.cpu().eval()
     torch.jit.script(model).save(str(args.out))

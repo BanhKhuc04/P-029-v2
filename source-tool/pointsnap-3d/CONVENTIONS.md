@@ -133,3 +133,15 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - Finding được sắp ổn định thêm theo label/source_id; overlap dùng thứ tự box xác định khi chọn mục tiêu. Không sửa hình học hoặc thuộc tính của đầu vào khi kiểm luật.
 
 Ma trận 18 mã luật, ca biên và bằng chứng: [review phần 02](../../review/2026-10-10/02-report.md).
+
+## 8. Dữ liệu và writer sau review 03
+
+- Manifest của bản xuất toàn scene kiểm số frame, tên file/sample_token, pose/time và transform trước scan. Auto tìm theo URL CVAT + task_id; bản cũ thiếu URL cần xác minh và chỉ manifest rõ hoặc cập nhật metadata.
+- PCD chỉ hỗ trợ binary XYZ/intensity float32, COUNT=1; kiểm SIZE/TYPE/count/byte và finite. nuScenes bin cần 5 float32/điểm, không âm thầm bỏ byte cuối. Sweep thiếu dùng số có; sweep corrupt báo lỗi.
+- Tên hệ export `ego` là hệ hiển thị quay cố định −90° giữ gốc LiDAR, chưa phải biến đổi calibration đầy đủ về gốc xe. Pose đi kèm bảo toàn world; core vẫn mô hình yaw.
+- Thuộc tính mutable kế thừa theo frame tới lần đổi/reset rõ. Cờ reset bằng chuỗi rỗng ở keyframe kế tiếp khi cần; không xóa entry rồi để cờ trước đó kế thừa lại.
+- Writer so nhãn fresh với lượt scan, GET lại trước PATCH; thay đổi yêu cầu quét lại. Còn race sau GET cuối nếu client khác sửa cùng lúc, chưa có bảo đảm atomic. Tránh sửa cùng job lúc ghi cờ.
+- CVAT có thể cấp source ID keyframe mới. Chỉ rebind theo track/frame khi đúng keyframe đã scan và nhãn chưa đổi; ID lạ unmatched. Flag attribute phải mutable.
+- Snapshot load từ API có thêm `meta.cvat_annotations` là payload gốc; không token, giữ ngoài Git. So geometry/state theo key ổn định và dung sai tuyệt đối, không dựa vào ID cấp lại.
+
+Mapping/18 ca/16 findings và bằng chứng: [review phần 03](../../review/2026-10-10/03-report.md).

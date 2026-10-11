@@ -1,8 +1,8 @@
 # 03 — Review dữ liệu, nuScenes và tích hợp CVAT
 
-**Nhánh:** `review/2026-10-10/03-data-cvat-integrations`.
-**Trạng thái:** chưa thực hiện.
-**Đầu ra sẽ tạo:** `03-report.md`, bảng mapping dữ liệu, bằng chứng đọc–ghi vòng lại và kiểm tra bảo toàn nhãn.
+**Nhánh:** `review/03-data-cvat-integrations`.
+**Trạng thái:** hoàn tất review phần 03 trong phạm vi [báo cáo](03-report.md); 367 pytest + 7 Node đạt, 0 skip trong suite bàn giao.
+**Đầu ra:** [bàn giao](03-handoff.md), [mapping](03-mapping.md), [bằng chứng](evidence/03/test-results.md). Dependency phần 02 tại `82fc8b8`.
 
 Đọc [quy trình chung](README.md), [mẫu báo cáo](report-template.md), CONVENTIONS và invariant phần 02. Đường dẫn dưới đây tính từ tool root.
 
@@ -82,17 +82,17 @@ CVAT thật: đọc `tests/test_live_cvat.py` trước. Test được bật qua 
 
 | Trường/đại lượng | Nguồn | Core | Đích CVAT/export | Đơn vị/ưu tiên | Ca/bằng chứng |
 |---|---|---|---|---|---|
-| center/dims/yaw/roll/pitch | Chưa điền | Chưa điền | Chưa điền | Theo CONVENTIONS | Chưa có |
-| frame/sample_token/pose/time | Chưa điền | Chưa điền | Chưa điền | Ghi offset và thứ tự | Chưa có |
-| track/source IDs/attrs/markers | Chưa điền | Chưa điền | Chưa điền | Ghi key ổn định | Chưa có |
+| center/dims/yaw/roll/pitch | nuScenes global / CVAT points | LiDAR hoặc hệ hiển thị; giữ tilt attrs | PCD/points gốc khi writer | m/rad; [hợp đồng chi tiết](03-mapping.md) | EV-03-001/002 |
+| frame/sample_token/pose/time | sample chain đúng scene | 0..N−1, pose cùng điểm | Manifest/metadata toàn task | s; URL+task ID, không bù mismatch | EV-03-001/002 |
+| track/source IDs/attrs/markers | instance / IDs CVAT | Keyframe, outside/occluded và attrs carry | Track đầy đủ, flag/reset mutable | ID mới được rebind có kiểm; snapshot raw | EV-03-001/002/003 |
 
 Mỗi ca writer ghi số box/track/keyframe trước và sau; phần nào được phép thay đổi; delta của hình học; danh sách attrs thay đổi và unmatched findings. Xác định có task thử còn sót nếu cleanup không thành công; chỉ cleanup đúng task do lượt test tạo.
 
 ## 8. Hoàn tất và bàn giao
 
-- [ ] Mapping, frame và hệ tọa độ có bằng chứng độc lập với converter.
-- [ ] Writer có ca gắn/gỡ/không khớp và kiểm giữ nguyên nhãn ngoài cờ.
-- [ ] Kết quả mock/real/CVAT thật được tách rõ, skip có lý do.
-- [ ] Findings về token/origin chuyển 06; API/message chuyển 04; điều hướng/ảnh chuyển 05.
-- [ ] Dataset/config ảnh hưởng đánh giá được ghi để 07 tái lập; phiên bản/mount đưa cho 08.
-- [ ] `03-report.md` ghi task thử, snapshot ngoài Git, kết quả cleanup và giới hạn CVAT của BTC nếu chưa kiểm.
+- [x] Mapping/fixture tính tay, frame và pose; giới hạn hệ hiển thị/tilt ghi rõ.
+- [x] Writer có gắn/gỡ/unmatched/idempotency và bảo toàn raw payload; race không atomic ghi rõ.
+- [x] Mock/dataset/CVAT/browser phân biệt trong report; 0 skip suite bàn giao.
+- [x] Origin đã sửa; phần 06 tiếp tục audit. Guard đồng thời chuyển 04/06; extension/shape URL UI còn ở 05.
+- [x] Scene/config/version ghi trong evidence, precision/recall và CVAT chuẩn vẫn thuộc 07/08.
+- [x] Báo cáo ghi task 27, snapshot ngoài Git, cleanup và server BTC chưa kiểm.

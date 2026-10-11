@@ -2,17 +2,17 @@
 
 Ngày lập: **10/10/2026, Asia/Saigon**. Mốc mã nguồn: **`5dcc97f1ffc1751d022e2474c0b50745e348af86`**.
 
-Đây là hướng dẫn thực hiện review và ghi kết quả. Phần **01 và 02 đã hoàn tất ngày 11/10**: [bàn giao 01](01-handoff.md), [bàn giao 02](02-handoff.md). Nhánh 02 tiếp nối 01; người nhận sẽ review độc lập và mở pull request theo hướng dẫn nhánh gốc trong trang bàn giao. Các ca chưa có kết quả của phần 03–08 vẫn **Chưa chạy**.
+Đây là hướng dẫn thực hiện review và ghi kết quả. Phần **01–03 đã hoàn tất ngày 11/10 trong phạm vi báo cáo**: [bàn giao 01](01-handoff.md), [bàn giao 02](02-handoff.md), [bàn giao 03](03-handoff.md). Nhánh 02 tiếp nối 01, 03 tiếp nối 02; người nhận mở PR theo hướng dẫn base. Các ca phần 04–08 vẫn **Chưa chạy**.
 
 ## 1. Chọn tài liệu theo nhánh
 
-Tiền tố nhánh hướng dẫn ban đầu: `review/2026-10-10/`. Nhánh kết quả phần 01/02 dùng tên không có ngày theo yêu cầu bàn giao.
+Tiền tố nhánh hướng dẫn ban đầu: `review/2026-10-10/`. Nhánh kết quả phần 01–03 dùng tên không có ngày theo yêu cầu bàn giao.
 
 | Thứ tự | Nhánh | Hướng dẫn | Trạng thái review |
 |---|---|---|---|
 | 01 | `review/01-overview-architecture` | [Yêu cầu và kiến trúc](01-overview-architecture.md) | Hoàn tất phần 01; 252 pytest + 7 Node đạt; [bàn giao](01-handoff.md) |
 | 02 | `review/02-core-detectors` | [Core và detector](02-core-detectors.md) | Hoàn tất phần 02; 317 pytest + 7 Node đạt; [bàn giao](02-handoff.md) |
-| 03 | `03-data-cvat-integrations` | [Dữ liệu và CVAT](03-data-cvat-integrations.md) | Chưa thực hiện |
+| 03 | `review/03-data-cvat-integrations` | [Dữ liệu và CVAT](03-data-cvat-integrations.md) | Hoàn tất phần 03; 367 pytest + 7 Node; [bàn giao](03-handoff.md) |
 | 04 | `04-backend-cli-reports` | [Backend, CLI và báo cáo](04-backend-cli-reports.md) | Chưa thực hiện |
 | 05 | `05-frontend-extension` | [Giao diện và extension](05-frontend-extension.md) | Chưa thực hiện |
 | 06 | `06-security-config` | [Bảo mật và cấu hình](06-security-config.md) | Chưa thực hiện |
@@ -38,7 +38,7 @@ Mẫu báo cáo: [report-template.md](report-template.md). Kiểm kê mã nguồ
 5. Đọc code theo đường gọi thực tế, chạy kiểm tra phù hợp, lưu kết quả và findings.
 6. Khi sửa, tách commit sửa mã nguồn với commit tài liệu; kiểm lại ca tái hiện và luồng liên quan.
 
-Các nhánh độc lập về kết quả. Đọc báo cáo phần khác bằng `git show <nhánh>:review/2026-10-10/NN-report.md` khi file đã được commit. Ghi SHA của báo cáo đã tham khảo. Nếu cần dùng một bản sửa từ nhánh khác, ghi dependency và đưa commit đó vào có chủ đích; không giả định thay đổi tự chuyển giữa nhánh.
+Các nhánh hướng dẫn ban đầu độc lập; nhánh kết quả 02/03 đã đưa dependency trước vào có chủ đích. Đọc báo cáo bằng `git show <nhánh>:review/2026-10-10/NN-report.md`; ghi SHA đã tham khảo và chọn đúng base PR trong bàn giao. Không giả định các nhánh đã merge main.
 
 ## 4. Môi trường và lệnh kiểm tra
 
@@ -108,4 +108,4 @@ Trạng thái finding: Mở → Đang xử lý → Đã sửa/chờ kiểm lại
 - Các Markdown links và đường dẫn file nguồn cụ thể được kiểm tra đều tồn tại trong checkout hiện tại; code fences cân bằng.
 - Inventory có đúng **184 file** của commit nền `5dcc97f`, không thiếu/thừa/trùng.
 
-Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Kết quả thực hiện 155 ca được ghi trong báo cáo từng nhánh; **14 ca phần 01 và 16 ca phần 02 đã hoàn tất**, 125 ca kế hoạch phần 03–08 chưa có kết quả review riêng.
+Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Kết quả 155 ca được ghi trong báo cáo từng nhánh; **14 ca phần 01 + 16 ca phần 02 + 18 ca phần 03 có kết quả trong phạm vi báo cáo**, 107 ca kế hoạch phần 04–08 chưa có kết quả review riêng.

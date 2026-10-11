@@ -1,8 +1,8 @@
 # 04 — Review backend, CLI, tác vụ quét và báo cáo
 
-**Nhánh:** `review/2026-10-10/04-backend-cli-reports`.
-**Trạng thái:** chưa thực hiện.
-**Đầu ra sẽ tạo:** `04-report.md`, bảng API/CLI contract, sơ đồ trạng thái scan, bảng so khớp kết quả giữa các giao diện.
+**Nhánh kết quả:** `review/04-backend-cli-reports`, tiếp nối phần 03 tại `f79a85b`.
+**Trạng thái:** đã thực hiện ngày 11/10/2026 trong phạm vi báo cáo.
+**Đầu ra:** [báo cáo](04-report.md), [hợp đồng API/CLI và trạng thái](04-contracts.md), [bàn giao](04-handoff.md), [bằng chứng](evidence/04/test-results.md). Các mục dưới là checklist gốc; kết quả thực hiện xem báo cáo.
 
 Đọc [quy trình chung](README.md), [mẫu báo cáo](report-template.md); dùng mapping/giới hạn từ 01–03. Đường dẫn code tính từ tool root.
 
@@ -16,7 +16,7 @@ Review điều phối đúng từ yêu cầu người dùng đến kết quả l
 | `pointsnap/web/app.py`, `projects.py` | Pydantic request, project CRUD, guideline, token tách riêng, CVAT task list, routes |
 | `pointsnap/web/runner.py`, `preview.py`, `link.py` | Scan queue, state/results/history, preview, reviews và cầu nối extension |
 | `pointsnap/report/html.py`, `csv_rep.py`, core serialize | Report escaping, encoding, metadata, deep link, số lượng và format |
-| `pointsnap/api.py`, `tests/test_report_api.py`, `Get-Report.ps1` | Report API cục bộ theo PAT của caller; chưa thuộc commit mã nguồn nền |
+| `pointsnap/api.py`, `tests/test_report_api.py`, `Get-Report.ps1` | Report API bổ sung theo PAT caller; nay tracked trên nhánh 04, không thuộc nền 5dcc97f |
 
 Phân biệt **FastAPI Web server** với **report API cục bộ dùng ThreadingHTTPServer**. Chúng không tự chia sẻ project state/config/token chỉ vì cùng dùng scanner.
 
@@ -81,7 +81,7 @@ Nếu file API cục bộ có trong checkout, kiểm riêng:
 python -m pytest -q tests/test_report_api.py
 ```
 
-Không gộp kết quả test local API thành kết quả cho bản GitHub `main`. Ca HTTP/mock không thay thế review giao diện; ca report cần token thật thực hiện riêng trên job thử và ghi rõ quyền token, không lưu token vào báo cáo.
+API/test API nay được đưa vào nhánh 04; chưa merge main. Ca HTTP/mock không thay thế review giao diện; ca report token thật đã chạy riêng trên job thử và ghi quyền token, không lưu token vào báo cáo.
 
 ## 6. Rủi ro đã được chuyển đến
 

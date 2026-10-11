@@ -186,7 +186,7 @@ def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], c
         if kind == "fit_duplicate":
             return (label in config.fit.overlap_classes
                     and frozenset((label, label)) not in {frozenset(p) for p in config.fit.overlap_allowed_pairs})
-        return points >= config.fit.outside_min_points
+        return points >= config.fit.outside_min_object_points
     if error.error_type == "floating":
         return label in config.floating.classes
     if error.error_type == "size_in_track":
@@ -343,7 +343,7 @@ def to_markdown(summary: dict[str, Any], title: str) -> str:
               "Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đất; kích thước trong track: trừ người đi bộ) "
               "và, với khoảng nội suy, đối tượng dịch > min_motion_m trong đoạn bị xóa. Sai hướng: xoay đủ lớn để luật "
               "lật hướng xét, hoặc box đủ điểm để so với cụm điểm; ngược cả track: vật có lúc chạy nhanh hơn min_speed. "
-              "Box lệch: box có ít nhất outside_min_points điểm (theo nhãn chuẩn).", "",
+              "Box lệch: box có ít nhất outside_min_object_points điểm (theo nhãn chuẩn).", "",
               "| Kiểu lỗi | Mức chèn | Số lỗi | Bắt được | Bắt được (thuộc phạm vi) | Báo ở mức Lỗi "
               "| Bắt được (box có đủ điểm mặt đất) |",
               "|---|---|---|---|---|---|---|"]

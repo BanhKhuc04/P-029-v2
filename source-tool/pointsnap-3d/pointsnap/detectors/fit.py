@@ -74,9 +74,9 @@ class OutsideMeasure:
 
 
 def outside_measure(item: BoxPointSet, cfg: FitConfig) -> OutsideMeasure | None:
-    """Đo điểm của vật nằm ngoài box; `None` nếu vật có ít hơn `outside_min_points` điểm."""
+    """Đo điểm của vật nằm ngoài box; `None` nếu vật có ít hơn `outside_min_object_points` điểm."""
     total, outside = item.num_object_points, item.num_outside
-    if total < cfg.outside_min_points:
+    if total < cfg.outside_min_object_points:
         return None
     side, reach = "", 0.0
     if outside:

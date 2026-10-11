@@ -198,8 +198,10 @@ class FitConfig:
     outside_margin_m: float = 0.5
     outside_margin_rel: float = 0.25
     """Vùng xét nới mỗi phía max(`outside_margin_m`, `outside_margin_rel` × cạnh box): xe dài thò ra xa hơn."""
-    outside_min_points: int = 30
-    outside_warning_ratio: float = 0.5
+    outside_min_points: int = 15
+    outside_min_object_points: int = 30
+    """`fit.outside` chỉ xét vật có ít nhất chừng này điểm (trước đây dùng chung `outside_min_points`)."""
+    outside_warning_ratio: float = 0.4
     outside_error_ratio: float = 0.7
     ground_clearance_m: float = 0.25
     loose_min_points: int = 40
@@ -603,6 +605,8 @@ def _parse_fit(r: _Reader) -> FitConfig:
         outside_margin_m=r.number("outside_margin_m", 0.0),
         outside_margin_rel=r.number("outside_margin_rel", 0.0),
         outside_min_points=r.integer("outside_min_points", 1),
+        outside_min_object_points=(r.integer("outside_min_object_points", 1) if "outside_min_object_points" in r.keys()
+                                   else FitConfig.outside_min_object_points),
         outside_warning_ratio=r.number("outside_warning_ratio", 0.0),
         outside_error_ratio=r.number("outside_error_ratio", 0.0),
         ground_clearance_m=r.number("ground_clearance_m", 0.0),

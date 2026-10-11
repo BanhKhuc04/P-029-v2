@@ -14,7 +14,9 @@ Spec 4.2: hướng box trùng với hướng chuyển động chính của vật
    trung vị của các box khác cùng track. Chỉ xét box dài (≥ `min_aspect`), đủ điểm, gần cảm biến. Lệch >
    `warning_deg` là Cảnh báo, > `error_deg` là Lỗi.
 
-Không có pose xe thu thì hướng trong hệ cảm biến đổi theo xe thu: hai luật theo track chỉ báo ở mức Cảnh báo.
+Không có pose xe thu thì hướng trong hệ cảm biến đổi theo xe thu: `heading.flip` chỉ báo ở mức Cảnh báo, còn
+`heading.motion` không xét (chuyển động thấy trong hệ cảm biến là chuyển động của vật trừ chuyển động của xe thu: xe đỗ
+bên đường trông như đang chạy lùi).
 """
 
 from __future__ import annotations
@@ -170,7 +172,7 @@ def detect_heading_track(
         times = _times(active, keyframe_interval_s, timestamps)
         flips = _flip_findings(active, headings, times, grp, has_world) if flip else []
         findings.extend(flips)
-        if motion:
+        if motion and has_world:
             flagged = {i for i, b in enumerate(active) if any(f.frame == b.frame for f in flips)}
             findings.extend(_motion_findings(active, centers, headings, times, grp, config.min_motion_m, has_world,
                                              flagged))
@@ -210,6 +212,11 @@ def heading_points_measure(item: BoxPointSet, cfg: HeadingPointsConfig) -> float
     return -math.degrees(rectangle_angle(item.local[:, :2]))
 
 
+def _wrap90(deg: float) -> float:
+    """Góc (độ) quy về [−45°, 45°)."""
+    return (deg + 45.0) % 90.0 - 45.0
+
+
 def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: HeadingPointsConfig) -> list[Finding]:
     """Luật `heading.points`: so độ lệch trục của từng box với **trung vị độ lệch của các box khác cùng track**.
 
@@ -226,8 +233,11 @@ def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: Headi
         others = list(by_track.get(box.track_id, [])) if box.track_id is not None else []
         if others:
             others.remove(dev)
+        # Trục hình chữ nhật chỉ xác định theo modulo 90°: đưa các frame khác về cùng nhánh với box đang xét
+        # (−44° và +44° chỉ cách nhau 2°) rồi mới lấy trung vị.
+        others = [dev + _wrap90(o - dev) for o in others]
         reference = float(np.median(others)) if len(others) >= 2 else 0.0
-        deviation = abs((dev - reference + 45.0) % 90.0 - 45.0)  # trục hình chữ nhật chỉ xác định theo modulo 90°
+        deviation = abs(_wrap90(dev - reference))
         if deviation <= cfg.warning_deg:
             continue
         severity = Severity.ERROR if deviation > cfg.error_deg else Severity.WARNING

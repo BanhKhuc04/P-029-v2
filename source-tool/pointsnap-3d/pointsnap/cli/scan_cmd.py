@@ -11,8 +11,9 @@ from pointsnap.adapters.cvat.reader import load_job
 from pointsnap.adapters.cvat.writer import flag_job_errors, save_snapshot
 from pointsnap.cli.common import frames_for_job
 from pointsnap.core.config import Config
+from pointsnap.core.gate import gate_verdict
 from pointsnap.core.model import Finding, Severity
-from pointsnap.core.scanner import actionable, scan_cuboids
+from pointsnap.core.scanner import actionable, scan_coverage_gaps, scan_cuboids
 from pointsnap.report.csv_rep import generate_csv_report
 from pointsnap.report.html import generate_html_report
 
@@ -38,9 +39,17 @@ def run(args: argparse.Namespace, config: Config) -> int:
     try:
         job = load_job(client, args.job)
     except Exception as exc:
+        client.session.close()
         print(f"Lỗi khi đọc job #{args.job}: {exc}", file=sys.stderr)
         return 3
 
+    try:
+        return _scan(client, job, args, config)
+    finally:
+        client.session.close()
+
+
+def _scan(client, job, args: argparse.Namespace, config: Config) -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -54,11 +63,13 @@ def run(args: argparse.Namespace, config: Config) -> int:
     print(f"-> {note}", file=sys.stdout if frames is not None else sys.stderr)
     print(f"Đang quét {len(job.cuboids)} box của job #{args.job}...")
     findings = scan_cuboids(job, config, frames)
+    gaps = scan_coverage_gaps(job, config, frames)
+    passed, reasons = gate_verdict(findings, config.gate, coverage_gaps=gaps)
 
     # 3. Xuất báo cáo HTML và CSV
     html_path = out_dir / f"report_job_{args.job}.html"
     csv_path = out_dir / f"report_job_{args.job}.csv"
-    generate_html_report(job, findings, html_path)
+    generate_html_report(job, findings, html_path, coverage_gaps=gaps, gate_passed=passed, gate_reasons=reasons)
     generate_csv_report(job, findings, csv_path)
     print(f"-> Báo cáo HTML: {html_path}")
     print(f"-> Báo cáo CSV:  {csv_path}")

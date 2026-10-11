@@ -335,7 +335,7 @@
    */
   async function linkLoop(sid) {
     while (sid === S.sid) {
-      const res = await pointsnap('GET', `/api/extension/poll?job_id=${S.job.jobId}&after=${S.linkSeq}`);
+      const res = await pointsnap('GET', `/api/extension/poll?job_id=${S.job.jobId}&after=${S.linkSeq}&cvat_url=${encodeURIComponent(location.origin)}`);
       if (sid !== S.sid) return;
       if (res.ok) {
         if (!S.ps.online) loadPointSnap(sid);

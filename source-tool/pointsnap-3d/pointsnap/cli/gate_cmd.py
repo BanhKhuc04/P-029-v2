@@ -28,9 +28,17 @@ def run(args: argparse.Namespace, config: Config) -> int:
     try:
         job = load_job(client, args.job)
     except Exception as exc:
+        client.session.close()
         print(f"Lỗi khi đọc job #{args.job}: {exc}", file=sys.stderr)
         return EXIT_RUNTIME_ERROR
 
+    try:
+        return _gate(job, args, config)
+    finally:
+        client.session.close()
+
+
+def _gate(job, args: argparse.Namespace, config: Config) -> int:
     try:
         frames, note = frames_for_job(job, getattr(args, "manifest", None))
         if frames is None:
@@ -67,5 +75,5 @@ def run(args: argparse.Namespace, config: Config) -> int:
     print(f"✅ [ĐẠT] Cổng kiểm tra Job #{args.job} đạt ngưỡng của các luật đang bật.")
     print(f"   • Số lỗi:     {num_errors} (ngưỡng: {max_err})")
     print(f"   • Cảnh báo:   {num_warnings} (ngưỡng: {max_warn})")
-    print(f"   • Tổng số box: {len(job.cuboids)}")
+    print(f"   • Tổng số box: {sum(not c.outside for c in job.cuboids)}")
     return EXIT_OK

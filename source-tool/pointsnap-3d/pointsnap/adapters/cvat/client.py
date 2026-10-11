@@ -54,13 +54,17 @@ class CvatClient:
         try:
             response = self.session.request(method, url, timeout=self.timeout, allow_redirects=False, **kwargs)
         except requests.RequestException as exc:
-            raise CvatError(f"Không kết nối được CVAT tại {self.url}: {exc}") from exc
+            raise CvatError(f"Không kết nối được CVAT tại {self._redact(self.url)}: {self._redact(str(exc))}") from exc
         if response.status_code not in expected:
-            raise CvatError(f"{method} {url} → HTTP {response.status_code}: {response.text[:500]}")
+            raise CvatError(f"{method} {self._redact(url)} → HTTP {response.status_code}: {self._redact(response.text[:500])}")
         try:
             return response.json() if response.content else {}
         except ValueError as exc:
-            raise CvatError(f"{method} {url}: CVAT trả JSON không hợp lệ") from exc
+            raise CvatError(f"{method} {self._redact(url)}: CVAT trả JSON không hợp lệ") from exc
+
+    def _redact(self, message: str) -> str:
+        token = self.session.headers.get("Authorization", "").partition(" ")[2]
+        return message.replace(token, "***") if token else message
 
     def _get_all(self, path: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         """GET một danh sách có phân trang, gom mọi trang."""

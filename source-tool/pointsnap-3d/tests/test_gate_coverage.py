@@ -4,6 +4,7 @@ import argparse
 import dataclasses
 import json
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -92,7 +93,7 @@ def test_gate_counts_warnings_in_a_generator():
     (None, size_only_config, 0),
 ])
 def test_cli_gate_reports_partial_checks(monkeypatch, capsys, frames, config_factory, expected):
-    monkeypatch.setattr(gate_cmd, "CvatClient", lambda *args: object())
+    monkeypatch.setattr(gate_cmd, "CvatClient", lambda *args: Mock())
     monkeypatch.setattr(gate_cmd, "load_job", lambda *args: job_data())
     monkeypatch.setattr(gate_cmd, "frames_for_job", lambda *args: (frames, "test data"))
     config = dataclasses.replace(config_factory(), gate=GateConfig(max_errors=100, max_warnings=100))
@@ -106,7 +107,7 @@ def test_cli_gate_frame_read_failure_is_runtime_error(monkeypatch, capsys):
         def frame_data(self, *args, **kwargs):
             raise FileNotFoundError("missing lidar.bin")
 
-    monkeypatch.setattr(gate_cmd, "CvatClient", lambda *args: object())
+    monkeypatch.setattr(gate_cmd, "CvatClient", lambda *args: Mock())
     monkeypatch.setattr(gate_cmd, "load_job", lambda *args: job_data())
     monkeypatch.setattr(gate_cmd, "frames_for_job", lambda *args: (BrokenFrames(), "test data"))
     assert gate_cmd.run(argparse.Namespace(job=1), load_config(env={})) == 3
@@ -125,7 +126,7 @@ def test_web_gate_persists_coverage_gaps(tmp_path, monkeypatch, frames, config_f
     pm.create_project(name="Coverage", slug="coverage")
     config = dataclasses.replace(config_factory(), gate=GateConfig(max_errors=100, max_warnings=100))
     monkeypatch.setattr(pm, "get_effective_config", lambda slug: config)
-    monkeypatch.setattr(module, "CvatClient", lambda *args: SimpleNamespace(url="http://cvat"))
+    monkeypatch.setattr(module, "CvatClient", lambda *args: Mock(url="http://cvat"))
     monkeypatch.setattr(module, "load_job", lambda *args: job_data())
     monkeypatch.setattr(module, "frames_for_job", lambda *args, **kwargs: (frames, "test data"))
     runner = ScanRunner(pm)

@@ -862,7 +862,8 @@
     const run = state.currentRun;
     if (!run || !run.job_id || document.hidden) return;
     try {
-      const res = await fetch(`/api/extension/status?job_id=${run.job_id}`);
+      const cvatUrl = run.summary?.cvat_url || state.projects.find((p) => p.slug === state.currentSlug)?.cvat_url || '';
+      const res = await fetch(`/api/extension/status?job_id=${run.job_id}&cvat_url=${encodeURIComponent(cvatUrl)}`);
       if (!res.ok) return;
       const data = await res.json();
       const changed = data.extension_online !== state.cvatLink.online || state.cvatLink.jobId !== run.job_id;
@@ -904,6 +905,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         job_id: state.currentRun.job_id,
+        cvat_url: state.currentRun.summary?.cvat_url || state.projects.find((p) => p.slug === state.currentSlug)?.cvat_url || '',
         frame: f.frame,
         label: f.label,
         message: f.message,

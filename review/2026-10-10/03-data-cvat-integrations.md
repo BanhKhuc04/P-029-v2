@@ -1,7 +1,7 @@
 # 03 — Review dữ liệu, nuScenes và tích hợp CVAT
 
 **Nhánh:** `review/03-data-cvat-integrations`.
-**Trạng thái:** hoàn tất review phần 03 trong phạm vi [báo cáo](03-report.md); 367 pytest + 7 Node đạt, 0 skip trong suite bàn giao.
+**Trạng thái:** hoàn tất review phần 03 trong phạm vi [báo cáo](03-report.md); 371 pytest + 7 Node đạt, 0 skip trong suite bàn giao.
 **Đầu ra:** [bàn giao](03-handoff.md), [mapping](03-mapping.md), [bằng chứng](evidence/03/test-results.md). Dependency phần 02 tại `82fc8b8`.
 
 Đọc [quy trình chung](README.md), [mẫu báo cáo](report-template.md), CONVENTIONS và invariant phần 02. Đường dẫn dưới đây tính từ tool root.

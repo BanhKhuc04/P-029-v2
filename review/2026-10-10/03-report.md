@@ -73,3 +73,12 @@ Chỉ đưa code/test liên quan và tài liệu review vào nhánh. File API/Do
 - Ba task CVAT live trong suite tự xóa; scene real task 27 xóa qua API, không sửa/xóa task người dùng có sẵn. Bằng chứng đầy đủ và snapshot ở out/, bản tóm tắt không nhãn/token ở Git.
 
 Nhánh 03 phụ thuộc 02; base PR là `review/02-core-detectors` nếu chưa merge. Commit chuẩn hóa CRLF→LF tách riêng `8d81c20` để commit code `40ac166` dễ review; commit tài liệu tách tiếp. Đồng đội mở PR theo [bàn giao](03-handoff.md).
+
+## 6. Kiểm lại cả ba nhánh sau push
+
+- Đối chiếu diff 01/02/03, caller CLI/Web, coverage, keyframe/class/time, parser/manifest, writer attrs/IDs/snapshot và giới hạn concurrency.
+- Tái hiện thêm RV-01-009: cloud rỗng khi tắt floating vẫn cho gate ĐẠT ở bốn luật LiDAR; 4/4 ca fail trước sửa. Đã sửa trên 01 tại 0727c15 và merge theo chuỗi vào 02/03; không force-push.
+- Nhánh 01: **256 passed, 0 skip in 22.96s**; nhánh 02: **321 passed, 0 skip in 23.49s**; nhánh 03 tại merge b841f63: **371 passed, 0 skip in 29.14s**. Mỗi suite có 1 warning Starlette/httpx; Docker/dataset thật bật.
+- Không phát hiện thêm lỗi mới trong thay đổi detector 02 hoặc adapter/writer 03 ngoài các findings và giới hạn đã ghi. Đã sửa diễn giải dấu quay của nhánh 01 và cập nhật bàn giao/dependency.
+- 367 là kết quả đợt phần 03 ban đầu; 4 ca mới thuộc dependency coverage phần 01. Merge-base xác nhận 01 là tổ tiên 02, 02 là tổ tiên 03; main chưa merge.
+- [Báo cáo ngắn ba nhánh](re-review-01-03.md). Race sau GET cuối, server BTC và precision/recall vẫn là giới hạn đã ghi, không được coi là đã nghiệm thu toàn sản phẩm.

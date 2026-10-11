@@ -72,3 +72,17 @@ Kiểm bằng Python standard library trước commit tài liệu, exit 0:
 ```text
 PASS: 8 documents; 63 relative links; balanced fences; 18 review cases; 16 findings
 ```
+
+## EV-03-005 — kiểm lại cả ba nhánh
+
+Cùng lệnh EV-03-001, chạy riêng trên mỗi nhánh sau sửa RV-01-009.
+
+```text
+01: 256 passed, 0 skipped, 1 warning in 22.96s (exit 0)
+02: 321 passed, 0 skipped, 1 warning in 23.49s (exit 0)
+03: 371 passed, 0 skipped, 1 warning in 29.14s (exit 0)
+```
+
+Code gate 0727c15; 02 sau merge 744acfe, 03 sau merge b841f63. Full suite của 03 chạy tên ca live đã chỉnh cho chính xác; không file nguồn thay đổi sau lần này, chỉ bổ sung báo cáo.
+
+Kiểm cuối: 7 tài liệu/61 links tương đối/fences cân bằng/không conflict marker đạt; extension tree giống nhau trên 01/02/03 (`dda4545adb29ab1a435a690d6af132fd90853283`). CVAT 2.78.1 trả count=0 cho cả `PointSnap live test` và `PointSnap review 03` sau toàn bộ suite. Merge-base xác nhận chuỗi tổ tiên 01→02→03, exit 0.

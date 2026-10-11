@@ -1,6 +1,6 @@
 # Bàn giao phần 03 — đọc trước khi mở PR
 
-**Nhánh:** `review/03-data-cvat-integrations`, không có ngày. Code `40ac166`, base `82fc8b8` của phần 02. Lý do sửa, báo cáo và nội dung PR bằng tiếng Việt.
+**Nhánh:** `review/03-data-cvat-integrations`, không có ngày. Code phần 03 `40ac166`, đã nhận guard mới qua merge `b841f63`; base ban đầu `82fc8b8` của phần 02, hiện đã nhận bản kiểm lại `7fca827`. Lý do sửa, báo cáo và nội dung PR bằng tiếng Việt.
 
 ## 1. Lý do sửa
 
@@ -14,7 +14,7 @@ Không thêm dependency hoặc đổi ngưỡng detector. Commit chuẩn hóa xu
 
 ## 2. Kiểm tra và tài liệu
 
-- **367 pytest + 7 Node đạt, 0 skip trong suite mã nguồn bàn giao.** 49 hồi quy mới + 1 live mới; 1 warning Starlette/httpx.
+- **371 pytest + 7 Node đạt, 0 skip trong suite mã nguồn bàn giao.** 49 hồi quy mới + 1 live mới và 4 ca cloud rỗng từ phần 01; 1 warning Starlette/httpx.
 - CVAT Docker 2.78.1 và nuScenes mini thật; task thử scene-0061: 39 frame, 234 ảnh, 3333 box GT, tâm/yaw đọc lại lệch 0; gắn/gỡ không đổi hình học, lần hai không đổi nội dung.
 - Kiểm browser sáu camera ở frame 0 và link track đúng đối tượng; task thật 27 đã xóa, các task suite tự xóa.
 - Đọc [báo cáo 18 ca/16 findings](03-report.md), [mapping](03-mapping.md), [lệnh và bằng chứng](evidence/03/test-results.md).
@@ -52,12 +52,12 @@ Sửa các nguyên nhân đọc sai frame/thuộc tính, cờ lan sang keyframe 
 - Tách commit xuống dòng, code/test và tài liệu; báo cáo/mapping/bàn giao bằng tiếng Việt.
 
 ## Kiểm tra
-367 pytest + 7 Node đạt, 0 skip trong suite bàn giao. Có 49 hồi quy và 1 ca CVAT live mới.
+371 pytest + 7 Node đạt, 0 skip trong suite bàn giao. Có 49 hồi quy và 1 ca CVAT live mới; nhận thêm 4 ca coverage từ phần 01.
 Scene thật 39 frame, 234 ảnh/6 camera, 3333 box đọc lại tâm/yaw lệch 0; gắn/gỡ bảo toàn hình học.
 Task thử đã xóa. 1 warning Starlette/httpx được ghi lại.
 
 ## Dependency và giới hạn
-Base phần 02 tại 82fc8b8; chọn review/02-core-detectors khi chưa merge, sau đó main.
+Base phần 02 mới nhất tại 7fca827 (ban đầu 82fc8b8); chọn review/02-core-detectors khi chưa merge, sau đó main.
 Race sau GET cuối chưa atomic; tránh chỉnh cùng job lúc ghi cờ. Chưa nghiệm thu server BTC/2.77, extension và precision/recall.
 ASCII/compressed không hỗ trợ. Không kèm token/dataset/snapshot/output hoặc API/Docker local chưa tracked.
 

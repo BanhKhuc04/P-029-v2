@@ -4,7 +4,8 @@ Ba kiểu phát hiện:
 1. Kiểu 1 (`track.jump`): Nhảy vị trí bất thường.
    - Xét mọi keyframe có mặt theo thời gian, nội suy cả qua đoạn đối tượng tạm vắng (`outside`).
    - Box giữa track: lệch so với vị trí nội suy tuyến tính theo thời gian từ 2 keyframe lân cận. Box ở đầu / cuối
-     track: so với vị trí ngoại suy từ 2 keyframe kế tiếp, ngưỡng nhân `END_FACTOR`.
+     track: so với vị trí ngoại suy từ 2 keyframe kế tiếp, ngưỡng nhân `END_FACTOR` × độ dài khoảng ngoại suy (so với
+     khoảng giữa 2 keyframe đó).
    - Một cú nhảy làm lệch cả box kề bên, nên với mỗi cụm vượt ngưỡng chỉ báo box mà khi bỏ đi các box còn lại khớp
      nhất. Track chỉ có 2 box: kiểm thô tốc độ > `v_max_mps`.
    - Ngưỡng theo nhóm class: vehicle (1.0/2.0 m), two_wheeler (0.75/1.5 m), pedestrian (0.5/1.0 m), static (0.3/0.6 m).
@@ -31,6 +32,16 @@ if TYPE_CHECKING:
 
 END_FACTOR = 1.5
 """Ở hai đầu đoạn vị trí được ngoại suy (kém chắc hơn nội suy): ngưỡng nhảy nhân thêm hệ số này."""
+
+
+def _end_factor(horizon: float) -> float:
+    """Hệ số ngưỡng ở đầu / cuối track. `horizon` = khoảng ngoại suy / khoảng giữa hai box dùng để ước lượng vận tốc.
+
+    Sai số vận tốc nhân lên theo khoảng ngoại suy: box đầu ở frame 1 mà hai box kế tiếp ở frame 5, 6 thì vị trí dự đoán
+    kém chắc gấp ~4 lần. Trên 5 cảnh tinh chỉnh, 8 / 12 báo nhầm `track.jump` ở hai đầu track là ca này; nhân ngưỡng theo
+    `horizon` bỏ 7 mục (cả 4 mục mức Lỗi) mà không mất lỗi nhảy chèn nào (100 vòng chèn lỗi).
+    """
+    return END_FACTOR * max(1.0, horizon)
 
 
 def _get_world_centers(
@@ -75,7 +86,7 @@ def _segments(track_boxes: Sequence[Cuboid]) -> list[list[Cuboid]]:
     return [s for s in segments if s]
 
 
-def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -> tuple[float, bool] | None:
+def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -> tuple[float, float] | None:
     """Độ lệch (x, y) của box `order[i]` so với vị trí dự đoán từ các box lân cận trong `order`, không dùng chính nó.
 
     Box ở giữa: nội suy tuyến tính theo thời gian. Box ở đầu / cuối: ngoại suy từ hai box kế tiếp.
@@ -87,20 +98,26 @@ def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -
         a, b = order[i - 1], order[i + 1]
         span = times[b] - times[a]
         ratio = (times[k] - times[a]) / span if span > 0 else 0.5
-        return float(np.linalg.norm(xy[k] - (xy[a] + (xy[b] - xy[a]) * ratio))), False
+        return float(np.linalg.norm(xy[k] - (xy[a] + (xy[b] - xy[a]) * ratio))), 1.0
     if n < 3:
         return None
     a, b = (order[1], order[2]) if i == 0 else (order[n - 2], order[n - 3])
     dt = times[a] - times[b]
     ratio = (times[k] - times[a]) / dt if dt != 0 else 1.0
-    return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), True
+    return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), _end_factor(abs(ratio))
 
 
-def _normalized(result: tuple[float, bool] | None) -> float:
+def _speed(xy: np.ndarray, times: np.ndarray, pair: list[int]) -> float:
+    a, b = pair
+    dt = abs(times[b] - times[a])
+    return float(np.linalg.norm(xy[b] - xy[a])) / dt if dt > 0 else float("inf")
+
+
+def _normalized(result: tuple[float, float] | None) -> float:
     if result is None:
         return 0.0
-    r, at_end = result
-    return r / END_FACTOR if at_end else r
+    r, factor = result
+    return r / factor
 
 
 def _segment_jumps(
@@ -120,18 +137,21 @@ def _segment_jumps(
         end = k
         while end + 1 < n and score[end + 1] >= grp.jump_warning_m:
             end += 1
-        # Chọn box mà khi bỏ đi, các box còn lại quanh cụm khớp nhất.
-        best: tuple[float, float, int] | None = None
+        # Chọn box mà khi bỏ đi, các box còn lại quanh cụm khớp nhất. Track 3 box: bỏ box nào cũng còn 2 box, không
+        # kiểm được; chọn giả thuyết để 2 box còn lại có tốc độ thấp nhất (box giữa nhảy 4 m thì hai đầu "chạy" 8 m mỗi
+        # keyframe nếu đổ lỗi cho một đầu).
+        best: tuple[float, float, float, int] | None = None
         for c in range(max(0, k - 1), min(n, end + 2)):
             rest = [i for i in order if i != c]
             window = [j for j, i in enumerate(rest) if k - 2 <= i <= end + 2]
             remaining = max((_normalized(_loo_residual(xy, times, rest, j)) for j in window), default=0.0)
-            candidate = (remaining, -score[c], c)
+            speed = _speed(xy, times, rest) if len(rest) == 2 else 0.0
+            candidate = (remaining, speed, -score[c], c)
             if best is None or candidate < best:
                 best = candidate
-        peak = best[2]
-        dev, at_end = raw[peak] if raw[peak] is not None else (0.0, False)
-        factor = END_FACTOR if at_end else 1.0
+        peak = best[3]
+        dev, factor = raw[peak] if raw[peak] is not None else (0.0, 1.0)
+        at_end = factor != 1.0
         if dev >= grp.jump_warning_m * factor:
             if dev >= grp.jump_error_m * factor and has_world:
                 severity, thresh = Severity.ERROR, grp.jump_error_m * factor

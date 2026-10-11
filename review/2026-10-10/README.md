@@ -2,7 +2,7 @@
 
 Ngày lập: **10/10/2026, Asia/Saigon**. Mốc mã nguồn: **`5dcc97f1ffc1751d022e2474c0b50745e348af86`**.
 
-Đây là hướng dẫn thực hiện review và ghi kết quả. Phần **01–04 đã hoàn tất ngày 11/10 trong phạm vi báo cáo**: [bàn giao 01](01-handoff.md), [bàn giao 02](02-handoff.md), [bàn giao 03](03-handoff.md), [bàn giao 04](04-handoff.md). Nhánh kết quả tiếp nối 01 → 02 → 03 → 04; người nhận mở PR theo hướng dẫn base. Các ca phần 05–08 vẫn **Chưa chạy**.
+Đây là hướng dẫn thực hiện review và ghi kết quả. Phần **01–06 đã review ngày 11/10 trong phạm vi báo cáo**: [bàn giao 01](01-handoff.md), [02](02-handoff.md), [03](03-handoff.md), [04](04-handoff.md), [05](05-handoff.md), [06](06-handoff.md). Nhánh kết quả tiếp nối 01 → 02 → 03 → 04 → 05 → 06; người nhận mở PR theo hướng dẫn base. Các bảng05/06 ghi ca đạt, một phần và chưa kiểm; ca MV3 cần Chrome/Edge còn thiếu môi trường. Phần07–08 **Chưa chạy**.
 
 ## 1. Chọn tài liệu theo nhánh
 
@@ -14,8 +14,8 @@ Tiền tố nhánh hướng dẫn ban đầu: `review/2026-10-10/`. Nhánh kết
 | 02 | `review/02-core-detectors` | [Core và detector](02-core-detectors.md) | Hoàn tất phần 02; 321 pytest + 7 Node đạt; [bàn giao](02-handoff.md) |
 | 03 | `review/03-data-cvat-integrations` | [Dữ liệu và CVAT](03-data-cvat-integrations.md) | Hoàn tất phần 03; 371 pytest + 7 Node; [bàn giao](03-handoff.md) |
 | 04 | `review/04-backend-cli-reports` | [Backend, CLI và báo cáo](04-backend-cli-reports.md) | Hoàn tất phần 04; xem [báo cáo](04-report.md), [bàn giao](04-handoff.md) |
-| 05 | `05-frontend-extension` | [Giao diện và extension](05-frontend-extension.md) | Chưa thực hiện |
-| 06 | `06-security-config` | [Bảo mật và cấu hình](06-security-config.md) | Chưa thực hiện |
+| 05 | `review/05-frontend-extension` | [Giao diện và extension](05-frontend-extension.md) | Web thật +logic extension; [bàn giao](05-handoff.md); MV3 thật còn thiếu môi trường |
+| 06 | `review/06-security-config` | [Bảo mật và cấu hình](06-security-config.md) | Đã review/sửa security local; [bàn giao](06-handoff.md); không chứng nhận LAN/deployment |
 | 07 | `07-tests-evaluation-performance` | [Kiểm thử, đánh giá và hiệu năng](07-tests-evaluation-performance.md) | Chưa thực hiện |
 | 08 | `08-deployment-docs-final` | [Triển khai và tổng hợp](08-deployment-docs-final.md) | Chưa thực hiện |
 
@@ -108,4 +108,4 @@ Trạng thái finding: Mở → Đang xử lý → Đã sửa/chờ kiểm lại
 - Các Markdown links và đường dẫn file nguồn cụ thể được kiểm tra đều tồn tại trong checkout hiện tại; code fences cân bằng.
 - Inventory có đúng **184 file** của commit nền `5dcc97f`, không thiếu/thừa/trùng.
 
-Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Kết quả 155 ca được ghi trong báo cáo từng nhánh; **14 ca phần 01 + 16 ca phần 02 + 18 ca phần 03 + 18 ca phần 04 có kết quả trong phạm vi báo cáo**, 89 ca kế hoạch phần 05–08 chưa có kết quả review riêng.
+Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Trong155 ca kế hoạch:66 ca phần01–04 có kết quả;22 ca05 và20 ca06 có bảng trạng thái riêng gồm đạt/một phần/chưa kiểm/bị chặn. Không cộng các ca chưa kiểm thành đạt.47 ca phần07–08 chưa có review riêng.

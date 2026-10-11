@@ -6,10 +6,10 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 
 - Mã nguồn gốc: `origin/main`, commit `5dcc97f` (merge PR #37).
 - Bộ nhánh hướng dẫn ban đầu dùng main và commit tài liệu chung; kết quả sửa lỗi được commit riêng.
-- Thực hiện theo thứ tự 01 → 08. Nhánh kết quả **01 → 02 → 03 → 04 tiếp nối nhau** có chủ đích; dependency/base PR ghi trong bàn giao. Không coi các nhánh kết quả là độc lập khi mở PR.
-- Trạng thái: **01–04 đã hoàn tất review trong phạm vi báo cáo; 05–08 chưa thực hiện**. Phần 04 có CVAT/PAT thật, parity Web/CLI/API và [bàn giao](review/2026-10-10/04-handoff.md); giới hạn đồng thời, UI và server BTC được ghi rõ.
+- Thực hiện theo thứ tự 01 → 08. Nhánh kết quả **01 → 02 → 03 → 04 → 05 → 06 tiếp nối nhau** có chủ đích; dependency/base PR ghi trong bàn giao. Không coi các nhánh kết quả là độc lập khi mở PR.
+- Trạng thái: **01–06 đã review trong phạm vi báo cáo; 07–08 chưa thực hiện**. [Phần 05](review/2026-10-10/05-handoff.md) có Web thật và logic extension, ca MV3 thật còn thiếu Chrome/Edge; [phần 06](review/2026-10-10/06-handoff.md) có security fixes, Host/Origin HTTP và ca âm tính. Các bảng ghi rõ ca một phần/chưa kiểm, không tính toàn bộ checklist là đạt.
 - Mỗi phần ghi kết quả vào `review/2026-10-10/NN-report.md` trên nhánh tương ứng. Chỉ commit file của phần đó bằng đường dẫn cụ thể.
-- Nhánh kết quả dùng tên không có ngày: `review/01-overview-architecture`, `review/02-core-detectors`, `review/03-data-cvat-integrations`, `review/04-backend-cli-reports`.
+- Nhánh kết quả dùng tên không có ngày: `review/01-overview-architecture`, `review/02-core-detectors`, `review/03-data-cvat-integrations`, `review/04-backend-cli-reports`, `review/05-frontend-extension`, `review/06-security-config`.
 - Theo yêu cầu bàn giao, đẩy từng nhánh; đồng đội mở PR và merge sau review độc lập.
 
 ## Bộ hướng dẫn chi tiết
@@ -57,7 +57,7 @@ Các đường dẫn dưới đây tương đối với `source-tool/pointsnap-3
 - Kiến trúc (01): `ARCHITECTURE.md`, `ARCHITECTURE_DIAGRAMS.md`.
 - Backend/báo cáo (04): `pointsnap/api.py`, `Get-Report.ps1` **đã được review và tracked trên nhánh 04**, không còn là file chỉ local của nhánh kết quả.
 - Kiểm thử: `tests/test_report_api.py` **đã tracked ở 04**; `auto-tests/`, `docs/checklist-test-thu-cong.md`, `docs/test/review-phan-da-push.md` vẫn local, phần 07 phụ trách.
-- Triển khai (08, bảo mật ở 06): `.dockerignore`, `.env.example`, `Dockerfile`, `Dockerfile.api`, `compose.yaml`, `README-Docker.md`.
+- Triển khai (08, bảo mật ở 06): `Dockerfile.api` đã tracked ở06 để explicit bind container. `.dockerignore`, `.env.example`, `Dockerfile`, `compose.yaml`, `README-Docker.md` vẫn local; chưa build/deploy image mới.
 - Bằng chứng hiện có (07/08): `output/pdf/PointSnap-Review-Test-Lan-1-2026-10-10.pdf`. Không coi báo cáo này là kết quả chạy mới.
 
 Ngoài kho Git có `../Start-CVAT-PointSnap.ps1` và `../cvat-develop/`. Bước 08 kiểm tra cách dự án phụ thuộc vào launcher/CVAT này; CVAT là dependency ngoài, không mở rộng phạm vi thành review toàn bộ mã nguồn CVAT.

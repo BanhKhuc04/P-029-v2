@@ -1,7 +1,7 @@
 # 06 — Review bảo mật, token và cấu hình
 
-**Nhánh:** `review/2026-10-10/06-security-config`.
-**Trạng thái:** chưa thực hiện; các tình huống bên dưới là ca dự kiến, chưa phải lỗ hổng đã xác minh.
+**Nhánh:** `review/06-security-config`.
+**Trạng thái:** đã review/sửa ngày11/10;12 nhóm findings và20 ca có kết quả/giới hạn trong [báo cáo](06-report.md), [bàn giao](06-handoff.md).
 **Đầu ra sẽ tạo:** `06-report.md`, bản đồ trust boundaries, findings có đường đi dữ liệu và ca xác minh sau sửa.
 
 Áp dụng [quy trình chung](README.md), [mẫu báo cáo](report-template.md); checklist được chọn theo skill security-review và kiến trúc Python/local app thực tế. Đường dẫn tính từ tool root. Không áp yêu cầu database/payment/blockchain cho thành phần dự án không có.

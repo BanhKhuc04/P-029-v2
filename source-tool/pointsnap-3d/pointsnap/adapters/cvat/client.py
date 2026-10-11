@@ -23,6 +23,19 @@ class CvatError(RuntimeError):
     """CVAT trả lỗi hoặc không phản hồi như mong đợi."""
 
 
+def validate_cvat_url(url: str) -> str:
+    url = url.strip().rstrip('/')
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+        if (parts.scheme not in ('http', 'https') or not parts.hostname or parts.username or parts.password
+                or parts.query or parts.fragment or any(c.isspace() or ord(c) < 32 for c in url)):
+            raise ValueError
+    except ValueError as exc:
+        raise CvatError('URL CVAT phải là HTTP(S), không chứa tài khoản, query, fragment hoặc ký tự điều khiển') from exc
+    return url
+
+
 class CvatClient:
     def __init__(
         self,
@@ -31,14 +44,15 @@ class CvatClient:
         auth_scheme: str = "Bearer",
         timeout: float = 60.0,
         session: requests.Session | None = None,
+        max_pages: int = 100,
     ) -> None:
         if not token:
             raise CvatError("Thiếu token CVAT: đặt biến môi trường CVAT_TOKEN")
-        self.url = url.rstrip("/")
-        parts = urlsplit(self.url)
-        if parts.scheme not in ("http", "https") or not parts.hostname or parts.username or parts.password or parts.query or parts.fragment:
-            raise CvatError("URL CVAT phải là HTTP(S), không chứa tài khoản, query hoặc fragment")
+        self.url = validate_cvat_url(url)
         self.timeout = timeout
+        if not isinstance(max_pages, int) or max_pages < 1:
+            raise CvatError('max_pages phải là số nguyên dương')
+        self.max_pages = max_pages
         self.session = session or requests.Session()
         # CVAT chỉ trả JSON với media type riêng (CVATAPIRenderer); "application/json" bị từ chối với HTTP 406.
         self.session.headers.update({"Authorization": f"{auth_scheme} {token}", "Accept": ACCEPT})
@@ -82,6 +96,8 @@ class CvatClient:
             if page["next"] in visited:
                 raise CvatError(f"GET {path}: URL phân trang lặp lại")
             visited.add(page["next"])
+            if len(visited) >= self.max_pages:
+                raise CvatError(f'CVAT vượt giới hạn {self.max_pages} trang; cần thu hẹp dữ liệu')
             page = self._request("GET", page["next"])
 
     # --- Thông tin máy chủ ------------------------------------------------------------------------
@@ -111,7 +127,7 @@ class CvatClient:
             )
         rq_id = result.get("rq_id")
         if not rq_id:
-            raise CvatError(f"CVAT không trả rq_id khi tải dữ liệu cho task {task_id}: {result}")
+            raise CvatError(f"CVAT không trả rq_id khi tải dữ liệu cho task {task_id}")
         return rq_id
 
     def wait_request(self, rq_id: str, timeout: float = 900.0, poll_interval: float = 2.0) -> dict[str, Any]:
@@ -123,7 +139,7 @@ class CvatClient:
             if state == "finished":
                 return status
             if state == "failed":
-                raise CvatError(f"Tác vụ {rq_id} thất bại: {status.get('message', '')}")
+                raise CvatError(f"Tác vụ thất bại: {self._redact(str(status.get('message', '')))}")
             if time.monotonic() > deadline:
                 raise CvatError(f"Tác vụ {rq_id} chưa xong sau {timeout:.0f} giây (trạng thái: {state})")
             time.sleep(poll_interval)

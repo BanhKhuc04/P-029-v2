@@ -12,7 +12,7 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 import numpy as np
@@ -84,21 +84,29 @@ class NuScenesReader:
                  taxonomy: str = "nuscenes") -> None:
         if taxonomy not in TAXONOMIES:
             raise ValueError(f"taxonomy phải là một trong {TAXONOMIES}, nhận {taxonomy!r}")
-        self.dataroot = Path(dataroot)
+        self.dataroot = Path(dataroot).resolve()
         self.version = version
         self.min_lidar_points = min_lidar_points
         self.taxonomy = taxonomy
-        self._table_dir = self.dataroot / version
+        self._table_dir = self._dataset_path(version)
         if not self._table_dir.is_dir():
             raise FileNotFoundError(f"Không thấy thư mục bảng nuScenes: {self._table_dir}")
         self._tables: dict[str, dict[str, dict[str, Any]]] = {}
+
+    def _dataset_path(self, filename: str) -> Path:
+        if not isinstance(filename, str) or Path(filename).is_absolute() or PureWindowsPath(filename).drive:
+            raise ValueError('Đường dẫn dataset phải tương đối trong dataroot')
+        path = (self.dataroot / filename).resolve()
+        if not path.is_relative_to(self.dataroot):
+            raise ValueError('Đường dẫn dataset nằm ngoài phạm vi dataroot')
+        return path
 
     # --- Bảng JSON -------------------------------------------------------------------------------
 
     def _table(self, name: str) -> dict[str, dict[str, Any]]:
         """Bảng `name` dạng token → bản ghi, giữ thứ tự trong file."""
         if name not in self._tables:
-            path = self._table_dir / f"{name}.json"
+            path = self._dataset_path(f'{self.version}/{name}.json')
             try:
                 with path.open(encoding="utf-8") as f:
                     records = json.load(f)
@@ -144,7 +152,7 @@ class NuScenesReader:
 
     def camera_images(self, ref: SampleRef) -> dict[str, Path]:
         """Ảnh camera chụp cùng keyframe với point cloud: {kênh, ví dụ `CAM_FRONT` → đường dẫn file}."""
-        return {channel: self.dataroot / filename
+        return {channel: self._dataset_path(filename)
                 for channel, filename in self._cameras_by_sample.get(ref.sample_token, {}).items()}
 
     @cached_property
@@ -199,7 +207,7 @@ class NuScenesReader:
                     frame=len(refs),
                     sample_token=token,
                     lidar_token=lidar["token"],
-                    lidar_path=self.dataroot / lidar["filename"],
+                    lidar_path=self._dataset_path(lidar["filename"]),
                     timestamp=timestamp,
                     sensor_to_world=self._sensor_to_world(lidar),
                 )
@@ -242,7 +250,7 @@ class NuScenesReader:
                 raise ValueError(f"Chuỗi sweep bị lặp: {token}")
             visited.add(token)
             record = sample_data[token]
-            path = self.dataroot / record["filename"]
+            path = self._dataset_path(record["filename"])
             if not path.is_file():
                 break  # bản tải về thiếu sweep: dùng những gì có
             points = self._load_points(path)[:, :3].astype(np.float64)

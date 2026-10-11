@@ -7,6 +7,7 @@ from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -18,6 +19,7 @@ from pointsnap.web.preview import PreviewError, finding_preview, load_reviews, s
 from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner, ScanBusyError, RUN_ID_RE
 from pointsnap.web.storage import StorageError
+from pointsnap.web.security import LocalRequestBoundary
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -95,6 +97,13 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         description="Giao diện Web kiểm tra và giám sát chất lượng nhãn 3D trên CVAT",
         version="0.1.0",
     )
+    application.add_middleware(LocalRequestBoundary)
+
+    @application.exception_handler(RequestValidationError)
+    async def invalid_request(request, exc):
+        # Pydantic có thể echo input là token object; chỉ trả vị trí và lý do.
+        errors = [{k: e[k] for k in ('loc', 'msg', 'type') if k in e} for e in exc.errors()]
+        return JSONResponse(status_code=422, content={'detail': errors})
 
     @application.middleware("http")
     async def revalidate_ui_files(request, call_next):

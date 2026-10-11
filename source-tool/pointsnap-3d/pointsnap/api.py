@@ -131,6 +131,13 @@ class ReportServer(ThreadingHTTPServer):
 
 
 class ReportHandler(BaseHTTPRequestHandler):
+    def log_request(self, code='-', size='-') -> None:
+        # Không ghi query/request target: caller có thể gửi credential nhầm trong URL.
+        self.log_message('%s %s %s', self.command, code, size)
+
+    def log_error(self, format, *args) -> None:
+        self.log_message('HTTP protocol error')
+
     def send_body(self, status: int, body: bytes, content_type: str, filename: str | None = None) -> None:
         self.send_response(status)
         self.send_header("Content-Type", content_type)
@@ -161,7 +168,8 @@ class ReportHandler(BaseHTTPRequestHandler):
             self.send_json(404, {"detail": "Không tìm thấy endpoint PointSnap"})
             return
         formats = parse_qs(parsed.query, keep_blank_values=True).get("format", ["json"])
-        if len(formats) != 1 or formats[0] not in ("json", "html", "csv"):
+        if (set(parse_qs(parsed.query, keep_blank_values=True)) - {'format'}
+                or len(formats) != 1 or formats[0] not in ("json", "html", "csv")):
             self.send_json(400, {"detail": "format phải là json, html hoặc csv"})
             return
         authentication = re.fullmatch(r"Bearer ([^\s]{1,4096})", self.headers.get("Authorization", ""), re.I)
@@ -207,6 +215,7 @@ class ReportHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = ReportServer(("0.0.0.0", 8081), os.environ.get("CVAT_URL", "http://cvat-server:8080"))
-    print("PointSnap report API listening on port 8081", flush=True)
+    host = os.environ.get('POINTSNAP_REPORT_HOST', '127.0.0.1')
+    server = ReportServer((host, 8081), os.environ.get("CVAT_URL", "http://cvat-server:8080"))
+    print(f"PointSnap report API listening on {host}:8081", flush=True)
     server.serve_forever()

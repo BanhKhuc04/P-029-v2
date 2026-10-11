@@ -114,7 +114,12 @@ def frame_url(
     - Không có track_id nhưng có shape_id: thêm &type=shape&serverID=<shape_id>.
     - Không có cả hai: link chỉ mở frame.
     """
-    url = f"{base_url.rstrip('/')}/tasks/{task_id}/jobs/{job_id}?frame={frame}"
+    from pointsnap.adapters.cvat.client import validate_cvat_url, CvatError
+    try:
+        base_url = validate_cvat_url(base_url)
+    except CvatError:
+        return ''
+    url = f"{base_url}/tasks/{task_id}/jobs/{job_id}?frame={frame}"
     if track_id is not None:
         return f"{url}&type=track&serverID={track_id}"
     if shape_id is not None:

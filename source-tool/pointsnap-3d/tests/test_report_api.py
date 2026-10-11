@@ -106,3 +106,11 @@ def test_pagination_cannot_forward_token_to_other_origin():
     with pytest.raises(CvatError, match="ngoài origin"):
         client._request("GET", "https://another-server.invalid/api/labels")
     client.session.close()
+
+
+def test_token_query_is_rejected_and_not_logged(api_server, capsys):
+    url, calls = api_server
+    response = requests.get(f'{url}/pointsnap/jobs/1/report?token=TEST-SECRET-URL-06', timeout=5)
+    assert response.status_code == 400
+    assert 'TEST-SECRET-URL-06' not in capsys.readouterr().err
+    assert not calls

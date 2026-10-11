@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const core = require('../src/core.js');
 
-function web(fetch) {
+function web(fetch, confirm = () => false) {
   const els = new Map();
   function el(id='') {
     return {id, value:'', textContent:'', innerHTML:'', style:{}, children:[], attrs:{}, disabled:false,
@@ -19,11 +19,11 @@ function web(fetch) {
     createElement(){return el();}, querySelectorAll(){return [];}, querySelector(){return null;},
     addEventListener(){}, documentElement:el(), activeElement:null};
   const source=fs.readFileSync(path.join(__dirname,'../../pointsnap/web/static/app.js'),'utf8');
-  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode'];
+  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline'];
   const context={document,fetch, console, URLSearchParams, URL, Map, Set, Date, Math,
     localStorage:{getItem(){return null;},setItem(){}},sessionStorage:{getItem(){return null;},setItem(){}},
     window:{location:{search:'',hash:''},matchMedia(){return {matches:false};},addEventListener(){}},
-    setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},confirm(){return false;}};
+    setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},confirm};
   vm.createContext(context);
   vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.api={${exports.join(',')}};})();`),context);
   return {...context.api,els,document};
@@ -126,4 +126,21 @@ test('extension scan response after a route change cannot attach to the new job'
   const pending=p.startScan(false);p.S.sid++;p.S.job={jobId:2};p.S.ps={active:null};
   resolve({ok:true,data:{run_id:'old'}});await pending;
   assert.equal(p.S.ps.active,null);
+});
+
+test('security: executable and credential links are not shown',()=>{
+  const w=web();for(const value of ['javascript:alert(1)','data:text/html,x','http://u:SECRET@localhost/'])assert.equal(w.safeHttpLink(value),'');
+  assert.equal(w.safeHttpLink('http://localhost:8080/tasks/1/jobs/2?frame=0'),'http://localhost:8080/tasks/1/jobs/2?frame=0');
+});
+test('security: persisted history fields and attributes are escaped',()=>{
+  const w=web(),payload='<img src=x onerror=alert(1)>';
+  w.renderHistoryRuns([{run_id:'" onmouseover="x',job_id:payload,started_at:payload,status:'done',summary:{num_errors:payload,num_warnings:0}}]);
+  const html=w.document.getElementById('history-table-body').children[0].innerHTML;
+  assert.ok(!html.includes('<img'));assert.ok(html.includes('&lt;img'));assert.ok(!html.includes('data-id="" onmouseover'));
+});
+
+test('confirmed reset discards dirty draft and reloads the saved default',async()=>{
+  const w=web(async()=>({ok:true,json:async()=>({config:{size:{manual_ranges:{}},gate:{max_errors:0}},yaml:'default'})}),()=>true);
+  w.state.currentSlug='a';w.state.currentGuideline={gate:{max_errors:5}};w.state.guidelineDirty=true;
+  await w.handleResetGuideline();assert.equal(w.state.guidelineDirty,false);assert.equal(w.state.currentGuideline.gate.max_errors,0);
 });

@@ -599,7 +599,9 @@ def _read_yaml(text: str, source: str) -> dict[str, Any]:
     try:
         data = yaml.safe_load(text)
     except yaml.YAMLError as exc:
-        raise ConfigError(f"Không đọc được YAML từ {source}: {exc}") from exc
+        mark = getattr(exc, 'problem_mark', None)
+        location = f' (dòng {mark.line+1}, cột {mark.column+1})' if mark else ''
+        raise ConfigError(f"Không đọc được YAML từ {source}{location}") from exc
     if data is None:
         return {}
     if not isinstance(data, Mapping):

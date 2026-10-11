@@ -13,9 +13,11 @@ import shutil
 import threading
 import unicodedata
 from pathlib import Path
+from urllib.parse import urlsplit
 from typing import Any, Mapping
 
 import yaml
+from pointsnap.adapters.cvat.client import CvatError, validate_cvat_url
 from pointsnap.web.storage import read_json, write_json, write_text
 
 from pointsnap.core.config import (
@@ -42,6 +44,18 @@ def validate_slug(slug: str) -> str:
             f"Slug '{slug}' không hợp lệ. Chỉ chấp nhận chữ cái, số, gạch ngang và gạch dưới."
         )
     return slug
+
+
+def project_cvat_url(url: str) -> str:
+    try:
+        return validate_cvat_url(url)
+    except CvatError as exc:
+        raise ProjectError(str(exc)) from exc
+
+
+def cvat_origin(url: str) -> tuple:
+    parts = urlsplit(url)
+    return parts.scheme, parts.hostname, parts.port or (443 if parts.scheme == 'https' else 80), parts.path.rstrip('/')
 
 
 def clean_guideline_dict(data: dict[str, Any]) -> dict[str, Any]:
@@ -144,6 +158,7 @@ class ProjectManager:
         name = name.strip()
         if not name:
             raise ProjectError("Tên dự án không được để trống")
+        cvat_url = project_cvat_url(cvat_url)
 
         actual_slug = validate_slug(slug or slugify(name))
         proj_dir = self.projects_dir / actual_slug
@@ -235,6 +250,12 @@ class ProjectManager:
             if not updates["name"]:
                 raise ProjectError("Tên dự án không được để trống")
 
+        if 'cvat_url' in updates:
+            updates = {**updates, 'cvat_url': project_cvat_url(updates['cvat_url'])}
+            if cvat_origin(data['cvat_url']) != cvat_origin(updates['cvat_url']):
+                # Xóa trước khi đổi server: lỗi ghi giữa hai file cũng không mang PAT cũ sang server mới.
+                write_json(proj_dir / 'secret.json', {})
+
         for key in ("name", "description", "cvat_url", "nuscenes_root", "export_dirs"):
             if key in updates:
                 data[key] = updates[key]
@@ -312,7 +333,9 @@ class ProjectManager:
             try:
                 raw_data = yaml.safe_load(content)
             except yaml.YAMLError as exc:
-                raise ConfigError(f"Cú pháp YAML không hợp lệ: {exc}") from exc
+                mark = getattr(exc, 'problem_mark', None)
+                location = f' (dòng {mark.line+1}, cột {mark.column+1})' if mark else ''
+                raise ConfigError(f"Cú pháp YAML không hợp lệ{location}") from exc
             if not isinstance(raw_data, Mapping):
                 raise ConfigError("Nội dung guideline phải là một mapping YAML")
             data = dict(raw_data)
@@ -345,6 +368,10 @@ class ProjectManager:
         - cvat.url từ project.json luôn ghi đè cấu hình trong guideline.yaml.
         - cvat.token lấy từ secret.json (không nằm trong file guideline).
         """
+        with self._lock:
+            return self._effective_config(slug)
+
+    def _effective_config(self, slug: str) -> Config:
         proj = self.get_project(slug)
         clean_data, _ = self.get_guideline(slug)
 

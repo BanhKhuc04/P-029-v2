@@ -11,7 +11,8 @@ from pointsnap.core.model import Finding
 
 
 def _text_cell(value: str) -> str:
-    return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
+    visible = value.lstrip(' \t\r\n\v\f\ufeff\u200b')
+    return "'" + value if visible.startswith(("=", "+", "-", "@")) else value
 
 
 def generate_csv_report(

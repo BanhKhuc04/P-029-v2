@@ -506,6 +506,8 @@
     setButtonIdle(document.getElementById('btn-start-scan'));
     showScanLoader(false);
     state.currentGuideline = null;
+    document.getElementById('guideline-form-view').inert = true;
+    document.getElementById('guideline-yaml-textarea').disabled = true;
     setGuidelineDirty(false);
     showEmptyResults();
     updateRecentScanCard(null);
@@ -864,9 +866,9 @@
       const sevLabel = f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
 
       tr.innerHTML = `
-        <td><span class="pill-badge ${sevClass}">${sevLabel}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
-        <td class="mono">#${f.frame}</td>
-        <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${f.track_id}` : '—'}</td>
+        <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
+        <td class="mono">#${escapeHtml(f.frame)}</td>
+        <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${escapeHtml(f.track_id)}` : '—'}</td>
         <td>${escapeHtml(f.label || '—')}</td>
         <td style="color: var(--text-2);">${escapeHtml(f.error_type_label || f.error_type || '—')}</td>
         <td style="color: var(--text);">${escapeHtml(f.message || '')}</td>
@@ -1204,8 +1206,9 @@
 
     // Nút mở CVAT
     const cvatBtn = document.getElementById('detail-btn-cvat-link');
-    if (f.cvat_link) {
-      cvatBtn.href = f.cvat_link;
+    const link = safeHttpLink(f.cvat_link);
+    if (link) {
+      cvatBtn.href = link;
       cvatBtn.style.display = 'flex';
     } else {
       cvatBtn.style.display = 'none';
@@ -1511,9 +1514,9 @@
     const gateLabel = sum.gate_passed ? 'ĐẠT' : 'KHÔNG ĐẠT';
 
     box.innerHTML = `
-      <span class="mono" style="font-size: 13px;">${timeStr} · job #${runData.job_id}</span>
-      <span style="color: var(--error);">${sum.num_errors ?? 0} Lỗi</span>
-      <span style="color: var(--warn);">${sum.num_warnings ?? 0} Cảnh báo</span>
+      <span class="mono" style="font-size: 13px;">${escapeHtml(timeStr)} · job #${escapeHtml(runData.job_id)}</span>
+      <span style="color: var(--error);">${escapeHtml(sum.num_errors ?? 0)} Lỗi</span>
+      <span style="color: var(--warn);">${escapeHtml(sum.num_warnings ?? 0)} Cảnh báo</span>
       <span class="${gateClass}">${gateLabel}</span>
       <a href="#results" class="btn btn-primary btn-sm" style="margin-left: auto;">Mở kết quả</a>
     `;
@@ -1572,6 +1575,8 @@
       const data = await res.json();
       if (!scope.current() || state.guidelineDirty) return;
       state.currentGuideline = data.config || {};
+      document.getElementById('guideline-form-view').inert = false;
+      document.getElementById('guideline-yaml-textarea').disabled = false;
       document.getElementById('guideline-yaml-textarea').value = data.yaml || '';
 
       populateGuidelineForm(state.currentGuideline);
@@ -1629,9 +1634,9 @@
 
       tr.innerHTML = `
         <td class="mono" style="padding-left: 20px;">${escapeHtml(cls)}</td>
-        <td class="mono">${lStr}</td>
-        <td class="mono">${wStr}</td>
-        <td class="mono">${hStr}</td>
+        <td class="mono">${escapeHtml(lStr)}</td>
+        <td class="mono">${escapeHtml(wStr)}</td>
+        <td class="mono">${escapeHtml(hStr)}</td>
         <td style="text-align: right; padding-right: 20px;">
           <button class="btn btn-outline btn-sm btn-delete-class" data-cls="${escapeHtml(cls)}" style="color: var(--error);">Xóa</button>
         </td>
@@ -1674,6 +1679,7 @@
       if (!scope.current()) return;
       if (!res.ok) throw new Error('Không thể khôi phục guideline');
       showToast('Đã khôi phục guideline mặc định', 'success');
+      setGuidelineDirty(false);
       await loadGuideline();
     } catch (err) {
       if (!scope.current()) return;
@@ -1871,14 +1877,14 @@
       const gateText = r.status === 'done' ? (isPass ? 'Đạt' : 'Không đạt') : ({queued:'Đang chờ', running:'Đang quét', failed:'Thất bại'}[r.status] || 'Chưa có kết quả');
 
       tr.innerHTML = `
-        <td class="mono" style="padding-left: 20px;">${timeStr}</td>
-        <td class="mono">#${r.job_id}</td>
+        <td class="mono" style="padding-left: 20px;">${escapeHtml(timeStr)}</td>
+        <td class="mono">#${escapeHtml(r.job_id)}</td>
         <td style="color: var(--text-2);">${sum.flagged ? 'Quét & gắn cờ' : 'Quét'}</td>
-        <td class="mono" style="color: var(--error);">${sum.num_errors ?? 0}</td>
-        <td class="mono" style="color: var(--warn);">${sum.num_warnings ?? 0}</td>
+        <td class="mono" style="color: var(--error);">${escapeHtml(sum.num_errors ?? 0)}</td>
+        <td class="mono" style="color: var(--warn);">${escapeHtml(sum.num_warnings ?? 0)}</td>
         <td><span class="${gateClass}">${gateText}</span></td>
         <td style="text-align: right; padding-right: 20px;">
-          <button class="btn btn-outline btn-sm btn-view-run" ${r.status === 'done' ? '' : 'disabled'} data-id="${r.run_id}" style="color: var(--primary-text);">Xem kết quả</button>
+          <button class="btn btn-outline btn-sm btn-view-run" ${r.status === 'done' ? '' : 'disabled'} data-id="${escapeHtml(r.run_id)}" style="color: var(--primary-text);">Xem kết quả</button>
         </td>
       `;
 
@@ -2033,5 +2039,12 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function safeHttpLink(value) {
+    try {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';
+    } catch (_) { return ''; }
   }
 })();

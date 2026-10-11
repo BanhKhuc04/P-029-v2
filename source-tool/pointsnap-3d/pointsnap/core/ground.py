@@ -300,27 +300,47 @@ class OtherBoxPoints:
 
     Điểm nằm trong một box (nới `margin` mét) là điểm của đối tượng, không phải mặt đất. Điểm trong chính box
     đang xét vẫn giữ: box bị lún thì mặt đất thật nằm trong box, không được bỏ.
+
+    Điểm được sắp theo x một lần để tìm nhanh các điểm quanh một box (`near`), thay vì quét cả point cloud cho mỗi box.
     """
 
     def __init__(self, points: np.ndarray, cuboids: Sequence[Cuboid], margin: float = 0.15) -> None:
         from pointsnap.core.geometry import points_in_cuboid
 
         self.points = np.asarray(points, dtype=np.float64)[:, :3]
+        self._order = np.argsort(self.points[:, 0], kind="stable")
+        self._sorted_x = self.points[self._order, 0]
         self._count = np.zeros(len(self.points), dtype=np.int32)
         self._inside: list[np.ndarray] = []
         for cuboid in cuboids:
-            reach = max(cuboid.dims) / 2.0 + margin
-            idx = np.flatnonzero((np.abs(self.points[:, 0] - cuboid.center[0]) <= reach)
-                                 & (np.abs(self.points[:, 1] - cuboid.center[1]) <= reach))
+            idx = self.near(cuboid.center[0], cuboid.center[1], max(cuboid.dims) / 2.0 + margin)
             idx = idx[points_in_cuboid(self.points[idx], cuboid, margin=margin)] if len(idx) else idx
             self._count[idx] += 1
             self._inside.append(idx)
+        self._boxes_center = [c.center for c in cuboids]
 
-    def without_others(self, index: int) -> np.ndarray:
-        """Các điểm không thuộc box nào ngoài box thứ `index` (theo thứ tự `cuboids` lúc tạo)."""
-        count = self._count.copy()
-        count[self._inside[index]] -= 1
-        return self.points[count == 0]
+    def near(self, x: float, y: float, reach: float) -> np.ndarray:
+        """Chỉ số (tăng dần) các điểm có |x − `x`| ≤ `reach` và |y − `y`| ≤ `reach`."""
+        lo = int(np.searchsorted(self._sorted_x, x - reach, side="left"))
+        hi = int(np.searchsorted(self._sorted_x, x + reach, side="right"))
+        idx = self._order[lo:hi]
+        idx = idx[np.abs(self.points[idx, 1] - y) <= reach]
+        return np.sort(idx)
+
+    def without_others(self, index: int, reach: float | None = None) -> np.ndarray:
+        """Các điểm không thuộc box nào ngoài box thứ `index` (theo thứ tự `cuboids` lúc tạo).
+
+        `reach`: chỉ trả các điểm trong hình vuông nửa cạnh `reach` quanh tâm box (giữ thứ tự gốc), đủ cho các phép đo
+        cục bộ như `ring_ground_for_box` mà không phải chép cả point cloud cho mỗi box.
+        """
+        if reach is None:
+            count = self._count.copy()
+            count[self._inside[index]] -= 1
+            return self.points[count == 0]
+        box = self._boxes_center[index]
+        idx = self.near(box[0], box[1], reach)
+        own = np.isin(idx, self._inside[index], assume_unique=True)
+        return self.points[idx[(self._count[idx] - own) == 0]]
 
     def belongs_to_others(self, index: int, idx: np.ndarray) -> np.ndarray:
         """Mask cho các điểm có chỉ số `idx` thuộc ít nhất một box khác ngoài box thứ `index`."""

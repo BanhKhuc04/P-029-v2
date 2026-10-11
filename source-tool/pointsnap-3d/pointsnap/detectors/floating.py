@@ -217,7 +217,8 @@ def estimate_scene_ground(
         for index, box in enumerate(boxes):
             if box.label in classes:
                 results.append((box, ring_ground_for_box(
-                    cloud.without_others(index), box, ring_inner_m=config.ring_inner_m,
+                    cloud.without_others(index, reach=max(box.dims[:2]) / 2.0 + config.ring_outer_m + 0.5), box,
+                    ring_inner_m=config.ring_inner_m,
                     ring_outer_m=config.ring_outer_m, min_ground_points=min_points,
                 )))
     return results

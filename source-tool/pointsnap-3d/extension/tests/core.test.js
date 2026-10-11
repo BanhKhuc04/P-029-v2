@@ -102,6 +102,12 @@ test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám 
     'track.occluded_long': 'Box đánh occluded 8 frame liền (frame 1–8), quá 6 frame: spec 4.4.5 chỉ dùng occluded cho che khuất tạm thời',
     'attr.missing': 'Vehicle thiếu thuộc tính bắt buộc `subtype` (2 keyframe, từ frame 0); spec 3.1.3: không chắc thì chọn other',
     'attr.invalid': "Thuộc tính `pose` = 'walking' không có trong danh sách cho phép (standing, sitting, bending) (frame 0)",
+    'track.static_shift': 'Vật đứng yên (các keyframe khác tụ trong 3 cm) nhưng box ở frame này lệch 31 cm so với vị trí chung (ngưỡng 20 cm)',
+    'heading.static': 'Vật đứng yên nhưng hướng box ở frame này lệch 14.3° so với các keyframe khác của track (ngưỡng 10°)',
+    'cam.mismatch': 'Box chiếu lên ảnh CAM_FRONT: 48% thân vật trên ảnh nằm ngoài khung box, các frame khác của track chỉ 6% (IoU 41%): box lệch hoặc nhỏ so với vật',
+    'cam.class': 'Ảnh camera nhận vật là người ở 5/6 lần nhìn rõ, nhãn là car: nghi sai class',
+    'cam.missing': 'Ảnh CAM_FRONT thấy xe (độ tin cậy 97%, cách ~18 m, 120 điểm LiDAR) nhưng không có box 3D nào: nghi sót đối tượng',
+    'critic.box': 'Box Critic: box nghi vẽ sai (xác suất 93%); gợi ý sửa: dời (+0.32, -0.05, +0.00) m, kích thước (+0.00, +0.00, +0.00) m, xoay +3.1°',
   };
   for (const [rule, text] of Object.entries(cases)) {
     const items = core.parseFlag(`[Lỗi] ${text}`);

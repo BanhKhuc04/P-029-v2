@@ -307,6 +307,30 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return {"reviews": load_reviews(run_dir), "rev": link.reviews_rev}
 
+    @application.get("/api/projects/{slug}/learn")
+    def get_learning(slug: str) -> dict[str, Any]:
+        """Kết quả học từ kết luận đã duyệt hiện đang dùng (lớp 4 của Box Verifier)."""
+        from pointsnap.learn import load_model, report
+
+        try:
+            pm.get_project(slug)
+            model = load_model(pm._project_dir(slug))
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"model": model.to_dict() if model else None, "report": report(model) if model else None}
+
+    @application.post("/api/projects/{slug}/learn")
+    def post_learning(slug: str) -> dict[str, Any]:
+        """Học lại từ mọi kết luận Đúng / Báo nhầm của dự án; áp dụng từ lần quét sau."""
+        from pointsnap.learn import learn_project, report
+
+        try:
+            pm.get_project(slug)
+            model = learn_project(pm._project_dir(slug))
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"model": model.to_dict(), "report": report(model)}
+
     @application.post("/api/projects/{slug}/scans/{run_id}/flag", status_code=202)
     def flag_scan(slug: str, run_id: str) -> dict[str, Any]:
         """Gắn cờ kết quả: khởi động một lượt quét lại với flag=True để tránh trượt ID (Điểm 4 Mục 6)."""

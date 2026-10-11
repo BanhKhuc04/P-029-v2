@@ -27,6 +27,12 @@ rules:                                # bật / tắt từng luật theo guideli
   track_occluded_long: true           # C2: occluded liên tục quá max_occluded_frames, spec 4.4.5
   attr_missing: true                  # C2: thiếu thuộc tính bắt buộc (spec.required_attributes), spec 3.1.3
   attr_invalid: true                  # C2: giá trị thuộc tính ngoài danh sách cho phép (spec.allowed_values)
+  track_static_shift: true            # C3: vật đứng yên mà box ở một keyframe dịch khỏi vị trí chung
+  heading_static: true                # C3: vật đứng yên mà box ở một keyframe xoay lệch
+  cam_mismatch: true                  # C3: box chiếu lên ảnh camera lệch vật trên ảnh (so với các frame khác của track)
+  cam_class: true                     # C3: ảnh camera nhận vật thuộc nhóm khác với nhãn
+  cam_missing: true                   # C3: ảnh thấy vật, có điểm LiDAR, nhưng không có box 3D (Thông tin)
+  critic_box: true                    # C3: Box Critic (model tự huấn luyện) nghi box sai; chỉ chạy khi có critic.model
 
 floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
@@ -170,6 +176,52 @@ fit:                                  # box vẽ lệch khỏi vật (C1), spec 
     - [truck, trailer]                # đầu kéo và rơ-moóc chồng ở chỗ nối
     - [car, trailer]
     - [construction_vehicle, trailer]
+
+static:                               # vật đứng yên (C3): box đúng ở mọi keyframe gần như trùng nhau trong hệ toàn cục
+  max_spread_m: 0.10                  # các keyframe khác của track tụ trong 10 cm (p90) thì coi là đứng yên
+  min_keyframes: 4
+  shift_warning_m: 0.20               # nhãn chuẩn nuScenes: p99 lệch 0.14 m; dời 0.3 m bắt ~99%
+  shift_error_m: 0.50
+  yaw_warning_deg: 4                  # nhãn chuẩn: p99 lệch < 1°; xoay 10° bắt ~100%
+  yaw_error_deg: 10
+  yaw_excluded_classes: [pedestrian, Pedestrian, Animal]   # đứng yên vẫn xoay người
+
+camera:                               # đối chiếu ảnh camera (C3); cần PyTorch: pip install -e ".[vision]"
+  enabled: auto                       # auto: chạy khi có PyTorch + GPU; true / false: bật / tắt hẳn
+  min_score: 0.5                      # độ tin cậy tối thiểu của vật trên ảnh (Mask R-CNN COCO)
+  min_inside: 0.85                    # chỉ xét box chiếu nằm gần trọn trong ảnh
+  max_depth_m: 50
+  min_box_px: 25                      # khung chiếu cao ít nhất 25 pixel
+  max_occlusion: 0.3                  # bỏ box bị box gần hơn che quá 30% khung
+  min_track_observations: 2           # cần ít nhất 2 lần nhìn thấy khác của track để so
+  min_brightness: 90                  # bỏ frame ban đêm: trung vị độ sáng 6 ảnh < 90 / 255
+  min_mask_iou: 0.05                  # vật trên ảnh phải chồng khung chiếu (IoU ≥ 0.05); không thì coi như model 2D sót vật
+  mask_rise_warning: 0.2              # cam.mismatch: phần vật trên ảnh nằm ngoài khung box cao hơn trung vị track > 20 điểm %
+  mismatch_severity: info             # info: bằng chứng phụ, không tính báo nhầm; warning: báo như luật khác
+  class_min_observations: 3           # cam.class: cần ít nhất 3 lần nhìn rõ
+  class_vote: 0.6                     # ≥ 60% số lần ảnh nhận nhóm khác
+  class_min_score: 0.7
+  missing_min_score: 0.85             # cam.missing: vật trên ảnh chắc chắn, cao ≥ 40 px, có ≥ 15 điểm LiDAR
+  missing_min_px: 40
+  missing_min_points: 15
+  groups:                             # nhóm vật trên ảnh → class nhãn 3D
+    vehicle: [car, truck, bus, trailer, construction_vehicle, Vehicle]
+    two_wheeler: [motorcycle, bicycle, Two-wheels]
+    person: [pedestrian, Pedestrian]
+    animal: [Animal]
+
+critic:                               # Box Critic do nhóm tự huấn luyện (C3, lớp 3); xem docs/box-critic.md
+  model: ""                           # đường dẫn TorchScript .pt; để trống thì không chạy
+  min_points: 20
+  min_probability: 0.7                # box không thuộc track: xác suất sai ≥ 0.7: Cảnh báo; ≥ 0.9: Lỗi
+  error_probability: 0.9
+  min_logit_rise: 4.4                 # box thuộc track: logit sai cao hơn trung vị các frame khác của track > 4.4: Cảnh báo
+  error_logit_rise: 6.0               # > 6.0: Lỗi
+
+learning:                             # học từ kết luận Đúng / Báo nhầm của người duyệt (C3); `pointsnap learn`
+  adjust_severity: false              # true: hạ mục Cảnh báo có độ tin cậy thấp xuống Thông tin
+  downgrade_below: 0.15
+  min_rule_reviews: 20                # chỉ hạ mức khi luật đã có ít nhất 20 kết luận
 
 spec:                                 # thuộc tính theo spec của dự án (C2); nhãn nuScenes không có thuộc tính nên để trống
   required_attributes: {}             # vd {Vehicle: [subtype], Pedestrian: [age_group, pose], Two-wheels: [rider_state]}

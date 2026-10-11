@@ -293,6 +293,10 @@
                     <dt>Ngưỡng</dt>
                     <dd id="detail-threshold-val">—</dd>
                   </div>
+                  <div>
+                    <dt>Độ tin cậy</dt>
+                    <dd id="detail-confidence-val" title="Xác suất là lỗi thật, học từ các kết luận Đúng / Báo nhầm đã duyệt">—</dd>
+                  </div>
                 </dl>
 
                 <div class="detail-drawer-body-text">
@@ -661,6 +665,72 @@
                     <button role="switch" aria-checked="true" aria-label="Thuộc tính sai giá trị" id="rule-attr-invalid" class="switch-btn"><span class="switch-thumb"></span></button>
                   </div>
                 </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Vật đứng yên: box dịch <span class="mono" style="font-size: 12px; color: var(--text-3);">track_static_shift</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Box ở một keyframe lệch khỏi vị trí chung của vật đỗ</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-track-static-shift" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Vật đứng yên: box dịch" id="rule-track-static-shift" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Vật đứng yên: box xoay <span class="mono" style="font-size: 12px; color: var(--text-3);">heading_static</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Box ở một keyframe xoay lệch so với vật đỗ</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-heading-static" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Vật đứng yên: box xoay" id="rule-heading-static" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Box lệch vật trên ảnh <span class="mono" style="font-size: 12px; color: var(--text-3);">cam_mismatch</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Khung box chiếu lên ảnh trùng vật kém hẳn các frame khác của track (cần PyTorch)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-cam-mismatch" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Box lệch vật trên ảnh" id="rule-cam-mismatch" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Ảnh camera thấy class khác <span class="mono" style="font-size: 12px; color: var(--text-3);">cam_class</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Model ảnh nhận vật là nhóm khác với nhãn ở đa số lần nhìn rõ (cần PyTorch)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-cam-class" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Ảnh camera thấy class khác" id="rule-cam-class" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Ảnh thấy vật chưa có box <span class="mono" style="font-size: 12px; color: var(--text-3);">cam_missing</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Ảnh thấy vật chắc chắn, có điểm LiDAR, mà không có box 3D (Thông tin; cần PyTorch)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-cam-missing" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Ảnh thấy vật chưa có box" id="rule-cam-missing" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-top: 1px solid var(--border);">
+                  <div style="flex: 1 1 320px;">
+                    <div style="font-weight: 500;">Box Critic nghi box sai <span class="mono" style="font-size: 12px; color: var(--text-3);">critic_box</span></div>
+                    <div style="font-size: 13px; color: var(--text-2);">Model Box Critic nhóm tự huấn luyện (khai critic.model trong guideline)</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="label-rule-critic-box" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
+                    <button role="switch" aria-checked="true" aria-label="Box Critic nghi box sai" id="rule-critic-box" class="switch-btn"><span class="switch-thumb"></span></button>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -827,7 +897,9 @@
               <h1 class="page-title">Lịch sử quét</h1>
               <div class="page-subtitle">Theo dõi số Lỗi và Cảnh báo giảm dần sau mỗi lần sửa nhãn và quét lại</div>
             </div>
+            <button id="btn-learn" class="btn btn-secondary" title="Dùng mọi kết luận Đúng / Báo nhầm của dự án để chấm độ tin cậy cho lần quét sau">Học từ kết luận đã duyệt</button>
           </div>
+          <pre id="learn-report" class="mono" style="display: none; white-space: pre-wrap; font-size: 12px; color: var(--text-2); margin: 0 0 16px;"></pre>
 
           <!-- Biểu đồ SVG cột xếp chồng -->
           <section class="card-section" aria-label="Biểu đồ lỗi theo thời gian">

@@ -267,6 +267,21 @@ với điểm trong / sát box, để cây, tường, cột bên cạnh không b
 | `fit.loose` | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật (box gần < 30 m, ≥ 40 điểm) | > 50 cm / > 100 cm |
 | `fit.overlap` | Phần chung nhìn từ trên / diện tích box nhỏ hơn, cùng chồng theo chiều cao; trừ cặp class được phép (người sát nhau, xe máy đỗ sát nhau, đầu kéo – rơ-moóc…) | > 20% / > 50% |
 
+#### f) Box Verifier — kiểm box bằng nhiều nguồn và học từ người duyệt (giai đoạn 3, C3)
+
+Bốn lớp, mỗi lớp thêm một nguồn bằng chứng; tool vẫn **chỉ phát hiện, cảnh báo và gợi ý**, không tự sửa box. Số liệu:
+[docs/ket-qua-box-verifier.md](docs/ket-qua-box-verifier.md).
+
+| Lớp | Nguồn | Luật | Trạng thái |
+|---|---|---|---|
+| 1. Hình học theo thời gian | Vị trí / hướng box trong **hệ toàn cục** qua các keyframe | `track.static_shift`, `heading.static`: vật đứng yên (các keyframe khác tụ trong 10 cm) mà một keyframe dịch > 20 cm / xoay > 4° | Xong, mặc định bật |
+| 2. Ảnh camera | Chiếu box lên 6 ảnh, so với **mặt nạ vật** của Mask R-CNN (COCO, huấn luyện sẵn) | `cam.mismatch` (Thông tin), `cam.class` (Cảnh báo), `cam.missing` (Thông tin); frame ban đêm bỏ qua | Xong; tự bật khi có PyTorch + GPU |
+| 3. Box Critic | Model PointNet học từ box làm nhiễu có đáp án | `critic.box` kèm gợi ý sửa | Có dữ liệu, script / notebook Colab, chỗ cắm; **nhóm tự huấn luyện** ([docs/box-critic.md](docs/box-critic.md)) |
+| 4. Học từ kết luận | Kết luận Đúng / Báo nhầm của người duyệt | Độ tin cậy từng mục; tuỳ chọn hạ Cảnh báo kém tin cậy | Xong; cần ≥ 40 kết luận để dùng mô hình |
+
+Lớp 2 đo được nhưng yếu: trên cảnh tinh chỉnh chỉ bắt thêm 4/400 lỗi chèn so với luật LiDAR, báo nhầm tăng 0,24 – 0,75
+/ 100 box, nên `cam.mismatch` mặc định là bằng chứng phụ mức Thông tin.
+
 #### Mặt đất v2 (giai đoạn 3)
 
 Gộp 4 lượt quét LiDAR trung gian (20 Hz) trước keyframe vào vành đai đo mặt đất. Vị trí mọi box được nội suy theo thời
@@ -553,6 +568,18 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Recall nhảy vị trí 2 m / 4 m** | ≥ 90% | 100% / 100% ✅ |
 | **Phân mức đúng** | ≥ 80% | 100% ✅ |
 | **Hiệu năng** | < 2 phút / cảnh | 5–35 giây / cảnh ✅ (gộp 4 sweep) |
+
+**Box Verifier (C3, 10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-box-verifier.md](docs/ket-qua-box-verifier.md).
+
+| Chỉ số | Mục tiêu | Giai đoạn 3 → Box Verifier |
+|---|---|---|
+| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 → 3,67 · 0,57; cảnh tinh chỉnh 1,92 · 0,35 → 1,99 · 0,36 ✅ |
+| **Recall box dời 0,3 / 0,5 / 1,0 m** (mọi lỗi chèn) | — | 0% / 14% / 7% → **44% / 36% / 29%** |
+| **Recall xoay 15° / 30°** | — | 7% / 9% → **29% / 27%** |
+| **Recall nhảy vị trí 0,5 / 1,0 m** | — | 45% / 50% → **55% / 75%** |
+| **Recall co / phóng box x0,7 · x1,3** | — | 9% · 0% (chưa cải thiện) |
+| **Thêm Box Critic** (model nhóm huấn luyện, `critic.model`) | — | co / phóng 27% · 12%, dời 0,5 m 64%, xoay 30° 55%, nhảy 0,5 m 73%; báo nhầm 3,86 · 0,62 |
+| **Phân mức đúng** | ≥ 80% | 100% ✅ |
 
 **Kỳ vọng định tính:** annotator thấy lỗi ngay trong CVAT và đi thẳng tới lỗi trước khi nộp; reviewer không phải soi thủ công 3 loại lỗi; giảm số lần bị trả về. Mức giảm cụ thể báo cáo bằng số liệu đo thực tế.
 

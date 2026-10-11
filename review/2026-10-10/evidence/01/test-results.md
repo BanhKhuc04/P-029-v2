@@ -95,3 +95,14 @@ Lệnh thực tế trên máy review, từ tool root:
 ## EV-01-008 — kiểm tra tài liệu bàn giao
 
 Kiểm bằng Python standard library và Git: inventory khớp đúng 184 file baseline, đủ 14 mã ca R01-01–14 và 8 findings RV-01-001–008; các đường dẫn Markdown nội bộ trong tài liệu thay đổi đều tồn tại, code fences cân bằng. Kết quả mã 0; `git diff --check` mã 0. Đây là kiểm tra cấu trúc/tham chiếu, không kiểm nội dung website ngoài repo.
+
+## EV-01-008 — review lại ba nhánh
+
+Cùng lệnh suite live/dataset EV-01-007, thêm bốn ca `test_empty_cloud_blocks_enabled_lidar_rules_even_without_floating`.
+
+```text
+Trước sửa: 4 failed, 13 deselected in 0.74s (exit 1)
+Nhánh 01 sau sửa: 256 passed, 0 skipped, 1 warning in 22.96s (exit 0)
+```
+
+Commit code bổ sung được ghi trong 01-report mục 9. Code và doc tách commit; sửa cloud rỗng được đưa sang 02/03 theo dependency. Dấu quay trong report/architecture đã đối chiếu với ma trận −90°.

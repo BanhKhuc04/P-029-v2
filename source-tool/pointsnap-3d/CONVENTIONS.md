@@ -133,3 +133,7 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - Finding được sắp ổn định thêm theo label/source_id; overlap dùng thứ tự box xác định khi chọn mục tiêu. Không sửa hình học hoặc thuộc tính của đầu vào khi kiểm luật.
 
 Ma trận 18 mã luật, ca biên và bằng chứng: [review phần 02](../../review/2026-10-10/02-report.md).
+
+### Bổ sung coverage khi review lại ba nhánh
+
+FrameSource có mặt nhưng point cloud rỗng ở frame có box nhìn thấy vẫn là thiếu dữ liệu cho các luật LiDAR đang bật. Gate chặn cả khi floating tắt; không dùng sự tồn tại của nguồn frame thay cho bằng chứng có điểm.

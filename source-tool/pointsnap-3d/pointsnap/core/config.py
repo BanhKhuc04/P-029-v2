@@ -252,8 +252,9 @@ class CameraConfig:
     enabled: str = "auto"
     """`auto`: chạy khi có PyTorch + GPU (CPU chạy được nhưng chậm); `true` / `false`: bật / tắt hẳn."""
     model: str = "maskrcnn"
-    """Model ảnh (`vision.detector2d`): `maskrcnn` (Mask R-CNN COCO) hoặc `gdino-sam2` (Grounding DINO + SAM 2.1, nhận
-    diện theo từ khóa, có thêm cọc tiêu / rào chắn; cần `transformers`)."""
+    """Model ảnh (`vision.detector2d`): `maskrcnn` (Mask R-CNN COCO), `gdino-sam2` (Grounding DINO + SAM 2.1, nhận diện
+    theo từ khóa, có thêm cọc tiêu / rào chắn; cần `transformers`) hoặc `hybrid` (Mask R-CNN, cộng Grounding DINO cho
+    cọc tiêu / rào chắn)."""
     min_score: float = 0.5
     min_inside: float = 0.85
     max_depth_m: float = 50.0
@@ -295,8 +296,17 @@ class CameraConfig:
         from pointsnap.vision import detector2d
 
         if self.enabled == "true":
-            return detector2d.available(self.model)
-        return detector2d.cuda_available(self.model)
+            return detector2d.available(self.effective_model())
+        return detector2d.cuda_available(self.effective_model())
+
+    def effective_model(self) -> str:
+        """Model ảnh thực dùng: `hybrid` lùi về `maskrcnn` khi máy chưa cài `transformers` (cùng ngưỡng, chỉ mất phần cọc
+        tiêu); `gdino-sam2` thì không lùi vì ngưỡng của nó khác thang điểm Mask R-CNN."""
+        from pointsnap.vision import detector2d
+
+        if self.model == "hybrid" and not detector2d.available("hybrid"):
+            return "maskrcnn"
+        return self.model
 
 
 @dataclass(frozen=True)
@@ -549,8 +559,8 @@ def _parse_camera(r: _Reader) -> CameraConfig:
     integers = {name: r.integer(name, 1) for name in (
         "min_track_observations", "class_min_observations", "missing_min_points")}
     model = r._take("model") if "model" in r.keys() else "maskrcnn"
-    if model not in ("maskrcnn", "gdino-sam2"):
-        raise ConfigError(f"'camera.model' phải là maskrcnn hoặc gdino-sam2, nhận {model!r}")
+    if model not in ("maskrcnn", "gdino-sam2", "hybrid"):
+        raise ConfigError(f"'camera.model' phải là maskrcnn, gdino-sam2 hoặc hybrid, nhận {model!r}")
     severity = r._take("mismatch_severity") if "mismatch_severity" in r.keys() else "info"
     if severity not in ("info", "warning"):
         raise ConfigError(f"'camera.mismatch_severity' phải là info hoặc warning, nhận {severity!r}")

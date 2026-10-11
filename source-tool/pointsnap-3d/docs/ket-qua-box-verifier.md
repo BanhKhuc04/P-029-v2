@@ -115,13 +115,30 @@ Box đối chiếu được theo nhóm vật:
 | Xe | 781 → 779 / 3 179 | 951 → 938 / 3 471 |
 | Xe hai bánh | 120 → 115 / 446 | 23 → 26 / 150 |
 
-Kết luận: **giữ Mask R-CNN làm mặc định.** Trên cảnh kiểm tra GDINO + SAM 2.1 bắt box lệch kém hơn (nhận người kém hơn),
-bù lại là cọc tiêu (Mask R-CNN không có) và ít mục `cam.missing` hơn hẳn. Không chỉnh lại ngưỡng theo cảnh kiểm tra. Rào
-chắn bê tông của nuScenes model theo từ khóa gần như không nhận ra. Hướng tiếp: dùng GDINO **chỉ cho nhóm Mask R-CNN không
-có** (cọc tiêu), giữ Mask R-CNN cho người / xe; chọn trên cảnh tinh chỉnh, chạy cảnh kiểm tra một lần.
+Trên cảnh kiểm tra GDINO + SAM 2.1 bắt box lệch kém hơn (nhận người kém hơn), bù lại là cọc tiêu (Mask R-CNN không có) và
+ít mục `cam.missing` hơn hẳn. Không chỉnh lại ngưỡng theo cảnh kiểm tra. Rào chắn bê tông của nuScenes model theo từ khóa
+gần như không nhận ra.
 
-Dùng thử: `pip install -e ".[vision]"` (thêm `transformers`), trong guideline đặt `camera.model: gdino-sam2` cùng 4 ngưỡng
-trên. Lần quét đầu tải trọng số từ Hugging Face (~1 GB).
+**`camera.model: hybrid`** ghép hai model: Mask R-CNN cho người / xe như cũ, Grounding DINO + SAM 2.1 **chỉ** cho nhóm COCO
+không có (cọc tiêu, rào chắn); dùng chung ngưỡng của Mask R-CNN. Trên cảnh tinh chỉnh, cộng thêm điểm cho vật của Grounding
+DINO (0,1 / 0,2) chỉ phủ thêm 1 – 2% box mà bắt đầu báo nhầm `cam.class`, nên không cộng.
+
+| | Tinh chỉnh: Mask R-CNN | Tinh chỉnh: hybrid | **Kiểm tra: Mask R-CNN** | **Kiểm tra: hybrid** |
+|---|---|---|---|---|
+| Phủ | 18% (1 594) | 21% (1 857) | 25% (1 361) | **28% (1 499)** |
+| Bắt dời ngang 0,5 m | 20% | 25% | 22% | **24%** |
+| Bắt nhảy 1 m | 25% | 25% | 27% | 25% |
+| Bắt co x0,7 | 60% | 64% | 69% | **71%** |
+| `cam.mismatch` báo nhầm / 100 box | 0,24 | 0,24 | 0,75 | 0,77 |
+| `cam.class` / `cam.missing` | 0 / 0,70 | 0 / 0,70 | 0 / 2,44 | 0 / 2,44 |
+
+Tính trên mọi box nhìn thấy (phủ × bắt được), trên cảnh kiểm tra hybrid bắt thêm ~20% box dời và ~13% box co ở gần như
+cùng mức báo nhầm; nhảy 1 m ngang nhau.
+
+Kết luận: **mặc định vẫn là `maskrcnn`** (không cần thêm thư viện, lần quét đầu nhanh hơn ~4 lần); máy có GPU nên đặt
+`camera.model: hybrid`. Thiếu `transformers` thì `hybrid` tự lùi về `maskrcnn` (cùng ngưỡng). `gdino-sam2` dùng riêng cần
+4 ngưỡng ở trên. Cài: `pip install -e ".[vision]"`; lần quét đầu tải trọng số Grounding DINO + SAM 2.1 từ Hugging Face
+(~1 GB) và chạy thêm ~0,8 s / ảnh.
 
 ## 4. Lớp 3 — Box Critic
 

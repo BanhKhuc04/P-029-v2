@@ -241,7 +241,8 @@ def check_camera(job: JobData, config: Config, frames: FrameSource | None = None
     from pointsnap.detectors.camera import camera_findings, collect_observations
 
     r = config.rules
-    observations, missing = collect_observations(job.cuboids, frames, _detector(config.camera.model), config.camera)
+    observations, missing = collect_observations(job.cuboids, frames, _detector(config.camera.effective_model()),
+                                                  config.camera)
     findings = camera_findings(observations, config.camera, mismatch=r.cam_mismatch, wrong_class=r.cam_class)
     return findings + (missing if r.cam_missing else [])
 

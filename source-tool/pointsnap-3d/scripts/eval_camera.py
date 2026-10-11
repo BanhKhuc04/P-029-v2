@@ -112,7 +112,7 @@ def main() -> int:
         if hasattr(stream, "reconfigure") and (stream.encoding or "").lower() not in ("utf-8", "utf8"):
             stream.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--model", choices=("maskrcnn", "gdino-sam2"), default="maskrcnn")
+    p.add_argument("--model", choices=("maskrcnn", "gdino-sam2", "hybrid"), default="maskrcnn")
     p.add_argument("--scenes", default="tuning", help="tuning | test")
     p.add_argument("--dataroot", default=os.environ.get("NUSCENES_ROOT"))
     p.add_argument("--config", type=Path, help="guideline YAML (mặc định: cấu hình mặc định)")

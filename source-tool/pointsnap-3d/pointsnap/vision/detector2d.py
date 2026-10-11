@@ -1,14 +1,16 @@
 """Nhận diện vật thể trên ảnh camera bằng model 2D có sẵn (việc C3, lớp 2 của Box Verifier).
 
-Hai model, chọn bằng `camera.model` của guideline:
+Ba lựa chọn, theo `camera.model` của guideline:
 
 - `maskrcnn`: Mask R-CNN ResNet-50 FPN v2 của torchvision, huấn luyện trên COCO. Chỉ có 4 nhóm vật dùng được (người, xe
   hai bánh, xe, động vật); COCO không có cọc tiêu, rào chắn.
 - `gdino-sam2`: **Grounding DINO** (IDEA Research, Apache 2.0) tìm vật theo từ khóa (`PROMPTS`), rồi **SAM 2.1** (Meta,
   Apache 2.0) cắt mặt nạ từ từng khung. Nhận diện theo từ khóa nên có thêm cọc tiêu, rào chắn. Cần thêm `transformers`;
   trọng số tải từ Hugging Face ở lần chạy đầu (~1 GB).
+- `hybrid`: Mask R-CNN cho các nhóm COCO có (người, xe…), Grounding DINO + SAM 2.1 **chỉ** cho nhóm COCO không có (cọc
+  tiêu, rào chắn). Đo trên nuScenes: Grounding DINO nhận người kém Mask R-CNN nhưng là model duy nhất thấy cọc tiêu.
 
-Cả hai không huấn luyện trên nuScenes, nên đánh giá trên nuScenes không bị rò dữ liệu. Kết quả mỗi ảnh (khung, điểm tin
+Các model không huấn luyện trên nuScenes, nên đánh giá trên nuScenes không bị rò dữ liệu. Kết quả mỗi ảnh (khung, điểm tin
 cậy, tên vật, mặt nạ thu nhỏ 1/4) được lưu vào bộ đệm `~/.pointsnap/cache/det2d/`, khóa theo model, nên chỉ chạy model một
 lần cho mỗi ảnh; quét lại / đánh giá nhiều vòng chỉ đọc bộ đệm.
 
@@ -27,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-MODELS = ("maskrcnn", "gdino-sam2")
+MODELS = ("maskrcnn", "gdino-sam2", "hybrid")
 MODEL_NAME = "maskrcnn_resnet50_fpn_v2_coco"
 """Tên của `maskrcnn` trong khóa bộ đệm (giữ nguyên để dùng lại bộ đệm cũ)."""
 GDINO_ID = "IDEA-Research/grounding-dino-base"
@@ -56,6 +58,7 @@ cọc tiêu hay đèn nên bỏ."""
 SUPPORTED_GROUPS = {
     "maskrcnn": frozenset(GROUP_OF_COCO.values()),
     "gdino-sam2": frozenset(PROMPTS.values()),
+    "hybrid": frozenset(PROMPTS.values()) | frozenset(GROUP_OF_COCO.values()),
 }
 """Nhóm vật mỗi model nhận được. Box 3D thuộc nhóm model không nhận được thì không đối chiếu (không có bằng chứng)."""
 
@@ -93,7 +96,7 @@ def available(model: str = "maskrcnn") -> bool:
         import torch  # noqa: F401
         import torchvision  # noqa: F401
 
-        if model == "gdino-sam2":
+        if model in ("gdino-sam2", "hybrid"):
             import transformers  # noqa: F401
     except ImportError:
         return False
@@ -114,7 +117,7 @@ def default_cache_dir() -> Path:
 
 
 class Detector2D:
-    """Model 2D theo `model` (`maskrcnn` / `gdino-sam2`), chạy lười (chỉ nạp model khi gặp ảnh chưa có trong bộ đệm).
+    """Model 2D theo `model` (`maskrcnn` / `gdino-sam2` / `hybrid`), chạy lười (chỉ nạp model khi gặp ảnh chưa có trong bộ đệm).
 
     `min_score` là ngưỡng giữ vật khi ghi bộ đệm; luật ảnh lọc tiếp bằng ngưỡng của guideline. Điểm tin cậy của
     Grounding DINO thấp hơn Mask R-CNN (vật rõ thường 0,4 – 0,6), nên bộ đệm của `gdino-sam2` giữ từ 0,2.
@@ -124,6 +127,10 @@ class Detector2D:
                  model: str = "maskrcnn"):
         if model not in MODELS:
             raise ValueError(f"model ảnh không hỗ trợ: {model!r} (chọn {', '.join(MODELS)})")
+        self._parts: tuple[Detector2D, Detector2D] | None = None
+        if model == "hybrid":
+            self._parts = (Detector2D(cache_dir, device, min_score, "maskrcnn"),
+                           Detector2D(cache_dir, device, min_score, "gdino-sam2"))
         self.cache_dir = Path(cache_dir) if cache_dir else default_cache_dir()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.device = device
@@ -154,6 +161,8 @@ class Detector2D:
         self._categories = list(weights.meta["categories"])
 
     def detect(self, path: str | Path) -> Detections:
+        if self._parts is not None:
+            return self._detect_hybrid(path)
         path = Path(path)
         cache = self._key(path)
         if cache.is_file():
@@ -165,6 +174,22 @@ class Detector2D:
         result = dataclasses.replace(self._run(path), brightness=image_brightness(path))
         _save(cache, result)
         return result
+
+    def _detect_hybrid(self, path: str | Path) -> Detections:
+        """Vật của Mask R-CNN, cộng vật của Grounding DINO thuộc nhóm Mask R-CNN không có. Ngưỡng điểm của guideline
+        (chọn theo Mask R-CNN) áp dụng chung: cọc tiêu rõ được Grounding DINO chấm 0,5 – 0,75; cộng thêm điểm cho
+        Grounding DINO chỉ phủ thêm 1 – 2% box mà bắt đầu báo nhầm `cam.class` (đo trên 5 cảnh tinh chỉnh)."""
+        coco, extra = (part.detect(path) for part in self._parts)
+        keep = [i for i, g in enumerate(extra.groups()) if g is not None and g not in SUPPORTED_GROUPS["maskrcnn"]]
+        if not keep:
+            return coco
+        return Detections(
+            np.concatenate([np.asarray(coco.boxes, dtype=np.float32).reshape(-1, 4), extra.boxes[keep]]),
+            np.concatenate([np.asarray(coco.scores, dtype=np.float32), extra.scores[keep].astype(np.float32)]),
+            list(coco.names) + [extra.names[i] for i in keep],
+            list(coco.masks) + [extra.masks[i] for i in keep],
+            coco.brightness,
+        )
 
     def _run(self, path: Path) -> Detections:
         import torch

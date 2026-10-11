@@ -257,3 +257,32 @@ def test_camera_skips_groups_the_model_cannot_see():
             sink += obs
     assert coco_obs == []
     assert len(open_obs) == 4 and all(o.iou > 0.5 for o in open_obs)
+
+
+def test_hybrid_detector_merges_cones_from_open_vocabulary(tmp_path, monkeypatch):
+    """`hybrid`: giữ nguyên vật của Mask R-CNN, chỉ lấy thêm vật Grounding DINO thuộc nhóm COCO không có (cọc tiêu)."""
+    from pointsnap.vision.detector2d import Detector2D
+
+    mask = np.zeros((2, 2), dtype=bool)
+    coco = Detections(np.array([[0, 0, 10, 10]], np.float32), np.array([0.9], np.float32), ["person"], [mask], 100.0)
+    open_vocab = Detections(np.array([[0, 0, 10, 10], [20, 20, 30, 30], [40, 40, 50, 50]], np.float32),
+                            np.array([0.4, 0.6, 0.3], np.float32), ["person", "traffic cone", ""], [mask] * 3)
+    det = Detector2D(cache_dir=tmp_path, model="hybrid")
+    monkeypatch.setattr(det._parts[0], "detect", lambda path: coco)
+    monkeypatch.setattr(det._parts[1], "detect", lambda path: open_vocab)
+    merged = det.detect("x.jpg")
+    assert merged.names == ["person", "traffic cone"]
+    assert merged.groups() == ["person", "traffic_cone"]
+    assert merged.scores.tolist() == pytest.approx([0.9, 0.6])
+    assert merged.brightness == 100.0
+    assert {"person", "traffic_cone"} <= det.supported_groups
+
+
+def test_hybrid_falls_back_to_maskrcnn_without_transformers(monkeypatch):
+    from pointsnap.vision import detector2d
+
+    monkeypatch.setattr(detector2d, "available", lambda model="maskrcnn": model == "maskrcnn")
+    assert CameraConfig(model="hybrid").effective_model() == "maskrcnn"
+    assert CameraConfig(model="gdino-sam2").effective_model() == "gdino-sam2"  # ngưỡng khác thang: không lùi
+    monkeypatch.setattr(detector2d, "available", lambda model="maskrcnn": True)
+    assert CameraConfig(model="hybrid").effective_model() == "hybrid"

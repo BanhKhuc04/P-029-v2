@@ -123,6 +123,8 @@ def test_camera_model_parsing(tmp_path):
     cfg = load_config(path)
     assert cfg.camera.model == "gdino-sam2"
     assert cfg.camera.group_of("traffic_cone") == "traffic_cone"
+    path.write_text("camera:\n  model: hybrid\n", encoding="utf-8")
+    assert load_config(path).camera.model == "hybrid"
     path.write_text("camera:\n  model: yolo\n", encoding="utf-8")
     with pytest.raises(ConfigError):
         load_config(path)

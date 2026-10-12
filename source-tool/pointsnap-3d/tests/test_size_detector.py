@@ -113,7 +113,7 @@ def test_in_track_suspect_id_over_30_percent(size_config):
 
 
 def test_in_track_ignores_pedestrian(size_config):
-    """Không báo lỗi người đi bộ ở kiểu trong track (tiêu chí TASKS.md)."""
+    """Không báo lỗi người đi bộ ở kiểu trong track (tiêu chí quan-ly/TASKS.md)."""
     boxes = [
         Cuboid(center=(0, 0, 0), dims=(0.5, 0.5, 1.6), yaw=0, label="pedestrian", frame=0, track_id=3),
         Cuboid(center=(1, 0, 0), dims=(0.8, 0.6, 1.7), yaw=0, label="pedestrian", frame=1, track_id=3),

@@ -41,6 +41,7 @@ size:
     Animal/other:             {length: [0.2, 3.2],   width: [0.1, 1.2],   height: [0.2, 2.0]}
     Obstacle/traffic cone:    {length: [0.35, 0.69], width: [0.36, 0.96], height: [0.55, 1.33]}  # (nuScenes) 72 cọc tiêu
     Obstacle/traffic barrier: {length: [0.40, 0.76], width: [1.73, 3.36], height: [0.90, 1.35]}  # (nuScenes) 75 rào chắn
+  cargo_classes: [Two-wheels, Vehicle/Tricycle]   # C5: xe máy / xe ba gác chở hàng cồng kềnh
   in_track:
     excluded_classes: [Pedestrian, Animal]   # tư thế thay đổi nên kích thước dao động là bình thường
 
@@ -81,6 +82,7 @@ heading:
       flip_warning_deg: 45
       flip_error_deg: 75
       yaw_rate_max_dps: 60
+      reverse_max_mps: 3.0            # xe lùi chậm: Cảnh báo thay vì Lỗi (C5)
     two_wheeler:
       classes: [Two-wheels]
       min_speed_mps: 1.5
@@ -99,6 +101,15 @@ heading:
       yaw_rate_max_dps: 180
   points:
     classes: [Vehicle]
+
+static:
+  yaw_excluded_classes:               # C5: không xét hướng box của vật đứng yên
+    - Pedestrian                      # đứng yên vẫn xoay người
+    - Animal
+    - Obstacle/traffic cone           # tròn / đối xứng: hướng box không có nghĩa
+    - Obstacle/sack
+    - Obstacle/trash_bag
+    - Obstacle/brick
 
 fit:
   overlap_classes: [Vehicle, Two-wheels, Pedestrian, Animal]
@@ -125,3 +136,21 @@ spec:                                 # spec 3.1.3: thuộc tính bắt buộc k
     pose: [standing, sitting, bending]
     species: [dog, cat, cow, buffalo, other]
     type: [brick, traffic barrier, traffic cone, sack, trash_bag, container, metal_sheet, wood, charging point, other]
+  attribute_height:                   # C6 `attr.height`: thuộc tính phải khớp chiều cao box (m); đo trên nhãn chuẩn nuScenes
+    Pedestrian/standing/adult: [1.45, 2.20]   # người lớn đứng 1,56–2,00
+    Pedestrian/sitting:        [0.80, 1.60]   # ngồi 1,28–1,52
+    Pedestrian/bending:        [0.80, 1.60]
+    Pedestrian/child:          [0.60, 1.60]   # trẻ em 1,33–1,49
+    Two-wheels/with_rider:     [1.45, 2.20]   # có người lái 1,56–1,93
+    Two-wheels/without_rider:  [0.60, 1.60]   # không người 0,95–1,53
+  inside_forbidden:                   # C6 `spec.inside`: spec 4.3B không gán người bên trong xe
+    - [Pedestrian, Vehicle]
+  rider_double:                       # C6 `spec.rider_double`: spec 4.3C người lái nằm trong box xe hai bánh
+    - [Two-wheels/with_rider, Pedestrian]
+  rider_state:                        # C8 `attr.rider_state`: lên / xuống xe phải đổi thuộc tính (spec 4.3C)
+    class: Two-wheels
+    attribute: rider_state
+    with: with_rider
+    without: without_rider
+    person: Pedestrian
+  rider_max_speed_mps: 2.5            # xe không người chạy > 2,5 m/s: có người lái? (nhãn chuẩn: tối đa 1,0 m/s)

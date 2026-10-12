@@ -20,6 +20,8 @@ from pointsnap.core.model import Finding, Severity
 from pointsnap.core.scanner import actionable, scan_coverage_gaps, scan_cuboids
 from pointsnap.report.csv_rep import generate_csv_report
 from pointsnap.report.html import generate_html_report
+from pointsnap.learn import apply as apply_learned
+from pointsnap.learn import load_model
 from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.storage import StorageError, read_json, write_json
 
@@ -60,6 +62,7 @@ def finding_to_dict(
         "source_id": f.source_id,
         "value": f.value,
         "threshold": f.threshold,
+        "confidence": f.details.get("confidence"),
         "cvat_link": link,
     }
 
@@ -186,6 +189,9 @@ class ScanRunner:
             info["progress"] = 65
             info["message"] = f"Đang quét {len(job.cuboids)} box của job #{job_id}..."
             findings = scan_cuboids(job, config, frames)
+            learned = load_model(self.pm._project_dir(slug))
+            findings = apply_learned(findings, learned, config.learning.adjust_severity,
+                                     config.learning.downgrade_below, config.learning.min_rule_reviews)
 
             # 4. Xuất báo cáo HTML / CSV
             info["progress"] = 80

@@ -87,11 +87,24 @@ def _track(heights, offsets=None):
     return pairs
 
 
-@pytest.mark.xfail(strict=True, reason="giới hạn đã biết (C4): box thuộc track so trung vị độ cao vành đai với các frame "
-                   "khác; mặt phẳng dốc khớp trên LiDAR thật quá nhiễu để dùng cho mọi box (tăng báo nhầm trên nuScenes)")
 def test_track_from_flat_onto_slope_not_flagged():
     """Track đi từ đường bằng (frame 0 – 4) lên dốc 8° (frame 5 – 9), mọi box đúng spec: không báo frame nào."""
     assert _flagged(_track([_flat] * 5 + [_slope(8)] * 5)) == []
+
+
+def test_track_from_flat_onto_slope_sunk_frame_flagged():
+    """Track đi từ đường bằng lên dốc 8°, frame 7 lún 25 cm: vẫn chỉ báo frame 7 (không bị bỏ cùng các frame dốc)."""
+    offsets = [-0.25 if f == 7 else 0.0 for f in range(10)]
+    assert _flagged(_track([_flat] * 5 + [_slope(8)] * 5, offsets)) == [7]
+
+
+@pytest.mark.xfail(strict=True, reason="giới hạn đã biết (C4): trên dốc 8° box lơ lửng 25 cm có d theo trung vị chỉ "
+                   "-6 cm, gần trung vị track (nửa bằng, nửa dốc) nên không bị báo; báo theo mặt phẳng dốc cho box thuộc "
+                   "track làm tăng báo nhầm trên nuScenes")
+def test_track_from_flat_onto_slope_floating_frame_flagged():
+    """Track đi từ đường bằng lên dốc 8°, frame 7 lơ lửng 25 cm: nên báo frame 7."""
+    offsets = [0.25 if f == 7 else 0.0 for f in range(10)]
+    assert _flagged(_track([_flat] * 5 + [_slope(8)] * 5, offsets)) == [7]
 
 
 def test_track_on_slope_one_floating_frame_flagged():

@@ -1,0 +1,9 @@
+{
+  "own_pid_stopped": true,
+  "cwd": "C:\\Users\\Han\\Downloads\\P-029-main\\P-029-main",
+  "occupied_port_rejected": true,
+  "positive_cwd_other": true,
+  "note": "Invoke script in current PowerShell; capturing stdout from a nested pwsh process hung in tool harness.",
+  "api_projects_status": 200,
+  "python": "workspace venv"
+}

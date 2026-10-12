@@ -1,0 +1,9 @@
+{
+  "files_checked": 44,
+  "local_links_checked": 337,
+  "missing": [],
+  "code_fences_balanced": true,
+  "scope": "Touched product docs and all review Markdown; local path existence only, not URL/anchor/visual QA",
+  "workflow": "BaseLoader parses jobs pytest/artifact/extension, matrix3 entries; no remote CI run",
+  "js_syntax": "node --check production extension/scripts and Web app, manifest JSON parse passed"
+}

@@ -1,0 +1,31 @@
+{
+  "json": {
+    "status": 200,
+    "bytes": 3740,
+    "seconds": 0.3396,
+    "cache": "private, no-store",
+    "boxes": 4,
+    "errors": 0,
+    "warnings": 4,
+    "info": 0,
+    "point_cloud_available": false,
+    "point_cloud_note": "Không tìm thấy manifest.json của task 79 (bỏ qua luật lơ lửng / lún và hướng/fit dùng LiDAR; luật chuyển động dùng tọa độ từng frame khi thiếu pose; gate kiểm tra dữ liệu theo luật đang bật). Chỉ đường dẫn bằng --manifest hoặc cấu hình thư mục bản xuất.",
+    "passed": false
+  },
+  "html": {
+    "status": 200,
+    "bytes": 12424,
+    "seconds": 0.3461,
+    "cache": "private, no-store"
+  },
+  "csv": {
+    "status": 200,
+    "bytes": 1281,
+    "seconds": 0.2464,
+    "cache": "private, no-store"
+  },
+  "no_auth": 401,
+  "bad_auth": 401,
+  "health": 200,
+  "annotations_unchanged": true
+}

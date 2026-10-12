@@ -1,0 +1,14 @@
+{
+  "condition": "private filesystem fixture, fake token only, byte-level backup/restore; not a live CVAT snapshot recovery",
+  "backup_files": 11,
+  "restored_bytes_equal_before_restart": true,
+  "config_preserved": true,
+  "fake_token_preserved": true,
+  "review_preserved": true,
+  "completed_run_after_restart": "done",
+  "queued_after_restart": "failed",
+  "bridge_online_after_restart": false,
+  "rollback_reader04_source": "59ef9c4",
+  "rollback_reader_result": "done",
+  "rollback_limit": "runner04 source with current dependencies; not whole historical deployment"
+}

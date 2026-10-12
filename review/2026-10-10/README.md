@@ -2,7 +2,7 @@
 
 Ngày lập: **10/10/2026, Asia/Saigon**. Mốc mã nguồn: **`5dcc97f1ffc1751d022e2474c0b50745e348af86`**.
 
-Đây là hướng dẫn thực hiện review và ghi kết quả. Phần **01–06 đã review ngày 11/10 trong phạm vi báo cáo**: [bàn giao 01](01-handoff.md), [02](02-handoff.md), [03](03-handoff.md), [04](04-handoff.md), [05](05-handoff.md), [06](06-handoff.md). Nhánh kết quả tiếp nối 01 → 02 → 03 → 04 → 05 → 06; người nhận mở PR theo hướng dẫn base. Các bảng05/06 ghi ca đạt, một phần và chưa kiểm; ca MV3 cần Chrome/Edge còn thiếu môi trường. Phần07–08 **Chưa chạy**.
+Đây là hướng dẫn và kết quả review **01–08**, thực hiện 11–12/10/2026. Xem [bàn giao tổng](08-handoff.md), [07](07-report.md) và [08](08-report.md). Nhánh kết quả tiếp nối 01→08, chưa merge main. Mọi ca có trạng thái và giới hạn; review hoàn tất không đồng nghĩa quality/release đã nghiệm thu. MV3 thật, precision xem tay, atomic CVAT Save và triển khai ngoài local còn thiếu bằng chứng.
 
 ## 1. Chọn tài liệu theo nhánh
 
@@ -16,8 +16,8 @@ Tiền tố nhánh hướng dẫn ban đầu: `review/2026-10-10/`. Nhánh kết
 | 04 | `review/04-backend-cli-reports` | [Backend, CLI và báo cáo](04-backend-cli-reports.md) | Hoàn tất phần 04; xem [báo cáo](04-report.md), [bàn giao](04-handoff.md) |
 | 05 | `review/05-frontend-extension` | [Giao diện và extension](05-frontend-extension.md) | Web thật +logic extension; [bàn giao](05-handoff.md); MV3 thật còn thiếu môi trường |
 | 06 | `review/06-security-config` | [Bảo mật và cấu hình](06-security-config.md) | Đã review/sửa security local; [bàn giao](06-handoff.md); không chứng nhận LAN/deployment |
-| 07 | `07-tests-evaluation-performance` | [Kiểm thử, đánh giá và hiệu năng](07-tests-evaluation-performance.md) | Chưa thực hiện |
-| 08 | `08-deployment-docs-final` | [Triển khai và tổng hợp](08-deployment-docs-final.md) | Chưa thực hiện |
+| 07 | `review/07-tests-evaluation-performance` | [Kiểm thử, đánh giá và hiệu năng](07-tests-evaluation-performance.md) | 490 pytest +36 Node, eval10×10 và benchmark; [báo cáo](07-report.md) |
+| 08 | `review/08-deployment-docs-final` | [Triển khai và tổng hợp](08-deployment-docs-final.md) | 493 pytest Windows,486 Linux/7skip; artifact/Docker/operations; [bàn giao](08-handoff.md) |
 
 Mẫu báo cáo: [report-template.md](report-template.md). Kiểm kê mã nguồn: [tracked-file-inventory.tsv](tracked-file-inventory.tsv). Kế hoạch tổng: [REVIEW-PLAN.md](../../REVIEW-PLAN.md).
 
@@ -42,7 +42,7 @@ Các nhánh hướng dẫn ban đầu độc lập; nhánh kết quả 02/03 đ�
 
 ## 4. Môi trường và lệnh kiểm tra
 
-Môi trường kiểm thử chuẩn trong tài liệu dự án dùng **Python 3.11, CVAT v2.77.0**; CI dùng Python 3.11 và Node 22. Code khai báo Python >=3.10; một số ghi chú adapter dùng CVAT 2.77.1; Docker cục bộ dùng Python 3.12. Đây là các cấu hình cần đối chiếu ở phần 08, không chứng nhận chúng tương đương.
+Môi trường kiểm thử chuẩn trong tài liệu dự án dùng **Python 3.11, CVAT v2.77.0**; CI hiện có matrix Ubuntu3.10/3.11, Windows3.12 và Node22, thêm artifact smoke; chưa có run remote nhánh review. Code khai báo Python >=3.10; một số ghi chú adapter dùng CVAT 2.77.1; Docker cục bộ dùng Python 3.12. Xem [ma trận 08](08-compatibility.md); các tổ hợp chưa kiểm không được coi tương đương.
 
 Chạy các lệnh dưới đây từ tool root, trong môi trường đã cài `.[dev]` theo [CAI-DAT.md](../../source-tool/CAI-DAT.md). Không tạo lại môi trường đang dùng chỉ để bắt đầu review.
 
@@ -108,4 +108,4 @@ Trạng thái finding: Mở → Đang xử lý → Đã sửa/chờ kiểm lại
 - Các Markdown links và đường dẫn file nguồn cụ thể được kiểm tra đều tồn tại trong checkout hiện tại; code fences cân bằng.
 - Inventory có đúng **184 file** của commit nền `5dcc97f`, không thiếu/thừa/trùng.
 
-Đây là kiểm tra cấu trúc và tham chiếu của bộ tài liệu. Trong155 ca kế hoạch:66 ca phần01–04 có kết quả;22 ca05 và20 ca06 có bảng trạng thái riêng gồm đạt/một phần/chưa kiểm/bị chặn. Không cộng các ca chưa kiểm thành đạt.47 ca phần07–08 chưa có review riêng.
+Đây là kiểm tra cấu trúc ngày lập kế hoạch, không phải kết quả test phần mềm. Cả 155 ca kế hoạch đã có bảng trạng thái theo báo cáo01–08, gồm đạt/một phần/bị chặn/chưa nghiệm thu, không cộng tất cả thành PASS. Kết quả hiện hành xem [08](08-report.md); inventory và kiểm links mới ở evidence08.

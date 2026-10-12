@@ -1,0 +1,310 @@
+path	origin	primary_phase	evidence	inspection_level
+.github/workflows/test.yml	baseline	08	08-report.md	Structure/source inspection; no independent execution claim
+README.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+REVIEW-PLAN.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/_mau-tuan.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/tuan-01/task1-tuan-01.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/tuan-01/task2-tuan-01.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/tuan-02/task1-tuan-02.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/tuan-02/task2-tuan-02.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/tuan-03/tuan-03.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+nhat-ky-tuan/tuan-04/tuan-04.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+problem-backlog.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/01-architecture.md	review-added	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/01-handoff.md	review-added	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/01-overview-architecture.md	review-added	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/01-report.md	review-added	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/02-core-detectors.md	review-added	02	02-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/02-handoff.md	review-added	02	02-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/02-report.md	review-added	02	02-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/02-rule-matrix.md	review-added	02	02-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/03-data-cvat-integrations.md	review-added	03	03-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/03-handoff.md	review-added	03	03-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/03-mapping.md	review-added	03	03-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/03-report.md	review-added	03	03-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/04-backend-cli-reports.md	review-added	04	04-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/04-contracts.md	review-added	04	04-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/04-handoff.md	review-added	04	04-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/04-report.md	review-added	04	04-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/05-frontend-extension.md	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/05-handoff.md	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/05-report.md	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/06-handoff.md	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/06-report.md	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/06-security-config.md	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/07-handoff.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/07-report.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/07-test-matrix.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/07-tests-evaluation-performance.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-compatibility.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-deployment-docs-final.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-file-coverage.tsv	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-findings.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-handoff.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-operations-checklist.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/08-report.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/README.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/01/test-results.md	review-added	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/02/test-results.md	review-added	02	02-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/03/test-results.md	review-added	03	03-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/04/run-live-check.py	review-added	04	04-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/04/test-results.md	review-added	04	04-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/01-before-splash.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/02-guideline-before.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/03-guideline-after.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/04-results-dark.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/05-results-light.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/06-narrow-600.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/07-rule-off.png	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/05/test-results.md	review-added	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/06/01-cross-origin-blocked.png	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/06/dependencies.json	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/06/live-results.json	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/06/origin-before-after.json	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/06/run-origin-before-after.py	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/06/test-results.md	review-added	06	06-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/analyze-evaluation.py	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/benchmark-measurements.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/benchmark-metadata.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/benchmark-summary.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/checklist-map-observed.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/checklist-map-observed.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/concurrency.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/dataset-sha256.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/run-benchmark.py	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/run-evaluation.py	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/test-summary.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/test/ket-qua.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/test/metadata.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/test/raw-files-sha256.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/test/recall-intervals.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/test/summary.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/tuning/ket-qua.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/tuning/metadata.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/tuning/raw-files-sha256.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/tuning/recall-intervals.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/07/tuning/summary.json	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/08/README.md	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/api-after.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/api-before.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/api-restart.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/api-router.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/artifact-smoke.json	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/08/cleanup.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/docker.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/docs-check.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/inventory-summary.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/launcher.json	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/08/linux-smoke.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/linux-tests.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/linux312-runtime.json	review-added	08	08-report.md	Evidence/document inspection in 08; no independent production-code execution claim
+review/2026-10-10/evidence/08/operations.json	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/evidence/08/package-tests.json	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/re-review-01-03.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/report-template.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+review/2026-10-10/tracked-file-inventory.tsv	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+so-quyet-dinh.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/CAI-DAT.md	baseline	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/README-template.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/README.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/.dockerignore	review-added	08	08-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/.env.example	review-added	08	08-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/.gitignore	baseline	08	08-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/CONVENTIONS.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/Dockerfile	review-added	08	08-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/Dockerfile.api	review-added	08	08-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/Get-Report.ps1	review-added	08	08-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/README-Docker.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/README.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/Start-PointSnap.ps1	review-added	08	08-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/TASKS.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/auto-tests/README.md	review-added	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/auto-tests/Run-Tests.ps1	review-added	07	07-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/auto-tests/checklist-map.json	review-added	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/auto-tests/run.py	review-added	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/auto-tests/test_runner.py	review-added	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/compose.yaml	review-added	08	08-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/de-xuat-de-tai.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/README.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/checklist-test-thu-cong.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/danh-gia.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/eval-giai-doan-3/kiem-tra.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/eval-giai-doan-3/main-truoc-giai-doan-3.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/eval-giai-doan-3/tinh-chinh.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/ket-qua-danh-gia-tu-dong.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/ket-qua-giai-doan-3.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/kiem-chung-ground.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/local-security.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/operations.md	review-added	08	08-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/screenshots/connection-dark.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/connection-light.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/extension-cvat-panel.jpg	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/extension-options.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/guideline-dark.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/guideline-light.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/history-dark.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/history-light.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/responsive-narrow-dark.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/responsive-narrow-light.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/results-dark.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/results-light.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/scan-dark.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/screenshots/scan-light.png	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/docs/test/CHUAN-KIEM-THU.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/test/chien.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/docs/thu-extension.md	baseline	07	07-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/extension/README.md	baseline	05	05-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/extension/background.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/icons/icon128.png	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/icons/icon16.png	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/icons/icon32.png	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/icons/icon48.png	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/manifest.json	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/options.html	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/options.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/src/content.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/src/core.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/src/cvat-api.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/src/cvat-dom.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/src/panel-css.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/src/seed.js	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/extension/tests/core.test.js	baseline	07	07-report.md	Executed by Node suite; no installed MV3 certification
+source-tool/pointsnap-3d/extension/tests/review05.test.js	review-added	07	07-report.md	Executed by Node suite; no installed MV3 certification
+source-tool/pointsnap-3d/extension/tests/security06.test.js	review-added	07	07-report.md	Executed by Node suite; no installed MV3 certification
+source-tool/pointsnap-3d/giao-viec/2026-10-06.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/2026-10-07.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/2026-10-08.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/2026-10-09.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/README.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/review-test.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/test-va-gop-y.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/giao-viec/tuan-gia-han.md	baseline	01	01-report.md	Document/reference inspection; historical results not rerun unless stated
+source-tool/pointsnap-3d/pointsnap/__init__.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/__main__.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/__init__.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/cvat/__init__.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/cvat/client.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/cvat/reader.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/cvat/shapes.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/cvat/writer.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/nuscenes/__init__.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/adapters/nuscenes/reader.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/api.py	review-added	08	08-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/__init__.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/common.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/eval_cmd.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/gate_cmd.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/main.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/nuscenes_cmd.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/scan_cmd.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/cli/ui_cmd.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/config.yaml	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/__init__.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/box_points.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/config.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/gate.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/geometry.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/ground.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/model.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/scanner.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/serialize.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/core/synthetic.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/datasets/__init__.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/datasets/nuscenes/__init__.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/datasets/nuscenes/to_cvat.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/datasets/pcd.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/datasets/taxonomy.py	baseline	03	03-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/__init__.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/attributes.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/fit.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/floating.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/heading.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/size.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/detectors/track.py	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/eval/__init__.py	baseline	07	07-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/eval/evaluate.py	baseline	07	07-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/eval/metrics.py	baseline	07	07-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/eval/split.py	baseline	07	07-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/guidelines/spec-vn.yaml	baseline	02	02-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/report/__init__.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/report/csv_rep.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/report/html.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/__init__.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/app.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/link.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/preview.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/projects.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/runner.py	baseline	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/security.py	review-added	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/static/app.js	baseline	05	05-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/static/favicon.svg	baseline	05	05-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/OFL.txt	baseline	05	05-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/fonts.css	baseline	05	05-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-400-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-400-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-400-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-500-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-500-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-500-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-600-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-600-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-mono-600-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-400-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-400-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-400-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-500-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-500-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-500-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-600-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-600-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-600-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-700-latin-ext.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-700-latin.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/fonts/ibm-plex-sans-700-vietnamese.woff2	baseline	05	05-report.md	Wheel contains font asset; one font fetched via HTTP; no glyph-by-glyph QA
+source-tool/pointsnap-3d/pointsnap/web/static/index.html	baseline	05	05-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/static/styles.css	baseline	05	05-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pointsnap/web/storage.py	review-added	04	04-report.md	Source/contract inspection in linked phase; relevant suites run; not every branch manually exercised
+source-tool/pointsnap-3d/pyproject.toml	baseline	08	08-report.md	Build/runtime inspected in 08; see case-specific execution limits
+source-tool/pointsnap-3d/scripts/build_size_stats.py	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/scripts/eval_metrics.py	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/scripts/run_eval_suite.py	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/scripts/smoke_package.py	review-added	08	08-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/scripts/verify_ground.py	baseline	07	07-report.md	Structure/source inspection; no independent execution claim
+source-tool/pointsnap-3d/tests/conftest.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/fake_nuscenes.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_backend_review_regressions.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_cli.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_config.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_core_review_regressions.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_cvat_client.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_cvat_reader.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_cvat_shapes_and_serialize.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_cvat_writer.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_data_review_regressions.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_deployment_review.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_detectors_a10.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_e2e_integration.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_evaluation_review.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_floating_detector.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_gate_coverage.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_geometry.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_ground.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_heading_fit.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_live_cvat.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_metrics.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_model.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_nuscenes_reader.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_pcd.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_real_nuscenes.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_report_api.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_scan_gate.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_scan_wiring.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_security_review.py	review-added	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_size_detector.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_spec_rules.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_synthetic.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_to_cvat.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_track_detector.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_web.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_web_a14.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report
+source-tool/pointsnap-3d/tests/test_web_a15.py	baseline	07	07-report.md	Executed in final Windows pytest; dataset/live conditions recorded in 08-report

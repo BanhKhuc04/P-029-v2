@@ -1,6 +1,6 @@
 # Cài đặt toàn bộ PointSnap 3D
 
-> Cập nhật 12/10/2026: các nhánh review01→08 tiếp nối nhau; dùng nhánh cuối đã review khi cài bản này, không giả định đã merge main. [Bàn giao tổng](../review/2026-10-10/08-handoff.md) ghi runtime đã kiểm và giới hạn. Windows Python3.12.14/CVAT2.78.1 và Docker Python3.12 đã được kiểm; CI3.10/3.11/3.12 còn cần kết quả remote. Extension MV3 trên Chrome/Edge chưa được nghiệm thu lại trong đợt review này.
+> Cập nhật 12/10/2026: các nhánh review01→08 tiếp nối nhau; dùng nhánh cuối đã review khi cài bản này, không giả định đã merge main. [Bàn giao tổng](../review/2026-10-10/08-handoff.md) ghi runtime đã kiểm và giới hạn. Windows Python3.12.14/CVAT2.78.1, Docker Python3.12.15 và Linux3.11.17 đã được kiểm theo [ma trận](../review/2026-10-10/08-compatibility.md); CI3.10/3.11/3.12 còn cần kết quả remote. Extension MV3 trên Chrome/Edge chưa được nghiệm thu lại trong đợt review này.
 
 Hướng dẫn cài và các bước tự kiểm tới luồng sửa nhãn bằng extension. Ca MV3 cuối luồng cần người vận hành kiểm trên trình duyệt của mình. Viết cho **Windows 10 / 11**; Linux / macOS xem ghi chú ở từng bước.
 

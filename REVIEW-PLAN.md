@@ -6,10 +6,10 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 
 - Mã nguồn gốc: `origin/main`, commit `5dcc97f` (merge PR #37).
 - Bộ nhánh hướng dẫn ban đầu dùng main và commit tài liệu chung; kết quả sửa lỗi được commit riêng.
-- Thực hiện theo thứ tự 01 → 08. Nhánh kết quả **01 → 02 → 03 → 04 → 05 → 06 tiếp nối nhau** có chủ đích; dependency/base PR ghi trong bàn giao. Không coi các nhánh kết quả là độc lập khi mở PR.
-- Trạng thái: **01–06 đã review trong phạm vi báo cáo; 07–08 chưa thực hiện**. [Phần 05](review/2026-10-10/05-handoff.md) có Web thật và logic extension, ca MV3 thật còn thiếu Chrome/Edge; [phần 06](review/2026-10-10/06-handoff.md) có security fixes, Host/Origin HTTP và ca âm tính. Các bảng ghi rõ ca một phần/chưa kiểm, không tính toàn bộ checklist là đạt.
+- Thực hiện theo thứ tự 01 → 08. Nhánh kết quả **01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 tiếp nối nhau** có chủ đích; dependency/base PR ghi trong bàn giao. Không coi các nhánh kết quả là độc lập khi mở PR.
+- Trạng thái: **01–08 đã review trong phạm vi báo cáo**, ngày11–12/10/2026. [Bàn giao tổng](review/2026-10-10/08-handoff.md) ghi test/artifact/Docker và giới hạn còn mở. Quality proxy còn vượt mục tiêu, precision manual0, MV3 thật/race/LAN/BTC chưa nghiệm thu; không tính ca một phần thành đạt.
 - Mỗi phần ghi kết quả vào `review/2026-10-10/NN-report.md` trên nhánh tương ứng. Chỉ commit file của phần đó bằng đường dẫn cụ thể.
-- Nhánh kết quả dùng tên không có ngày: `review/01-overview-architecture`, `review/02-core-detectors`, `review/03-data-cvat-integrations`, `review/04-backend-cli-reports`, `review/05-frontend-extension`, `review/06-security-config`.
+- Nhánh kết quả dùng tên không có ngày: `review/01-overview-architecture`, `review/02-core-detectors`, `review/03-data-cvat-integrations`, `review/04-backend-cli-reports`, `review/05-frontend-extension`, `review/06-security-config`, `review/07-tests-evaluation-performance`, `review/08-deployment-docs-final`.
 - Theo yêu cầu bàn giao, đẩy từng nhánh; đồng đội mở PR và merge sau review độc lập.
 
 ## Bộ hướng dẫn chi tiết
@@ -37,8 +37,8 @@ Các tài liệu này là kế hoạch thực hiện, không phải chứng nh�
 | 04 | `review/04-backend-cli-reports` | `pointsnap/web/` phần Python, `pointsnap/cli/`, `pointsnap/report/`, entrypoint và API báo cáo bổ sung. Quản lý dự án, scan jobs, preview, history, trạng thái tiến trình, đường dẫn, lỗi và xuất báo cáo. | Hoàn tất: [báo cáo](review/2026-10-10/04-report.md), [contracts](review/2026-10-10/04-contracts.md), [bàn giao](review/2026-10-10/04-handoff.md); có parity/CVAT/PAT thật. |
 | 05 | `review/2026-10-10/05-frontend-extension` | `pointsnap/web/static/`, toàn bộ `extension/`, ảnh và tài nguyên giao diện. Kết nối CVAT, cấu hình, scan, kết quả, lịch sử, điều hướng frame/box, options, messaging, quyền extension; responsive, bàn phím và khả năng tiếp cận. | Kết quả kiểm tra luồng người dùng, bằng chứng giao diện, lỗi đồng bộ trạng thái và tương thích extension. |
 | 06 | `review/2026-10-10/06-security-config` | Toàn bộ điểm nhận dữ liệu ngoài, HTTP routes, CVAT credentials, lưu secrets, CORS, URL, filesystem, HTML/report, extension permissions, dependencies, cấu hình môi trường và Git ignore. | Findings bảo mật có đường đi dữ liệu và điều kiện khai thác; không đưa token hoặc dữ liệu nhạy cảm vào báo cáo. |
-| 07 | `review/2026-10-10/07-tests-evaluation-performance` | `tests/`, `extension/tests/`, `pointsnap/eval/`, `scripts/`, CI test workflow, tài liệu đánh giá và auto-tests cục bộ. Tính độc lập của test, synthetic/real data, metrics, split, tái lập, hiệu năng và tài nguyên. | Lệnh chạy, môi trường, số pass/fail/skip; khoảng trống kiểm thử; đo hiệu năng trên dữ liệu xác định; phân biệt bằng chứng cũ và kết quả chạy mới. |
-| 08 | `review/2026-10-10/08-deployment-docs-final` | `pyproject.toml`, đóng gói static assets, cài đặt, `.github/`, Docker/Compose và script PowerShell cục bộ; toàn bộ hướng dẫn và báo cáo. Kiểm tra cài mới, vận hành, backup/khôi phục và đối chiếu tất cả findings 01–07. | Checklist vận hành, tài liệu sai/thiếu, bảng tổng hợp ưu tiên sửa, phần còn bị chặn; đánh giá hoàn tất dựa trên bằng chứng. |
+| 07 | `review/2026-10-10/07-tests-evaluation-performance` | `tests/`, `extension/tests/`, `pointsnap/eval/`, `scripts/`, CI test workflow, tài liệu đánh giá và auto-tests cục bộ. Tính độc lập của test, synthetic/real data, metrics, split, tái lập, hiệu năng và tài nguyên. | Đã review: [báo cáo07](review/2026-10-10/07-report.md);490pytest+36Node,eval10×10,benchmark;quality proxy chưa đạt mục tiêu. |
+| 08 | `review/2026-10-10/08-deployment-docs-final` | `pyproject.toml`, đóng gói static assets, cài đặt, `.github/`, Docker/Compose và script PowerShell cục bộ; toàn bộ hướng dẫn và báo cáo. Kiểm tra cài mới, vận hành, backup/khôi phục và đối chiếu tất cả findings 01–07. | Đã review: [báo cáo08](review/2026-10-10/08-report.md),[bàn giao](review/2026-10-10/08-handoff.md);493pytestWindows,486Linux/7skip,package/Docker/operations vàtổng findings. |
 
 ## Quy tắc ghi findings và hoàn tất
 
@@ -56,10 +56,10 @@ Các đường dẫn dưới đây tương đối với `source-tool/pointsnap-3
 
 - Kiến trúc (01): `ARCHITECTURE.md`, `ARCHITECTURE_DIAGRAMS.md`.
 - Backend/báo cáo (04): `pointsnap/api.py`, `Get-Report.ps1` **đã được review và tracked trên nhánh 04**, không còn là file chỉ local của nhánh kết quả.
-- Kiểm thử: `tests/test_report_api.py` **đã tracked ở 04**; `auto-tests/`, `docs/checklist-test-thu-cong.md`, `docs/test/review-phan-da-push.md` vẫn local, phần 07 phụ trách.
-- Triển khai (08, bảo mật ở 06): `Dockerfile.api` đã tracked ở06 để explicit bind container. `.dockerignore`, `.env.example`, `Dockerfile`, `compose.yaml`, `README-Docker.md` vẫn local; chưa build/deploy image mới.
+- Kiểm thử: `tests/test_report_api.py` **đã tracked ở 04**; `auto-tests/` và `docs/checklist-test-thu-cong.md` đã tracked ở07; `docs/test/review-phan-da-push.md` vẫn local, không dùng làm kết quả chạy mới.
+- Triển khai (08, bảo mật ở 06): `Dockerfile.api` đã tracked ở06 để explicit bind container. `.dockerignore`, `.env.example`, `Dockerfile`, `compose.yaml`, `README-Docker.md` đã reviewed/tracked ở08; image thử riêng build và kiểm, không redeploy service công việc.
 - Bằng chứng hiện có (07/08): `output/pdf/PointSnap-Review-Test-Lan-1-2026-10-10.pdf`. Không coi báo cáo này là kết quả chạy mới.
 
-Ngoài kho Git có `../Start-CVAT-PointSnap.ps1` và `../cvat-develop/`. Bước 08 kiểm tra cách dự án phụ thuộc vào launcher/CVAT này; CVAT là dependency ngoài, không mở rộng phạm vi thành review toàn bộ mã nguồn CVAT.
+Ngoài kho Git có `../Start-CVAT-PointSnap.ps1` và `../cvat-develop/`. Bước08 đã làm rõ dependency ngoài và thêm Start-PointSnap.ps1 vào repo để bật Web; CVAT là dependency ngoài, không mở rộng phạm vi thành review toàn bộ mã nguồn CVAT.
 
 Không thêm hàng loạt file cục bộ bằng `git add .`. Không commit dataset, point cloud, token, bản chụp nhãn hoặc output chạy test. Nếu cần đưa một file nguồn cục bộ vào nhánh review, kiểm tra nội dung và thêm riêng file đó.

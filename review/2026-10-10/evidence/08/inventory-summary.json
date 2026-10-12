@@ -1,0 +1,20 @@
+{
+  "baseline": 184,
+  "files_in_final_index": 309,
+  "new": 125,
+  "findings01_07": 95,
+  "findings08": 6,
+  "by_phase": {
+    "01": 9,
+    "02": 15,
+    "03": 16,
+    "04": 19,
+    "05": 14,
+    "06": 12,
+    "07": 10,
+    "08": 6
+  },
+  "deleted_baseline": 0,
+  "rows_unique_and_cover_index": true,
+  "note": "File coverage distinguishes execution, source/docs inspection and binary assets; 101 report groups are not necessarily independent root causes."
+}

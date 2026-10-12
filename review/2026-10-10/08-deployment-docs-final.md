@@ -1,7 +1,7 @@
 # 08 — Review triển khai, tài liệu và tổng hợp cuối
 
-**Nhánh:** `review/2026-10-10/08-deployment-docs-final`.
-**Trạng thái:** chưa thực hiện; cần báo cáo đã commit của 01–07 để kết luận tổng thể.
+**Nhánh:** `review/08-deployment-docs-final`.
+**Trạng thái:** đã review ngày 12/10/2026; xem [báo cáo](08-report.md), [bàn giao](08-handoff.md), [ma trận](08-compatibility.md) và [findings](08-findings.md). Ca một phần/chưa nghiệm thu được ghi rõ; không chứng nhận phát hành rộng.
 **Đầu ra sẽ tạo:** `08-report.md`, ma trận tương thích/cài mới, sổ tổng findings, checklist vận hành và kết luận theo phạm vi đã xác minh.
 
 Đọc [quy trình chung](README.md), [mẫu báo cáo](report-template.md). Đây là phần đối chiếu toàn đợt, bao gồm khả năng chạy từ checkout sạch và cách vận hành thực tế. Đường dẫn dưới đây tính từ tool root, trừ mục nêu rõ kho Git hoặc thư mục cha.
@@ -111,9 +111,9 @@ Kiểm wheel dùng môi trường build riêng và công cụ build sẵn có ho
 
 ## 9. Hoàn tất
 
-- [ ] Mọi báo cáo 01–07 có SHA/trạng thái và được tham chiếu đúng; phần thiếu chặn kết luận tương ứng.
-- [ ] Coverage inventory đủ file nền và file mới; root/shared docs được gán review tài liệu.
-- [ ] Cài mới/artifact/runtime có bằng chứng hoặc trạng thái Bị chặn; ma trận tương thích không dựa vào suy đoán.
-- [ ] Findings mở có owner, ưu tiên, việc tiếp theo và phạm vi sử dụng bị ảnh hưởng.
-- [ ] README/CAI-DAT/kiến trúc/số liệu đã đồng bộ khi thay đổi, hoặc có finding chưa xử lý.
-- [ ] `08-report.md` kết luận riêng: hoàn tất review, sẵn sàng demo, sẵn sàng dùng local, sẵn sàng chia sẻ/phát hành; mỗi mức chỉ ghi khi có điều kiện/bằng chứng hỗ trợ.
+- [x] Mọi báo cáo 01–07 có SHA/trạng thái và được tham chiếu đúng; phần thiếu chặn kết luận tương ứng.
+- [x] Coverage inventory đủ file nền và file mới; root/shared docs được gán review tài liệu.
+- [x] Cài mới/artifact/runtime có bằng chứng hoặc trạng thái Bị chặn; ma trận tương thích không dựa vào suy đoán.
+- [x] Findings mở có owner, ưu tiên, việc tiếp theo và phạm vi sử dụng bị ảnh hưởng.
+- [x] README/CAI-DAT/kiến trúc/số liệu đã đồng bộ khi thay đổi, hoặc có finding chưa xử lý.
+- [x] `08-report.md` kết luận riêng: hoàn tất review, sẵn sàng demo, sẵn sàng dùng local, sẵn sàng chia sẻ/phát hành; mỗi mức chỉ ghi khi có điều kiện/bằng chứng hỗ trợ.

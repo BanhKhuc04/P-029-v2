@@ -31,7 +31,7 @@ def _make_ground_points(z: float = -1.8, num: int = 2000, seed: int = 42) -> np.
 
 
 def test_detect_floating_error_box_raised_25cm(floating_config):
-    """Nâng đáy box 25 cm -> Báo lỗi lơ lửng ~25 cm (tiêu chí TASKS.md)."""
+    """Nâng đáy box 25 cm -> Báo lỗi lơ lửng ~25 cm (tiêu chí quan-ly/TASKS.md)."""
     ground_z = -1.80
     pts = _make_ground_points(ground_z)
 

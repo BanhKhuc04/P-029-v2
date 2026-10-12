@@ -217,8 +217,10 @@ class FitConfig:
     ground_clearance_m: float = 0.25
     loose_min_points: int = 40
     loose_max_range_m: float = 30.0
-    loose_warning_m: float = 0.5
+    loose_warning_m: float = 0.4
     loose_error_m: float = 1.0
+    loose_rise_m: float = 0.3
+    """`fit.loose`: mặt dư hơn trung vị các frame khác của track quá mức này (m) mới báo."""
     overlap_warning: float = 0.2
     overlap_error: float = 0.5
     overlap_classes: tuple[str, ...] = (
@@ -713,6 +715,7 @@ def _parse_fit(r: _Reader) -> FitConfig:
         loose_max_range_m=r.number("loose_max_range_m", 0.0),
         loose_warning_m=r.number("loose_warning_m", 0.0),
         loose_error_m=r.number("loose_error_m", 0.0),
+        loose_rise_m=r.number("loose_rise_m", 0.0) if "loose_rise_m" in r.keys() else FitConfig.loose_rise_m,
         overlap_warning=r.number("overlap_warning", 0.0),
         overlap_error=r.number("overlap_error", 0.0),
         overlap_classes=r.strings("overlap_classes"),

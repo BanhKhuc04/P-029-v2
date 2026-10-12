@@ -221,6 +221,23 @@ def test_shifted_box_toward_sensor_is_loose():
     assert finding.value == pytest.approx(0.8, abs=0.15)
 
 
+def test_loose_compares_with_rest_of_track():
+    """Track dư đều 0,45 m (hình dạng vật / vẽ rộng có chủ ý): không báo. Một frame dư 0,8 m khi các frame khác dư
+    0,1 m: báo. Box lẻ dư 0,45 m: chỉ so ngưỡng tuyệt đối (0,4 m) nên báo."""
+    from pointsnap.detectors.fit import LooseMeasure, loose_findings
+
+    cfg = FitConfig()
+    steady = [LooseMeasure(_car(frame=f), 0.45, "đuôi", 100) for f in range(5)]
+    assert loose_findings(steady, cfg) == []
+    spike = [LooseMeasure(_car(frame=f), 0.1, "đuôi", 100) for f in range(4)]
+    spike.append(LooseMeasure(_car(frame=4), 0.8, "đuôi", 100))
+    found = loose_findings(spike, cfg)
+    assert [(f.frame, f.severity) for f in found] == [(4, Severity.WARNING)]
+    assert found[0].details["track_median_m"] == pytest.approx(0.1)
+    single = LooseMeasure(_car(frame=0).replace(track_id=None), 0.45, "đuôi", 100)
+    assert [f.rule for f in loose_findings([single], cfg)] == ["fit.loose"]
+
+
 def test_connected_to_box_drops_separate_clutter():
     half = np.array([1.0, 1.0, 1.0])
     obj = np.array([[0.0, 0.0, 0.0], [0.9, 0.0, 0.0], [1.15, 0.0, 0.0]])  # đầu vật thò ra ngoài box, liền kề

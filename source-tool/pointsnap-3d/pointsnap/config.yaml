@@ -167,7 +167,8 @@ fit:                                  # box vẽ lệch khỏi vật (C1), spec 
   ground_clearance_m: 0.25            # điểm thấp hơn đáy box + 0.25 m coi là mặt đất
   loose_min_points: 40                # box dư: chỉ xét box gần, nhiều điểm
   loose_max_range_m: 30.0
-  loose_warning_m: 0.5                # mặt box quay về phía LiDAR cách điểm gần nhất của vật > 0.5 m: Cảnh báo
+  loose_warning_m: 0.4                # mặt box quay về phía LiDAR cách điểm gần nhất của vật > 0.4 m
+  loose_rise_m: 0.3                   # ... và dư hơn trung vị các frame khác của track > 0.3 m: Cảnh báo
   loose_error_m: 1.0
   overlap_warning: 0.2                # phần chồng / diện tích box nhỏ hơn (nhìn từ trên) > 20%: Cảnh báo
   overlap_error: 0.5                  # > 50% (gần như vẽ trùng một vật hai lần): Lỗi

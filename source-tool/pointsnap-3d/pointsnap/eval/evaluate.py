@@ -115,6 +115,7 @@ class ErrorOutcome:
     measured: float | None  # số đo tool báo (finding khớp đầu tiên)
     expected: float | None  # số đo đúng của lỗi chèn
     has_ground_evidence: bool | None  # chỉ với lơ lửng / lún: box có đủ điểm mặt đất trên nhãn sạch không
+    measured_unit: str | None = None  # bản cũ không có đơn vị; size cũ không dùng để tính accuracy
 
 
 @dataclass
@@ -267,7 +268,10 @@ def evaluate_scene(
                 applicable=is_applicable(error, labels[error.track_id], clean_boxes, config, frames),
                 detected=best is not None,
                 severity=best.severity.value if best else None,
-                measured=primary.value if primary else None, expected=_expected_value(error),
+                measured=(primary.details.get("relative_diff") if error.error_type == "size_in_track"
+                          else primary.value) if primary else None,
+                measured_unit="ratio" if error.error_type == "size_in_track" else None,
+                expected=_expected_value(error),
                 has_ground_evidence=evidence,
             ))
         for i, f in enumerate(findings):
@@ -326,7 +330,8 @@ def summarize(stats: Sequence[SceneStats], outcomes: Sequence[ErrorOutcome]) -> 
     accuracy = {}
     for kind, unit in (("floating", 100.0), ("size_in_track", 100.0), ("track_jump", 1.0), ("heading_rotate", 1.0)):
         errs = [abs(abs(o.measured) - abs(o.expected)) * unit for o in outcomes
-                if o.error_type == kind and o.detected and o.measured is not None and o.expected is not None]
+                if o.error_type == kind and o.detected and o.measured is not None and o.expected is not None
+                and (kind != "size_in_track" or o.measured_unit == "ratio")]
         accuracy[kind] = {"n": len(errs), "median_abs_error": float(np.median(errs)) if errs else None}
 
     large = [o for o in outcomes if (o.error_type, o.magnitude) in LARGE and o.applicable
@@ -418,9 +423,20 @@ def run_evaluation(
               'dataset_version':reader.version, 'scenes':list(scenes),'rounds':rounds,'seed':seed,'catalog':catalog,
               'error_rate':.10,'config':config_data,'config_sha256':hashlib.sha256(json.dumps(config_data,sort_keys=True).encode()).hexdigest(),
               'matching':'same rule family and track/frame; warning+; each finding credited to one injection; precision is finding-level matching, not manual truth'}
+    source = Path(__file__).resolve()
+    metadata['evaluator_sha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
+    metadata['source_commit'] = None
+    metadata['source_dirty'] = None
     try:
-        metadata['source_commit']=subprocess.check_output(['git','rev-parse','HEAD'],cwd=Path(__file__).resolve().parents[2],stderr=subprocess.DEVNULL).decode().strip()
-    except (OSError,subprocess.CalledProcessError): metadata['source_commit']=None
+        # Archive/site-packages trong checkout cha không phải source của Git HEAD đó.
+        subprocess.check_output(['git', 'ls-files', '--error-unmatch', 'pointsnap/eval/evaluate.py'],
+                                cwd=source.parents[2], stderr=subprocess.DEVNULL)
+        metadata['source_commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                                           cwd=source.parents[2], stderr=subprocess.DEVNULL).decode().strip()
+        metadata['source_dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain', '--', 'pointsnap'],
+                                                               cwd=source.parents[2], stderr=subprocess.DEVNULL).strip())
+    except (OSError, subprocess.CalledProcessError):
+        pass
     (out/'metadata.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
     stats: list[SceneStats] = []
     outcomes: list[ErrorOutcome] = []

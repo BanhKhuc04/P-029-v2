@@ -1,5 +1,6 @@
 """Đọc JSON có kiểm kiểu; thay file nguyên vẹn sau khi ghi xong."""
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -13,8 +14,13 @@ class StorageError(ValueError):
 def read_json(path: Path, expected: type = dict) -> Any:
     def reject_constant(value):
         raise ValueError("JSON chứa số không hữu hạn")
+    def finite_float(value):
+        number = float(value)
+        if not math.isfinite(number):
+            reject_constant(value)
+        return number
     try:
-        data = json.loads(path.read_text(encoding="utf-8"), parse_constant=reject_constant)
+        data = json.loads(path.read_text(encoding="utf-8"), parse_constant=reject_constant, parse_float=finite_float)
     except (OSError, ValueError) as exc:
         raise StorageError(f"Không đọc được {path.name}; kiểm tra hoặc khôi phục bản sao lưu.") from exc
     if not isinstance(data, expected):

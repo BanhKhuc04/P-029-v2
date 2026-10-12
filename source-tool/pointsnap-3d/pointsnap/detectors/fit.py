@@ -9,7 +9,8 @@ Spec 4.2: box phải bao trọn toàn bộ vật thể, không dư thừa quá m
 2. `fit.outside`: trong vùng box nới `outside_margin_m`, sau khi bỏ mặt đất và điểm của box khác, tỉ lệ điểm của vật
    nằm ngoài box cao hơn trung vị của các frame khác cùng track quá `outside_warning_ratio` → box nhỏ hoặc lệch.
 3. `fit.loose`: mặt box quay về phía cảm biến (nhìn thấy được, không bị che) mà cách điểm gần nhất của vật hơn
-   `loose_warning_m` → box dư. Chỉ xét box gần, nhiều điểm; mặt sau của vật vốn không có điểm nên không xét.
+   `loose_warning_m` và dư hơn các frame khác của track quá `loose_rise_m` → box dư. Chỉ xét box gần, nhiều điểm; mặt sau
+   của vật vốn không có điểm nên không xét.
 4. `fit.overlap`: hai box cùng frame chồng nhau (diện tích phần chung nhìn từ trên / diện tích box nhỏ hơn, và chồng
    theo chiều cao) > `overlap_warning` → nghi vẽ trùng một vật. Chỉ xét class trong `overlap_classes`; spec 4.3B cho
    phép người đứng sát nhau chồng box, xe kéo rơ-moóc chồng ở chỗ nối (`overlap_allowed_pairs`). Báo trên box nhỏ hơn.
@@ -149,7 +150,19 @@ def _occluded(points: np.ndarray, target: np.ndarray, own: np.ndarray, radius: f
     return int(blocking.sum()) >= 3
 
 
-def loose_finding(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | None = None) -> Finding | None:
+@dataclass(frozen=True)
+class LooseMeasure:
+    """Số đo của luật `fit.loose` cho một box: mặt nhìn thấy (không bị che) dư nhất so với điểm của vật."""
+
+    box: Cuboid
+    gap_m: float
+    """Khoảng dư (m) của mặt dư nhất; 0 nếu không mặt nhìn thấy nào dư."""
+    face: str
+    num_points: int
+
+
+def loose_measure(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | None = None) -> LooseMeasure | None:
+    """Đo khoảng dư của box; `None` nếu box ngoài phạm vi luật (ít điểm, xa)."""
     box = item.box
     if item.num_object_points < cfg.loose_min_points or item.range_m > cfg.loose_max_range_m:
         return None
@@ -157,14 +170,14 @@ def loose_finding(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | 
     inside = item.local[item.inside]
     if len(inside) < cfg.loose_min_points:
         return None
-    worst: tuple[float, str] | None = None
+    worst = (0.0, "")
     for axis in (0, 1):
         for side in (1, -1):
             if side * item.sensor_local[axis] <= half[axis]:
                 continue  # mặt này quay lưng về cảm biến
             extent = float(np.percentile(side * inside[:, axis], 98))
             gap = half[axis] - extent
-            if gap <= cfg.loose_warning_m:
+            if gap <= worst[0]:
                 continue
             if frame_points is not None:
                 c, s = math.cos(box.yaw), math.sin(box.yaw)
@@ -174,17 +187,46 @@ def loose_finding(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | 
                                  box.center[1] + s * local[0] + c * local[1], box.center[2]])
                 if _occluded(frame_points, face, np.empty(0, dtype=np.int64)):
                     continue
-            if worst is None or gap > worst[0]:
-                worst = (gap, FACE_NAMES[(axis, side)])
-    if worst is None:
-        return None
-    gap, where = worst
-    severity = Severity.ERROR if gap > cfg.loose_error_m else Severity.WARNING
-    threshold = cfg.loose_error_m if gap > cfg.loose_error_m else cfg.loose_warning_m
-    return _finding("fit.loose", severity, box,
-                    f"Mặt {where} của box cách điểm gần nhất của vật {gap * 100:.0f} cm dù nhìn thấy rõ từ LiDAR: "
-                    f"box dư so với vật (ngưỡng {threshold * 100:.0f} cm)", gap, threshold,
-                    {"gap_m": gap, "face": where, "num_points": int(len(inside))})
+            worst = (gap, FACE_NAMES[(axis, side)])
+    return LooseMeasure(box, worst[0], worst[1], int(len(inside)))
+
+
+def loose_findings(measures: Sequence[LooseMeasure], cfg: FitConfig) -> list[Finding]:
+    """Luật `fit.loose`: mặt dư > `loose_warning_m` **và** dư hơn trung vị các frame khác của track quá `loose_rise_m`.
+
+    Vật có hình dạng đặc thù (thùng xe hở, cần cẩu) hoặc box vẽ rộng có chủ ý thì dư đều trong cả track; so với chính
+    track thì hạ được ngưỡng tuyệt đối (0,5 → 0,4 m) mà không tăng báo nhầm: trên 5 cảnh tinh chỉnh, cùng ~0,15 báo nhầm /
+    100 box, bắt box phóng x1,15 tăng 18% → 30%, x1,3 tăng 42% → 47%. Box lẻ hoặc track có ít hơn 2 frame khác đo được thì
+    chỉ so ngưỡng tuyệt đối.
+    """
+    by_track: dict[int, list[LooseMeasure]] = {}
+    for m in measures:
+        if m.box.track_id is not None:
+            by_track.setdefault(m.box.track_id, []).append(m)
+    findings: list[Finding] = []
+    for m in measures:
+        if m.gap_m <= cfg.loose_warning_m:
+            continue
+        others = [o.gap_m for o in by_track.get(m.box.track_id, []) if o.box.frame != m.box.frame]
+        reference = float(np.median(others)) if len(others) >= 2 else None
+        if reference is not None and m.gap_m - reference <= cfg.loose_rise_m:
+            continue
+        severity = Severity.ERROR if m.gap_m > cfg.loose_error_m else Severity.WARNING
+        threshold = cfg.loose_error_m if m.gap_m > cfg.loose_error_m else cfg.loose_warning_m
+        relative = f"; các frame khác của track dư {reference * 100:.0f} cm" if reference is not None else ""
+        findings.append(_finding(
+            "fit.loose", severity, m.box,
+            f"Mặt {m.face} của box cách điểm gần nhất của vật {m.gap_m * 100:.0f} cm dù nhìn thấy rõ từ LiDAR{relative}: "
+            f"box dư so với vật (ngưỡng {threshold * 100:.0f} cm)", m.gap_m, threshold,
+            {"gap_m": m.gap_m, "face": m.face, "num_points": m.num_points, "track_median_m": reference}))
+    return findings
+
+
+def loose_finding(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | None = None) -> Finding | None:
+    """`fit.loose` cho một box đứng riêng (chỉ so ngưỡng tuyệt đối)."""
+    measure = loose_measure(item, cfg, frame_points)
+    found = loose_findings([measure], cfg) if measure is not None else []
+    return found[0] if found else None
 
 
 def _overlap_ratio(a: Cuboid, b: Cuboid) -> float:
@@ -236,17 +278,18 @@ def overlap_findings(
 def fit_findings_for_frame(
     items: Sequence[BoxPointSet], cfg: FitConfig, frame_points: np.ndarray | None,
     empty: bool = True, outside: bool = True, loose: bool = True,
-) -> tuple[list[Finding], list[OutsideMeasure]]:
-    """Luật box rỗng và box dư của một frame, cùng số đo cho luật điểm ngoài box (chốt sau khi có cả job,
-    `outside_findings`). Box rỗng thì không xét hai luật kia."""
+) -> tuple[list[Finding], list[OutsideMeasure], list[LooseMeasure]]:
+    """Luật box rỗng của một frame, cùng số đo cho luật điểm ngoài box và box dư (chốt sau khi có cả job:
+    `outside_findings`, `loose_findings`). Box rỗng thì không xét hai luật kia."""
     findings: list[Finding] = []
     measures: list[OutsideMeasure] = []
+    loose_measures: list[LooseMeasure] = []
     for item in items:
         if empty and (f := empty_finding(item, cfg)) is not None:
             findings.append(f)
             continue
         if outside and (m := outside_measure(item, cfg)) is not None:
             measures.append(m)
-        if loose and (f := loose_finding(item, cfg, frame_points)) is not None:
-            findings.append(f)
-    return findings, measures
+        if loose and (m := loose_measure(item, cfg, frame_points)) is not None:
+            loose_measures.append(m)
+    return findings, measures, loose_measures

@@ -346,6 +346,80 @@ def detect_track_spec(track_boxes: Sequence[Cuboid], config: TrackConfig) -> lis
     return findings
 
 
+SWAP_MAX_GAP_S = 1.5
+"""Chỉ dự đoán vị trí từ 2 keyframe trước đó cách nhau không quá mức này."""
+
+
+def _predict(track: list[tuple[int, float, np.ndarray]], k: int) -> np.ndarray | None:
+    """Vị trí dự đoán ở phần tử `k` từ 2 phần tử trước (vận tốc không đổi)."""
+    if k < 2:
+        return None
+    (_, t2, p2), (_, t1, p1), (_, t0, _) = track[k - 2], track[k - 1], track[k]
+    if t1 - t2 <= 0 or t0 - t1 > SWAP_MAX_GAP_S or t1 - t2 > SWAP_MAX_GAP_S:
+        return None
+    return p1 + (p1 - p2) * (t0 - t1) / (t1 - t2)
+
+
+def detect_id_swaps(
+    cuboids: Sequence[Cuboid],
+    config: TrackConfig,
+    sensor_to_world_by_frame: Mapping[int, np.ndarray] | None = None,
+    timestamps_by_frame: Mapping[int, float] | None = None,
+) -> list[Finding]:
+    """`track.id_swap` (C5, spec 4.4.6): hai track cùng nhóm đổi chỗ nhau ở một frame.
+
+    Ở mỗi frame có cả hai track, so tổng lệch khỏi quỹ đạo dự đoán (vận tốc không đổi từ 2 keyframe trước) khi giữ
+    nguyên ID và khi đổi ID cho nhau. Đổi ID khớp hơn hẳn (≤ 35% tổng lệch khi giữ nguyên, và giữ nguyên lệch quá
+    `jump_warning_m`) → nghi người gán nối nhầm hai vật, vd hai xe máy chạy song song. Cú nhảy của từng track có thể nhỏ
+    hơn ngưỡng `track.jump` vì vật bên cạnh chỉ cách vài chục cm.
+    """
+    tracks: dict[int, list[tuple[int, float, np.ndarray]]] = {}
+    labels: dict[int, Cuboid] = {}
+    has_world_all = True
+    for tid, boxes in group_by_track(cuboids).items():
+        visible = sorted((b for b in boxes if b.visible), key=lambda b: b.frame)
+        if len(visible) < 3 or config.group_for(visible[0].label) is None:
+            continue
+        centers, has_world = _get_world_centers(visible, sensor_to_world_by_frame)
+        has_world_all &= has_world
+        tracks[tid] = [(b.frame, _time(b.frame, config, timestamps_by_frame), centers[i, :2])
+                       for i, b in enumerate(visible)]
+        labels[tid] = visible[0]
+    findings: list[Finding] = []
+    ids = sorted(tracks)
+    for x, a in enumerate(ids):
+        grp = config.group_for(labels[a].label)
+        for b in ids[x + 1:]:
+            if config.group_for(labels[b].label) is not grp:
+                continue
+            index_b = {f: i for i, (f, _, _) in enumerate(tracks[b])}
+            for ka, (frame, _, pa) in enumerate(tracks[a]):
+                kb = index_b.get(frame)
+                if kb is None:
+                    continue
+                pred_a, pred_b = _predict(tracks[a], ka), _predict(tracks[b], kb)
+                if pred_a is None or pred_b is None:
+                    continue
+                pb = tracks[b][kb][2]
+                keep = float(np.linalg.norm(pa - pred_a) + np.linalg.norm(pb - pred_b))
+                swap = float(np.linalg.norm(pa - pred_b) + np.linalg.norm(pb - pred_a))
+                if keep <= grp.jump_warning_m or swap > 0.35 * keep:
+                    continue
+                strong = has_world_all and keep > 2 * grp.jump_warning_m and swap <= 0.2 * keep
+                box = next(c for c in cuboids if c.track_id == a and c.frame == frame)
+                findings.append(Finding(
+                    error_type=ErrorType.TRACK, rule="track.id_swap",
+                    severity=Severity.ERROR if strong else Severity.WARNING, frame=frame, label=box.label,
+                    track_id=a, source_id=box.source_id, value=keep, threshold=grp.jump_warning_m,
+                    message=(f"Track {a} và track {b} đổi chỗ nhau ở frame {frame}: vị trí mỗi box khớp quỹ đạo của "
+                             f"track kia (lệch {swap:.2f} m, giữ nguyên ID lệch {keep:.2f} m): nghi gán nhầm ID, kiểm "
+                             f"tra hai track từ frame này (spec 4.4.6)"),
+                    details={"other_track_id": b, "keep_m": keep, "swap_m": swap},
+                ))
+                break  # một mục cho mỗi cặp track
+    return findings
+
+
 def detect_track_errors(
     cuboids: Sequence[Cuboid],
     config: TrackConfig,
@@ -369,6 +443,9 @@ def detect_track_errors(
     # Luật track theo spec 4.4 (C2)
     for track_boxes in tracks.values():
         findings.extend(detect_track_spec(track_boxes, config))
+
+    # Đổi nhầm ID giữa hai track (C5)
+    findings.extend(detect_id_swaps(cuboids, config, sensor_to_world_by_frame, timestamps_by_frame))
 
     # Kiểu 2: tách ID
     findings.extend(detect_track_splits(

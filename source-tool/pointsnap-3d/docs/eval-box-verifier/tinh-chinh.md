@@ -1,4 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (tuning, 10 vòng chèn lỗi, bộ lỗi all)
+> Guideline mặc định sau C8 (ngưỡng lơ lửng / lún 15 cm, C5, C7, C8). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md), [C5](../giao-viec/C5-tinh-huong-thuc-te.md), [sót đối tượng](../ket-qua-sot-doi-tuong.md).
 
 Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box nhãn chuẩn
 
@@ -8,6 +9,7 @@ Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box n
 |---|---|---|---|
 | `cam.mismatch` | info | 21 | 0.24 |
 | `cam.missing` | info | 61 | 0.70 |
+| `cam.sparse` | info | 20 | 0.23 |
 | `fit.empty` | warning | 7 | 0.08 |
 | `fit.loose` | error | 1 | 0.01 |
 | `fit.loose` | warning | 12 | 0.14 |
@@ -15,15 +17,16 @@ Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box n
 | `fit.outside` | warning | 3 | 0.04 |
 | `floating.no_evidence` | info | 350 | 4.04 |
 | `floating` | error | 21 | 0.24 |
-| `floating` | warning | 122 | 1.41 |
+| `floating` | warning | 68 | 0.79 |
 | `heading.points` | warning | 11 | 0.13 |
 | `heading.static` | error | 1 | 0.01 |
+| `lidar.missing` | warning | 2 | 0.02 |
 | `size.class_range` | error | 2 | 0.02 |
 | `size.class_range` | warning | 2 | 0.02 |
 | `track.jump` | error | 4 | 0.05 |
 | `track.jump` | warning | 9 | 0.10 |
 | `track.static_shift` | warning | 6 | 0.07 |
-| **Tổng** | warning | | **1.99** (mục tiêu ≤ 2.0) |
+| **Tổng** | warning | | **1.39** (mục tiêu ≤ 2.0) |
 | **Tổng** | error | | **0.36** (mục tiêu ≤ 0.5) |
 
 ## Recall trên lỗi chèn giả
@@ -45,10 +48,10 @@ Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đấ
 | floating | 0.2 | 24 | 21% (5/24) | 25% (5/20) | 4% (1/24) | 100% (5/5) |
 | floating | 0.4 | 27 | 7% (2/27) | 10% (2/21) | 7% (2/27) | 100% (2/2) |
 | heading_reverse | 180 | 8 | 25% (2/8) | 50% (2/4) | 25% (2/8) |  |
-| heading_rotate | 15 | 15 | 33% (5/15) | — | 33% (5/15) |  |
+| heading_rotate | 15 | 15 | 20% (3/15) | — | 20% (3/15) |  |
 | heading_rotate | 180 | 17 | 71% (12/17) | 100% (12/12) | 71% (12/17) |  |
-| heading_rotate | 30 | 13 | 62% (8/13) | 67% (2/3) | 62% (8/13) |  |
-| heading_rotate | 60 | 11 | 73% (8/11) | 100% (6/6) | 36% (4/11) |  |
+| heading_rotate | 30 | 13 | 54% (7/13) | 67% (2/3) | 54% (7/13) |  |
+| heading_rotate | 60 | 11 | 64% (7/11) | 100% (6/6) | 27% (3/11) |  |
 | heading_rotate | 90 | 9 | 44% (4/9) | 100% (3/3) | 44% (4/9) |  |
 | size_class_range | other_class | 15 | 100% (15/15) | 100% (15/15) | 100% (15/15) |  |
 | size_class_range | x0.6 | 13 | 100% (13/13) | 100% (13/13) | 38% (5/13) |  |
@@ -73,11 +76,11 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 | Loại | Finding (Cảnh báo+) | Khớp lỗi chèn cùng loại | Precision | Trên box bị chèn lỗi bất kỳ |
 |---|---|---|---|---|
-| floating | 1430 | 9 | 1% (9/1430) | 3% (40/1430) |
+| floating | 897 | 9 | 1% (9/897) | 3% (28/897) |
 | size | 106 | 59 | 56% (59/106) | 65% (69/106) |
 | track | 295 | 85 | 29% (85/295) | 37% (108/295) |
-| heading | 221 | 63 | 29% (63/221) | 36% (80/221) |
-| fit | 346 | 7 | 2% (7/346) | 25% (85/346) |
+| heading | 212 | 59 | 28% (59/212) | 36% (76/212) |
+| fit | 366 | 7 | 2% (7/366) | 23% (85/366) |
 
 ## Độ chính xác của số đo (trung vị sai số tuyệt đối)
 
@@ -92,8 +95,8 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:
 
-- scene-0061: 35.5 s
-- scene-0553: 13.8 s
-- scene-0757: 7.6 s
-- scene-0916: 24.2 s
-- scene-1094: 17.4 s
+- scene-0061: 46.3 s
+- scene-0553: 12.7 s
+- scene-0757: 13.5 s
+- scene-0916: 32.3 s
+- scene-1094: 27.9 s

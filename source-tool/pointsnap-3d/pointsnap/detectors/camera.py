@@ -235,3 +235,74 @@ def _wrong_class(obs: list[Observation], cfg: CameraConfig) -> list[Finding]:
                  f"{first.box.label}: nghi sai class"),
         details={"camera_group": group, "votes": dict(votes)},
     )]
+
+
+def sparse_unconfirmed(cuboids: Sequence[Cuboid], frames, detector, cfg: CameraConfig) -> list[Finding]:
+    """`cam.sparse` (C8, spec 4.2: không nên gán vật quá ít điểm, trừ khi suy luận được từ frame / camera khác): một mục
+    Thông tin cho track mà **mọi** keyframe đều có ≤ `sparse_max_points` điểm LiDAR (không frame nào thấy rõ vật) và model
+    2D chưa lần nào thấy vật cùng nhóm trùng khung chiếu (IoU ≥ 0,3) ở ảnh ban ngày có chứa box. Track có frame thấy rõ thì
+    các frame thưa suy luận được, không báo (nếu báo theo từng frame thưa: 1/3 số track nuScenes bị báo).
+    """
+    from pointsnap.core.geometry import points_in_cuboid
+
+    if cfg.sparse_max_points <= 0:
+        return []
+    runs: dict[object, list[Cuboid]] = defaultdict(list)
+    dense: set[object] = set()     # track có frame thấy rõ vật (nhiều điểm) hoặc ảnh xác nhận
+    key_of = lambda b: b.track_id if b.track_id is not None else ("shape", id(b))  # noqa: E731
+    for frame, boxes in group_by_frame(c for c in cuboids if c.visible).items():
+        data = frames.frame_data(frame)
+        if data.sensor_to_world is None:
+            continue
+        pts = np.asarray(data.points, dtype=np.float64)[:, :3]
+        sparse = []
+        for b in boxes:
+            if cfg.group_of(b.label) is None:
+                continue
+            reach = max(b.dims[:2]) / 2 + 0.1
+            near = (np.abs(pts[:, 0] - b.center[0]) <= reach) & (np.abs(pts[:, 1] - b.center[1]) <= reach)
+            if key_of(b) in dense:
+                continue
+            if int(points_in_cuboid(pts[near], b).sum()) <= cfg.sparse_max_points:
+                sparse.append(b)
+            else:
+                dense.add(key_of(b))
+        if not sparse:
+            continue
+        views = list(frames.camera_views(frame))
+        dets = [detector.detect(v.path) for v in views]
+        bright = [d.brightness for d in dets if d.brightness is not None]
+        if bright and float(np.median(bright)) < cfg.min_brightness:
+            continue
+        for b in sparse:
+            in_image = seen = False
+            for view, det in zip(views, dets):
+                proj = project_box(b, data.sensor_to_world, view)
+                if proj is None or proj.inside_ratio < 0.5:
+                    continue
+                in_image = True
+                group = cfg.group_of(b.label)
+                if any(g == group and s >= cfg.min_score and iou_2d(proj.box, tuple(map(float, bb))) >= 0.3
+                       for bb, g, s in zip(det.boxes, det.groups(), det.scores)):
+                    seen = True
+                    break
+            if seen:
+                dense.add(key_of(b))
+            elif in_image:
+                runs[key_of(b)].append(b)
+    findings = []
+    for key, boxes in runs.items():
+        if key in dense:
+            continue
+        boxes.sort(key=lambda b: b.frame)
+        first = boxes[0]
+        where = f"frame {first.frame}" if len(boxes) == 1 else f"{len(boxes)} keyframe ({first.frame}–{boxes[-1].frame})"
+        findings.append(Finding(
+            error_type=ErrorType.FIT, rule="cam.sparse", severity=Severity.INFO, frame=first.frame, label=first.label,
+            track_id=first.track_id, source_id=first.source_id, value=float(len(boxes)),
+            threshold=float(cfg.sparse_max_points),
+            message=(f"Vật chỉ có ≤ {cfg.sparse_max_points} điểm LiDAR ở mọi keyframe và ảnh camera cũng không thấy ({where}): "
+                     f"spec 4.2 không nên gán vật quá ít điểm khiến kích thước / hướng không đáng tin"),
+            details={"frames": [b.frame for b in boxes]},
+        ))
+    return findings

@@ -46,6 +46,13 @@ class RulesConfig:
     fit_overlap: bool = True
     track_reuse_id: bool = True
     track_occluded_long: bool = True
+    track_id_swap: bool = True
+    attr_height: bool = True
+    spec_inside: bool = True
+    spec_rider_double: bool = True
+    attr_rider_state: bool = True
+    cam_sparse: bool = True
+    lidar_missing: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
     track_static_shift: bool = True
@@ -103,6 +110,9 @@ class SizeConfig:
     key_attributes: Mapping[str, str] = dataclasses.field(default_factory=dict)
     """Class → thuộc tính phân loại chi tiết (spec 3.1.2, vd `Vehicle: subtype`): khoảng kích thước tra theo khóa
     `Class/giá trị` (vd `Vehicle/bus`), không có thì theo `Class`."""
+    cargo_classes: tuple[str, ...] = ("motorcycle", "bicycle", "Two-wheels", "Vehicle/Tricycle")
+    """Class hay chở hàng cồng kềnh (C5): "lớn bất thường" mà điểm LiDAR phủ kín chiều đó thì hạ Lỗi xuống Cảnh báo.
+    Ghi `Class` hoặc `Class/thuộc tính`."""
 
 
 @dataclass(frozen=True)
@@ -149,6 +159,9 @@ class HeadingGroupConfig:
     flip_error_deg: float
     yaw_rate_max_dps: float
     """Tốc độ quay tối đa hợp lý (độ / giây): hướng đổi chậm hơn mức này giữa hai keyframe không bị coi là lật."""
+    reverse_max_mps: float = 0.0
+    """Box ngược chiều chuyển động ở gần hết đoạn mà vật chạy không nhanh hơn mức này: có thể đang lùi thật → Cảnh báo
+    thay vì Lỗi (C5). 0 = không xét."""
 
 
 @dataclass(frozen=True)
@@ -164,7 +177,7 @@ class HeadingPointsConfig:
 def _default_heading_groups() -> dict[str, HeadingGroupConfig]:
     return {
         "vehicle": HeadingGroupConfig(("car", "truck", "bus", "trailer", "construction_vehicle"),
-                                      2.0, 60.0, 135.0, 45.0, 75.0, 60.0),
+                                      2.0, 60.0, 135.0, 45.0, 75.0, 60.0, 3.0),
         "two_wheeler": HeadingGroupConfig(("motorcycle", "bicycle"), 1.5, 60.0, 135.0, 45.0, 75.0, 90.0),
         "pedestrian": HeadingGroupConfig(("pedestrian",), 1.0, 90.0, 150.0, 120.0, 170.0, 180.0),
     }
@@ -230,8 +243,9 @@ class StaticConfig:
     shift_error_m: float = 0.50
     yaw_warning_deg: float = 4.0
     yaw_error_deg: float = 10.0
-    yaw_excluded_classes: tuple[str, ...] = ("pedestrian", "Pedestrian", "Animal")
-    """Người, động vật đứng yên vẫn xoay người: không xét hướng."""
+    yaw_excluded_classes: tuple[str, ...] = ("pedestrian", "Pedestrian", "Animal", "traffic_cone")
+    """Người, động vật đứng yên vẫn xoay người; vật tròn / đối xứng (cọc tiêu) hướng box không có nghĩa: không xét hướng.
+    Ghi `Class` hoặc `Class/giá trị thuộc tính` (vd `Obstacle/traffic cone`)."""
 
 
 def _default_camera_groups() -> dict[str, tuple[str, ...]]:
@@ -271,6 +285,8 @@ class CameraConfig:
     missing_min_score: float = 0.85
     missing_min_px: float = 40.0
     missing_min_points: int = 15
+    sparse_max_points: int = 5
+    """`cam.sparse` (C8, spec 4.2): vật có ≤ chừng này điểm LiDAR ở mọi keyframe mà ảnh camera không thấy → Thông tin."""
     groups: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=_default_camera_groups)
     """Nhóm vật trên ảnh (person / two_wheeler / vehicle / animal) → các class nhãn 3D thuộc nhóm đó."""
 
@@ -291,6 +307,42 @@ class CameraConfig:
         if self.enabled == "true":
             return detector2d.available()
         return detector2d.cuda_available()
+
+
+@dataclass(frozen=True)
+class MissingConfig:
+    """Sót đối tượng bằng LiDAR (C7, `detectors.missing`; spec 4.2 NÊN gán vật rõ trong point cloud)."""
+
+    min_range_m: float = 3.0
+    max_range_m: float = 40.0
+    box_margin_m: float = 0.3
+    """Bỏ điểm trong box nhãn nới chừng này."""
+    cell_m: float = 0.25
+    min_points: int = 15
+    min_points_per_cell: float = 1.2
+    """Mật độ điểm / ô của cụm: nhiễu mưa, bụi ~1; mặt vật thật bị nhiều tia LiDAR quét chồng nên dày hơn."""
+    max_bottom_m: float = 0.6
+    """Chân cụm (p2 độ cao trên mặt đất) không cao hơn mức này: vật đứng trên đường, không phải tán cây / biển báo."""
+    max_persistence: float = 0.4
+    """Tỉ lệ ô của cụm vẫn có điểm sau / trước 1 giây quá mức này thì coi là vật đứng yên (tường, cây, cột): bỏ."""
+    first_gate_m: float = 7.0
+    link_gate_m: float = 2.0
+    min_frames: int = 3
+    min_motion_m: float = 3.0
+    min_motion_person_m: float = 1.5
+    """Cụm cỡ người đi chậm: dời ≥ mức này nhưng cần thêm 1 keyframe."""
+    static_min_persistence: float = 0.2
+    """Nhánh vật đứng yên: cụm có tỉ lệ ô còn bị chiếm sau / trước 1 s lớn hơn mức này."""
+    static_gate_m: float = 1.0
+    """Vật đứng yên: tâm cụm các keyframe cách tâm chung ≤ mức này (phần nhìn thấy đổi theo góc nhìn)."""
+    static_min_views: int = 2
+    """Vật đứng yên chỉ báo khi ảnh camera thấy vật cùng loại ở ≥ chừng này keyframe."""
+    static_min_iou: float = 0.5
+    """Phần khung chiếu của cụm nằm trong khung vật trên ảnh (LiDAR thường chỉ thấy một mặt nên không dùng IoU)."""
+    static_min_score: float = 0.7
+    static_labelled_iou: float = 0.5
+    """Vật trên ảnh trùng khung chiếu của box đã gán (IoU) từ mức này thì coi là vật đã có box."""
+    keyframe_interval_s: float = 0.5
 
 
 @dataclass(frozen=True)
@@ -327,6 +379,20 @@ class SpecConfig:
     """Class → các thuộc tính bắt buộc, vd `Vehicle: [subtype]`."""
     allowed_values: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=dict)
     """Thuộc tính (hoặc `Class.thuộc_tính`) → các giá trị cho phép."""
+    attribute_height: Mapping[str, tuple[float, float]] = dataclasses.field(default_factory=dict)
+    """`attr.height` (C6): `Class/giá trị[/giá trị…]` → [min, max] chiều cao box (m), vd `Pedestrian/standing/adult`.
+    Khóa khớp khi box mang đủ các giá trị; nhiều khóa khớp thì lấy khóa cụ thể nhất."""
+    inside_forbidden: tuple[tuple[str, str], ...] = ()
+    """`spec.inside` (C6, spec 4.3B): cặp [vật bên trong, vật bao] không được gán lồng nhau, vd [Pedestrian, Vehicle]."""
+    inside_min_lift_m: float = 0.6
+    """Đáy vật bên trong cao hơn đáy vật bao từ mức này trở lên (đứng trên nóc / thùng xe) thì không tính là bên trong."""
+    rider_double: tuple[tuple[str, str], ...] = ()
+    """`spec.rider_double` (C6, spec 4.3C): cặp [box đã gồm người lái, box người], vd [Two-wheels/with_rider, Pedestrian]."""
+    rider_state: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    """`attr.rider_state` (C8, spec 4.3C): khóa xe → thuộc tính trạng thái người lái, gồm `class`, `attribute`,
+    `with`, `without`, `person` (class người). Rỗng thì không chạy."""
+    rider_max_speed_mps: float = 2.5
+    """Xe `without` chạy nhanh hơn mức này ở ≥ 2 bước liền: có người lái mà quên đổi (dắt xe ~1,3 m/s)."""
 
 
 @dataclass(frozen=True)
@@ -350,6 +416,7 @@ class Config:
     camera: CameraConfig = dataclasses.field(default_factory=CameraConfig)
     learning: LearningConfig = dataclasses.field(default_factory=LearningConfig)
     critic: CriticConfig = dataclasses.field(default_factory=CriticConfig)
+    missing: MissingConfig = dataclasses.field(default_factory=MissingConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -464,7 +531,9 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
-              "fit_overlap", "track_reuse_id", "track_occluded_long", "attr_missing", "attr_invalid",
+              "fit_overlap", "track_reuse_id", "track_occluded_long", "track_id_swap", "attr_height", "spec_inside",
+              "spec_rider_double", "attr_rider_state", "lidar_missing",
+              "cam_sparse", "attr_missing", "attr_invalid",
               "track_static_shift", "heading_static", "cam_mismatch", "cam_class", "cam_missing",
               "critic_box")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
@@ -484,6 +553,7 @@ def _parse_heading(r: _Reader) -> HeadingConfig:
             flip_warning_deg=g.number("flip_warning_deg", 0.0),
             flip_error_deg=g.number("flip_error_deg", 0.0),
             yaw_rate_max_dps=g.number("yaw_rate_max_dps", 0.0),
+            reverse_max_mps=g.number("reverse_max_mps", 0.0) if "reverse_max_mps" in g.keys() else 0.0,
         )
         g.finish()
         for low, high in (("motion_warning_deg", "motion_error_deg"), ("flip_warning_deg", "flip_error_deg")):
@@ -542,6 +612,8 @@ def _parse_camera(r: _Reader) -> CameraConfig:
         "mask_rise_warning", "class_vote", "class_min_score", "missing_min_score", "missing_min_px")}
     integers = {name: r.integer(name, 1) for name in (
         "min_track_observations", "class_min_observations", "missing_min_points")}
+    if "sparse_max_points" in r.keys():
+        integers["sparse_max_points"] = r.integer("sparse_max_points", 0)
     severity = r._take("mismatch_severity") if "mismatch_severity" in r.keys() else "info"
     if severity not in ("info", "warning"):
         raise ConfigError(f"'camera.mismatch_severity' phải là info hoặc warning, nhận {severity!r}")
@@ -550,6 +622,16 @@ def _parse_camera(r: _Reader) -> CameraConfig:
     gr.finish()
     r.finish()
     return CameraConfig(enabled=enabled, groups=groups, mismatch_severity=severity, **numbers, **integers)
+
+
+def _parse_missing(r: _Reader) -> MissingConfig:
+    values = {}
+    for f in dataclasses.fields(MissingConfig):
+        if f.name not in r.keys():
+            continue
+        values[f.name] = r.integer(f.name, 1) if f.type in ("int", int) else r.number(f.name, 0.0)
+    r.finish()
+    return MissingConfig(**values)
 
 
 def _parse_critic(r: _Reader) -> CriticConfig:
@@ -585,8 +667,29 @@ def _parse_spec(r: _Reader) -> SpecConfig:
         section.finish()
         return result
 
+    def pairs(key: str) -> tuple[tuple[str, str], ...]:
+        if key not in r.keys():
+            return ()
+        raw = r._take(key)
+        if (not isinstance(raw, list) or not all(isinstance(p, list) and len(p) == 2
+                                                 and all(isinstance(v, str) and v for v in p) for p in raw)):
+            raise ConfigError(f"'spec.{key}' phải là danh sách cặp [a, b], nhận {raw!r}")
+        return tuple((a, b) for a, b in raw)
+
+    heights: dict[str, tuple[float, float]] = {}
+    if "attribute_height" in r.keys():
+        hr = r.section("attribute_height")
+        heights = {key: hr.min_max(key) for key in hr.keys()}
+        hr.finish()
     cfg = SpecConfig(required_attributes=mapping_of_lists("required_attributes"),
-                     allowed_values=mapping_of_lists("allowed_values"))
+                     allowed_values=mapping_of_lists("allowed_values"), attribute_height=heights,
+                     inside_forbidden=pairs("inside_forbidden"),
+                     inside_min_lift_m=r.number("inside_min_lift_m", 0.0) if "inside_min_lift_m" in r.keys() else 0.6,
+                     rider_double=pairs("rider_double"),
+                     rider_state=(lambda sec: ({k: sec.string(k) for k in sec.keys()}, sec.finish())[0])(
+                         r.section("rider_state")) if "rider_state" in r.keys() else {},
+                     rider_max_speed_mps=(r.number("rider_max_speed_mps", 0.0) if "rider_max_speed_mps" in r.keys()
+                                          else 2.5))
     r.finish()
     return cfg
 
@@ -701,8 +804,10 @@ def _parse_size(r: _Reader) -> SizeConfig:
         kr = r.section("key_attributes")
         key_attributes = {label: kr.string(label) for label in kr.keys()}
         kr.finish()
+    cargo = r.strings("cargo_classes") if "cargo_classes" in r.keys() else SizeConfig.cargo_classes
     r.finish()
-    return SizeConfig(class_range=class_range, manual_ranges=manual, in_track=in_track, key_attributes=key_attributes)
+    return SizeConfig(class_range=class_range, manual_ranges=manual, in_track=in_track, key_attributes=key_attributes,
+                      cargo_classes=cargo)
 
 
 def _parse_track(r: _Reader) -> TrackConfig:
@@ -795,6 +900,7 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         camera=_parse_camera(r.section("camera")) if "camera" in r.keys() else CameraConfig(),
         learning=_parse_learning(r.section("learning")) if "learning" in r.keys() else LearningConfig(),
         critic=_parse_critic(r.section("critic")) if "critic" in r.keys() else CriticConfig(),
+        missing=_parse_missing(r.section("missing")) if "missing" in r.keys() else MissingConfig(),
     )
     r.finish()
     return cfg

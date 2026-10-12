@@ -74,27 +74,34 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 |---|---|---|
 | `floating` | Lơ lửng / lún | Khoảng cách đáy box tới mặt đất cục bộ vượt ngưỡng |
 | `floating.no_evidence` | Lơ lửng / lún | Vành đai quanh box có quá ít điểm ground; mức Thông tin |
-| `size.class_range` | Sai kích thước | l, w hoặc h nằm ngoài khoảng thường gặp của class |
+| `size.class_range` | Sai kích thước | l, w hoặc h nằm ngoài khoảng thường gặp của class. "Lớn bất thường" mà điểm LiDAR của vật lấp đầy ≥ 85% chiều đó (chở hàng, hình dạng đặc biệt) thì hạ Lỗi xuống Cảnh báo (C5) |
 | `size.in_track` | Sai kích thước | Kích thước một keyframe lệch so với trung vị của track |
 | `track.jump` | Đứt track | Tâm box lệch khỏi vị trí nội suy từ hai keyframe lân cận |
 | `track.split_id` | Đứt track | Track kết thúc rồi một track cùng class bắt đầu ngay gần đó |
 | `track.long_interpolation` | Đứt track | Đoạn dài chỉ có box nội suy trong khi đối tượng di chuyển (B5b) |
 | `heading.flip` | Sai hướng box | Hướng box (hệ toàn cục) đổi giữa hai keyframe nhanh hơn tốc độ quay hợp lý: lật đầu, xoay ngang (C1) |
-| `heading.motion` | Sai hướng box | Hướng box lệch / ngược hướng chuyển động khi vật chạy nhanh hơn `min_speed_mps` (C1, spec 4.2) |
+| `heading.motion` | Sai hướng box | Hướng box lệch / ngược hướng chuyển động khi vật chạy nhanh hơn `min_speed_mps` (C1, spec 4.2). Ngược chiều ở ≥ 80% đoạn mà vật chạy ≤ `reverse_max_mps` (xe 3 m/s): một mục Cảnh báo "có thể đang lùi" thay vì Lỗi từng frame (C5) |
 | `heading.points` | Sai hướng box | Trục box lệch trục cụm điểm LiDAR (khớp hình chữ L), so với các frame khác của track (C1) |
 | `fit.empty` | Box lệch khỏi vật | Vùng quanh box quét rõ nhưng trong box không có điểm nào cao hơn đáy box; box `occluded` thì bỏ qua. Mức Cảnh báo (C1) |
 | `fit.outside` | Box lệch khỏi vật | Tỉ lệ điểm của vật (nối liền với điểm trong box) nằm ngoài box, so với trung vị các frame khác của track: box nhỏ hoặc lệch (C1) |
 | `fit.loose` | Box lệch khỏi vật | Mặt box quay về phía LiDAR, không bị che, cách điểm gần nhất của vật quá xa: box dư (C1) |
 | `fit.overlap` | Box lệch khỏi vật | Hai box cùng frame chồng nhau (phần chung / box nhỏ hơn), trừ cặp class được phép (C1) |
 | `track.reuse_id` | Đứt track | Track đã kết thúc bằng `outside` rồi lại có box (spec 4.4.3–4.4.4). Mức Cảnh báo (C2) |
+| `track.id_swap` | Đứt track | Hai track cùng nhóm đổi chỗ nhau ở một frame: mỗi box khớp quỹ đạo dự đoán của track kia hơn hẳn track mình (≤ 35% độ lệch khi giữ nguyên) (C5, spec 4.4.6) |
 | `track.occluded_long` | Đứt track | `occluded` liên tục quá `track.max_occluded_frames` (6) frame (spec 4.4.5). Mức Cảnh báo (C2) |
 | `attr.missing` | Thiếu / sai thuộc tính | Thiếu thuộc tính bắt buộc theo `spec.required_attributes` (spec 3.1.3). Mức Lỗi (C2) |
 | `track.static_shift` | Đứt track | Vật đứng yên (các keyframe khác tụ trong 10 cm, hệ toàn cục) mà box ở một keyframe lệch > 20 cm (C3) |
-| `heading.static` | Sai hướng box | Vật đứng yên mà hướng box ở một keyframe lệch > 4° (modulo 180°); không xét người, động vật (C3) |
+| `heading.static` | Sai hướng box | Vật đứng yên mà hướng box ở một keyframe lệch > 4° (modulo 180°); không xét người, động vật, vật tròn / đối xứng (`static.yaw_excluded_classes`, ghi `Class` hoặc `Class/thuộc tính`) (C3, C5) |
 | `cam.mismatch` | Box lệch khỏi vật | Phần mặt nạ vật cùng nhóm trên ảnh camera (Mask R-CNN) nằm ngoài khung chiếu 8 góc box cao hơn trung vị các frame khác của track > 20 điểm %; model ảnh không thấy vật thì bỏ qua; frame ban đêm bỏ qua. Mức Thông tin (`camera.mismatch_severity`) (C3, cần PyTorch) |
 | `cam.class` | Thiếu / sai thuộc tính | Ở đa số (≥ 60%) lần nhìn rõ, vật trên ảnh trùng khung chiếu thuộc nhóm khác với nhãn (người / xe hai bánh / xe / động vật). Mức Cảnh báo (C3) |
 | `cam.missing` | Box lệch khỏi vật | Ảnh thấy vật chắc chắn (điểm ≥ 0.85, cao ≥ 40 px, ≥ 15 điểm LiDAR) mà không có box 3D chiếu tới. Mức Thông tin, không gắn cờ CVAT (C3) |
 | `critic.box` | Box lệch khỏi vật | Box Critic (model nhóm tự huấn luyện, `critic.model`) cho xác suất box sai ≥ 0.7, kèm gợi ý sửa (C3, `docs/box-critic.md`) |
+| `attr.height` | Thiếu / sai thuộc tính | Thuộc tính không khớp chiều cao box (trung vị đoạn cùng giá trị): `spec.attribute_height`, khóa `Class/giá trị[/giá trị]`. Mức Cảnh báo (C6) |
+| `spec.inside` | Thiếu / sai thuộc tính | Tâm box vật trong nằm trong footprint box vật bao, đáy không cao hơn `inside_min_lift_m` (0,6 m): `spec.inside_forbidden`, vd người trong xe (spec 4.3B). Mức Cảnh báo (C6) |
+| `spec.rider_double` | Thiếu / sai thuộc tính | Box người chồng ≥ 50% footprint lên box xe hai bánh `with_rider` cùng frame (spec 4.3C): `spec.rider_double`. Mức Cảnh báo (C6) |
+| `lidar.missing` | Box lệch khỏi vật | Cụm điểm LiDAR (ngoài mọi box, giống người / xe hai bánh / xe, chân sát đất) **di chuyển** đều qua ≥ 3 keyframe (≥ 3 m; cỡ người ≥ 1,5 m qua ≥ 4 keyframe) và chỗ đứng cũ trống sau 1 s, mà không có box: nghi sót đối tượng (spec 4.2). Vật **đứng yên** chỉ báo khi ảnh camera (lớp 2) thấy vật cùng loại ở ≥ 2 keyframe. Mức Cảnh báo, không gắn cờ CVAT được (C7) |
+| `attr.rider_state` | Thiếu / sai thuộc tính | Xe hai bánh `without_rider` chạy > 2,5 m/s ≥ 2 bước liền (quên đổi khi lên xe), hoặc `with_rider` đứng yên mà track người mới bắt đầu sát xe (≤ 1,2 m) và xe vẫn `with_rider` ≥ 2 keyframe sau (quên đổi khi xuống xe). `spec.rider_state`. Mức Cảnh báo (C8, spec 4.3C) |
+| `cam.sparse` | Box lệch khỏi vật | Box ≤ `camera.sparse_max_points` (2) điểm LiDAR, nằm trong ảnh ban ngày, mà model 2D không thấy vật cùng nhóm (spec 4.2 không nên gán vật quá ít điểm). Một mục mỗi track, mức Thông tin (C8, cần PyTorch) |
 | `attr.invalid` | Thiếu / sai thuộc tính | Giá trị ngoài `spec.allowed_values` (khóa `thuộc_tính` hoặc `Class.thuộc_tính`). Mức Lỗi (C2) |
 
 **Box `occluded`** (thuộc tính `occluded` của CVAT, `Cuboid.occluded`): vật không nhìn thấy, vị trí do người gán ước

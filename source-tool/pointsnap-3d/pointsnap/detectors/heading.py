@@ -117,7 +117,7 @@ def _motion_findings(
     boxes: list[Cuboid], centers: np.ndarray, headings: np.ndarray, times: np.ndarray, grp: HeadingGroupConfig,
     min_motion_m: float, has_world: bool, skip: set[int],
 ) -> list[Finding]:
-    findings: list[Finding] = []
+    rows = []
     n = len(boxes)
     for i in range(n):
         if i in skip:
@@ -130,20 +130,42 @@ def _motion_findings(
         dt = float(times[b] - times[a])
         if dt <= 0 or distance < min_motion_m or distance / dt < grp.min_speed_mps:
             continue
-        direction = math.atan2(motion[1], motion[0])
-        deviation = angle_diff_deg(headings[i], direction)
+        deviation = angle_diff_deg(headings[i], math.atan2(motion[1], motion[0]))
+        rows.append((i, a, b, distance / dt, deviation))
+    # Xe lùi thật (C5): box ngược chiều ở gần hết các frame đang chạy và vật chạy chậm. Không phân biệt được với box vẽ
+    # ngược trên xe chạy chậm, nên hạ xuống Cảnh báo; xe chạy nhanh mà box ngược vẫn là Lỗi.
+    reversed_rows = [r for r in rows if r[4] >= grp.motion_error_deg]
+    maybe_reversing = (grp.reverse_max_mps > 0 and len(reversed_rows) >= 2
+                       and len(reversed_rows) >= 0.8 * len(rows)
+                       and max(r[3] for r in reversed_rows) <= grp.reverse_max_mps)
+    findings: list[Finding] = []
+    if maybe_reversing:
+        # Một mục cho cả đoạn: người duyệt chỉ cần xác nhận xe có lùi không.
+        first, last = reversed_rows[0], reversed_rows[-1]
+        speed = max(r[3] for r in reversed_rows)
+        deviation = float(np.median([r[4] for r in reversed_rows]))
+        message = (f"Hướng box ngược chiều chuyển động ở {len(reversed_rows)}/{len(rows)} keyframe đang chạy (frame "
+                   f"{boxes[first[0]].frame}–{boxes[last[0]].frame}) khi vật chạy chậm (≤ {speed:.1f} m/s): có thể đang "
+                   f"lùi thật, nếu không thì xoay box 180° ở cả đoạn")
+        findings.append(_finding("heading.motion", Severity.WARNING, boxes[first[0]], message, deviation,
+                                 grp.motion_error_deg, {"deviation_deg": deviation, "speed_mps": speed,
+                                                        "has_world_pose": has_world, "maybe_reversing": True,
+                                                        "frames": [boxes[r[0]].frame for r in reversed_rows]}))
+        rows = [r for r in rows if r[4] < grp.motion_error_deg]
+    for i, a, b, speed, deviation in rows:
         if deviation <= grp.motion_warning_deg:
             continue
-        is_error = deviation >= grp.motion_error_deg and has_world
+        is_reverse = deviation >= grp.motion_error_deg
+        is_error = is_reverse and has_world
         severity = Severity.ERROR if is_error else Severity.WARNING
-        threshold = grp.motion_error_deg if deviation >= grp.motion_error_deg else grp.motion_warning_deg
-        kind = "ngược chiều" if deviation >= grp.motion_error_deg else "lệch"
+        threshold = grp.motion_error_deg if is_reverse else grp.motion_warning_deg
+        kind = "ngược chiều" if is_reverse else "lệch"
         message = (f"Hướng box {kind} {deviation:.0f}° so với hướng chuyển động của vật "
-                   f"({distance / dt:.1f} m/s, frame {boxes[a].frame}–{boxes[b].frame}; ngưỡng {threshold:.0f}°)")
+                   f"({speed:.1f} m/s, frame {boxes[a].frame}–{boxes[b].frame}; ngưỡng {threshold:.0f}°)")
         if not has_world:
             message += " [chưa có toạ độ toàn cục]"
         findings.append(_finding("heading.motion", severity, boxes[i], message, deviation, threshold, {
-            "deviation_deg": deviation, "speed_mps": distance / dt, "has_world_pose": has_world,
+            "deviation_deg": deviation, "speed_mps": speed, "has_world_pose": has_world,
         }))
     return findings
 

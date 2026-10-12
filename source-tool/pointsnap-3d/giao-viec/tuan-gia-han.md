@@ -24,16 +24,38 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 | C3 | Lớp 3: Box Critic — dữ liệu (`pointsnap critic-data`), script + notebook Colab, chỗ cắm `critic.model` | Chờ nhóm huấn luyện |
 | C3 | Lớp 4: học từ kết luận Đúng / Báo nhầm (nút *Học từ kết luận*, `pointsnap learn`) | Chờ ≥ 40 kết luận thật |
 
+## Cập nhật 12/10 (bàn giao)
+
+Chi tiết, thứ tự merge và cách kiểm lại: [`docs/ban-giao-12-10.md`](../docs/ban-giao-12-10.md).
+
+| Mã | Việc | Kết quả | PR |
+|---|---|---|---|
+| C3 | Ngưỡng Cảnh báo lơ lửng / lún 12 → 15 cm | — | PR bàn giao |
+| C4 | Lơ lửng / lún trên mặt đất dốc, đá, vỉa hè ([giao việc](C4-mat-dat-nghieng.md)) | Test tổng hợp 14 / 15 ca (code cũ sai 7); cảnh tinh chỉnh không đổi | [#49](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/49) |
+| C5 | Tình huống giao thông thực tế ([giao việc](C5-tinh-huong-thuc-te.md)): bộ mô phỏng, sửa 4 lỗi, luật `track.id_swap` | 23 / 23 tình huống; đổi ID bắt 94%, 0 báo nhầm | PR bàn giao |
+| C6 | Bám spec theo hình học ([giao việc](C6-bam-spec.md)): `attr.height`, `spec.inside`, `spec.rider_double`, `attr.rider_state` | Báo nhầm 0,03 / 0,02 trên 100 box | PR bàn giao |
+| C7 | **Sót đối tượng** bằng LiDAR: `lidar.missing` | Tìm lại vật bị xóa box 66% (tinh chỉnh) / 71% (kiểm tra) | PR bàn giao |
+| C8 | Sót vật đứng yên (LiDAR + ảnh), vật quá ít điểm `cam.sparse` | Vật đứng yên tìm lại 31% / 15% | PR bàn giao |
+| — | Camera Grounding DINO + SAM 2.1 (tùy chọn), `track.jump` hai đầu track, `heading.motion` khi không có pose, Box Critic ensemble, quét nhanh ~3 lần, `fit.loose` theo track | Mỗi PR có số liệu trước / sau | [#40](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/40) – [#44](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/44), [#46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46), [#47](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/47) |
+| — | `heading.points` 12°, `fit.outside` nhạy hơn: tăng tỉ lệ bắt nhưng tăng báo nhầm | **Nhóm quyết** | [#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45), [#48](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/48) |
+
+Eval 10 vòng mới nhất (Cảnh báo / Lỗi trên 100 box, nhãn sạch): cảnh tinh chỉnh **1,39 / 0,36** (đạt G7), cảnh kiểm tra
+**2,88 / 0,57** (chưa đạt ≤ 2 / ≤ 0,5; phần lớn là lơ lửng / lún).
+
 ## Việc của từng người
 
 ### Khúc Việt Anh · sản phẩm
-- [ ] Review và merge PR giai đoạn 3; tạo **lại** task scene-0061 bằng `to-cvat` mới (đoạn vắng thành occluded).
+- [x] Review và merge PR giai đoạn 3 ([#37](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/37), [#39](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/39)); tạo **lại** task scene-0061 bằng `to-cvat` mới
+      (đoạn vắng thành occluded): **task 4 / job 4** trên CVAT local, demo trên job này. Task 2 giữ nguyên.
 - [ ] Tạo task spec-vn: `pointsnap nuscenes --taxonomy spec-vn to-cvat --scene scene-0061 --out D:/data/cvat-vn --upload`.
-- [ ] Cập nhật CAI-DAT.md: bước tạo token **bỏ tích Read-only** (lỗi CHIEN-01), bước tạo task spec-vn.
-- [ ] Huấn luyện **Box Critic** trên Google Colab theo `docs/box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
-      `critic.model`, đo `pointsnap eval --scenes test --errors all` so với không có Box Critic.
+- [ ] Cập nhật CAI-DAT.md: bước tạo token **bỏ tích Read-only** (lỗi CHIEN-01) — [PR #46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46) chờ merge; bước
+      tạo task spec-vn.
+- [x] Huấn luyện **Box Critic** trên Google Colab theo `docs/box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
+      `critic.model`, đo `pointsnap eval --scenes test --errors all` so với không có Box Critic. Đang dùng bản v3
+      ensemble 5 model; cách huấn luyện ensemble và số liệu ở [PR #43](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/43).
 - [ ] Hỏi mentor về việc dùng model làm bằng chứng phụ (Box Verifier lớp 2, 3).
-- [ ] Sửa các lỗi trong `docs/test/tong-hop-loi.md` được giao.
+- [ ] Sửa các lỗi trong `docs/test/tong-hop-loi.md` được giao (file chưa có trong repo; lỗi CHIEN-01 đã sửa ở
+      PR #46).
 
 ### Đặng Văn Huy · thuật toán
 - [ ] Review code `detectors/heading.py`, `detectors/fit.py`, `core/box_points.py`, mặt đất v2 trong `detectors/floating.py`.
@@ -57,8 +79,8 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 
 ### Vũ Bảo Khánh · báo cáo
 - [ ] Thêm vào báo cáo và slide **bảng truy vết spec ↔ luật** (mục 4.7 của đề xuất): mỗi luật kiểm điều khoản nào.
-- [ ] Mục giới hạn: dữ liệu demo là nuScenes, khoảng kích thước của van / xe ba gác / động vật là ước lượng; chưa phát
-      hiện sót đối tượng.
+- [ ] Mục giới hạn: dữ liệu demo là nuScenes, khoảng kích thước của van / xe ba gác / động vật là ước lượng; phát hiện
+      sót đối tượng (C7, C8) mới tìm lại 66 – 71% vật di chuyển và 15 – 31% vật đứng yên bị bỏ box.
 - [ ] Tổng hợp lỗi đợt test giai đoạn 3; nộp 18/10.
 
 ## Cổng

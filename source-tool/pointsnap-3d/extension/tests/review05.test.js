@@ -36,12 +36,12 @@ test('identity matching cannot review another same-label box',()=>{
 });
 test('outside shapes cannot become navigable flags',()=>{
   const specs=new Map([[1,{name:'car',specId:2}]]);
-  assert.equal(core.collectFlags({shapes:[{id:1,type:'cuboid',outside:true,label_id:1,frame:0,attributes:[{spec_id:2,value:'[Lá»—i] same'}]}]},specs).length,0);
+  assert.equal(core.collectFlags({shapes:[{id:1,type:'cuboid',outside:true,label_id:1,frame:0,attributes:[{spec_id:2,value:'[Lỗi] same'}]}]},specs).length,0);
 });
 test('mutable flags carry through keyframes and explicit reset stops carry',()=>{
   const specs=new Map([[1,{name:'car',specId:2}]]);
   const shape=(frame,attributes)=>({frame,type:'cuboid',outside:false,attributes});
-  const flags=core.collectFlags({tracks:[{id:7,label_id:1,shapes:[shape(2,[{spec_id:2,value:''}]),shape(1,[]),shape(0,[{spec_id:2,value:'[Lá»—i] same'}])]}]},specs);
+  const flags=core.collectFlags({tracks:[{id:7,label_id:1,shapes:[shape(2,[{spec_id:2,value:''}]),shape(1,[]),shape(0,[{spec_id:2,value:'[Lỗi] same'}])]}]},specs);
   assert.deepEqual(flags.map(f=>f.frame),[0,1]);
 });
 test('manual ranges form reflects actual schema',()=>{

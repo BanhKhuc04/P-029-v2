@@ -147,3 +147,10 @@ spec:                                 # spec 3.1.3: thuộc tính bắt buộc k
     - [Pedestrian, Vehicle]
   rider_double:                       # C6 `spec.rider_double`: spec 4.3C người lái nằm trong box xe hai bánh
     - [Two-wheels/with_rider, Pedestrian]
+  rider_state:                        # C8 `attr.rider_state`: lên / xuống xe phải đổi thuộc tính (spec 4.3C)
+    class: Two-wheels
+    attribute: rider_state
+    with: with_rider
+    without: without_rider
+    person: Pedestrian
+  rider_max_speed_mps: 2.5            # xe không người chạy > 2,5 m/s: có người lái? (nhãn chuẩn: tối đa 1,0 m/s)

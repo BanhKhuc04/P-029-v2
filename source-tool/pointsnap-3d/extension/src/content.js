@@ -32,6 +32,7 @@
     'track.reuse_id': 'Dùng lại track sau outside',
     'track.occluded_long': 'Che khuất quá lâu',
     'track.id_swap': 'Nghi đổi nhầm ID',
+    'attr.rider_state': 'Quên đổi trạng thái người lái',
     'attr.height': 'Thuộc tính lệch chiều cao',
     'spec.inside': 'Người bên trong xe',
     'spec.rider_double': 'Người lái bị gán 2 lần',

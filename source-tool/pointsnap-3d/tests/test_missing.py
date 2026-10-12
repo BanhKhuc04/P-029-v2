@@ -64,3 +64,73 @@ def test_kind_by_size():
     assert _kind(2.5, 1.0, 3.2) is None  # ngắn mà cao: tán cây, biển báo
     assert _kind(25.0, 0.4, 2.0) is None  # tường dài
     assert math.isclose(load_config(None).missing.min_points_per_cell, 1.2)
+
+
+# --- Vật đứng yên: LiDAR + ảnh camera -------------------------------------------------------------------------
+
+import numpy as np  # noqa: E402
+
+from pointsnap.core.camera import CameraView, project_box  # noqa: E402
+from pointsnap.vision.detector2d import Detections  # noqa: E402
+
+
+def _front_camera() -> CameraView:
+    """Camera nhìn theo +x của hệ toàn cục, đặt ở (0, 0, 1,8) — trùng chỗ cảm biến khi xe thu đứng yên ở gốc."""
+    m = np.eye(4)
+    m[:3, :3] = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])
+    m[:3, 3] = [0.0, 0.0, 1.8]
+    k = np.array([[1000.0, 0.0, 800.0], [0.0, 1000.0, 450.0], [0.0, 0.0, 1.0]])
+    return CameraView("CAM_FRONT", __import__("pathlib").Path("cam.jpg"), k, m, 1600, 900)
+
+
+class _CamFrames(SimFrames):
+    def camera_views(self, frame):
+        return [_front_camera()]
+
+
+class _FakeDetector:
+    """Trả sẵn một vật (tên `name`) trùng khung chiếu của box thật `truth` ở mọi ảnh."""
+
+    def __init__(self, scene, truth_track: int, name: str):
+        self.box = None
+        self.name = name
+        frames = _CamFrames(scene)
+        truth = next(b for b in labels(scene) if b.track_id == truth_track and b.frame == 0)
+        proj = project_box(truth, frames.frame_data(0).sensor_to_world, _front_camera())
+        self.box = np.array([proj.box])
+
+    def detect(self, path):
+        if self.name is None:
+            return Detections(np.zeros((0, 4)), np.zeros(0), [], [])
+        return Detections(self.box, np.array([0.98]), [self.name], [])
+
+
+def _static_missing(scene, boxes, detector):
+    cfg = load_config(None)
+    found = detect_missing_objects(boxes, _CamFrames(scene), cfg.missing, detector, cfg.camera)[0]
+    return [f for f in found if not f.details["moving"]]
+
+
+def _parked_scene():
+    return Scene([Obj(1, "car", CAR, parked(15, 0.5, 0.0)), Obj(2, "car", CAR, parked(14, -8, 0.2))], num_frames=8)
+
+
+def test_static_unlabelled_car_confirmed_by_camera():
+    scene = _parked_scene()
+    found = _static_missing(scene, _unlabelled(scene, 1), _FakeDetector(scene, 1, "car"))
+    assert len(found) == 1
+    f = found[0]
+    assert f.rule == "lidar.missing" and f.label == "xe" and f.details["camera_class"] == "car"
+    assert len(f.details["camera_frames"]) >= 2
+
+
+def test_static_cluster_without_camera_confirmation_is_quiet():
+    scene = _parked_scene()
+    assert _static_missing(scene, _unlabelled(scene, 1), _FakeDetector(scene, 1, None)) == []
+    # ảnh thấy loại vật khác hẳn kích thước cụm (người ở chỗ cụm cỡ xe): không báo
+    assert _static_missing(scene, _unlabelled(scene, 1), _FakeDetector(scene, 1, "person")) == []
+
+
+def test_static_labelled_car_is_quiet():
+    scene = _parked_scene()
+    assert _static_missing(scene, labels(scene), _FakeDetector(scene, 1, "car")) == []

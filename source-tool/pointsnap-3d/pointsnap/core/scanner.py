@@ -249,6 +249,10 @@ def check_camera(job: JobData, config: Config, frames: FrameSource | None = None
     r = config.rules
     observations, missing = collect_observations(job.cuboids, frames, _detector(), config.camera)
     findings = camera_findings(observations, config.camera, mismatch=r.cam_mismatch, wrong_class=r.cam_class)
+    if r.cam_sparse:
+        from pointsnap.detectors.camera import sparse_unconfirmed
+
+        findings += sparse_unconfirmed(job.cuboids, frames, _detector(), config.camera)
     return findings + (missing if r.cam_missing else [])
 
 
@@ -258,7 +262,8 @@ def check_missing(job: JobData, config: Config, frames: FrameSource | None = Non
         return []
     from pointsnap.detectors.missing import detect_missing_objects
 
-    return detect_missing_objects(job.cuboids, frames, config.missing)[0]
+    detector = _detector() if hasattr(frames, "camera_views") and config.camera.active() else None
+    return detect_missing_objects(job.cuboids, frames, config.missing, detector, config.camera)[0]
 
 
 def check_critic(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -276,16 +281,19 @@ def check_critic(job: JobData, config: Config, frames: FrameSource | None = None
 
 def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
-    from pointsnap.detectors.attributes import detect_attribute_height, detect_spec_geometry
+    from pointsnap.detectors.attributes import detect_attribute_height, detect_rider_state, detect_spec_geometry
 
+    sensor_to_world, _ = _poses(job, frames)
     return (detect_attribute_errors(job.cuboids, config.spec) + detect_attribute_height(job.cuboids, config.spec)
-            + detect_spec_geometry(job.cuboids, config.spec))
+            + detect_spec_geometry(job.cuboids, config.spec)
+            + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s))
 
 
 _RULE_SWITCH = {
     "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
     "attr.missing": "attr_missing", "attr.invalid": "attr_invalid", "attr.height": "attr_height",
     "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double", "lidar.missing": "lidar_missing",
+    "attr.rider_state": "attr_rider_state", "cam.sparse": "cam_sparse",
     "track.static_shift": "track_static_shift", "heading.static": "heading_static",
     "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
     "critic.box": "critic_box",
@@ -358,11 +366,12 @@ def scan_cuboids(
             active_detectors.append(check_heading)
         if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:
             active_detectors.append(check_box_points)
-        if r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double:
+        if (r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double
+                or r.attr_rider_state):
             active_detectors.append(check_attributes)
         if r.track_static_shift or r.heading_static:
             active_detectors.append(check_static)
-        if r.cam_mismatch or r.cam_class or r.cam_missing:
+        if r.cam_mismatch or r.cam_class or r.cam_missing or r.cam_sparse:
             active_detectors.append(check_camera)
         if r.critic_box:
             active_detectors.append(check_critic)

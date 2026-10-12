@@ -20,6 +20,10 @@ Luật bám spec theo hình học (C6, mức Cảnh báo):
    cao hơn đáy vật bao `inside_min_lift_m` (người đứng trên nóc / thùng xe vẫn được).
 5. `spec.rider_double` (spec 4.3C: người lái nằm trong box xe hai bánh): box người chồng ≥ 50% footprint lên box xe
    `with_rider` cùng frame — người lái bị gán hai lần.
+6. `attr.rider_state` (C8, spec 4.3C: lên / xuống xe phải đổi `rider_state`): xe ghi `without_rider` mà chạy nhanh hơn
+   `rider_max_speed_mps` ở ≥ 2 bước liền (quên đổi khi lên xe; trên nhãn chuẩn nuScenes xe không người chạy tối đa
+   1,0 m/s, có người thường > 2 m/s); hoặc xe `with_rider` đứng yên mà một track người mới bắt đầu sát xe (≤ 1,2 m)
+   và xe vẫn ghi `with_rider` ≥ 2 keyframe sau đó (quên đổi khi xuống xe).
 """
 
 from __future__ import annotations
@@ -196,4 +200,64 @@ def detect_spec_geometry(cuboids: Sequence[Cuboid], cfg: SpecConfig) -> list[Fin
             details={"other_label": outer.label, "other_track_id": outer.track_id,
                      "frames": [p[0].frame for p in pairs_]},
         ))
+    return findings
+
+
+def detect_rider_state(cuboids: Sequence[Cuboid], cfg: SpecConfig, sensor_to_world=None,
+                       interval_s: float = 0.5) -> list[Finding]:
+    """`attr.rider_state`: thuộc tính có người lái không khớp chuyển động / người xuống xe."""
+    rs = cfg.rider_state
+    if not rs:
+        return []
+    cls, attr, with_v, without_v, person = rs["class"], rs["attribute"], rs["with"], rs["without"], rs["person"]
+
+    def world(box: Cuboid) -> np.ndarray:
+        if sensor_to_world and box.frame in sensor_to_world:
+            m = np.asarray(sensor_to_world[box.frame])
+            return (m[:3, :3] @ np.asarray(box.center) + m[:3, 3])[:2]
+        return np.asarray(box.center[:2])
+
+    findings: list[Finding] = []
+    tracks = group_by_track([c for c in cuboids if c.visible])
+    starts = [(t[0].frame, world(t[0]), tid) for tid, t in ((tid, sorted(tb, key=lambda b: b.frame))
+                                                         for tid, tb in tracks.items()) if t[0].label == person]
+    for tid, tb in tracks.items():
+        tb = sorted(tb, key=lambda b: b.frame)
+        if tb[0].label != cls:
+            continue
+        pos = [world(b) for b in tb]
+        speed = [float(np.linalg.norm(pos[i] - pos[i - 1])) / max((tb[i].frame - tb[i - 1].frame) * interval_s, 1e-6)
+                 for i in range(1, len(tb))]
+        # Lên xe mà quên đổi: without_rider chạy nhanh ≥ 2 bước liền
+        fast = [i + 1 for i, v in enumerate(speed) if v > cfg.rider_max_speed_mps
+                and tb[i].attrs.get(attr) == without_v and tb[i + 1].attrs.get(attr) == without_v]
+        runs = [i for n, i in enumerate(fast) if n > 0 and fast[n - 1] == i - 1]
+        if runs:
+            first = tb[runs[0] - 1]
+            v = max(speed[i - 1] for i in fast)
+            findings.append(Finding(
+                error_type=ErrorType.ATTRIBUTE, rule="attr.rider_state", severity=Severity.WARNING, frame=first.frame,
+                label=first.label, track_id=tid, source_id=first.source_id, value=v, threshold=cfg.rider_max_speed_mps,
+                message=(f"{cls} ghi {attr}={without_v} nhưng chạy {v:.1f} m/s (từ frame {first.frame}; dắt xe chỉ ~1,3 "
+                         f"m/s): có người lái mà chưa đổi sang {with_v}? (spec 4.3C)"),
+                details={"frames": [tb[i].frame for i in fast], "speed_mps": v, "kind": "mount"},
+            ))
+            continue
+        # Xuống xe mà quên đổi: người mới bắt đầu sát xe đứng yên, xe vẫn with_rider ≥ 2 keyframe sau đó
+        for k, box in enumerate(tb):
+            if box.attrs.get(attr) != with_v or k == 0 or speed[k - 1] > 0.5:
+                continue
+            here = pos[k]
+            newcomer = next((t for f, p, t in starts if f == box.frame and np.linalg.norm(p - here) <= 1.2), None)
+            after = [b for b in tb[k + 1:k + 4] if b.attrs.get(attr) == with_v]
+            if newcomer is None or len(after) < 2:
+                continue
+            findings.append(Finding(
+                error_type=ErrorType.ATTRIBUTE, rule="attr.rider_state", severity=Severity.WARNING, frame=box.frame,
+                label=box.label, track_id=tid, source_id=box.source_id, value=float(len(after)), threshold=2.0,
+                message=(f"Người (track {newcomer}) xuất hiện sát {cls} đang đứng ở frame {box.frame} nhưng xe vẫn ghi "
+                         f"{attr}={with_v} các frame sau: người lái đã xuống xe thì đổi xe sang {without_v} (spec 4.3C)"),
+                details={"frames": [box.frame] + [b.frame for b in after], "person_track_id": newcomer, "kind": "dismount"},
+            ))
+            break
     return findings

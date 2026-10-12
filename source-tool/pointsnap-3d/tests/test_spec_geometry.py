@@ -94,3 +94,37 @@ def test_scenario_spec_vn_end_to_end():
     ])
     found = [f for f in scan(scene, SPEC_VN) if f.rule.startswith(("attr.", "spec."))]
     assert {f.rule for f in found} == {"spec.inside"}
+
+
+# --- attr.rider_state (C8) ---------------------------------------------------------------------------------
+
+from pointsnap.detectors.attributes import detect_rider_state  # noqa: E402
+
+
+def _moto_track(rider, speed=6.0, n=6, track_id=2, x0=0.0):
+    return [Cuboid(center=(x0 + speed * 0.5 * f, 0.0, 0.85), dims=(1.9, 0.8, 1.7), yaw=0.0, label="Two-wheels",
+                   frame=f, track_id=track_id, attrs={"rider_state": rider(f) if callable(rider) else rider})
+            for f in range(n)]
+
+
+def test_rider_state_mount_forgotten(spec):
+    found = detect_rider_state(_moto_track("without_rider"), spec)
+    assert [f.details["kind"] for f in found] == ["mount"]
+    assert detect_rider_state(_moto_track("with_rider"), spec) == []
+    assert detect_rider_state(_moto_track("without_rider", speed=1.3), spec) == []  # dắt xe
+
+
+def test_rider_state_dismount_forgotten(spec):
+    # xe dừng từ frame 3; người mới xuất hiện sát xe ở frame 4; xe vẫn with_rider
+    moto = [Cuboid(center=(min(f, 3) * 3.0, 0.0, 0.85), dims=(1.9, 0.8, 1.7), yaw=0.0, label="Two-wheels", frame=f,
+                   track_id=2, attrs={"rider_state": "with_rider"}) for f in range(8)]
+    person = [ped(f, track_id=9, x=9.0) for f in range(4, 8)]
+    person = [p.replace(center=(9.0, 0.8, p.center[2])) for p in person]
+    found = detect_rider_state(moto + person, spec)
+    assert [f.details["kind"] for f in found] == ["dismount"] and found[0].details["person_track_id"] == 9
+    fixed = [b.replace(attrs={"rider_state": "without_rider"}) if b.frame >= 4 else b for b in moto]
+    assert detect_rider_state(fixed + person, spec) == []
+
+
+def test_rider_state_inactive_without_config():
+    assert detect_rider_state(_moto_track("without_rider"), load_config(None).spec) == []

@@ -10,8 +10,13 @@ Mỗi keyframe:
 
 Rồi nối cụm giữa các keyframe liền nhau trong hệ toàn cục (dự đoán vận tốc không đổi, cổng `link_gate_m`). Chuỗi cụm
 **di chuyển** (≥ `min_frames` keyframe, dời ≥ `min_motion_m` theo một hướng nhất quán) mà không box nào phủ → `lidar.missing`
-(Cảnh báo). Cụm đứng yên rất hay là cột, thùng rác, bụi cây không thuộc class cần gán nên không báo; nếu ảnh camera thấy
-vật chắc chắn ở đó (`cam.missing`) thì nâng mục `cam.missing` (Thông tin) thành `lidar.missing` (Cảnh báo).
+(Cảnh báo).
+
+Cụm **đứng yên** rất hay là cột, thùng rác, bụi cây không thuộc class cần gán, LiDAR không phân biệt được. Khi có ảnh
+camera và model 2D (lớp 2), chuỗi cụm đứng yên giống vật (≥ `min_frames` keyframe, tâm lệch ≤ `static_gate_m`) được
+chiếu lên ảnh: model 2D thấy vật **cùng loại** (cụm cỡ người ↔ person, cỡ xe ↔ car / truck / bus, cỡ xe hai bánh ↔
+bicycle / motorcycle) trùng khung chiếu (IoU ≥ `static_min_iou`) ở ≥ `static_min_views` keyframe → `lidar.missing`
+(Cảnh báo, `details.moving = False`): cả LiDAR lẫn ảnh cùng thấy vật mà không có box.
 
 Không có box nên không gắn cờ lên CVAT được; mục ghi vị trí tâm cụm ở từng frame (hệ point cloud của frame) và kích thước
 để người gán vẽ box.
@@ -43,6 +48,11 @@ class Cluster:
     num_points: int
     cells: frozenset = frozenset()
     """Ô lưới (hệ toàn cục, cạnh `cell_m`) mà cụm chiếm."""
+    bottom_z: float = 0.0
+    """Mặt đất dưới cụm (hệ point cloud của frame)."""
+    yaw: float = 0.0
+    """Hướng trục dài của cụm (hệ point cloud của frame)."""
+    persistence: float = 0.0
 
 
 def _ground(points: np.ndarray, cell: float = 1.0) -> np.ndarray:
@@ -129,6 +139,7 @@ def frame_clusters(points: np.ndarray, boxes: Sequence[Cuboid], sensor_to_world:
         center = xy.mean(axis=0)
         cov = np.cov((xy - center).T) if len(idx) > 2 else np.eye(2)
         axes = np.linalg.eigh(cov)[1]
+        major = axes[:, int(np.argmax(np.linalg.eigvalsh(cov)))]
         proj = (xy - center) @ axes
         extent = np.percentile(proj, 98, axis=0) - np.percentile(proj, 2, axis=0)
         width, length = float(min(extent)), float(max(extent))
@@ -140,7 +151,9 @@ def frame_clusters(points: np.ndarray, boxes: Sequence[Cuboid], sensor_to_world:
             continue  # nhiễu mưa / bụi rải rác: ~1 điểm mỗi ô; mặt vật thật bị nhiều tia quét chồng theo chiều đứng
         world = world_xy[idx].mean(axis=0)
         clusters.append(Cluster(frame, center, world, length, width, height, len(idx),
-                                frozenset(map(tuple, world_cells[idx]))))
+                                frozenset(map(tuple, world_cells[idx])),
+                                bottom_z=float(np.median(pts[idx, 2] - above[idx])),
+                                yaw=float(math.atan2(major[1], major[0]))))
     return clusters
 
 
@@ -213,8 +226,10 @@ def _steady(chain: list[Cluster]) -> bool:
     return bool(np.all(cos >= 0.5) and np.all(norm >= 0.3 * mean) and np.all(norm <= 2.5 * mean))
 
 
-def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig) -> tuple[list[Finding], list[list[Cluster]]]:
-    """Mục `lidar.missing` cho chuỗi cụm di chuyển không có box; trả kèm mọi chuỗi cụm (để đối chiếu ảnh camera)."""
+def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig, detector=None,
+                           camera_cfg=None) -> tuple[list[Finding], list[list[Cluster]]]:
+    """Mục `lidar.missing`: chuỗi cụm di chuyển không có box, và (có `detector`) chuỗi cụm đứng yên mà ảnh camera
+    xác nhận. Trả kèm chuỗi cụm di chuyển."""
     boxes_by_frame = group_by_frame(cuboids)
     num_frames = getattr(frames, "num_frames", None) or (max(boxes_by_frame) + 1 if boxes_by_frame else 0)
     by_frame: dict[int, list[Cluster]] = {}
@@ -223,9 +238,15 @@ def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig
         data = frames.frame_data(f)
         occupied[f] = set()
         by_frame[f] = frame_clusters(data.points, boxes_by_frame.get(f, []), data.sensor_to_world, cfg, f, occupied[f])
-    # Vật đứng yên vẫn chiếm chỗ cũ ở frame kề; vật di chuyển thì chỗ cũ trống. Bỏ cụm mà chỗ đứng còn bị chiếm.
+    # Vật đứng yên vẫn chiếm chỗ cũ ở frame kề; vật di chuyển thì chỗ cũ trống. Tách cụm đứng yên ra để đối chiếu ảnh.
+    static_by_frame: dict[int, list[Cluster]] = {}
     for f, clusters in by_frame.items():
-        by_frame[f] = [c for c in clusters if _persistence(c, occupied, f) <= cfg.max_persistence]
+        for c in clusters:
+            c.persistence = _persistence(c, occupied, f)
+        # Người đứng yên lắc lư, cụm nhỏ: tỉ lệ chiếm chỗ dao động 0,2–0,4, nên nhánh đứng yên dùng ngưỡng thấp hơn
+        # (chồng với nhánh di chuyển không sao: nhánh đó còn đòi dời ≥ 1,5–3 m).
+        static_by_frame[f] = [c for c in clusters if c.persistence > cfg.static_min_persistence]
+        by_frame[f] = [c for c in clusters if c.persistence <= cfg.max_persistence]
     chains = [c for c in _link(by_frame, cfg) if len(c) >= cfg.min_frames]
     findings = []
     for chain in chains:
@@ -250,4 +271,114 @@ def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig
                      "centers": [[round(float(v), 2) for v in c.center] for c in chain],
                      "size_m": [round(v, 2) for v in size], "moving": True},
         ))
+    if detector is not None and hasattr(frames, "camera_views"):
+        findings.extend(_static_confirmed(_link_static(static_by_frame, cfg), cuboids, frames, detector, cfg,
+                                          camera_cfg))
     return findings, chains
+
+
+def _link_static(by_frame: dict[int, list[Cluster]], cfg: MissingConfig) -> list[list[Cluster]]:
+    """Chuỗi cụm đứng yên: keyframe liền nhau, tâm (hệ toàn cục) cách tâm đầu chuỗi ≤ `static_gate_m`."""
+    chains, active = [], []
+    for frame in sorted(by_frame):
+        free = list(by_frame[frame])
+        nxt = []
+        for chain in active:
+            if chain[-1].frame != frame - 1:
+                chains.append(chain)
+                continue
+            anchor = np.mean([c.world for c in chain], axis=0)
+            best = min(free, key=lambda c: np.linalg.norm(c.world - anchor), default=None)
+            if best is not None and np.linalg.norm(best.world - anchor) <= cfg.static_gate_m:
+                chain.append(best)
+                free.remove(best)
+                nxt.append(chain)
+            else:
+                chains.append(chain)
+        nxt.extend([c] for c in free)
+        active = nxt
+    return [c for c in chains + active if len(c) >= cfg.min_frames]
+
+
+def _inside_fraction(a: tuple[float, ...], b: tuple[float, ...]) -> float:
+    """Tỉ lệ diện tích khung `a` nằm trong khung `b`."""
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    area = (a[2] - a[0]) * (a[3] - a[1])
+    return ix * iy / area if area > 0 else 0.0
+
+
+COCO_FOR_KIND = {"người": ("person",), "xe hai bánh": ("bicycle", "motorcycle"), "xe": ("car", "truck", "bus"),
+                 "xe dài": ("bus", "truck", "train")}
+KIND_OF_COCO = {"person": "người", "bicycle": "xe hai bánh", "motorcycle": "xe hai bánh", "car": "xe", "truck": "xe",
+                "bus": "xe", "train": "xe dài"}
+
+
+def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], frames, detector, cfg: MissingConfig,
+                      camera_cfg) -> list[Finding]:
+    """Chuỗi cụm đứng yên mà ảnh camera thấy vật cùng loại trùng khung chiếu ở ≥ `static_min_views` keyframe."""
+    from pointsnap.core.camera import iou_2d, project_box
+
+    findings = []
+    boxes_by_frame = group_by_frame(c for c in cuboids if not c.outside)
+    for chain in chains:
+        size = (float(np.median([c.length for c in chain])), float(np.median([c.width for c in chain])),
+                float(np.median([c.height for c in chain])))
+        # Phần nhìn thấy đổi theo góc nhìn (xe đỗ nhìn nghiêng chỉ lộ một đoạn, giống xe hai bánh): chấp nhận mọi loại
+        # cụm từng mang trong chuỗi, loại vật lấy theo ảnh camera.
+        kinds = {k for c in chain if (k := _kind(c.length, c.width, c.height))}
+        wanted = {name for k in kinds for name in COCO_FOR_KIND[k]}
+        views_ok, names = [], []
+        for c in chain[:: max(1, len(chain) // 6)]:
+            data = frames.frame_data(c.frame, with_points=False)
+            if data.sensor_to_world is None:
+                continue
+            pseudo = Cuboid(center=(float(c.center[0]), float(c.center[1]), c.bottom_z + size[2] / 2),
+                            dims=(max(c.length, 0.3), max(c.width, 0.3), size[2]), yaw=c.yaw, label="cluster",
+                            frame=c.frame)
+            views = list(frames.camera_views(c.frame))
+            dets = [detector.detect(v.path) for v in views]
+            bright = [d.brightness for d in dets if d.brightness is not None]
+            if bright and float(np.median(bright)) < camera_cfg.min_brightness:
+                continue
+            seen = None
+            for view, det in zip(views, dets):
+                proj = project_box(pseudo, data.sensor_to_world, view)
+                if proj is None or proj.inside_ratio < 0.5 or proj.depth > cfg.max_range_m:
+                    continue
+                labelled = [p.box for b in boxes_by_frame.get(c.frame, [])
+                            if (p := project_box(b, data.sensor_to_world, view)) is not None]
+                for box2d, name, score in zip(det.boxes, det.names, det.scores):
+                    if name not in wanted or score < cfg.static_min_score:
+                        continue
+                    b2 = tuple(float(v) for v in box2d)
+                    # LiDAR thường chỉ thấy một mặt vật nên khung chiếu nhỏ hơn vật trên ảnh: xét phần khung chiếu
+                    # nằm trong khung vật (không dùng IoU)
+                    if _inside_fraction(proj.box, b2) < cfg.static_min_iou:
+                        continue
+                    if any(iou_2d(b2, lb) >= cfg.static_labelled_iou for lb in labelled):
+                        continue  # vật trên ảnh là vật đã có box 3D (xe đỗ sát nhau thì khung ảnh chồng một phần)
+                    seen = (view.channel, name, float(score))
+                    break
+                if seen:
+                    break
+            if seen:
+                views_ok.append(c.frame)
+                names.append(seen)
+        if len(views_ok) < cfg.static_min_views:
+            continue
+        first = chain[0]
+        name = max(set(n[1] for n in names), key=[n[1] for n in names].count)
+        kind = KIND_OF_COCO[name]
+        findings.append(Finding(
+            error_type=ErrorType.FIT, rule="lidar.missing", severity=Severity.WARNING, frame=first.frame, label=kind,
+            value=float(len(views_ok)), threshold=float(cfg.static_min_views),
+            message=(f"Vật đứng yên cỡ {kind} ({size[0]:.1f} × {size[1]:.1f} × {size[2]:.1f} m, ~"
+                     f"{int(np.median([c.num_points for c in chain]))} điểm LiDAR) ở {len(chain)} keyframe "
+                     f"({first.frame}–{chain[-1].frame}); ảnh camera cũng thấy {name} ở {len(views_ok)} keyframe "
+                     f"({names[0][0]}) mà không có box: nghi sót đối tượng (spec 4.2)"),
+            details={"frames": [c.frame for c in chain], "camera_frames": views_ok,
+                     "centers": [[round(float(v), 2) for v in c.center] for c in chain],
+                     "size_m": [round(v, 2) for v in size], "moving": False, "camera_class": name},
+        ))
+    return findings

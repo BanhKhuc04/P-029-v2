@@ -43,3 +43,20 @@ car / truck / bus đã bị `size.class_range` bắt 100% (lỗi chèn "class kh
 (van ↔ car, pickup ↔ truck, xe ba gác, trâu ↔ bò) COCO không có → luật thêm gần như không bắt thêm lỗi.
 
 Test: `tests/test_spec_geometry.py` (gồm một cảnh mô phỏng quét đầu-cuối với guideline spec-vn).
+
+## C8 — lên / xuống xe quên đổi `rider_state` (`attr.rider_state`, spec 4.3C)
+
+Đo trên nhãn chuẩn nuScenes spec-vn: xe hai bánh `without_rider` chạy tối đa **1,0 m/s** (dắt xe), còn `with_rider`
+thường chạy trên 2 m/s (tới 15 m/s). Luật (mức Cảnh báo, khai `spec.rider_state` trong guideline):
+
+- **Lên xe quên đổi:** xe `without_rider` chạy > 2,5 m/s ở ≥ 2 bước liền.
+- **Xuống xe quên đổi:** xe `with_rider` đứng yên, một track người mới bắt đầu sát xe (≤ 1,2 m), xe vẫn `with_rider` ≥ 2
+  keyframe sau đó.
+
+| | 5 cảnh tinh chỉnh | 5 cảnh kiểm tra |
+|---|---|---|
+| Báo nhầm trên nhãn sạch | 0 | 0 |
+| Đổi xe có người lái → `without_rider` cả track | 4 / 6 | 5 / 6 |
+
+Sót: xe có người lái đứng chờ suốt đoạn (không phân biệt được bằng chuyển động). Ca xuống xe kiểm bằng test
+(`tests/test_spec_geometry.py`), nuScenes ít tình huống này.

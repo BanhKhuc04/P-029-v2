@@ -50,6 +50,8 @@ class RulesConfig:
     attr_height: bool = True
     spec_inside: bool = True
     spec_rider_double: bool = True
+    attr_rider_state: bool = True
+    cam_sparse: bool = True
     lidar_missing: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
@@ -283,6 +285,8 @@ class CameraConfig:
     missing_min_score: float = 0.85
     missing_min_px: float = 40.0
     missing_min_points: int = 15
+    sparse_max_points: int = 5
+    """`cam.sparse` (C8, spec 4.2): vật có ≤ chừng này điểm LiDAR ở mọi keyframe mà ảnh camera không thấy → Thông tin."""
     groups: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=_default_camera_groups)
     """Nhóm vật trên ảnh (person / two_wheeler / vehicle / animal) → các class nhãn 3D thuộc nhóm đó."""
 
@@ -327,6 +331,17 @@ class MissingConfig:
     min_motion_m: float = 3.0
     min_motion_person_m: float = 1.5
     """Cụm cỡ người đi chậm: dời ≥ mức này nhưng cần thêm 1 keyframe."""
+    static_min_persistence: float = 0.2
+    """Nhánh vật đứng yên: cụm có tỉ lệ ô còn bị chiếm sau / trước 1 s lớn hơn mức này."""
+    static_gate_m: float = 1.0
+    """Vật đứng yên: tâm cụm các keyframe cách tâm chung ≤ mức này (phần nhìn thấy đổi theo góc nhìn)."""
+    static_min_views: int = 2
+    """Vật đứng yên chỉ báo khi ảnh camera thấy vật cùng loại ở ≥ chừng này keyframe."""
+    static_min_iou: float = 0.5
+    """Phần khung chiếu của cụm nằm trong khung vật trên ảnh (LiDAR thường chỉ thấy một mặt nên không dùng IoU)."""
+    static_min_score: float = 0.7
+    static_labelled_iou: float = 0.5
+    """Vật trên ảnh trùng khung chiếu của box đã gán (IoU) từ mức này thì coi là vật đã có box."""
     keyframe_interval_s: float = 0.5
 
 
@@ -373,6 +388,11 @@ class SpecConfig:
     """Đáy vật bên trong cao hơn đáy vật bao từ mức này trở lên (đứng trên nóc / thùng xe) thì không tính là bên trong."""
     rider_double: tuple[tuple[str, str], ...] = ()
     """`spec.rider_double` (C6, spec 4.3C): cặp [box đã gồm người lái, box người], vd [Two-wheels/with_rider, Pedestrian]."""
+    rider_state: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    """`attr.rider_state` (C8, spec 4.3C): khóa xe → thuộc tính trạng thái người lái, gồm `class`, `attribute`,
+    `with`, `without`, `person` (class người). Rỗng thì không chạy."""
+    rider_max_speed_mps: float = 2.5
+    """Xe `without` chạy nhanh hơn mức này ở ≥ 2 bước liền: có người lái mà quên đổi (dắt xe ~1,3 m/s)."""
 
 
 @dataclass(frozen=True)
@@ -512,7 +532,8 @@ def _parse_rules(r: _Reader) -> RulesConfig:
 
 _NEW_RULES = ("heading_flip", "heading_motion", "heading_points", "fit_empty", "fit_outside", "fit_loose",
               "fit_overlap", "track_reuse_id", "track_occluded_long", "track_id_swap", "attr_height", "spec_inside",
-              "spec_rider_double", "lidar_missing", "attr_missing", "attr_invalid",
+              "spec_rider_double", "attr_rider_state", "lidar_missing",
+              "cam_sparse", "attr_missing", "attr_invalid",
               "track_static_shift", "heading_static", "cam_mismatch", "cam_class", "cam_missing",
               "critic_box")
 """Luật thêm ở giai đoạn 3: file cấu hình cũ không có thì coi là bật."""
@@ -591,6 +612,8 @@ def _parse_camera(r: _Reader) -> CameraConfig:
         "mask_rise_warning", "class_vote", "class_min_score", "missing_min_score", "missing_min_px")}
     integers = {name: r.integer(name, 1) for name in (
         "min_track_observations", "class_min_observations", "missing_min_points")}
+    if "sparse_max_points" in r.keys():
+        integers["sparse_max_points"] = r.integer("sparse_max_points", 0)
     severity = r._take("mismatch_severity") if "mismatch_severity" in r.keys() else "info"
     if severity not in ("info", "warning"):
         raise ConfigError(f"'camera.mismatch_severity' phải là info hoặc warning, nhận {severity!r}")
@@ -662,7 +685,11 @@ def _parse_spec(r: _Reader) -> SpecConfig:
                      allowed_values=mapping_of_lists("allowed_values"), attribute_height=heights,
                      inside_forbidden=pairs("inside_forbidden"),
                      inside_min_lift_m=r.number("inside_min_lift_m", 0.0) if "inside_min_lift_m" in r.keys() else 0.6,
-                     rider_double=pairs("rider_double"))
+                     rider_double=pairs("rider_double"),
+                     rider_state=(lambda sec: ({k: sec.string(k) for k in sec.keys()}, sec.finish())[0])(
+                         r.section("rider_state")) if "rider_state" in r.keys() else {},
+                     rider_max_speed_mps=(r.number("rider_max_speed_mps", 0.0) if "rider_max_speed_mps" in r.keys()
+                                          else 2.5))
     r.finish()
     return cfg
 

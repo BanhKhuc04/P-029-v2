@@ -288,3 +288,25 @@ def test_estimate_ground_real_nuscenes():
     assert len(errors) / checked_boxes > 0.6  # Ít nhất 60% box gần ước lượng được mặt đất
     median_err = float(np.median(errors))
     assert median_err < 0.15  # Sai số trung vị dưới 15 cm trên dữ liệu thật
+
+
+def test_other_box_points_local_reach_matches_full_cloud():
+    """`near` / `without_others(reach=...)` (tìm theo x đã sắp) cho đúng tập điểm như lọc cả point cloud."""
+    import numpy as np
+
+    from pointsnap.core.ground import OtherBoxPoints
+    from pointsnap.core.model import Cuboid
+
+    rng = np.random.default_rng(0)
+    points = rng.uniform(-20, 20, size=(5000, 3))
+    boxes = [Cuboid(center=(float(x), float(y), 0.0), dims=(4.0, 2.0, 1.6), yaw=float(a), label="car", frame=0)
+             for x, y, a in rng.uniform([-15, -15, -3], [15, 15, 3], size=(12, 3))]
+    boxes.append(boxes[0].replace(center=(boxes[0].center[0] + 1.0, boxes[0].center[1], 0.0)))  # hai box chồng nhau
+    cloud = OtherBoxPoints(points, boxes)
+    for index, box in enumerate(boxes):
+        reach = 3.5
+        square = (np.abs(points[:, 0] - box.center[0]) <= reach) & (np.abs(points[:, 1] - box.center[1]) <= reach)
+        assert cloud.near(box.center[0], box.center[1], reach).tolist() == np.flatnonzero(square).tolist()
+        full = cloud.without_others(index)
+        in_square = full[(np.abs(full[:, 0] - box.center[0]) <= reach) & (np.abs(full[:, 1] - box.center[1]) <= reach)]
+        assert np.array_equal(cloud.without_others(index, reach=reach), in_square)

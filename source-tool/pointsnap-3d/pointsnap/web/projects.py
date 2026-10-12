@@ -34,7 +34,7 @@ class ProjectError(ValueError):
 
 def validate_slug(slug: str) -> str:
     """Kiểm tra tính an toàn của slug dự án (chống path traversal)."""
-    if not slug or not SLUG_PATTERN.match(slug) or ".." in slug:
+    if not slug or not SLUG_PATTERN.fullmatch(slug) or ".." in slug:
         raise ProjectError(
             f"Slug '{slug}' không hợp lệ. Chỉ chấp nhận chữ cái, số, gạch ngang và gạch dưới."
         )

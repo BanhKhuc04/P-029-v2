@@ -1,7 +1,7 @@
 """Script đánh giá chỉ số Precision, Recall và xuất bảng mục 8.2 (việc B6).
 
 Cách dùng:
-python scripts/eval_metrics.py --faults path/to/injected_faults.json --findings path/to/findings.json --out docs/danh-gia.md
+python scripts/eval_metrics.py --faults path/to/injected_faults.json --findings path/to/findings.json --out docs/ket-qua/danh-gia.md
 """
 
 import argparse

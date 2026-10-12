@@ -91,3 +91,20 @@ def test_ui_fonts_are_served_locally(client_with_run: TestClient):
     css = client_with_run.get("/static/fonts/fonts.css")
     assert css.status_code == 200 and "IBM Plex Sans" in css.text
     assert client_with_run.get("/static/fonts/ibm-plex-sans-400-vietnamese.woff2").status_code == 200
+
+
+def test_learn_endpoint_uses_reviews(client_with_run: TestClient):
+    """Lớp 4 (C3): học từ kết luận đã ghi, lưu learned.json, GET trả lại bản đang dùng."""
+    assert client_with_run.get("/api/projects/a14/learn").json() == {"model": None, "report": None}
+    url = f"/api/projects/a14/scans/{RUN_ID}"
+    client_with_run.put(f"{url}/reviews/0", json={"verdict": "ok"})
+    client_with_run.put(f"{url}/reviews/1", json={"verdict": "fp"})
+    res = client_with_run.post("/api/projects/a14/learn")
+    assert res.status_code == 200
+    model = res.json()["model"]
+    assert model["version"] == 1 and model["n_samples"] == 2 and not model["use_model"]
+    assert model["rule_stats"]["floating"]["ok"] == 1 and model["rule_stats"]["track.jump"]["fp"] == 1
+    assert "Học từ 2 kết luận" in res.json()["report"]
+    assert client_with_run.get("/api/projects/a14/learn").json()["model"]["version"] == 1
+    assert client_with_run.post("/api/projects/a14/learn").json()["model"]["version"] == 2
+    assert client_with_run.post("/api/projects/khong-co/learn").status_code == 404

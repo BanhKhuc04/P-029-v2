@@ -13,14 +13,14 @@ from pathlib import Path
 import yaml
 
 from pointsnap import __version__
-from pointsnap.cli import eval_cmd, gate_cmd, nuscenes_cmd, scan_cmd, ui_cmd
+from pointsnap.cli import eval_cmd, gate_cmd, learn_cmd, nuscenes_cmd, scan_cmd, ui_cmd
 from pointsnap.core.config import ConfigError, load_config
 
 EXIT_OK = 0
 EXIT_GATE_FAILED = 1
 EXIT_RUNTIME_ERROR = 3
 
-# Lệnh đã khai báo nhưng chưa viết, kèm mã việc trong TASKS.md.
+# Lệnh đã khai báo nhưng chưa viết, kèm mã việc trong quan-ly/TASKS.md.
 _NOT_IMPLEMENTED = {"diff": "A8"}
 
 
@@ -53,6 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("config", help="in cấu hình đang dùng (token được ẩn)")
     nuscenes_cmd.add_parser(sub)
     eval_cmd.add_parser(sub)
+    learn_cmd.add_parser(sub)
+    eval_cmd.add_critic_parser(sub)
     ui_cmd.add_parser(sub)
     return parser
 
@@ -102,9 +104,13 @@ def main(argv: list[str] | None = None) -> int:
         return eval_cmd.run(args, config)
     if args.command == "ui":
         return ui_cmd.run(args, config)
+    if args.command == "learn":
+        return learn_cmd.run(args, config)
+    if args.command == "critic-data":
+        return eval_cmd.run_critic(args, config)
 
     task = _NOT_IMPLEMENTED[args.command]
-    print(f"Lệnh '{args.command}' chưa có (việc {task} trong TASKS.md).", file=sys.stderr)
+    print(f"Lệnh '{args.command}' chưa có (việc {task} trong quan-ly/TASKS.md).", file=sys.stderr)
     return EXIT_RUNTIME_ERROR
 
 

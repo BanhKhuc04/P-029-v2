@@ -23,15 +23,29 @@
     'fit.loose': 'Kéo mặt box về sát các điểm của vật ở phía được nhìn rõ, không để dư khoảng trống.',
     'fit.overlap': 'Kiểm tra hai box có cùng là một vật không: vẽ trùng thì xóa box thừa; hai vật sát nhau thì thu box cho khỏi lấn.',
     'track.reuse_id': 'Vật chỉ bị che tạm thời (≤ 6 frame) thì bỏ outside và bật occluded; vắng lâu hơn thì tách phần sau thành track mới (spec 4.4.3–4.4.5).',
+    'attr.height': 'Xem vật trên point cloud / ảnh: sửa thuộc tính (tư thế, nhóm tuổi, có người lái) hoặc chiều cao box cho khớp.',
+    'spec.inside': 'Spec 4.3B: không gán người ngồi trong xe — xóa box người (người đứng trên nóc / thùng xe thì giữ).',
+    'spec.rider_double': 'Spec 4.3C: người lái nằm trong box xe hai bánh — xóa box người; người đã xuống xe thì đổi xe sang without_rider.',
+    'lidar.missing': 'Mở point cloud tại vị trí trong mục (tâm cụm từng frame): vật thật đang di chuyển mà chưa gán thì vẽ box và track mới (spec 4.2).',
+    'attr.rider_state': 'Spec 4.3C: lên xe thì đổi sang with_rider, xuống xe thì đổi sang without_rider (người xuống thành track Pedestrian mới).',
+    'cam.sparse': 'Spec 4.2: không gán vật quá ít điểm. Xem lại point cloud / ảnh các frame khác: không suy luận được vật thì xóa box.',
+    'track.id_swap': 'Hai vật bị nối nhầm ID: tách lại từ frame bị đổi, mỗi đoạn về đúng track của vật (đối chiếu quỹ đạo, ảnh camera).',
     'track.occluded_long': 'Che khuất quá 6 frame: kết thúc track (Switch outside) và tạo track mới khi vật xuất hiện lại, trừ khi chắc chắn là cùng vật (spec 4.4.5).',
     'attr.missing': 'Chọn giá trị cho thuộc tính bắt buộc; không chắc thì chọn other (spec 3.1.3).',
-    'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.'
+    'attr.invalid': 'Chọn lại giá trị thuộc tính theo danh sách của guideline dự án.',
+    'track.static_shift': 'Vật đứng yên: kéo box về trùng vị trí ở các keyframe khác của track (hoặc copy box từ keyframe đúng).',
+    'heading.static': 'Vật đứng yên: xoay box về cùng hướng với các keyframe khác của track.',
+    'cam.mismatch': 'Mở ảnh camera của frame, so khung box với vật: dời / chỉnh kích thước box cho khớp vật (đối chiếu cả point cloud).',
+    'cam.class': 'Xem vật trên ảnh camera: nhãn sai thì đổi class cho cả track; ảnh nhận nhầm (vật bị che, phản chiếu) thì bỏ qua.',
+    'cam.missing': 'Mở ảnh camera và point cloud của frame: có vật thật mà chưa gán thì vẽ thêm box (spec: gán mọi vật trong vùng quan tâm).',
+    'critic.box': 'Box Critic nghi box sai: xem gợi ý sửa (dời / kích thước / xoay) trong chi tiết, đối chiếu point cloud rồi chỉnh tay.'
   };
 
   // Công tắc luật trong tab Guideline (khóa `rules:` của cấu hình); C1 thêm 7 luật sai hướng / box lệch.
   const RULE_IDS = ['floating', 'size_class_range', 'size_in_track', 'track_jump', 'track_split_id',
     'track_long_interpolation', 'heading_flip', 'heading_motion', 'heading_points', 'fit_empty', 'fit_outside',
-    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'attr_missing', 'attr_invalid'];
+    'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'track_id_swap', 'attr_height', 'spec_inside', 'spec_rider_double', 'attr_rider_state', 'lidar_missing', 'cam_sparse', 'attr_missing', 'attr_invalid',
+    'track_static_shift', 'heading_static', 'cam_mismatch', 'cam_class', 'cam_missing', 'critic_box'];
 
   const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
 
@@ -88,6 +102,15 @@
       case 'heading.motion':
       case 'heading.points':
         return `${Math.round(n)}°`;
+      case 'heading.static':
+        return `${fixed(n, 1)}°`;
+      case 'track.static_shift':
+        return `${Math.round(n * 100)} cm`;
+      case 'cam.mismatch':
+      case 'cam.class':
+      case 'cam.missing':
+      case 'critic.box':
+        return `${Math.round(n * 100)}%`;
       case 'fit.outside':
       case 'fit.overlap':
         return `${Math.round(n * 100)}%`;
@@ -96,6 +119,14 @@
       case 'fit.empty':
         return `${Math.round(n)} điểm`;
       case 'track.reuse_id':
+      case 'track.id_swap':
+      case 'attr.height':
+        return `${fixed(n, 2)} m`;
+      case 'lidar.missing':
+        return `${fixed(n, 1)} m/s`;
+      case 'spec.inside':
+      case 'spec.rider_double':
+        return `${Math.round(n)} frame`;
       case 'track.occluded_long':
         return `${Math.round(n)} frame`;
       case 'attr.missing':
@@ -301,6 +332,7 @@
 
     // 5. Tab Kết quả (Results)
     document.getElementById('btn-re-flag-cvat').addEventListener('click', handleReFlagScan);
+    document.getElementById('btn-learn').addEventListener('click', handleLearn);
     document.getElementById('filter-search-box').addEventListener('input', () => {
       state.findingsPage = 1;
       renderFindingsTable();
@@ -1116,6 +1148,8 @@
 
     document.getElementById('detail-measured-val').textContent = formatMeasure(f, f.value, true);
     document.getElementById('detail-threshold-val').textContent = formatMeasure(f, f.threshold);
+    document.getElementById('detail-confidence-val').textContent =
+      f.confidence === null || f.confidence === undefined ? 'chưa học' : `${Math.round(f.confidence * 100)}%`;
     document.getElementById('detail-message-desc').textContent = f.message || '—';
 
     // Gợi ý cách sửa từ từ điển A13
@@ -1144,6 +1178,7 @@
     document.getElementById('detail-track-class-val').textContent = '—';
     document.getElementById('detail-measured-val').textContent = '—';
     document.getElementById('detail-threshold-val').textContent = '—';
+    document.getElementById('detail-confidence-val').textContent = '—';
     document.getElementById('detail-message-desc').textContent = '—';
     document.getElementById('detail-fix-hint').textContent = '—';
     document.getElementById('detail-btn-cvat-link').style.display = 'none';
@@ -1169,8 +1204,21 @@
     if (f.rule === 'fit.overlap') return 'Hai box chồng nhau';
     if (f.rule === 'track.reuse_id') return 'Dùng lại track sau khi kết thúc';
     if (f.rule === 'track.occluded_long') return 'Che khuất quá lâu';
+    if (f.rule === 'track.id_swap') return 'Nghi đổi nhầm ID';
+    if (f.rule === 'attr.rider_state') return 'Quên đổi trạng thái người lái';
+    if (f.rule === 'cam.sparse') return 'Box quá ít điểm, ảnh không thấy';
+    if (f.rule === 'lidar.missing') return 'Nghi sót đối tượng (LiDAR)';
+    if (f.rule === 'attr.height') return 'Thuộc tính lệch chiều cao';
+    if (f.rule === 'spec.inside') return 'Người bên trong xe';
+    if (f.rule === 'spec.rider_double') return 'Người lái bị gán 2 lần';
     if (f.rule === 'attr.missing') return 'Thiếu thuộc tính bắt buộc';
     if (f.rule === 'attr.invalid') return 'Thuộc tính sai giá trị';
+    if (f.rule === 'track.static_shift') return 'Vật đứng yên: box dịch';
+    if (f.rule === 'heading.static') return 'Vật đứng yên: box xoay';
+    if (f.rule === 'cam.mismatch') return 'Box lệch vật trên ảnh';
+    if (f.rule === 'cam.class') return 'Ảnh camera thấy class khác';
+    if (f.rule === 'cam.missing') return 'Ảnh thấy vật chưa có box';
+    if (f.rule === 'critic.box') return 'Box Critic nghi box sai';
     return f.message ? f.message.split(';')[0] : 'Phát hiện bất thường';
   }
 
@@ -1703,6 +1751,25 @@
   }
 
   // --- 6. Tab Lịch sử (History View - LichSu.dc.html) ---
+  async function handleLearn() {
+    if (!state.currentSlug) return;
+    const btn = document.getElementById('btn-learn');
+    setButtonBusy(btn, 'Đang học…');
+    try {
+      const res = await fetch(`/api/projects/${encodeURIComponent(state.currentSlug)}/learn`, { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json()).detail || 'Không học được');
+      const data = await res.json();
+      const box = document.getElementById('learn-report');
+      box.textContent = data.report;
+      box.style.display = 'block';
+      showToast('Đã học từ kết luận đã duyệt; áp dụng từ lần quét sau.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setButtonIdle(btn);
+    }
+  }
+
   async function loadHistoryTab() {
     if (!state.currentSlug) return;
     try {

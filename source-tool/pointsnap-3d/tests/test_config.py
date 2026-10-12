@@ -12,7 +12,7 @@ def test_default_config_loads():
     cfg = load_config(env={})
     assert cfg.cvat.url == "http://localhost:8080"
     assert cfg.cvat.token is None
-    assert cfg.floating.warning_m == pytest.approx(0.12)
+    assert cfg.floating.warning_m == pytest.approx(0.15)
     assert cfg.floating.error_m == pytest.approx(0.22)
     assert "pedestrian" in cfg.size.in_track.excluded_classes
     assert cfg.size.manual_ranges["bus"]["length"] == (6.0, 18.5)
@@ -48,7 +48,7 @@ def test_user_file_overrides_only_given_keys(tmp_path):
     user.write_text("floating:\n  error_m: 0.25\ngate:\n  max_warnings: 3\n", encoding="utf-8")
     cfg = load_config(user, env={})
     assert cfg.floating.error_m == pytest.approx(0.25)
-    assert cfg.floating.warning_m == pytest.approx(0.12)  # giữ mặc định
+    assert cfg.floating.warning_m == pytest.approx(0.15)  # giữ mặc định
     assert cfg.gate.max_warnings == 3
 
 
@@ -100,3 +100,31 @@ def test_manual_range_must_be_ordered():
 def test_missing_file_gives_clear_error(tmp_path):
     with pytest.raises(ConfigError, match="Không mở được"):
         load_config(tmp_path / "nope.yaml", env={})
+
+
+def test_camera_mismatch_severity_parsing(tmp_path):
+    from pointsnap.core.config import ConfigError, load_config
+
+    path = tmp_path / "g.yaml"
+    path.write_text("camera:\n  mismatch_severity: warning\n", encoding="utf-8")
+    assert load_config(path).camera.mismatch_severity == "warning"
+    assert load_config(None).camera.mismatch_severity == "info"
+    path.write_text("camera:\n  mismatch_severity: error\n", encoding="utf-8")
+    with pytest.raises(ConfigError):
+        load_config(path)
+
+
+def test_camera_model_parsing(tmp_path):
+    from pointsnap.core.config import ConfigError, load_config
+
+    assert load_config(None).camera.model == "maskrcnn"
+    path = tmp_path / "g.yaml"
+    path.write_text("camera:\n  model: gdino-sam2\n", encoding="utf-8")
+    cfg = load_config(path)
+    assert cfg.camera.model == "gdino-sam2"
+    assert cfg.camera.group_of("traffic_cone") == "traffic_cone"
+    path.write_text("camera:\n  model: hybrid\n", encoding="utf-8")
+    assert load_config(path).camera.model == "hybrid"
+    path.write_text("camera:\n  model: yolo\n", encoding="utf-8")
+    with pytest.raises(ConfigError):
+        load_config(path)

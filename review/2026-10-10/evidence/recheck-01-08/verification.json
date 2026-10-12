@@ -1,0 +1,47 @@
+{
+  "tested_code_commit": "1a39b6f3ae221fbc75caaabd2929feab4c661f05",
+  "main_commit": "be1778c8c83c2f711016f5468245641118453b6f",
+  "scope": "Original review 01–08; main synchronized only for merge compatibility, newer features not reviewed.",
+  "python": "3.12.14",
+  "cvat": "2.78.1",
+  "dataset": "nuScenes v1.0-mini real local",
+  "pytest": {
+    "tests": 608,
+    "failures": 0,
+    "errors": 0,
+    "passed": 605,
+    "skipped": 2,
+    "xfailed": 1
+  },
+  "skip_cases": [
+    {
+      "name": "test_critic_findings_with_scripted_model",
+      "type": "pytest.skip",
+      "reason": "could not import 'torch': No module named 'torch'"
+    },
+    {
+      "name": "test_critic_track_relative",
+      "type": "pytest.skip",
+      "reason": "could not import 'torch': No module named 'torch'"
+    },
+    {
+      "name": "test_track_from_flat_onto_slope_floating_frame_flagged",
+      "type": "pytest.xfail",
+      "reason": "giới hạn đã biết (C4): trên dốc 8° box lơ lửng 25 cm có d theo trung vị chỉ -6 cm, gần trung vị track (nửa bằng, nửa dốc) nên không bị báo; báo theo mặt phẳng dốc cho box thuộc track làm tăng báo nhầm trên nuScenes"
+    }
+  ],
+  "node": {
+    "tests": 37,
+    "pass": 37,
+    "fail": 0,
+    "skipped": 0
+  },
+  "new_cases": {
+    "python": 15,
+    "node": 1
+  },
+  "raw_junit_sha256": "1340a442e8dce934098815997e150f451a3e2e9bd103640eb7d09b2a591c5b27",
+  "cvat_safety": "Three live tests create/delete their own temporary tasks; existing work jobs not written.",
+  "warning": "Starlette TestClient/httpx deprecation",
+  "new_feature_review": false
+}

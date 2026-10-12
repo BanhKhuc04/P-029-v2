@@ -1,0 +1,209 @@
+[
+  {
+    "branch": "review/01-overview-architecture",
+    "sha": "65ee0feb5d9b9b80b17a9651241840eeb02c3bc9",
+    "previous_sha": "c27d54be1957329bfff6d81147c841e8d138815e",
+    "pytest_exit": 0,
+    "seconds": 55.9,
+    "pytest": {
+      "tests": 358,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "passed": 353,
+      "xfailed": 1
+    },
+    "junit_sha256": "44f07bc08e8e8c0276dcd5ab14f8e7c2c770c35dffec8645d0dd949cee4f9c20",
+    "node_exit": 0,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "3bdaf1ae40ad60f882ad65d0477f937a0d45ee60033a26fccd906131d3722fd7",
+    "previous_head_is_ancestor": true
+  },
+  {
+    "branch": "review/02-core-detectors",
+    "sha": "aa67798d2dd751150ec3ddadc01932b01b20d79f",
+    "previous_sha": "7fca8270cc5127d103ac75b157bbe9d4188255d6",
+    "pytest_exit": 0,
+    "seconds": 63.42,
+    "pytest": {
+      "tests": 425,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "passed": 420,
+      "xfailed": 1
+    },
+    "junit_sha256": "910018a6cf81db0a6df027b9e62e74e41343d4c9930c052fc1873d71da0342f8",
+    "node_exit": 0,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "464a46f35a6f8a58b364f310ca8bbdb81bab0d5b4ab65bae2df1807be9f76340",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  },
+  {
+    "branch": "review/03-data-cvat-integrations",
+    "sha": "f0bd5ec0ebb3524a3afbfcdff7c5d828788308c3",
+    "previous_sha": "f79a85bc609ee0d06879c30bc402d28d773861cb",
+    "pytest_exit": 0,
+    "seconds": 63.97,
+    "pytest": {
+      "tests": 475,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 469,
+      "xfailed": 1
+    },
+    "junit_sha256": "2855ae1834e8cec0d46490df8775d056a0e2debee2cece06f541afc7c895b99c",
+    "node_exit": 0,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "e3366e08eca5d52537ebcb470c17c0fd471857309c3ad537e0fb7d1ae73fe105",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  },
+  {
+    "branch": "review/04-backend-cli-reports",
+    "sha": "4efee4adb78b96264d6d0ce14b9bd680df3f0dd8",
+    "previous_sha": "59ef9c4b949b4617406b38ffda00732a8742ff27",
+    "pytest_exit": 0,
+    "seconds": 80.74,
+    "pytest": {
+      "tests": 548,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 542,
+      "xfailed": 1
+    },
+    "junit_sha256": "17226d4fe823ef9647ec11fc2c029a628dee5dc03cf0d12b06e0b1140b826e43",
+    "node_exit": 0,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "99a00dd4bb67adf860f4eacd00e452c62951136cef84d46d3950f239ec23347b",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  },
+  {
+    "branch": "review/05-frontend-extension",
+    "sha": "6bd8984ea370054f021c6ad59ac8f1351f284c16",
+    "previous_sha": "43812b9099d9f8575605e56c0aa2dbc8a15c736d",
+    "pytest_exit": 0,
+    "seconds": 80.17,
+    "pytest": {
+      "tests": 548,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 542,
+      "xfailed": 1
+    },
+    "junit_sha256": "fd7e030de3e74be07926d6286c967cd0836ba2900be8f2b0c363242391272425",
+    "node_exit": 0,
+    "node": {
+      "tests": 22,
+      "pass": 22,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "409db42b990b3808cf401221df3843b53293095279bce92666396e69d35991ec",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  },
+  {
+    "branch": "review/06-security-config",
+    "sha": "7bd5dd2167371e846b68a890d80bb4fe073d1841",
+    "previous_sha": "6282f05531b24b8d4343e9eeff88f36cc91ce9ce",
+    "pytest_exit": 0,
+    "seconds": 97.68,
+    "pytest": {
+      "tests": 581,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 575,
+      "xfailed": 1
+    },
+    "junit_sha256": "86d23eb334ce2af75af1a5b22d9c2deca4722dbe622655e1a702509709797c24",
+    "node_exit": 0,
+    "node": {
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "16e4179760efcea9f1e7481b45c278893eec0782f24c758153131fe5fe6f0666",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  },
+  {
+    "branch": "review/07-tests-evaluation-performance",
+    "sha": "0d5dcb5d2e012f18b8a0789446ead936500301d7",
+    "previous_sha": "5353683ed5a355772b1d2cc89c527940bb00eda0",
+    "pytest_exit": 0,
+    "seconds": 87.29,
+    "pytest": {
+      "tests": 605,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 599,
+      "xfailed": 1
+    },
+    "junit_sha256": "0cf1b731b0c5a427da7fbcedf342b5c552b4e38d529ffc5ffbafdcd42b7d7183",
+    "node_exit": 0,
+    "node": {
+      "tests": 37,
+      "pass": 37,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "ecb5357970a31e0a30f8ef9e97fdcf6f68eb7e16756f1f19e9f69df8b01b8160",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  },
+  {
+    "branch": "review/08-deployment-docs-final",
+    "sha": "1a39b6f3ae221fbc75caaabd2929feab4c661f05",
+    "previous_sha": "092b647006d264562bd007e835e2b126627833fc",
+    "pytest_exit": 0,
+    "seconds": 85.0,
+    "pytest": {
+      "tests": 608,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 5,
+      "passed": 602,
+      "xfailed": 1
+    },
+    "junit_sha256": "023214d567c0665553f6b24e11ad56b56357c6eac110c34a3bda6935bacd20e6",
+    "node_exit": 0,
+    "node": {
+      "tests": 37,
+      "pass": 37,
+      "fail": 0,
+      "skipped": 0
+    },
+    "node_log_sha256": "81472e63e32bca73180094652207fbbbd437dd051f7106ea200bd604d7cc4052",
+    "previous_head_is_ancestor": true,
+    "previous_branch_is_ancestor": true
+  }
+]

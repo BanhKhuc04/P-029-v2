@@ -1,5 +1,16 @@
 # Bàn giao 07 và 08 — kết thúc đợt review
 
+## Lượt soát lại để merge ngày 12/10/2026
+
+Xem [báo cáo soát lại các nhánh 01–08](recheck-01-08-report.md) và evidence đi kèm.
+Bản sửa được đưa vào chính tám nhánh kết quả hiện có. Đã đồng bộ main `be1778c`
+để giải quyết xung đột; tính năng mới trên main ngoài phạm vi review.
+
+Merge các nhánh kết quả vào main theo thứ tự **01 → 08**, giữ ancestry bằng merge
+commit hoặc fast-forward. Nhánh 08 chứa kết quả cộng dồn 01–07. Các số liệu và
+SHA trong phần bàn giao cũ bên dưới là bằng chứng lịch sử, không thay thế kết quả
+test các đầu nhánh mới trong báo cáo soát lại.
+
 Đối chiếu 12/10/2026. Các nhánh tiếp nối phần 06 (`6282f05`):
 
 | Phần | Nhánh | Base PR | Kết quả |
@@ -47,5 +58,5 @@ Private images giữ để tái hiện; output/dataset/PAT/payload nhãn không 
 - [Báo cáo08](08-report.md), [tương thích](08-compatibility.md),
   [findings và việc còn mở](08-findings.md), [coverage](08-file-coverage.tsv),
   [checklist vận hành](08-operations-checklist.md), [evidence08](evidence/08/README.md).
-- [Cài đặt](../../source-tool/CAI-DAT.md), [Docker](../../source-tool/pointsnap-3d/README-Docker.md),
+- [Cài đặt](../../source-tool/pointsnap-3d/CAI-DAT.md), [Docker](../../source-tool/pointsnap-3d/README-Docker.md),
   [vận hành](../../source-tool/pointsnap-3d/docs/operations.md).

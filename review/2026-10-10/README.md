@@ -109,3 +109,9 @@ Trạng thái finding: Mở → Đang xử lý → Đã sửa/chờ kiểm lại
 - Inventory có đúng **184 file** của commit nền `5dcc97f`, không thiếu/thừa/trùng.
 
 Đây là kiểm tra cấu trúc ngày lập kế hoạch, không phải kết quả test phần mềm. Cả 155 ca kế hoạch đã có bảng trạng thái theo báo cáo01–08, gồm đạt/một phần/bị chặn/chưa nghiệm thu, không cộng tất cả thành PASS. Kết quả hiện hành xem [08](08-report.md); inventory và kiểm links mới ở evidence08.
+
+## 9. Soát lại các nhánh để merge ngày 12/10/2026
+
+Kết quả mới: [báo cáo soát và sửa 01–08](recheck-01-08-report.md). Các sửa được đưa vào chính tám nhánh kết quả `review/01-*` đến `review/08-*`; đã đồng bộ main `be1778c` và giải quyết xung đột phục vụ merge. Các tính năng mới trên main ngoài phạm vi review.
+
+Merge theo thứ tự **01 → 08**, giữ ancestry bằng merge commit hoặc fast-forward; 08 chứa kết quả cộng dồn 01–07. Báo cáo mới tách PASS/SKIP/XFAIL, giữ kết quả snapshot cũ và ghi giới hạn chưa nghiệm thu. Nhánh có ngày là snapshot hướng dẫn ban đầu, không dùng thay nhánh kết quả.

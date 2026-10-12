@@ -16,6 +16,8 @@ from pointsnap.core.config import load_config
 from pointsnap.core.model import add_track_markers, group_by_frame
 from pointsnap.detectors.heading import heading_points_findings, heading_points_measure
 from pointsnap.eval.split import TUNING_SCENES, TEST_SCENES
+if len(sys.argv) != 2 or sys.argv[1] not in ("tuning", "test") or not os.environ.get("NUSCENES_ROOT"):
+    sys.exit(f"Cách chạy: NUSCENES_ROOT=<thư mục nuScenes> python {sys.argv[0]} tuning|test")
 scenes = TUNING_SCENES if sys.argv[1] == "tuning" else TEST_SCENES
 cfg = load_config(None)
 fc, hc = cfg.fit, cfg.heading.points

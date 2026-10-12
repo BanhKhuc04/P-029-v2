@@ -34,14 +34,14 @@
   - Job #1445 (Vũ Bảo Khánh): 299 đối tượng (252 bbox, 47 polygon)
 - **Qua review lần đầu:** Cả 4 job đã hoàn thành gán nhãn 100% và chuyển sang giai đoạn `acceptance` để Lead nghiệm thu lần cuối.
 - **Edge case mới / đã chốt:**
-  - Đã chốt: [P-001](../problem-backlog.md#p-001) thành [QĐ-001](../so-quyet-dinh.md#qđ-001), [P-002](../problem-backlog.md#p-002) thành [QĐ-002](../so-quyet-dinh.md#qđ-002), [P-003](../problem-backlog.md#p-003) thành [QĐ-003](../so-quyet-dinh.md#qđ-003), [P-004](../problem-backlog.md#p-004) thành [QĐ-004](../so-quyet-dinh.md#qđ-004).
+  - Đã chốt: [P-001](../../problem-backlog.md#p-001) thành [QĐ-001](../../so-quyet-dinh.md#qđ-001), [P-002](../../problem-backlog.md#p-002) thành [QĐ-002](../../so-quyet-dinh.md#qđ-002), [P-003](../../problem-backlog.md#p-003) thành [QĐ-003](../../so-quyet-dinh.md#qđ-003), [P-004](../../problem-backlog.md#p-004) thành [QĐ-004](../../so-quyet-dinh.md#qđ-004).
 
 ## Vướng mắc
 
-- Đã giải quyết xong sự không đồng nhất về gán nhãn `area/alternative` bằng quyết định [QĐ-004](../so-quyet-dinh.md#qđ-004).
+- Đã giải quyết xong sự không đồng nhất về gán nhãn `area/alternative` bằng quyết định [QĐ-004](../../so-quyet-dinh.md#qđ-004).
 
 ## Kế hoạch tuần sau
 
 - Lead hoàn tất nghiệm thu (`acceptance`) cho cả 4 job và chuyển trạng thái trên CVAT sang `completed`.
-- Rà soát các polygon bổ sung theo [QĐ-004](../so-quyet-dinh.md#qđ-004) (`area/alternative`).
+- Rà soát các polygon bổ sung theo [QĐ-004](../../so-quyet-dinh.md#qđ-004) (`area/alternative`).
 - Export bản dataset cuối cùng sau khi hoàn tất toàn bộ task tuần 01.

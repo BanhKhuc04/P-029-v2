@@ -17,6 +17,7 @@ from typing import Any
 
 import numpy as np
 
+from pointsnap.core.camera import CameraView
 from pointsnap.core.geometry import invert_pose, pose_matrix
 from pointsnap.core.model import Cuboid, FrameData
 from pointsnap.datasets.taxonomy import spec_label
@@ -141,6 +142,40 @@ class NuScenesReader:
             if record["is_key_frame"] and sensor.get("modality") == "camera":
                 result[record["sample_token"]][sensor["channel"]] = record["filename"]
         return {token: dict(sorted(cams.items())) for token, cams in result.items()}
+
+    @cached_property
+    def _camera_records_by_sample(self) -> dict[str, list[dict[str, Any]]]:
+        """`sample_token` → bản ghi `sample_data` của các ảnh camera keyframe, sắp theo kênh."""
+        sensors = self._table("sensor")
+        calibrations = self._table("calibrated_sensor")
+        result: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
+        for record in self._table("sample_data").values():
+            sensor = sensors[calibrations[record["calibrated_sensor_token"]]["sensor_token"]]
+            if record["is_key_frame"] and sensor.get("modality") == "camera":
+                result[record["sample_token"]].append((sensor["channel"], record))
+        return {token: [r for _, r in sorted(items, key=lambda x: x[0])] for token, items in result.items()}
+
+    def camera_views(self, ref: SampleRef) -> list[CameraView]:
+        """Các ảnh camera chụp cùng keyframe, kèm thông số để chiếu box 3D lên ảnh (`core.camera`).
+
+        Pose camera lấy theo `ego_pose` của chính ảnh đó (thời điểm chụp ảnh lệch thời điểm quét LiDAR).
+        Ảnh không có trên máy thì bỏ qua.
+        """
+        sensors = self._table("sensor")
+        calibrations = self._table("calibrated_sensor")
+        views = []
+        for record in self._camera_records_by_sample.get(ref.sample_token, []):
+            path = self.dataroot / record["filename"]
+            if not path.is_file():
+                continue
+            calibration = calibrations[record["calibrated_sensor_token"]]
+            channel = sensors[calibration["sensor_token"]]["channel"]
+            views.append(CameraView(
+                channel=channel, path=path, intrinsic=np.asarray(calibration["camera_intrinsic"], dtype=np.float64),
+                camera_to_world=self._sensor_to_world(record), width=int(record["width"]),
+                height=int(record["height"]),
+            ))
+        return views
 
     def camera_images(self, ref: SampleRef) -> dict[str, Path]:
         """Ảnh camera chụp cùng keyframe với point cloud: {kênh, ví dụ `CAM_FRONT` → đường dẫn file}."""
@@ -336,3 +371,7 @@ class NuScenesFrames:
     def ground_sweeps(self, frame: int, sweeps: int) -> list[tuple[float, np.ndarray]]:
         """`sweeps` lượt quét LiDAR trung gian trước keyframe, hệ LiDAR của keyframe: [(thời điểm, điểm (N, 3))]."""
         return self.reader.load_sweeps(self.refs[frame], sweeps)
+
+    def camera_views(self, frame: int) -> list[CameraView]:
+        """Ảnh camera của frame (`NuScenesReader.camera_views`)."""
+        return self.reader.camera_views(self.refs[frame])

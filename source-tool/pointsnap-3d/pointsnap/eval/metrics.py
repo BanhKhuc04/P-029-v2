@@ -1,10 +1,10 @@
 """Tính toán các chỉ số đánh giá Precision, Recall, False Alarms (việc B6).
 
-Theo đặc tả mục 8.2 của de-xuat-de-tai.md:
+Theo đặc tả mục 8.2 của docs/thiet-ke/de-xuat-de-tai.md:
 - Recall theo loại lỗi (floating, size, track) và theo mức độ (error, warning).
 - Precision theo từng loại lỗi.
 - Sai số đo đạc: median và p90 của sai số số đo so với lỗi chèn.
-- Tạo bảng markdown kết quả đánh giá cho docs/danh-gia.md.
+- Tạo bảng markdown kết quả đánh giá cho docs/ket-qua/danh-gia.md.
 """
 
 from __future__ import annotations

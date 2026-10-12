@@ -256,6 +256,8 @@ def _default_camera_groups() -> dict[str, tuple[str, ...]]:
         "two_wheeler": ("motorcycle", "bicycle", "Two-wheels"),
         "person": ("pedestrian", "Pedestrian"),
         "animal": ("Animal",),
+        "traffic_cone": ("traffic_cone",),
+        "barrier": ("barrier",),
     }
 
 
@@ -265,6 +267,10 @@ class CameraConfig:
 
     enabled: str = "auto"
     """`auto`: chạy khi có PyTorch + GPU (CPU chạy được nhưng chậm); `true` / `false`: bật / tắt hẳn."""
+    model: str = "maskrcnn"
+    """Model ảnh (`vision.detector2d`): `maskrcnn` (Mask R-CNN COCO), `gdino-sam2` (Grounding DINO + SAM 2.1, nhận diện
+    theo từ khóa, có thêm cọc tiêu / rào chắn; cần `transformers`) hoặc `hybrid` (Mask R-CNN, cộng Grounding DINO cho
+    cọc tiêu / rào chắn)."""
     min_score: float = 0.5
     min_inside: float = 0.85
     max_depth_m: float = 50.0
@@ -290,7 +296,8 @@ class CameraConfig:
     sparse_max_points: int = 5
     """`cam.sparse` (C8, spec 4.2): vật có ≤ chừng này điểm LiDAR ở mọi keyframe mà ảnh camera không thấy → Thông tin."""
     groups: Mapping[str, tuple[str, ...]] = dataclasses.field(default_factory=_default_camera_groups)
-    """Nhóm vật trên ảnh (person / two_wheeler / vehicle / animal) → các class nhãn 3D thuộc nhóm đó."""
+    """Nhóm vật trên ảnh (person / two_wheeler / vehicle / animal / traffic_cone / barrier) → các class nhãn 3D thuộc
+    nhóm đó. Nhóm model ảnh không nhận được (Mask R-CNN: cọc tiêu, rào chắn) thì bỏ qua."""
 
     def group_of(self, label: str) -> str | None:
         for group, labels in self.groups.items():
@@ -307,8 +314,17 @@ class CameraConfig:
         from pointsnap.vision import detector2d
 
         if self.enabled == "true":
-            return detector2d.available()
-        return detector2d.cuda_available()
+            return detector2d.available(self.effective_model())
+        return detector2d.cuda_available(self.effective_model())
+
+    def effective_model(self) -> str:
+        """Model ảnh thực dùng: `hybrid` lùi về `maskrcnn` khi máy chưa cài `transformers` (cùng ngưỡng, chỉ mất phần cọc
+        tiêu); `gdino-sam2` thì không lùi vì ngưỡng của nó khác thang điểm Mask R-CNN."""
+        from pointsnap.vision import detector2d
+
+        if self.model == "hybrid" and not detector2d.available("hybrid"):
+            return "maskrcnn"
+        return self.model
 
 
 @dataclass(frozen=True)
@@ -614,6 +630,9 @@ def _parse_camera(r: _Reader) -> CameraConfig:
         "mask_rise_warning", "class_vote", "class_min_score", "missing_min_score", "missing_min_px")}
     integers = {name: r.integer(name, 1) for name in (
         "min_track_observations", "class_min_observations", "missing_min_points")}
+    model = r._take("model") if "model" in r.keys() else "maskrcnn"
+    if model not in ("maskrcnn", "gdino-sam2", "hybrid"):
+        raise ConfigError(f"'camera.model' phải là maskrcnn, gdino-sam2 hoặc hybrid, nhận {model!r}")
     if "sparse_max_points" in r.keys():
         integers["sparse_max_points"] = r.integer("sparse_max_points", 0)
     severity = r._take("mismatch_severity") if "mismatch_severity" in r.keys() else "info"
@@ -623,7 +642,7 @@ def _parse_camera(r: _Reader) -> CameraConfig:
     groups = {name: gr.strings(name) for name in gr.keys()}
     gr.finish()
     r.finish()
-    return CameraConfig(enabled=enabled, groups=groups, mismatch_severity=severity, **numbers, **integers)
+    return CameraConfig(enabled=enabled, model=model, groups=groups, mismatch_severity=severity, **numbers, **integers)
 
 
 def _parse_missing(r: _Reader) -> MissingConfig:

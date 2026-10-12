@@ -198,6 +198,10 @@ static:                               # vật đứng yên (C3): box đúng ở 
 
 camera:                               # đối chiếu ảnh camera (C3); cần PyTorch: pip install -e ".[vision]"
   enabled: auto                       # auto: chạy khi có PyTorch + GPU; true / false: bật / tắt hẳn
+  model: maskrcnn                     # maskrcnn (Mask R-CNN COCO) | hybrid (Mask R-CNN + Grounding DINO cho cọc tiêu; nên dùng khi có
+                                      # GPU, cần transformers, thiếu thì tự lùi về maskrcnn) | gdino-sam2 (chỉ Grounding DINO + SAM 2.1:
+                                      # đặt min_score 0.3, mask_rise_warning 0.25, class_min_score 0.6, missing_min_score 0.6).
+                                      # Số liệu: docs/ket-qua-box-verifier.md mục 3.1
   min_score: 0.5                      # độ tin cậy tối thiểu của vật trên ảnh (Mask R-CNN COCO)
   min_inside: 0.85                    # chỉ xét box chiếu nằm gần trọn trong ảnh
   max_depth_m: 50
@@ -220,6 +224,8 @@ camera:                               # đối chiếu ảnh camera (C3); cần 
     two_wheeler: [motorcycle, bicycle, Two-wheels]
     person: [pedestrian, Pedestrian]
     animal: [Animal]
+    traffic_cone: [traffic_cone]      # chỉ gdino-sam2 nhận được cọc tiêu / rào chắn
+    barrier: [barrier]
 
 missing:                              # sót đối tượng bằng LiDAR (C7); đo trên nuScenes: docs/ket-qua-sot-doi-tuong.md
   max_range_m: 40

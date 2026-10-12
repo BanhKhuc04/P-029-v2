@@ -199,6 +199,95 @@ def test_camera_class_ignores_rider_on_two_wheeler():
     assert [f for f in findings if f.rule == "cam.class"] == []
 
 
+# --- Model ảnh theo từ khóa (Grounding DINO + SAM 2.1) ------------------------------------------------------
+
+
+def test_group_of_name_maps_coco_and_prompt_names():
+    from pointsnap.vision.detector2d import group_of_name
+
+    assert group_of_name("truck") == "vehicle"
+    assert group_of_name("traffic cone") == "traffic_cone"
+    assert group_of_name("construction vehicle") == "vehicle"
+    assert group_of_name("car truck") == "vehicle"  # Grounding DINO ghép hai từ khóa liền nhau
+    assert group_of_name("barrier traffic cone") == "barrier"  # lấy từ khóa đứng đầu
+    assert group_of_name("construction") == "vehicle"  # mảnh của "construction vehicle"
+    assert group_of_name("traffic light") is None
+    assert group_of_name("traffic") is None
+    assert group_of_name("") is None
+
+
+def test_detector_model_choice_and_cache_key(tmp_path):
+    import hashlib
+
+    from pointsnap.vision.detector2d import MODEL_NAME, Detector2D
+
+    with pytest.raises(ValueError):
+        Detector2D(cache_dir=tmp_path, model="yolo")
+    image = tmp_path / "a.jpg"
+    image.write_bytes(b"x")
+    old = Detector2D(cache_dir=tmp_path)
+    new = Detector2D(cache_dir=tmp_path, model="gdino-sam2")
+    stat = image.stat()
+    raw = f"{MODEL_NAME}|{image.resolve()}|{stat.st_size}|{int(stat.st_mtime)}|0.3"
+    assert old._key(image).name == f"{hashlib.sha1(raw.encode('utf-8')).hexdigest()}.npz"  # dùng lại bộ đệm cũ
+    assert new._key(image) != old._key(image)
+    assert {"traffic_cone", "barrier"} <= new.supported_groups
+    assert "traffic_cone" not in old.supported_groups
+
+
+def test_camera_skips_groups_the_model_cannot_see():
+    """Mask R-CNN COCO không có cọc tiêu: box cọc tiêu không được đối chiếu (không có bằng chứng), kể cả khi ảnh có
+    vật khác trùng khung."""
+    cone = [_car(frame=f, x=15.0 + f, label="traffic_cone", dims=(0.4, 0.4, 0.8)) for f in range(4)]
+
+    class _Coco(_Detector):
+        supported_groups = frozenset({"person", "two_wheeler", "vehicle", "animal"})
+
+    class _Open(_Detector):
+        supported_groups = frozenset({"person", "two_wheeler", "vehicle", "animal", "traffic_cone", "barrier"})
+
+    truth = {b.frame: b for b in cone}
+    coco_obs = []
+    open_obs = []
+    for frame in truth:
+        for cls, sink in ((_Coco, coco_obs), (_Open, open_obs)):
+            det = cls(truth, name="traffic cone")
+            det.frame = frame
+            obs, _ = collect_observations([truth[frame]], _Frames(frame + 1), det, CameraConfig())
+            sink += obs
+    assert coco_obs == []
+    assert len(open_obs) == 4 and all(o.iou > 0.5 for o in open_obs)
+
+
+def test_hybrid_detector_merges_cones_from_open_vocabulary(tmp_path, monkeypatch):
+    """`hybrid`: giữ nguyên vật của Mask R-CNN, chỉ lấy thêm vật Grounding DINO thuộc nhóm COCO không có (cọc tiêu)."""
+    from pointsnap.vision.detector2d import Detector2D
+
+    mask = np.zeros((2, 2), dtype=bool)
+    coco = Detections(np.array([[0, 0, 10, 10]], np.float32), np.array([0.9], np.float32), ["person"], [mask], 100.0)
+    open_vocab = Detections(np.array([[0, 0, 10, 10], [20, 20, 30, 30], [40, 40, 50, 50]], np.float32),
+                            np.array([0.4, 0.6, 0.3], np.float32), ["person", "traffic cone", ""], [mask] * 3)
+    det = Detector2D(cache_dir=tmp_path, model="hybrid")
+    monkeypatch.setattr(det._parts[0], "detect", lambda path: coco)
+    monkeypatch.setattr(det._parts[1], "detect", lambda path: open_vocab)
+    merged = det.detect("x.jpg")
+    assert merged.names == ["person", "traffic cone"]
+    assert merged.groups() == ["person", "traffic_cone"]
+    assert merged.scores.tolist() == pytest.approx([0.9, 0.6])
+    assert merged.brightness == 100.0
+    assert {"person", "traffic_cone"} <= det.supported_groups
+
+
+def test_hybrid_falls_back_to_maskrcnn_without_transformers(monkeypatch):
+    from pointsnap.vision import detector2d
+
+    monkeypatch.setattr(detector2d, "available", lambda model="maskrcnn": model == "maskrcnn")
+    assert CameraConfig(model="hybrid").effective_model() == "maskrcnn"
+    assert CameraConfig(model="gdino-sam2").effective_model() == "gdino-sam2"  # ngưỡng khác thang: không lùi
+    monkeypatch.setattr(detector2d, "available", lambda model="maskrcnn": True)
+    assert CameraConfig(model="hybrid").effective_model() == "hybrid"
+
+
 def test_cam_sparse_box_without_points_or_image_evidence():
     """C8: box không có điểm LiDAR (khung `_Frames` rỗng); ảnh cũng không thấy vật → một mục Thông tin cho track."""
     from pointsnap.detectors.camera import sparse_unconfirmed

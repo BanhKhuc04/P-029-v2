@@ -231,16 +231,15 @@ def check_static(job: JobData, config: Config, frames: FrameSource | None = None
                                 rotate=config.rules.heading_static)
 
 
-_DETECTOR = None
+_DETECTORS: dict = {}
 
 
-def _detector():
-    global _DETECTOR
-    if _DETECTOR is None:
+def _detector(model: str = "maskrcnn"):
+    if model not in _DETECTORS:
         from pointsnap.vision.detector2d import Detector2D
 
-        _DETECTOR = Detector2D()
-    return _DETECTOR
+        _DETECTORS[model] = Detector2D(model=model)
+    return _DETECTORS[model]
 
 
 def check_camera(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -250,12 +249,13 @@ def check_camera(job: JobData, config: Config, frames: FrameSource | None = None
     from pointsnap.detectors.camera import camera_findings, collect_observations
 
     r = config.rules
-    observations, missing = collect_observations(job.cuboids, frames, _detector(), config.camera)
+    observations, missing = collect_observations(job.cuboids, frames, _detector(config.camera.effective_model()),
+                                                  config.camera)
     findings = camera_findings(observations, config.camera, mismatch=r.cam_mismatch, wrong_class=r.cam_class)
     if r.cam_sparse:
         from pointsnap.detectors.camera import sparse_unconfirmed
 
-        findings += sparse_unconfirmed(job.cuboids, frames, _detector(), config.camera)
+        findings += sparse_unconfirmed(job.cuboids, frames, _detector(config.camera.effective_model()), config.camera)
     return findings + (missing if r.cam_missing else [])
 
 
@@ -265,7 +265,8 @@ def check_missing(job: JobData, config: Config, frames: FrameSource | None = Non
         return []
     from pointsnap.detectors.missing import detect_missing_objects
 
-    detector = _detector() if hasattr(frames, "camera_views") and config.camera.active() else None
+    detector = (_detector(config.camera.effective_model())
+                if hasattr(frames, "camera_views") and config.camera.active() else None)
     return detect_missing_objects(job.cuboids, frames, config.missing, detector, config.camera)[0]
 
 

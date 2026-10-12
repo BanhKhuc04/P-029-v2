@@ -30,7 +30,7 @@ Mục tiêu: một người chưa từng dùng tool làm theo README mà chạy 
     `docker compose up -d`; tạo admin bằng
     `docker exec -it cvat_server bash -ic "python3 ~/manage.py createsuperuser"`; đăng nhập http://localhost:8080,
     tạo Access token.
-  - Cài tool theo [README](../../README.md#cài-đặt-và-chạy) (`pip install -e .`), tạo file `.env` với `CVAT_TOKEN`,
+  - Cài tool theo [README](../../README.md#bắt-đầu-nhanh) (`pip install -e .`), tạo file `.env` với `CVAT_TOKEN`,
     `NUSCENES_ROOT`, `POINTSNAP_EXPORT_DIR`.
 - [ ] **Tạo task**: `pointsnap nuscenes to-cvat --scene scene-0061 --out <thư mục>/cvat --upload`
   (`POINTSNAP_EXPORT_DIR` trỏ tới `<thư mục>/cvat`). Mở task trên CVAT: thấy point cloud, box và ảnh camera.

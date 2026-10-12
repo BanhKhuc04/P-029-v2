@@ -39,8 +39,8 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 | — | Camera Grounding DINO + SAM 2.1 (tùy chọn), `track.jump` hai đầu track, `heading.motion` khi không có pose, Box Critic ensemble, quét nhanh ~3 lần, `fit.loose` theo track | Mỗi PR có số liệu trước / sau | [#40](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/40) – [#44](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/44), [#46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46), [#47](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/47) |
 | — | `heading.points` 12°, `fit.outside` nhạy hơn: tăng tỉ lệ bắt nhưng tăng báo nhầm | #45 đã merge; #48 để ngỏ | [#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45), [#48](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/48) |
 
-Eval 10 vòng mới nhất (Cảnh báo / Lỗi trên 100 box, nhãn sạch): cảnh tinh chỉnh **1,39 / 0,36** (đạt G7), cảnh kiểm tra
-**2,88 / 0,57** (chưa đạt ≤ 2 / ≤ 0,5; phần lớn là lơ lửng / lún).
+Eval 10 vòng trên `main` sau khi merge (Cảnh báo / Lỗi trên 100 box, nhãn sạch): cảnh tinh chỉnh **1,45 / 0,31** (đạt G7),
+cảnh kiểm tra **2,98 / 0,59** (chưa đạt ≤ 2 / ≤ 0,5; phần lớn là lơ lửng / lún).
 
 ## Việc của từng người
 

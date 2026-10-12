@@ -178,10 +178,10 @@ def main() -> None:
                 best, best_state = val_loss, {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         model.load_state_dict(best_state)
         print(f"[seed {seed}] loss kiểm tra tốt nhất {best:.3f}")
-        return model.eval()
+        return model.eval().cpu()  # giải phóng GPU trước khi huấn luyện model kế tiếp của ensemble
 
     members = [train_one(args.seed + i) for i in range(args.ensemble)]
-    model = members[0] if len(members) == 1 else Ensemble(members).eval()
+    model = (members[0] if len(members) == 1 else Ensemble(members).eval()).to(device)
     logit, _ = predict(model)
     best_logit = logit.numpy()
     best_p = torch.sigmoid(logit).numpy()

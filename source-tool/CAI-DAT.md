@@ -58,7 +58,8 @@ Tạo tài khoản quản trị (nhập tên, email, mật khẩu theo lời nh�
 docker exec -it cvat_server bash -ic "python3 ~/manage.py createsuperuser"
 ```
 
-Mở http://localhost:8080 và đăng nhập. Tạo **Access token**: bấm tên tài khoản (góc phải trên) → **Profile / Settings** → **Access tokens** → tạo token mới, **chép lại ngay** (chỉ hiện một lần).
+Mở http://localhost:8080 và đăng nhập. Tạo **Access token**: bấm tên tài khoản (góc phải trên) → **Profile / Settings** → **Access tokens** → tạo token mới, **chép lại ngay** (chỉ hiện một lần). **Bỏ chọn ô *Read only*** khi tạo: token chỉ đọc làm `nuscenes to-cvat` (tạo task) và gắn cờ báo
+HTTP 403 *You do not have permission to perform this action*.
 
 > Extension viết cho **CVAT 2.77**. Bản CVAT khác vẫn quét và gắn cờ được, nhưng một số nút bấm hộ của extension có thể không tìm thấy (bảng PointSnap sẽ báo rõ phần nào).
 
@@ -203,6 +204,7 @@ Rồi tắt và chạy lại `pointsnap ui`; ở `chrome://extensions` bấm **�
 | `docker` báo *cannot find the file specified* / *daemon is not running* | Mở Docker Desktop, chờ **Engine running** |
 | `localhost:8080` không mở được | Chờ 1–2 phút sau khi Docker chạy; vẫn không được thì `docker compose up -d` trong thư mục CVAT |
 | PointSnap báo 401 / *Authentication* | Token sai hoặc hết hạn: tạo token mới ở CVAT, sửa `.env` và token của dự án trên web |
+| Tạo task / gắn cờ báo 403 *You do not have permission* | Token tạo với *Read only*: tạo token mới, bỏ chọn *Read only* |
 | Kết quả quét ghi *"Không tìm thấy manifest.json"*, không có lỗi lơ lửng / lún | Điền **Thư mục bản xuất to-cvat** ở tab Kết nối CVAT (hoặc `POINTSNAP_EXPORT_DIR` trong `.env`) đúng thư mục `--out` của bước 5 |
 | `pointsnap` không chạy được hoặc không đọc `.env` | Bật venv và đứng trong `source-tool\pointsnap-3d`; hoặc chạy `.venv\Scripts\python -m pointsnap ...` |
 | Extension không hiện bảng | Extension đang bật ở `chrome://extensions`; đang ở trang job (`/tasks/<t>/jobs/<j>`); CVAT không ở `localhost:8080` thì thêm địa chỉ trong **Tùy chọn** |

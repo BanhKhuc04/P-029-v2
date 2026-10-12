@@ -135,7 +135,7 @@ def main():
         else:
             print(f"=> Nhận xét: Trên dữ liệu thật, median={med:.1f} cm, p90={p90:.1f} cm.")
             print("   Lý do: nhãn chuẩn nuScenes có sai số gán nhãn thủ công hoặc lốp xe hơi lún nhẹ,")
-            print("   cùng địa hình dốc/bờ vỉa. Theo de-xuat-de-tai.md, luật lơ lửng/lún có thể")
+            print("   cùng địa hình dốc/bờ vỉa. Theo docs/thiet-ke/de-xuat-de-tai.md, luật lơ lửng/lún có thể")
             print("   điều chỉnh mức hoặc chỉ báo Cảnh báo nếu vượt ngưỡng.")
     print("=" * 65)
 

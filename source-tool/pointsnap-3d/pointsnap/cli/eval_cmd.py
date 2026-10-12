@@ -30,6 +30,31 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
                     help="bộ lỗi chèn: core = 6 loại của mục 8.1, c1 = sai hướng và box lệch, all = cả hai (mặc định)")
 
 
+def add_critic_parser(sub: argparse._SubParsersAction) -> None:
+    cd = sub.add_parser("critic-data", help="xuất dữ liệu huấn luyện Box Critic từ nhãn chuẩn nuScenes (docs/huong-dan/huan-luyen-box-critic.md)")
+    cd.add_argument("--dataroot", type=Path, default=os.environ.get("NUSCENES_ROOT"),
+                    help="thư mục nuScenes (mặc định: biến môi trường NUSCENES_ROOT)")
+    cd.add_argument("--scenes", nargs="+", default=["tuning"], help="tuning | test | all, hoặc tên cảnh (mặc định: tuning)")
+    cd.add_argument("--samples-per-box", type=int, default=6, help="số mẫu nhiễu mỗi box (mặc định: 6)")
+    cd.add_argument("--seed", type=int, default=0)
+    cd.add_argument("--out", type=Path, default=Path("data/critic"), help="thư mục ghi (mặc định: data/critic)")
+
+
+def run_critic(args: argparse.Namespace, config: Config) -> int:
+    from pointsnap.critic import export_dataset
+
+    if args.dataroot is None:
+        print("Thiếu --dataroot (hoặc biến môi trường NUSCENES_ROOT).", file=sys.stderr)
+        return 3
+    scenes: list[str] = []
+    for item in args.scenes:
+        scenes.extend(SCENE_SETS.get(item, (item,)))
+    totals = export_dataset(NuScenesReader(args.dataroot), scenes, args.out, samples_per_box=args.samples_per_box,
+                            seed=args.seed)
+    print(f"-> {totals['samples']} mẫu ({totals['errors']} mẫu sai) trong {args.out}")
+    return 0
+
+
 def run(args: argparse.Namespace, config: Config) -> int:
     if args.dataroot is None:
         print("Thiếu --dataroot (hoặc biến môi trường NUSCENES_ROOT).", file=sys.stderr)

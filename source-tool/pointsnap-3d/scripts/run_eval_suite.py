@@ -2,7 +2,7 @@
 
 - 5 cảnh tinh chỉnh (scene 0..4): chốt ngưỡng tham số.
 - 5 cảnh kiểm tra (scene 5..9): chèn lỗi giả theo mục 8.1 và đo chỉ số mục 8.2.
-- Xuất báo cáo ra docs/danh-gia.md và in kết quả tổng kết.
+- Xuất báo cáo ra docs/ket-qua/danh-gia.md và in kết quả tổng kết.
 """
 
 import os
@@ -145,8 +145,8 @@ def main():
     print(md_output)
     print("=" * 70)
 
-    # Lưu ra docs/danh-gia.md
-    out_file = ROOT_DIR / "docs" / "danh-gia.md"
+    # Lưu ra docs/ket-qua/danh-gia.md
+    out_file = ROOT_DIR / "docs" / "ket-qua" / "danh-gia.md"
     out_file.parent.mkdir(parents=True, exist_ok=True)
     out_file.write_text(md_output, encoding="utf-8")
     print(f"\n=> Đã ghi bảng chỉ số vào: {out_file}")

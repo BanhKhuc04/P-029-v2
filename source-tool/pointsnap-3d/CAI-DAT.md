@@ -1,6 +1,8 @@
 # Cài đặt toàn bộ PointSnap 3D
 
-Hướng dẫn cài từ máy trắng tới lúc sửa được lỗi nhãn trong CVAT bằng extension. Viết cho **Windows 10 / 11**; Linux / macOS xem ghi chú ở từng bước.
+> Cập nhật 12/10/2026: các nhánh review01→08 tiếp nối nhau; dùng nhánh cuối đã review khi cài bản này, không giả định đã merge main. [Bàn giao tổng](../review/2026-10-10/08-handoff.md) ghi runtime đã kiểm và giới hạn. Windows Python3.12.14/CVAT2.78.1, Docker Python3.12.15 và Linux3.11.17 đã được kiểm theo [ma trận](../review/2026-10-10/08-compatibility.md); CI3.10/3.11/3.12 còn cần kết quả remote. Extension MV3 trên Chrome/Edge chưa được nghiệm thu lại trong đợt review này.
+
+Hướng dẫn cài và các bước tự kiểm tới luồng sửa nhãn bằng extension. Ca MV3 cuối luồng cần người vận hành kiểm trên trình duyệt của mình. Viết cho **Windows 10 / 11**; Linux / macOS xem ghi chú ở từng bước.
 
 Làm lần lượt từ bước 1 tới bước 8. Mỗi bước có mục **Kiểm tra**: đạt rồi mới sang bước sau. Tổng thời gian khoảng 1 giờ, phần lớn là chờ tải CVAT và dữ liệu.
 
@@ -61,7 +63,7 @@ docker exec -it cvat_server bash -ic "python3 ~/manage.py createsuperuser"
 Mở http://localhost:8080 và đăng nhập. Tạo **Access token**: bấm tên tài khoản (góc phải trên) → **Profile / Settings** → **Access tokens** → tạo token mới, **chép lại ngay** (chỉ hiện một lần). **Bỏ chọn ô *Read only*** khi tạo: token chỉ đọc làm `nuscenes to-cvat` (tạo task) và gắn cờ báo
 HTTP 403 *You do not have permission to perform this action*.
 
-> Extension viết cho **CVAT 2.77**. Bản CVAT khác vẫn quét và gắn cờ được, nhưng một số nút bấm hộ của extension có thể không tìm thấy (bảng PointSnap sẽ báo rõ phần nào).
+> Hướng dẫn gốc dùng **CVAT 2.77.0**, ghi chú adapter 2.77.1; review hiện hành đã chạy API thật trên **2.78.1**. Chưa chứng nhận mọi version hoặc MV3 thật trên 2.78.1. Nút bấm hộ của extension phụ thuộc DOM CVAT; kiểm trên job thử trước khi dùng.
 
 **Kiểm tra:** http://localhost:8080 mở được, đăng nhập được, đã có token.
 
@@ -76,11 +78,15 @@ HTTP 403 *You do not have permission to perform this action*.
 
 ```powershell
 git clone https://github.com/AI20K-Build-Phase-Cohort-4A/P-029 D:\Work\P-029
-cd D:\Work\P-029\source-tool\pointsnap-3d
+cd D:\Work\P-029
+git checkout review/08-deployment-docs-final
+cd source-tool\pointsnap-3d
 py -3.11 -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
+
+> PowerShell chặn `activate`: dùng `.venv\Scripts\python.exe -m pip install -e ".[dev]"`, rồi `.venv\Scripts\python.exe -m pointsnap ...`. Không cần đổi execution policy để chạy Python.
 
 **Không bắt buộc: đối chiếu ảnh camera** (luật `cam.*`, lớp 2 của Box Verifier). Cần PyTorch; máy có GPU NVIDIA cài bản
 CUDA (khoảng 2,5 GB), không có GPU thì bỏ qua bước này, các luật còn lại vẫn chạy:
@@ -97,8 +103,6 @@ Máy có GPU nên đặt `camera.model: hybrid` trong guideline: thêm Grounding
 R-CNN không có). Lần đầu tải ~1 GB từ Hugging Face, chạy thêm ~0,8 s / ảnh. Số liệu:
 `pointsnap-3d/docs/ket-qua-box-verifier.md` mục 3.1.
 
-> PowerShell báo *"running scripts is disabled"* khi `activate`: chạy một lần
-> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, rồi `activate` lại.
 > Linux / macOS: `python3.11 -m venv .venv` và `source .venv/bin/activate`.
 
 Tạo file **`.env`** trong `source-tool\pointsnap-3d\` (thay giá trị của mình; file này đã nằm trong `.gitignore`, **không commit**):
@@ -128,7 +132,7 @@ pointsnap nuscenes to-cvat --scene scene-0061 --out D:/data/cvat --upload
 
 Lệnh này tạo task 3D trên CVAT gồm point cloud, nhãn chuẩn dạng track, ảnh 6 camera làm ảnh ngữ cảnh, và sẵn 2 thuộc tính PointSnap cần cho mọi nhãn: `pointsnap_error` (văn bản) và `reviewed` (checkbox). Bản xuất (có `manifest.json`) nằm trong `D:\data\cvat`.
 
-> Dùng task CVAT có sẵn của mình thay vì nuScenes: thêm vào **mọi label** thuộc tính văn bản `pointsnap_error` (mutable) và checkbox `reviewed`. Luật lơ lửng / lún cần point cloud, nên chỉ chạy đầy đủ với task tạo bằng lệnh trên.
+> Dùng task CVAT có sẵn của mình thay vì nuScenes: thêm vào **mọi label** thuộc tính văn bản `pointsnap_error` (mutable) và checkbox `reviewed`. Luật lơ lửng / lún cần point cloud, nên cần manifest/frame mapping và cloud đúng job; task tạo bằng lệnh trên có sẵn bản xuất để kiểm.
 
 **Kiểm tra:** trong CVAT → **Tasks** có task *PointSnap scene-0061*; mở job thấy point cloud, box và ảnh camera bên cạnh. Ghi lại **id job** (số cuối trong URL `/tasks/<t>/jobs/<j>`).
 
@@ -159,7 +163,7 @@ Trình duyệt tự mở `http://127.0.0.1:8765` → bấm **Bắt đầu**.
 
 1. **Tạo dự án** (lần đầu): tên dự án, URL CVAT `http://localhost:8080`, token CVAT.
 2. Tab **Kết nối CVAT**: điền **Thư mục nuScenes** (`D:/data/nuscenes`) và **Thư mục bản xuất to-cvat** (`D:/data/cvat`), bấm **Kiểm tra kết nối**.
-3. Tab **Quét job**: chọn task / job của bước 5 → **Bắt đầu quét**. Job 39 frame quét trong khoảng 3–4 giây.
+3. Tab **Quét job**: chọn task / job của bước 5 → **Bắt đầu quét**. Benchmark12/10 trên hai cảnh nuScenes,39–40frame: khoảng3–10giây không sweeps và8–25giây với4sweeps; thời gian khác theo scene/máy. Xem [review07](../review/2026-10-10/07-report.md).
 4. Màn **Kết quả**: bảng lỗi, khung chi tiết, **Duyệt nhanh** (point cloud quanh box; `J` / `K` chuyển mục, `1` đúng, `2` báo nhầm).
 5. Bấm **Gắn cờ lên CVAT**: PointSnap ghi nội dung lỗi vào thuộc tính `pointsnap_error` của từng box lỗi (không sửa box).
 
@@ -194,15 +198,17 @@ Mở cùng lúc web PointSnap (bước 6) và tab CVAT đang mở job (bước 7
 - Bấm nút hoặc chọn dòng / `J` / `K` trên web → tab CVAT tự chuyển tới đúng frame và làm sáng đúng box, **không tải lại trang**.
 - **Đúng / Báo nhầm** ghi ở bên nào cũng hiện ở bên kia sau khoảng 2 giây.
 
+Nếu nhiều box cùng nhãn và cùng cờ, extension không đoán serverID từ sidebar: dùng link ID trong báo cáo. Các đường quét/review được giới hạn theo origin/project/job. Khi đổi server hoặc đường dẫn CVAT trên Web, nhập PAT mới; token cũ bị xóa trước khi đổi destination.
+
 **Kiểm tra:** chọn một lỗi trên web → chuyển sang tab CVAT thấy đúng frame và đúng box đang sáng.
 
 ## Luồng làm việc hằng ngày
 
-1. Bật **Docker Desktop** (CVAT tự chạy lại; nếu không: `cd D:\Work\cvat` rồi `docker compose up -d`).
+1. Bật **Docker Desktop** (CVAT có thể tự chạy lại theo cấu hình restart; nếu không: `cd D:\Work\cvat` rồi `docker compose up -d`).
 2. `cd D:\Work\P-029\source-tool\pointsnap-3d` → `.venv\Scripts\activate` → `pointsnap ui`.
 3. Web: quét job → **Gắn cờ lên CVAT**.
 4. CVAT (có extension): mở job → bấm `.` đi qua từng lỗi → sửa box → **Save** (Ctrl+S).
-5. Xong job: **Quét + gắn cờ** lại (ở tab Danh sách của extension hoặc trên web) → tải lại trang CVAT để thấy cờ mới → làm tới khi cổng kiểm tra **ĐẠT**.
+5. Xong job: **Quét + gắn cờ** lại (ở tab Danh sách của extension hoặc trên web) → tải lại trang CVAT để thấy cờ mới → kiểm gate/coverage và để reviewer xác nhận phần tool không kiểm trước khi nộp.
 
 > Khi đang có người mở job trên CVAT, chỉ gắn cờ sau khi họ đã **Save**; gắn cờ xong họ phải tải lại trang trước khi sửa tiếp.
 
@@ -236,6 +242,10 @@ Rồi tắt và chạy lại `pointsnap ui`; ở `chrome://extensions` bấm **�
 | Phím `[` `]` gõ ra `ư` `ơ` | Bộ gõ tiếng Việt kiểu Telex: dùng phím `,` `.` |
 
 ## Tài liệu liên quan
+
+- [Docker CLI và ReportAPI](pointsnap-3d/README-Docker.md): build CLI trước API, map URL backend/web vàmount dataset/export.
+- [Vận hành, backup vàrollback](pointsnap-3d/docs/operations.md), [bảo mật local](pointsnap-3d/docs/local-security.md).
+- `pointsnap-3d/Start-PointSnap.ps1` chỉ bật Web, nhận port/PythonPath/ProjectHome; CVAT là dependency cài riêng. Launcher trong thư mục cha máy tác giả không nằm trong checkout GitHub.
 
 - [README công cụ](README.md) — tính năng, dòng lệnh, giới hạn.
 - [Đề xuất đề tài](docs/thiet-ke/de-xuat-de-tai.md) — mục tiêu, thiết kế, chỉ số.

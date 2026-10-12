@@ -1,0 +1,44 @@
+{
+  "source_commit": "94dac32a64fa91d3ebe6211db2c1f84716044f81",
+  "images": [
+    {
+      "tag": "pointsnap-review:94dac32",
+      "id": "sha256:5a3c10f4bf018b69df49214494afa0e30899d2db194ab07acccc9bf7c256fa54",
+      "user": "pointsnap",
+      "revision": "94dac32a64fa91d3ebe6211db2c1f84716044f81"
+    },
+    {
+      "tag": "pointsnap-api-review:94dac32",
+      "id": "sha256:5759856a7aa039ea7e3924906be567fe3fdc7242db477fc011bca63f628da188",
+      "user": "pointsnap",
+      "revision": "94dac32a64fa91d3ebe6211db2c1f84716044f81"
+    },
+    {
+      "tag": "pointsnap-review:94dac32-py311",
+      "id": "sha256:78ef7ebce325454ee8f9f5da4f482a450a6a0849d71b7bd41fb875913386ddeb",
+      "user": "pointsnap",
+      "revision": "94dac32; temp pip timeout only"
+    }
+  ],
+  "container": "pointsnap-review08-api",
+  "read_only": true,
+  "tmpfs": {
+    "/tmp": "rw,size=64m"
+  },
+  "mounts": [
+    {
+      "target": "/work/data/cvat",
+      "read_only": true
+    },
+    {
+      "target": "/work/data/nuscenes",
+      "read_only": true
+    }
+  ],
+  "network": "cvat_cvat",
+  "router_host": "pointsnap-review.local",
+  "router_priority": 100,
+  "no_service_pat": true,
+  "compose_config_quiet_exit": 0,
+  "linux311_first_build": "pip ReadTimeoutError downloading numpy from files.pythonhosted.org; retry uses same source with temporary pip timeout 120/retries3 Dockerfile"
+}

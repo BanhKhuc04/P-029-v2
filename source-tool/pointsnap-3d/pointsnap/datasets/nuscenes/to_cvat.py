@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from pointsnap.adapters.cvat.client import CvatClient
+from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.shapes import cuboid_to_points
 from pointsnap.adapters.nuscenes.reader import NuScenesReader
 from pointsnap.core.geometry import (
@@ -205,22 +205,29 @@ def upload_scene(
     cuboids, meta = load_cuboids(export.ground_truth)
     taxonomy = meta.get("taxonomy", "nuscenes")
     task = client.create_task(task_name, label_specs(flag_attribute, taxonomy))
-    rq_id = client.upload_task_data(task["id"], export.archive)
-    client.wait_request(rq_id, timeout=timeout)
-
-    labels = client.task_labels(task["id"])
-    label_ids = {label["name"]: label["id"] for label in labels}
-    attribute_ids = {label["name"]: {a["name"]: a["id"] for a in label.get("attributes", [])
-                                     if a["name"] not in (flag_attribute, REVIEWED_ATTRIBUTE)} for label in labels}
-    client.put_task_annotations(task["id"], build_annotations(cuboids, export.num_frames, label_ids, attribute_ids))
-
-    info = {
-        "url": client.url,
-        "task_id": task["id"],
-        "job_ids": [job["id"] for job in client.task_jobs(task["id"])],
-        "scene": export.scene,
-        "num_frames": export.num_frames,
-        "num_boxes": len(cuboids),
-    }
-    (export.directory / "cvat_task.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
-    return info
+    try:
+        rq_id = client.upload_task_data(task["id"], export.archive)
+        client.wait_request(rq_id, timeout=timeout)
+        labels = client.task_labels(task["id"])
+        label_ids = {label["name"]: label["id"] for label in labels}
+        attribute_ids = {label["name"]: {a["name"]: a["id"] for a in label.get("attributes", [])
+                                         if a["name"] not in (flag_attribute, REVIEWED_ATTRIBUTE)} for label in labels}
+        client.put_task_annotations(task["id"], build_annotations(cuboids, export.num_frames, label_ids, attribute_ids))
+        info = {
+            "url": client.url,
+            "task_id": task["id"],
+            "job_ids": [job["id"] for job in client.task_jobs(task["id"])],
+            "scene": export.scene,
+            "num_frames": export.num_frames,
+            "num_boxes": len(cuboids),
+        }
+        if not info["job_ids"]:
+            raise CvatError(f"Task {task['id']} đã upload nhưng không có job")
+        (export.directory / "cvat_task.json").write_text(json.dumps(info, indent=1), encoding="utf-8")
+        return info
+    except Exception as exc:
+        try:
+            client.delete_task(task["id"])
+        except Exception as cleanup_exc:
+            raise CvatError(f"Upload task {task['id']} thất bại; chưa xóa được task thử: {cleanup_exc}") from exc
+        raise

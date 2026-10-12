@@ -15,6 +15,10 @@ def generate_html_report(
     findings: Iterable[Finding],
     output_path: str | Path,
     source_name: str | None = None,
+    *,
+    coverage_gaps: Iterable[str] = (),
+    gate_passed: bool | None = None,
+    gate_reasons: Iterable[str] = (),
 ) -> Path:
     """Ghi báo cáo HTML. source_name (ví dụ tên cảnh nuScenes) thay cho Task / Job khi quét không qua CVAT."""
     findings_list = sorted(findings, key=lambda f: f.sort_key())
@@ -94,12 +98,16 @@ def generate_html_report(
         <div class="empty-state">
             <div class="empty-icon">&check;</div>
             <h2>Không phát hiện lỗi nhãn nào!</h2>
-            <p>Job này sạch và sẵn sàng để nộp hoặc gắn nhãn tiếp theo.</p>
+            <p>Không có finding trong các luật và dữ liệu đã kiểm; xem phạm vi kiểm tra và gate bên dưới.</p>
         </div>
     """
 
     source_tags = (f'<span class="meta-tag">{html.escape(source_name)}</span>' if source_name else
                    f'<span class="meta-tag">Task #{job.task_id}</span> <span class="meta-tag">Job #{job.job_id}</span>')
+    notes = list(dict.fromkeys([*coverage_gaps, *gate_reasons]))
+    scope_html = "".join(f"<p>{html.escape(note)}</p>" for note in notes)
+    if gate_passed is not None:
+        scope_html = f"<p>Gate: {'ĐẠT ngưỡng các luật đang bật' if gate_passed else 'KHÔNG ĐẠT'}</p>" + scope_html
 
     html_content = f"""<!DOCTYPE html>
 <html lang="vi">
@@ -334,7 +342,7 @@ def generate_html_report(
             <div class="meta-badges">
                 {source_tags}
                 <span class="meta-tag">Frame {job.start_frame}&ndash;{job.stop_frame}</span>
-                <span class="meta-tag">Tổng {len(job.cuboids)} box</span>
+                <span class="meta-tag">Tổng {sum(not c.outside for c in job.cuboids)} box</span>
             </div>
         </header>
 
@@ -358,6 +366,7 @@ def generate_html_report(
         </section>
 
         <main>
+            <section class="scan-scope">{scope_html}</section>
             {content_html}
         </main>
     </div>

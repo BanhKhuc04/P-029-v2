@@ -20,7 +20,7 @@ Ba kiểu phát hiện:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Mapping, Sequence
 
 import numpy as np
 
@@ -202,12 +202,14 @@ def detect_track_jumps_for_track(
     timestamps_by_frame: Mapping[int, float] | None = None,
 ) -> list[Finding]:
     """Kiểm tra kiểu 1: nhảy vị trí trong một track."""
-    active = [b for b in track_boxes if b.visible]
+    active = [b for b in track_boxes if b.visible and b.keyframe]
     if len(active) < 2:
         return []
     grp = config.group_for(active[0].label)
     if grp is None:
         return []
+    if timestamps_by_frame and any(b.frame not in timestamps_by_frame for b in active):
+        timestamps_by_frame = None
 
     # Vị trí liên tục theo thời gian kể cả khi đối tượng tạm vắng (keyframe `outside`), nên nội suy qua đoạn vắng:
     # bắt được cú nhảy ngay sát đoạn vắng mà không tăng báo nhầm (đo trên 5 cảnh kiểm tra).
@@ -227,7 +229,7 @@ def detect_long_interpolation(
     """Kiểm tra kiểu 3: đoạn dài chỉ có box nội suy trong khi đối tượng đang chạy."""
     cfg = config.long_interpolation
     findings: list[Finding] = []
-    for segment in _segments(track_boxes):
+    for segment in _segments([b for b in track_boxes if b.keyframe or b.outside]):
         if len(segment) < 2:
             continue
         centers, _ = _get_world_centers(segment, sensor_to_world_by_frame)
@@ -255,9 +257,18 @@ def detect_track_splits(
     config: TrackConfig,
     sensor_to_world_by_frame: Mapping[int, np.ndarray] | None = None,
     timestamps_by_frame: Mapping[int, float] | None = None,
+    *, stop_frame: int | None = None, class_key: Callable[[Cuboid], str] | None = None,
 ) -> list[Finding]:
     """Kiểm tra kiểu 2: nghi ngờ tách ID giữa các track cùng class."""
-    last_frame = max((b.frame for boxes in tracks.values() for b in boxes), default=0)
+    frames = {b.frame for boxes in tracks.values() for b in boxes if not b.outside}
+    if sensor_to_world_by_frame is not None and not frames.issubset(sensor_to_world_by_frame):
+        # Cùng một hệ tọa độ cho mọi ứng viên, không ghép local của A với world của B.
+        sensor_to_world_by_frame = None
+    if timestamps_by_frame and not frames.issubset(timestamps_by_frame):
+        timestamps_by_frame = None
+    class_key = class_key or (lambda box: box.label)
+    last_frame = stop_frame if stop_frame is not None else max(
+        (b.frame for boxes in tracks.values() for b in boxes), default=0)
     track_summaries = []
 
     for tid, boxes in tracks.items():
@@ -280,6 +291,8 @@ def detect_track_splits(
         track_summaries.append({
             "track_id": tid,
             "label": first_b.label,
+            "class_key": class_key(first_b),
+            "continues": stop_frame is not None and not any(b.outside and b.frame > last_b.frame for b in boxes),
             "first_frame": first_b.frame,
             "last_frame": last_b.frame,
             "first_time": _time(first_b.frame, config, timestamps_by_frame),
@@ -299,7 +312,8 @@ def detect_track_splits(
             continue
         best: tuple[float, dict] | None = None
         for a in track_summaries:
-            if a is b or a["label"] != b["label"] or a["last_frame"] >= last_frame:
+            if (a is b or a["class_key"] != b["class_key"] or a["continues"]
+                    or a["last_frame"] >= last_frame):
                 continue
             frame_gap = b["first_frame"] - a["last_frame"]
             if not 1 <= frame_gap <= max_gap:
@@ -319,13 +333,16 @@ def detect_track_splits(
                      f"bắt đầu ở frame {b['first_frame']} cách vị trí ngoại suy {dist:.2f} m (nghi tách ID)"),
             value=dist, threshold=grp.split_max_dist_m,
             details={"previous_track_id": a["track_id"], "extrapolated_dist": dist,
-                     "frame_gap": b["first_frame"] - a["last_frame"]},
+                     "frame_gap": b["first_frame"] - a["last_frame"],
+                     "has_world_pose": sensor_to_world_by_frame is not None},
         ))
 
     return findings
 
 
-def detect_track_spec(track_boxes: Sequence[Cuboid], config: TrackConfig) -> list[Finding]:
+def detect_track_spec(
+    track_boxes: Sequence[Cuboid], config: TrackConfig, *, stop_frame: int | None = None,
+) -> list[Finding]:
     """Luật track theo spec 4.4 (C2), mức Cảnh báo.
 
     - `track.reuse_id`: track đã kết thúc bằng keyframe `outside` rồi lại có box ở frame sau. Spec 4.4.3: sau khi kết
@@ -360,7 +377,7 @@ def detect_track_spec(track_boxes: Sequence[Cuboid], config: TrackConfig) -> lis
         if hidden and start is None:
             start = box
         elif not hidden and start is not None:
-            end = box.frame if box is not None else boxes[-1].frame + 1
+            end = box.frame if box is not None else (stop_frame + 1 if stop_frame is not None else boxes[-1].frame + 1)
             length = end - start.frame
             if length > limit:
                 findings.append(Finding(
@@ -454,6 +471,7 @@ def detect_track_errors(
     config: TrackConfig,
     sensor_to_world_by_frame: Mapping[int, np.ndarray] | None = None,
     timestamps_by_frame: Mapping[int, float] | None = None,
+    *, stop_frame: int | None = None, class_key: Callable[[Cuboid], str] | None = None,
 ) -> list[Finding]:
     """Phát hiện lỗi đứt track (nhảy vị trí, tách ID, khoảng nội suy dài) trên tập box."""
     tracks = group_by_track(cuboids)
@@ -471,7 +489,7 @@ def detect_track_errors(
 
     # Luật track theo spec 4.4 (C2)
     for track_boxes in tracks.values():
-        findings.extend(detect_track_spec(track_boxes, config))
+        findings.extend(detect_track_spec(track_boxes, config, stop_frame=stop_frame))
 
     # Đổi nhầm ID giữa hai track (C5)
     findings.extend(detect_id_swaps(cuboids, config, sensor_to_world_by_frame, timestamps_by_frame))
@@ -479,6 +497,7 @@ def detect_track_errors(
     # Kiểu 2: tách ID
     findings.extend(detect_track_splits(
         tracks, config, sensor_to_world_by_frame=sensor_to_world_by_frame, timestamps_by_frame=timestamps_by_frame,
+        stop_frame=stop_frame, class_key=class_key,
     ))
 
     return findings

@@ -10,10 +10,15 @@ import json
 import os
 import re
 import shutil
+import threading
+import unicodedata
 from pathlib import Path
+from urllib.parse import urlsplit
 from typing import Any, Mapping
 
 import yaml
+from pointsnap.adapters.cvat.client import CvatError, validate_cvat_url
+from pointsnap.web.storage import read_json, write_json, write_text
 
 from pointsnap.core.config import (
     Config,
@@ -41,6 +46,18 @@ def validate_slug(slug: str) -> str:
     return slug
 
 
+def project_cvat_url(url: str) -> str:
+    try:
+        return validate_cvat_url(url)
+    except CvatError as exc:
+        raise ProjectError(str(exc)) from exc
+
+
+def cvat_origin(url: str) -> tuple:
+    parts = urlsplit(url)
+    return parts.scheme, parts.hostname, parts.port or (443 if parts.scheme == 'https' else 80), parts.path.rstrip('/')
+
+
 def clean_guideline_dict(data: dict[str, Any]) -> dict[str, Any]:
     """Xóa bỏ khóa `token` khỏi mục `cvat` của guideline nếu có (Điểm 1 Mục 6)."""
     cleaned = dict(data)
@@ -62,16 +79,21 @@ def merge_guideline_with_default(incoming: Mapping[str, Any]) -> dict[str, Any]:
     merged = _deep_merge(base_data, incoming)
     if "size" in incoming and isinstance(incoming["size"], Mapping):
         if "manual_ranges" in incoming["size"] and "size" in merged and isinstance(merged["size"], dict):
+            if not isinstance(incoming["size"]["manual_ranges"], Mapping):
+                raise ConfigError("size.manual_ranges phải là mapping")
             merged["size"]["manual_ranges"] = dict(incoming["size"]["manual_ranges"])
     if "track" in incoming and isinstance(incoming["track"], Mapping):
         if "groups" in incoming["track"] and "track" in merged and isinstance(merged["track"], dict):
+            if not isinstance(incoming["track"]["groups"], Mapping):
+                raise ConfigError("track.groups phải là mapping")
             merged["track"]["groups"] = dict(incoming["track"]["groups"])
     return merged
 
 
 def slugify(text: str) -> str:
     """Tạo slug an toàn từ tên dự án."""
-    text = text.lower().strip()
+    text = unicodedata.normalize("NFKD", text.lower().strip().replace("đ", "d"))
+    text = text.encode("ascii", "ignore").decode("ascii")
     text = re.sub(r"[^\w\s-]", "", text)
     text = re.sub(r"[\s_-]+", "-", text)
     return text.strip("-") or "project"
@@ -79,6 +101,7 @@ def slugify(text: str) -> str:
 
 class ProjectManager:
     def __init__(self, home_dir: Path | str | None = None) -> None:
+        self._lock = threading.RLock()
         if home_dir is not None:
             self._home = Path(home_dir)
         elif os.environ.get("POINTSNAP_HOME"):
@@ -135,13 +158,24 @@ class ProjectManager:
         name = name.strip()
         if not name:
             raise ProjectError("Tên dự án không được để trống")
+        cvat_url = project_cvat_url(cvat_url)
 
         actual_slug = validate_slug(slug or slugify(name))
         proj_dir = self.projects_dir / actual_slug
         if proj_dir.exists():
             raise ProjectError(f"Dự án với slug '{actual_slug}' đã tồn tại")
 
-        proj_dir.mkdir(parents=True, exist_ok=True)
+        # Kiểm preset trước khi tạo thư mục để lỗi input không để lại dự án dở.
+        if preset_slug:
+            clean_dict, _ = self.get_guideline(preset_slug)
+            parse_config(merge_guideline_with_default(clean_dict), env={})
+        else:
+            clean_dict = clean_guideline_dict(load_config(env={}).to_dict(redact=False))
+
+        try:
+            proj_dir.mkdir(parents=True, exist_ok=False)
+        except FileExistsError as exc:
+            raise ProjectError(f"Dự án với slug '{actual_slug}' đã tồn tại") from exc
         (proj_dir / "runs").mkdir(parents=True, exist_ok=True)
 
         # 1. Ghi project.json
@@ -155,34 +189,17 @@ class ProjectManager:
             "export_dirs": export_dirs or [],
             "created_at": now,
         }
-        (proj_dir / "project.json").write_text(
-            json.dumps(proj_data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        write_json(proj_dir / "project.json", proj_data)
 
         # 2. Ghi secret.json (chỉ chứa token, không bao giờ lộ ra ngoài API)
         secret_data: dict[str, str] = {}
         if cvat_token and cvat_token.strip():
             secret_data["cvat_token"] = cvat_token.strip()
-        (proj_dir / "secret.json").write_text(
-            json.dumps(secret_data, indent=2), encoding="utf-8"
-        )
+        write_json(proj_dir / "secret.json", secret_data)
 
         # 3. Tạo guideline.yaml (Điểm 1 Mục 6: loại bỏ khóa cvat.token)
-        if preset_slug:
-            preset_dir = self._project_dir(preset_slug)
-            preset_guideline = preset_dir / "guideline.yaml"
-            if not preset_guideline.is_file():
-                raise ProjectError(f"Không tìm thấy guideline của preset '{preset_slug}'")
-            guideline_text = preset_guideline.read_text(encoding="utf-8")
-            preset_dict = yaml.safe_load(guideline_text) or {}
-            clean_dict = clean_guideline_dict(preset_dict)
-        else:
-            default_cfg = load_config()
-            cfg_dict = default_cfg.to_dict(redact=False)
-            clean_dict = clean_guideline_dict(cfg_dict)
-
         clean_yaml = yaml.safe_dump(clean_dict, allow_unicode=True, sort_keys=False)
-        (proj_dir / "guideline.yaml").write_text(clean_yaml, encoding="utf-8")
+        write_text(proj_dir / "guideline.yaml", clean_yaml)
 
         return self.get_project(actual_slug)
 
@@ -193,7 +210,7 @@ class ProjectManager:
         if not meta_file.is_file():
             raise ProjectError(f"Không tìm thấy dự án '{slug}'")
 
-        data = json.loads(meta_file.read_text(encoding="utf-8"))
+        data = read_json(meta_file)
 
         secret_file = proj_dir / "secret.json"
         has_token = False
@@ -221,22 +238,36 @@ class ProjectManager:
         if not meta_file.is_file():
             raise ProjectError(f"Không tìm thấy dự án '{slug}'")
 
-        data = json.loads(meta_file.read_text(encoding="utf-8"))
+        with self._lock:
+            return self._update_project(slug, updates)
+
+    def _update_project(self, slug: str, updates: dict[str, Any]) -> dict[str, Any]:
+        proj_dir = self._project_dir(slug)
+        meta_file = proj_dir / "project.json"
+        data = read_json(meta_file)
+        if "name" in updates:
+            updates = {**updates, "name": str(updates["name"]).strip()}
+            if not updates["name"]:
+                raise ProjectError("Tên dự án không được để trống")
+
+        if 'cvat_url' in updates:
+            updates = {**updates, 'cvat_url': project_cvat_url(updates['cvat_url'])}
+            if cvat_origin(data['cvat_url']) != cvat_origin(updates['cvat_url']):
+                # Xóa trước khi đổi server: lỗi ghi giữa hai file cũng không mang PAT cũ sang server mới.
+                write_json(proj_dir / 'secret.json', {})
 
         for key in ("name", "description", "cvat_url", "nuscenes_root", "export_dirs"):
             if key in updates:
                 data[key] = updates[key]
 
-        meta_file.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        write_json(meta_file, data)
 
         # Cập nhật token nếu được gửi (nếu gửi null hoặc rỗng thì giữ nguyên token cũ)
         if "cvat_token" in updates and updates["cvat_token"] is not None:
             new_tok = str(updates["cvat_token"]).strip()
             secret_file = proj_dir / "secret.json"
             secret_data = (
-                json.loads(secret_file.read_text(encoding="utf-8"))
+                read_json(secret_file)
                 if secret_file.is_file()
                 else {}
             )
@@ -244,9 +275,7 @@ class ProjectManager:
                 secret_data["cvat_token"] = new_tok
             else:
                 secret_data.pop("cvat_token", None)
-            secret_file.write_text(
-                json.dumps(secret_data, indent=2), encoding="utf-8"
-            )
+            write_json(secret_file, secret_data)
 
         return self.get_project(slug)
 
@@ -283,9 +312,9 @@ class ProjectManager:
         g_file = proj_dir / "guideline.yaml"
         if not g_file.is_file():
             raise ProjectError(f"Dự án '{slug}' thiếu guideline.yaml")
-        text = g_file.read_text(encoding="utf-8")
-        data = yaml.safe_load(text) or {}
-        return clean_guideline_dict(data), text
+        data = _read_yaml(g_file.read_text(encoding="utf-8"), "guideline.yaml")
+        clean = clean_guideline_dict(data)
+        return clean, yaml.safe_dump(clean, allow_unicode=True, sort_keys=False)
 
     def save_guideline(
         self, slug: str, content: dict[str, Any] | str
@@ -297,13 +326,16 @@ class ProjectManager:
         thiếu, không kết hợp với guideline.yaml đang có.
         """
         proj_dir = self._project_dir(slug)
+        self.get_project(slug)
         g_file = proj_dir / "guideline.yaml"
 
         if isinstance(content, str):
             try:
                 raw_data = yaml.safe_load(content)
             except yaml.YAMLError as exc:
-                raise ConfigError(f"Cú pháp YAML không hợp lệ: {exc}") from exc
+                mark = getattr(exc, 'problem_mark', None)
+                location = f' (dòng {mark.line+1}, cột {mark.column+1})' if mark else ''
+                raise ConfigError(f"Cú pháp YAML không hợp lệ{location}") from exc
             if not isinstance(raw_data, Mapping):
                 raise ConfigError("Nội dung guideline phải là một mapping YAML")
             data = dict(raw_data)
@@ -316,16 +348,16 @@ class ProjectManager:
         merged_clean = merge_guideline_with_default(clean_incoming)
 
         # Kiểm tra tính hợp lệ bằng parse_config (ném ConfigError nếu sai)
-        parse_config(merged_clean)
+        parse_config(merged_clean, env={})
 
         # Lưu file — ghi đè hoàn toàn (ghi thay thế, không giữ khóa cũ)
         clean_yaml = yaml.safe_dump(merged_clean, allow_unicode=True, sort_keys=False)
-        g_file.write_text(clean_yaml, encoding="utf-8")
+        write_text(g_file, clean_yaml)
         return merged_clean
 
     def reset_guideline(self, slug: str) -> dict[str, Any]:
         """Khôi phục guideline về cấu hình mặc định."""
-        default_cfg = load_config()
+        default_cfg = load_config(env={})
         clean_data = clean_guideline_dict(default_cfg.to_dict(redact=False))
         return self.save_guideline(slug, clean_data)
 
@@ -336,6 +368,10 @@ class ProjectManager:
         - cvat.url từ project.json luôn ghi đè cấu hình trong guideline.yaml.
         - cvat.token lấy từ secret.json (không nằm trong file guideline).
         """
+        with self._lock:
+            return self._effective_config(slug)
+
+    def _effective_config(self, slug: str) -> Config:
         proj = self.get_project(slug)
         clean_data, _ = self.get_guideline(slug)
 

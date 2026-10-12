@@ -141,6 +141,8 @@
   const state = {
     projects: [],
     currentSlug: null,
+    projectEpoch: 0,
+    runLoadVersion: 0,
     currentProject: null,
     currentGuideline: null,
     currentRun: null,
@@ -162,6 +164,16 @@
     guidelineDirty: false,
     guidelineMode: 'form', // 'form' hoặc 'yaml'
   };
+
+  function projectScope() {
+    const slug = state.currentSlug, epoch = state.projectEpoch;
+    return { slug, current: () => slug === state.currentSlug && epoch === state.projectEpoch };
+  }
+
+  function errorDetail(detail, fallback) {
+    if (Array.isArray(detail)) return detail.map(e => `${(e.loc || []).join('.')}: ${e.msg || 'Không hợp lệ'}`).join('; ');
+    return typeof detail === 'string' ? detail : fallback;
+  }
 
   // --- Khởi tạo Theme an toàn ---
   function getInitialTheme() {
@@ -214,12 +226,21 @@
   // --- Modals Helper ---
   function openModal(id) {
     const m = document.getElementById(id);
-    if (m) m.classList.add('open');
+    if (m) {
+      m.returnFocus = document.activeElement?.closest('#project-dropdown-menu') ? document.getElementById('btn-project-dropdown') : document.activeElement;
+      m.classList.add('open');
+      document.getElementById('app-container').inert = true;
+      m.querySelector('input, button, textarea, select')?.focus();
+    }
   }
 
   function closeModal(id) {
     const m = document.getElementById(id);
-    if (m) m.classList.remove('open');
+    if (m) {
+      m.classList.remove('open');
+      document.getElementById('app-container').inert = false;
+      m.returnFocus?.focus();
+    }
   }
 
   // --- Khởi động ứng dụng khi DOM sẵn sàng ---
@@ -261,6 +282,17 @@
 
   // --- Thiết lập các bộ lắng nghe sự kiện ---
   function setupEventListeners() {
+    document.addEventListener('keydown', (event) => {
+      const modal = document.querySelector('.modal-overlay.open');
+      if (!modal) return;
+      if (event.key === 'Escape') { event.preventDefault(); closeModal(modal.id); }
+      if (event.key === 'Tab') {
+        const controls = [...modal.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea, select, [tabindex="0"]')];
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    });
     // 1. Chuyển đổi Theme Sáng | Tối
     document.getElementById('theme-btn-light').addEventListener('click', () => applyTheme('light'));
     document.getElementById('theme-btn-dark').addEventListener('click', () => applyTheme('dark'));
@@ -285,6 +317,7 @@
     // Modal Tạo dự án mới
     document.getElementById('btn-open-create-proj').addEventListener('click', () => {
       projectMenu.classList.remove('open');
+      projectBtn.setAttribute('aria-expanded', 'false');
       populatePresetOptions();
       openModal('modal-create-proj');
     });
@@ -293,6 +326,7 @@
     // Modal Xóa dự án (bắt buộc gõ lại tên)
     document.getElementById('btn-open-delete-proj').addEventListener('click', () => {
       projectMenu.classList.remove('open');
+      projectBtn.setAttribute('aria-expanded', 'false');
       if (!state.currentProject) return;
       document.getElementById('delete-proj-target-name').textContent = state.currentProject.name;
       const confirmInput = document.getElementById('delete-proj-confirm-input');
@@ -454,7 +488,10 @@
       renderProjectDropdown();
 
       if (state.projects.length > 0) {
-        const lastSlug = state.currentSlug || state.projects[0].slug;
+        let saved;
+        try { saved = localStorage.getItem('pointsnap_project'); } catch (_) {}
+        const wanted = state.currentSlug || saved;
+        const lastSlug = state.projects.some(p => p.slug === wanted) ? wanted : state.projects[0].slug;
         await selectProject(lastSlug);
       } else {
         document.getElementById('current-project-name').textContent = 'Chưa có dự án';
@@ -491,7 +528,21 @@
   }
 
   async function selectProject(slug) {
+    if (state.guidelineDirty && !confirm('Bỏ thay đổi Guideline chưa lưu để đổi dự án?')) return;
+    state.projectEpoch++;
     state.currentSlug = slug;
+    const scope = projectScope();
+    try { localStorage.setItem('pointsnap_project', slug); } catch (_) {}
+    clearInterval(state.scanPollTimer);
+    state.scanPollTimer = null;
+    setButtonIdle(document.getElementById('btn-start-scan'));
+    showScanLoader(false);
+    state.currentGuideline = null;
+    document.getElementById('guideline-form-view').inert = true;
+    document.getElementById('guideline-yaml-textarea').disabled = true;
+    setGuidelineDirty(false);
+    showEmptyResults();
+    updateRecentScanCard(null);
     state.currentProject = state.projects.find((p) => p.slug === slug) || null;
     state.currentRun = null;
 
@@ -508,6 +559,7 @@
 
     // Nạp lần quét gần nhất
     await loadLatestRun();
+    if (!scope.current()) return;
 
     // Nạp lại tab đang mở
     handleHashNavigation();
@@ -559,7 +611,7 @@
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Không thể tạo dự án');
+        throw new Error(errorDetail(err.detail, 'Không thể tạo dự án'));
       }
 
       const created = await res.json();
@@ -587,7 +639,7 @@
       const res = await fetch(`/api/projects/${state.currentSlug}`, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Không thể xóa dự án');
+        throw new Error(errorDetail(err.detail, 'Không thể xóa dự án'));
       }
 
       closeModal('modal-delete-proj');
@@ -602,6 +654,7 @@
 
   // --- Kiểm tra trạng thái CVAT trên Topbar ---
   async function checkCvatConnectionStatus() {
+    const scope = projectScope();
     const dot = document.getElementById('cvat-status-dot');
     const text = document.getElementById('cvat-status-text');
     dot.className = 'status-dot checking';
@@ -614,8 +667,9 @@
     }
 
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/cvat/check`);
+      const res = await fetch(`/api/projects/${scope.slug}/cvat/check`);
       const data = await res.json();
+      if (!scope.current()) return;
       if (data.connected) {
         dot.className = 'status-dot';
         text.textContent = `CVAT ${data.version || ''} · đã kết nối`;
@@ -624,6 +678,7 @@
         text.textContent = 'CVAT · Mất kết nối';
       }
     } catch (_) {
+      if (!scope.current()) return;
       dot.className = 'status-dot disconnected';
       text.textContent = 'CVAT · Không kết nối được';
     }
@@ -632,23 +687,34 @@
   // --- 2. Tab Kết quả (Results View - Main.dc.html) ---
   async function loadLatestRun() {
     if (!state.currentSlug) return;
+    const scope = projectScope();
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/scans`);
+      const res = await fetch(`/api/projects/${scope.slug}/scans`);
+      if (!res.ok) throw new Error('Không thể tải kết quả. Kiểm tra kết nối rồi thử lại.');
       if (res.ok) {
         const runs = await res.json();
-        if (runs.length > 0) {
-          await loadRunDetails(runs[0].run_id);
-          updateRecentScanCard(runs[0]);
+        if (!scope.current()) return;
+        const latest = runs.find(r => r.status === 'done');
+        if (latest) {
+          await loadRunDetails(latest.run_id);
+          if (scope.current()) updateRecentScanCard(latest);
           return;
         }
       }
       showEmptyResults();
-    } catch (_) {
+    } catch (err) {
+      if (!scope.current()) return;
       showEmptyResults();
+      document.getElementById('results-header-subtitle').textContent = err.message;
+      showToast(err.message, 'error');
     }
   }
 
   function showEmptyResults() {
+    state.currentRun = null;
+    state.currentDetail = null;
+    state.previewData = null;
+    clearPreviewCanvases();
     document.getElementById('results-empty-state').style.display = 'block';
     document.getElementById('results-content-box').style.display = 'none';
     document.getElementById('results-actions-group').style.display = 'none';
@@ -660,13 +726,18 @@
 
   async function loadRunDetails(runId) {
     if (!state.currentSlug || !runId) return;
+    const scope = projectScope();
+    const version = ++state.runLoadVersion;
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/scans/${runId}`);
+      const res = await fetch(`/api/projects/${scope.slug}/scans/${runId}`);
       if (!res.ok) throw new Error('Không thể nạp chi tiết lần quét');
       const data = await res.json();
+      if (!scope.current() || version !== state.runLoadVersion) return;
+      if (data.status !== 'done') throw new Error(data.error || 'Lần quét chưa hoàn tất, chưa có kết quả để xem.');
       state.currentRun = data;
       renderRunResults(data);
     } catch (err) {
+      if (!scope.current() || version !== state.runLoadVersion) return;
       showToast(err.message, 'error');
     }
   }
@@ -682,7 +753,7 @@
     // Breadcrumb & Title
     document.getElementById('breadcrumb-job').textContent = `Job #${runData.job_id}`;
     document.getElementById('results-header-title').textContent = `Kết quả quét job #${runData.job_id}`;
-    const runTimeStr = formatDateTime(sum.timestamp || runData.created_at);
+    const runTimeStr = formatDateTime(sum.timestamp || runData.started_at);
     document.getElementById('results-header-subtitle').textContent =
       `Quét lúc ${runTimeStr} · ${sum.num_boxes ?? 0} box · guideline của dự án`;
 
@@ -694,12 +765,15 @@
     if (sum.gate_passed) {
       gateBanner.className = 'gate-banner-strip pass';
       gateTitle.textContent = 'Đạt cổng kiểm soát';
-      gateDesc.textContent = `${sum.num_errors ?? 0} Lỗi · ${sum.num_warnings ?? 0} Cảnh báo. Các chỉ số đều nằm trong ngưỡng quy định.`;
+      gateDesc.textContent = `${sum.num_errors ?? 0} Lỗi · ${sum.num_warnings ?? 0} Cảnh báo. Đạt ngưỡng của các luật đang bật.`;
     } else {
       gateBanner.className = 'gate-banner-strip fail';
       gateTitle.textContent = 'Không đạt cổng kiểm soát';
       const reasons = sum.gate_reasons && sum.gate_reasons.length > 0 ? sum.gate_reasons.join(' · ') : 'Vượt ngưỡng cho phép';
-      gateDesc.textContent = `${reasons}. Sửa các mục Lỗi trên CVAT rồi quét lại.`;
+      const partial = (sum.gate_reasons || []).some(reason => reason.startsWith('Kiểm tra một phần:'));
+      gateDesc.textContent = partial
+        ? `${reasons}. Bổ sung dữ liệu cần thiết, kiểm tra các box thiếu bằng chứng rồi quét lại.`
+        : `${reasons}. Sửa các mục Lỗi trên CVAT rồi quét lại.`;
     }
 
     // Thẻ số lượng (Stats Grid)
@@ -796,6 +870,7 @@
     const startIndex = (state.findingsPage - 1) * perPage;
     const endIndex = Math.min(startIndex + perPage, total);
     const pageItems = filtered.slice(startIndex, endIndex);
+    if (total) state.selectedFindingIndex = Math.min(Math.max(state.selectedFindingIndex, startIndex), endIndex - 1);
 
     // Cập nhật phân trang footer
     const prevBtn = document.getElementById('btn-pagination-prev');
@@ -823,9 +898,9 @@
       const sevLabel = f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
 
       tr.innerHTML = `
-        <td><span class="pill-badge ${sevClass}">${sevLabel}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
-        <td class="mono">#${f.frame}</td>
-        <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${f.track_id}` : '—'}</td>
+        <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
+        <td class="mono">#${escapeHtml(f.frame)}</td>
+        <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${escapeHtml(f.track_id)}` : '—'}</td>
         <td>${escapeHtml(f.label || '—')}</td>
         <td style="color: var(--text-2);">${escapeHtml(f.error_type_label || f.error_type || '—')}</td>
         <td style="color: var(--text);">${escapeHtml(f.message || '')}</td>
@@ -891,9 +966,11 @@
     const run = state.currentRun;
     if (!run || !run.job_id || document.hidden) return;
     try {
-      const res = await fetch(`/api/extension/status?job_id=${run.job_id}`);
+      const cvatUrl = run.summary?.cvat_url || state.projects.find((p) => p.slug === state.currentSlug)?.cvat_url || '';
+      const res = await fetch(`/api/extension/status?job_id=${run.job_id}&cvat_url=${encodeURIComponent(cvatUrl)}`);
       if (!res.ok) return;
       const data = await res.json();
+      if (state.currentRun !== run) return;
       const changed = data.extension_online !== state.cvatLink.online || state.cvatLink.jobId !== run.job_id;
       const rev = state.cvatLink.jobId === run.job_id ? state.cvatLink.rev : null;
       state.cvatLink = { online: data.extension_online, jobId: run.job_id, rev: data.reviews_rev };
@@ -909,6 +986,7 @@
     const res = await fetch(`/api/projects/${state.currentSlug}/scans/${run.run_id}/reviews`);
     if (!res.ok || state.currentRun !== run) return;
     const { reviews } = await res.json();
+    if (state.currentRun !== run) return;
     if (JSON.stringify(reviews) === JSON.stringify(run.reviews || {})) return;
     run.reviews = reviews;
     renderFindingsTable();
@@ -933,9 +1011,12 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         job_id: state.currentRun.job_id,
+        cvat_url: state.currentRun.summary?.cvat_url || state.projects.find((p) => p.slug === state.currentSlug)?.cvat_url || '',
         frame: f.frame,
         label: f.label,
         message: f.message,
+        track_id: f.track_id ?? null,
+        source_id: f.source_id ?? null,
         run_id: state.currentRun.run_id,
         index: index >= 0 ? index : null,
         bring,
@@ -984,6 +1065,7 @@
     const f = state.currentDetail;
     const index = runFindingIndex(f);
     if (!f || index < 0 || !state.currentSlug) return;
+    const scope = projectScope(), run = state.currentRun;
     const reviews = state.currentRun.reviews || {};
     const value = reviews[String(index)] === verdict ? null : verdict;
     try {
@@ -993,7 +1075,9 @@
         body: JSON.stringify({ verdict: value }),
       });
       if (!res.ok) throw new Error((await res.json()).detail || 'Không lưu được kết luận');
-      state.currentRun.reviews = (await res.json()).reviews;
+      const data = await res.json();
+      if (!scope.current() || state.currentRun !== run) return;
+      run.reviews = data.reviews;
       if (value) moveSelection(1);
       renderFindingsTable();
     } catch (err) {
@@ -1012,6 +1096,7 @@
     const v = reviews[String(index)];
     const ok = document.getElementById('btn-review-ok');
     const fp = document.getElementById('btn-review-fp');
+    ok.disabled = fp.disabled = !f;
     ok.setAttribute('aria-pressed', v === 'ok' ? 'true' : 'false');
     fp.setAttribute('aria-pressed', v === 'fp' ? 'true' : 'false');
 
@@ -1150,13 +1235,14 @@
     document.getElementById('detail-message-desc').textContent = f.message || '—';
 
     // Gợi ý cách sửa từ từ điển A13
-    const fixTip = RULE_FIX_TIPS[f.rule] || DEFAULT_FIX_TIP;
+    const fixTip = findingFixTip(f);
     document.getElementById('detail-fix-hint').textContent = fixTip;
 
     // Nút mở CVAT
     const cvatBtn = document.getElementById('detail-btn-cvat-link');
-    if (f.cvat_link) {
-      cvatBtn.href = f.cvat_link;
+    const link = safeHttpLink(f.cvat_link);
+    if (link) {
+      cvatBtn.href = link;
       cvatBtn.style.display = 'flex';
     } else {
       cvatBtn.style.display = 'none';
@@ -1179,6 +1265,8 @@
     document.getElementById('detail-message-desc').textContent = '—';
     document.getElementById('detail-fix-hint').textContent = '—';
     document.getElementById('detail-btn-cvat-link').style.display = 'none';
+    document.getElementById('quick-nav-counter').textContent = '0 / 0';
+    ['btn-review-ok', 'btn-review-fp', 'btn-quick-prev', 'btn-quick-next'].forEach(id => { document.getElementById(id).disabled = true; });
   }
 
   function generateFindingTitle(f) {
@@ -1221,27 +1309,31 @@
 
   // --- Quét lại và gắn cờ (Re-flag) ---
   async function handleReFlagScan() {
+    const scope = projectScope();
     if (!state.currentRun || !state.currentSlug) return;
     const btn = document.getElementById('btn-re-flag-cvat');
     setButtonBusy(btn, 'Đang khởi động…');
 
     try {
       showToast('Đang khởi động quét lại và gắn cờ lên CVAT...', 'info');
-      const res = await fetch(`/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/flag`, {
+      const res = await fetch(`/api/projects/${scope.slug}/scans/${state.currentRun.run_id}/flag`, {
         method: 'POST',
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Không thể quét lại và gắn cờ');
+      if (!scope.current()) return;
+        throw new Error(errorDetail(err.detail, 'Không thể quét lại và gắn cờ'));
       }
 
       const result = await res.json();
+      if (!scope.current()) return;
       showToast(result.message || 'Đang quét lại và gắn cờ...', 'info');
       window.location.hash = 'scan';
       resetScanProgress();
       pollScanProgress(result.run_id);
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     } finally {
       setButtonIdle(btn);
@@ -1250,6 +1342,7 @@
 
   // --- 3. Tab Quét (Scan View - Quet.dc.html) ---
   async function fetchCvatTasks() {
+    const scope = projectScope();
     if (!state.currentSlug) return;
     const taskSelect = document.getElementById('select-cvat-task');
     const refreshBtn = document.getElementById('btn-refresh-tasks');
@@ -1257,9 +1350,11 @@
     taskSelect.innerHTML = '<option value="">Đang tải Task từ CVAT...</option>';
 
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/cvat/tasks`);
+      const res = await fetch(`/api/projects/${scope.slug}/cvat/tasks`);
+      if (!scope.current()) return;
       if (!res.ok) throw new Error('Không thể lấy danh sách Task');
       const data = await res.json();
+      if (!scope.current()) return;
       state.tasksList = data.tasks || [];
 
       taskSelect.innerHTML = '<option value="">-- Chọn Task --</option>';
@@ -1276,6 +1371,7 @@
         handleTaskChange();
       }
     } catch (err) {
+      if (!scope.current()) return;
       taskSelect.innerHTML = '<option value="">Không tải được Task (kiểm tra kết nối)</option>';
       showToast(err.message, 'error');
     } finally {
@@ -1294,7 +1390,8 @@
       task.jobs.forEach((j) => {
         const opt = document.createElement('option');
         opt.value = j.id;
-        opt.textContent = `#${j.id} · ${j.stage || 'annotation'} · ${j.frame_count || 0} frame`;
+        const frames = j.frame_count ?? (Number.isInteger(j.stop_frame) && Number.isInteger(j.start_frame) ? j.stop_frame - j.start_frame + 1 : null);
+        opt.textContent = `#${j.id} · ${j.stage || 'annotation'} · ${frames == null ? 'chưa rõ số' : frames} frame`;
         jobSelect.appendChild(opt);
       });
 
@@ -1305,6 +1402,7 @@
   }
 
   async function handleStartScan() {
+    const scope = projectScope();
     if (!state.currentSlug) {
       showToast('Vui lòng chọn hoặc tạo dự án trước', 'error');
       return;
@@ -1326,7 +1424,7 @@
     resetScanProgress();
 
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/scans`, {
+      const res = await fetch(`/api/projects/${scope.slug}/scans`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job_id: parseInt(jobId, 10), flag }),
@@ -1334,12 +1432,15 @@
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Không thể bắt đầu quét');
+      if (!scope.current()) return;
+        throw new Error(errorDetail(err.detail, 'Không thể bắt đầu quét'));
       }
 
       const scanInfo = await res.json();
+      if (!scope.current()) return;
       pollScanProgress(scanInfo.run_id);
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
       setButtonIdle(btn);
       showScanLoader(false);
@@ -1347,8 +1448,9 @@
   }
 
   function resetScanProgress() {
-    document.getElementById('scan-progress-bar').style.width = '10%';
-    document.getElementById('scan-progress-percent').textContent = '10%';
+    document.getElementById('scan-progress-bar').style.width = '0%';
+    document.getElementById('scan-progress-region').setAttribute('aria-valuenow', '0');
+    document.getElementById('scan-progress-percent').textContent = '0%';
     document.getElementById('scan-status-message').textContent = 'Khởi tạo tác vụ quét…';
     showScanLoader(true);
 
@@ -1365,16 +1467,21 @@
   function pollScanProgress(runId) {
     if (state.scanPollTimer) clearInterval(state.scanPollTimer);
 
-    let progressSim = 15;
+    const scope = projectScope();
+    let polling = false;
     state.scanPollTimer = setInterval(async () => {
+      if (polling || !scope.current()) return;
+      polling = true;
       try {
-        const res = await fetch(`/api/projects/${state.currentSlug}/scans/${runId}`);
-        if (!res.ok) return;
+        const res = await fetch(`/api/projects/${scope.slug}/scans/${runId}`);
+        if (!res.ok) throw new Error("Không nhận được tiến độ quét. Xem Lịch sử hoặc thử lại.");
         const data = await res.json();
+        if (!scope.current()) return;
 
         if (data.status === 'running' || data.status === 'queued') {
-          progressSim = Math.min(progressSim + 15, 85);
+          const progressSim = Math.max(0, Math.min(100, Number(data.progress) || 0));
           document.getElementById('scan-progress-bar').style.width = `${progressSim}%`;
+          document.getElementById('scan-progress-region').setAttribute('aria-valuenow', String(progressSim));
           document.getElementById('scan-progress-percent').textContent = `${progressSim}%`;
           document.getElementById('scan-status-message').textContent = data.message || 'Đang quét kiểm tra nhãn 3D…';
 
@@ -1383,6 +1490,7 @@
         } else if (data.status === 'done') {
           clearInterval(state.scanPollTimer);
           document.getElementById('scan-progress-bar').style.width = '100%';
+          document.getElementById('scan-progress-region').setAttribute('aria-valuenow', '100');
           document.getElementById('scan-progress-percent').textContent = '100%';
           document.getElementById('scan-status-message').textContent = 'Quét hoàn tất thành công!';
           updateScanStepsUI(5, true);
@@ -1398,7 +1506,7 @@
 
           // Tự động chuyển qua tab Kết quả sau 800ms
           setTimeout(() => {
-            window.location.hash = 'results';
+            if (scope.current()) window.location.hash = 'results';
           }, 800);
         } else if (data.status === 'failed') {
           clearInterval(state.scanPollTimer);
@@ -1408,7 +1516,14 @@
           showScanLoader(false);
           showToast(`Lỗi quét: ${data.error}`, 'error');
         }
-      } catch (_) {}
+      } catch (err) {
+        if (!scope.current()) return;
+        clearInterval(state.scanPollTimer);
+        document.getElementById('scan-status-message').textContent = err.message;
+        showToast(err.message, 'error');
+        setButtonIdle(document.getElementById('btn-start-scan'));
+        showScanLoader(false);
+      } finally { polling = false; }
     }, 800);
   }
 
@@ -1442,14 +1557,14 @@
     }
 
     const sum = runData.summary || {};
-    const timeStr = formatDateTime(sum.timestamp || runData.created_at);
+    const timeStr = formatDateTime(sum.timestamp || runData.started_at);
     const gateClass = sum.gate_passed ? 'pill-badge pass' : 'pill-badge error';
     const gateLabel = sum.gate_passed ? 'ĐẠT' : 'KHÔNG ĐẠT';
 
     box.innerHTML = `
-      <span class="mono" style="font-size: 13px;">${timeStr} · job #${runData.job_id}</span>
-      <span style="color: var(--error);">${sum.num_errors ?? 0} Lỗi</span>
-      <span style="color: var(--warn);">${sum.num_warnings ?? 0} Cảnh báo</span>
+      <span class="mono" style="font-size: 13px;">${escapeHtml(timeStr)} · job #${escapeHtml(runData.job_id)}</span>
+      <span style="color: var(--error);">${escapeHtml(sum.num_errors ?? 0)} Lỗi</span>
+      <span style="color: var(--warn);">${escapeHtml(sum.num_warnings ?? 0)} Cảnh báo</span>
       <span class="${gateClass}">${gateLabel}</span>
       <a href="#results" class="btn btn-primary btn-sm" style="margin-left: auto;">Mở kết quả</a>
     `;
@@ -1472,6 +1587,11 @@
   }
 
   function setGuidelineMode(mode) {
+    if (mode !== state.guidelineMode && state.guidelineDirty) {
+      if (!confirm('Bỏ thay đổi chưa lưu để chuyển chế độ?')) return;
+      setGuidelineDirty(false);
+      loadGuideline();
+    }
     state.guidelineMode = mode;
     const formView = document.getElementById('guideline-form-view');
     const yamlView = document.getElementById('guideline-yaml-view');
@@ -1494,17 +1614,24 @@
   }
 
   async function loadGuideline() {
-    if (!state.currentSlug) return;
+    const scope = projectScope();
+    if (!state.currentSlug || state.guidelineDirty) return;
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/guideline`);
+      const res = await fetch(`/api/projects/${scope.slug}/guideline`);
+      if (!scope.current()) return;
       if (!res.ok) throw new Error('Không thể tải guideline');
       const data = await res.json();
+      if (!scope.current() || state.guidelineDirty) return;
       state.currentGuideline = data.config || {};
+      document.getElementById('guideline-form-view').inert = false;
+      document.getElementById('guideline-yaml-textarea').disabled = false;
       document.getElementById('guideline-yaml-textarea').value = data.yaml || '';
 
       populateGuidelineForm(state.currentGuideline);
+      if (!scope.current()) return;
       setGuidelineDirty(false);
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     }
   }
@@ -1533,7 +1660,7 @@
     document.getElementById('fl-single-error-m').value = fl.single_error_m ?? 0.30;
 
     // 4. Size classes table
-    const ranges = (cfg.size && cfg.size.class_range && cfg.size.class_range.manual_ranges) || {};
+    const ranges = cfg.size?.manual_ranges || {};
     renderSizeClassesTable(ranges);
   }
 
@@ -1555,9 +1682,9 @@
 
       tr.innerHTML = `
         <td class="mono" style="padding-left: 20px;">${escapeHtml(cls)}</td>
-        <td class="mono">${lStr}</td>
-        <td class="mono">${wStr}</td>
-        <td class="mono">${hStr}</td>
+        <td class="mono">${escapeHtml(lStr)}</td>
+        <td class="mono">${escapeHtml(wStr)}</td>
+        <td class="mono">${escapeHtml(hStr)}</td>
         <td style="text-align: right; padding-right: 20px;">
           <button class="btn btn-outline btn-sm btn-delete-class" data-cls="${escapeHtml(cls)}" style="color: var(--error);">Xóa</button>
         </td>
@@ -1580,33 +1707,38 @@
 
     if (!state.currentGuideline) state.currentGuideline = {};
     if (!state.currentGuideline.size) state.currentGuideline.size = {};
-    if (!state.currentGuideline.size.class_range) state.currentGuideline.size.class_range = {};
-    if (!state.currentGuideline.size.class_range.manual_ranges) state.currentGuideline.size.class_range.manual_ranges = {};
+    if (!state.currentGuideline.size.manual_ranges) state.currentGuideline.size.manual_ranges = {};
 
-    state.currentGuideline.size.class_range.manual_ranges[clean] = {
+    state.currentGuideline.size.manual_ranges[clean] = {
       length: [2.0, 5.0],
       width: [1.5, 2.5],
       height: [1.2, 2.0],
     };
 
-    renderSizeClassesTable(state.currentGuideline.size.class_range.manual_ranges);
+    renderSizeClassesTable(state.currentGuideline.size.manual_ranges);
     setGuidelineDirty(true);
   }
 
   async function handleResetGuideline() {
+    const scope = projectScope();
     if (!confirm('Khôi phục toàn bộ Guideline về cấu hình mặc định?')) return;
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/guideline/reset`, { method: 'POST' });
+      const res = await fetch(`/api/projects/${scope.slug}/guideline/reset`, { method: 'POST' });
+      if (!scope.current()) return;
       if (!res.ok) throw new Error('Không thể khôi phục guideline');
       showToast('Đã khôi phục guideline mặc định', 'success');
+      setGuidelineDirty(false);
       await loadGuideline();
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     }
   }
 
   async function handleSaveGuideline() {
+    const scope = projectScope();
     if (!state.currentSlug) return;
+    if (!state.currentGuideline) { showToast('Đợi Guideline tải xong trước khi lưu.', 'error'); return; }
     const btn = document.getElementById('btn-save-guideline');
     btn.disabled = true;
 
@@ -1626,13 +1758,13 @@
         };
 
         const fl = {
-          warning_m: parseFloat(document.getElementById('fl-warning-m').value) || 0.12,
-          error_m: parseFloat(document.getElementById('fl-error-m').value) || 0.22,
-          single_warning_m: parseFloat(document.getElementById('fl-single-warning-m').value) || 0.15,
-          single_error_m: parseFloat(document.getElementById('fl-single-error-m').value) || 0.30,
+          warning_m: Number(document.getElementById('fl-warning-m').value),
+          error_m: Number(document.getElementById('fl-error-m').value),
+          single_warning_m: Number(document.getElementById('fl-single-warning-m').value),
+          single_error_m: Number(document.getElementById('fl-single-error-m').value),
         };
 
-        const currentManual = (state.currentGuideline?.size?.class_range?.manual_ranges) || {};
+        const currentManual = state.currentGuideline?.size?.manual_ranges || {};
         const configObj = {
           ...(state.currentGuideline || {}),
           rules,
@@ -1640,16 +1772,13 @@
           floating: { ...(state.currentGuideline?.floating || {}), ...fl },
           size: {
             ...(state.currentGuideline?.size || {}),
-            class_range: {
-              ...(state.currentGuideline?.size?.class_range || {}),
-              manual_ranges: currentManual,
-            },
+            manual_ranges: currentManual,
           },
         };
         payload = { config: configObj };
       }
 
-      const res = await fetch(`/api/projects/${state.currentSlug}/guideline`, {
+      const res = await fetch(`/api/projects/${scope.slug}/guideline`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1657,13 +1786,16 @@
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Không thể lưu guideline');
+      if (!scope.current()) return;
+        throw new Error(errorDetail(err.detail, 'Không thể lưu guideline'));
       }
 
+      if (!scope.current()) return;
       setGuidelineDirty(false);
       showToast('Đã lưu cấu hình Guideline thành công', 'success');
       await loadGuideline();
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     } finally {
       btn.disabled = false;
@@ -1672,29 +1804,35 @@
 
   // --- 5. Tab Kết nối CVAT (Connection View) ---
   async function loadConnectionTab() {
+    const scope = projectScope();
     if (!state.currentSlug) return;
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}`);
+      const res = await fetch(`/api/projects/${scope.slug}`);
+      if (!scope.current()) return;
       if (!res.ok) throw new Error('Không thể tải thông tin kết nối');
       const p = await res.json();
+      if (!scope.current()) return;
 
       document.getElementById('conn-cvat-url').value = p.cvat_url || '';
       document.getElementById('conn-cvat-token').value = '';
       document.getElementById('conn-nuscenes-root').value = p.nuscenes_root || '';
       document.getElementById('conn-export-dirs').value = (p.export_dirs || []).join(';');
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     }
   }
 
   async function checkCvatConnection() {
+    const scope = projectScope();
     const msg = document.getElementById('cvat-test-result-msg');
     msg.innerHTML = `<span class="inline-loading">${loaderSvg(20)}<span>Đang kiểm tra kết nối tới CVAT…</span></span>`;
     msg.style.color = 'var(--text-2)';
 
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/cvat/check`);
+      const res = await fetch(`/api/projects/${scope.slug}/cvat/check`);
       const data = await res.json();
+      if (!scope.current()) return;
       if (data.connected) {
         msg.textContent = `Kết nối thành công! Phiên bản CVAT: ${data.version || 'Không xác định'}`;
         msg.style.color = 'var(--success)';
@@ -1704,12 +1842,14 @@
         msg.style.color = 'var(--error)';
       }
     } catch (err) {
+      if (!scope.current()) return;
       msg.textContent = `Lỗi mạng: ${err.message}`;
       msg.style.color = 'var(--error)';
     }
   }
 
   async function handleSaveConnectionSettings() {
+    const scope = projectScope();
     if (!state.currentSlug) return;
     const cvatUrl = document.getElementById('conn-cvat-url').value.trim();
     const token = document.getElementById('conn-cvat-token').value.trim();
@@ -1728,7 +1868,7 @@
     if (token) body.cvat_token = token;
 
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}`, {
+      const res = await fetch(`/api/projects/${scope.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -1736,13 +1876,16 @@
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || 'Không thể lưu thông tin kết nối');
+      if (!scope.current()) return;
+        throw new Error(errorDetail(err.detail, 'Không thể lưu thông tin kết nối'));
       }
 
+      if (!scope.current()) return;
       showToast('Đã lưu cấu hình kết nối thành công', 'success');
       checkCvatConnectionStatus();
       loadConnectionTab();
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     }
   }
@@ -1768,14 +1911,18 @@
   }
 
   async function loadHistoryTab() {
+    const scope = projectScope();
     if (!state.currentSlug) return;
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/scans`);
+      const res = await fetch(`/api/projects/${scope.slug}/scans`);
+      if (!scope.current()) return;
       if (!res.ok) throw new Error('Không thể tải lịch sử');
       const runs = await res.json();
+      if (!scope.current()) return;
       renderHistoryRuns(runs);
       renderHistoryChart(runs);
     } catch (err) {
+      if (!scope.current()) return;
       showToast(err.message, 'error');
     }
   }
@@ -1792,20 +1939,20 @@
     runs.forEach((r) => {
       const sum = r.summary || {};
       const tr = document.createElement('tr');
-      const timeStr = formatDateTime(sum.timestamp || r.created_at);
+      const timeStr = formatDateTime(sum.timestamp || r.started_at);
       const isPass = !!sum.gate_passed;
       const gateClass = isPass ? 'pill-badge pass' : 'pill-badge error';
-      const gateText = isPass ? 'Đạt' : 'Không đạt';
+      const gateText = r.status === 'done' ? (isPass ? 'Đạt' : 'Không đạt') : ({queued:'Đang chờ', running:'Đang quét', failed:'Thất bại'}[r.status] || 'Chưa có kết quả');
 
       tr.innerHTML = `
-        <td class="mono" style="padding-left: 20px;">${timeStr}</td>
-        <td class="mono">#${r.job_id}</td>
+        <td class="mono" style="padding-left: 20px;">${escapeHtml(timeStr)}</td>
+        <td class="mono">#${escapeHtml(r.job_id)}</td>
         <td style="color: var(--text-2);">${sum.flagged ? 'Quét & gắn cờ' : 'Quét'}</td>
-        <td class="mono" style="color: var(--error);">${sum.num_errors ?? 0}</td>
-        <td class="mono" style="color: var(--warn);">${sum.num_warnings ?? 0}</td>
+        <td class="mono" style="color: var(--error);">${escapeHtml(sum.num_errors ?? 0)}</td>
+        <td class="mono" style="color: var(--warn);">${escapeHtml(sum.num_warnings ?? 0)}</td>
         <td><span class="${gateClass}">${gateText}</span></td>
         <td style="text-align: right; padding-right: 20px;">
-          <button class="btn btn-outline btn-sm btn-view-run" data-id="${r.run_id}" style="color: var(--primary-text);">Xem kết quả</button>
+          <button class="btn btn-outline btn-sm btn-view-run" ${r.status === 'done' ? '' : 'disabled'} data-id="${escapeHtml(r.run_id)}" style="color: var(--primary-text);">Xem kết quả</button>
         </td>
       `;
 
@@ -1819,6 +1966,7 @@
   }
 
   function renderHistoryChart(runs) {
+    runs = (runs || []).filter(r => r.status === 'done');
     const emptyBox = document.getElementById('history-chart-empty');
     const svgWrapper = document.getElementById('history-chart-svg-wrapper');
     const svg = document.getElementById('history-svg-chart');
@@ -1916,7 +2064,7 @@
       timeText.setAttribute('fill', 'var(--text-3)');
       timeText.setAttribute('font-size', '11');
       timeText.setAttribute('font-family', 'IBM Plex Mono, monospace');
-      const dStr = sum.timestamp || r.created_at;
+      const dStr = sum.timestamp || r.started_at;
       timeText.textContent = dStr ? formatShortDate(dStr) : `#${idx + 1}`;
       svg.appendChild(timeText);
     });
@@ -1959,5 +2107,19 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function safeHttpLink(value) {
+    try {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';
+    } catch (_) { return ''; }
+  }
+
+  function findingFixTip(f) {
+    if (f.rule === 'floating' && /\(lún\)|nằm dưới mặt đất/i.test(f.message || '')) {
+      return 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
+    }
+    return RULE_FIX_TIPS[f.rule] || DEFAULT_FIX_TIP;
   }
 })();

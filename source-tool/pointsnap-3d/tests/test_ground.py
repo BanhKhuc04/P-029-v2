@@ -254,6 +254,7 @@ def test_estimate_ground_for_frame():
 def test_estimate_ground_real_nuscenes():
     """Kiểm thử trên dữ liệu nuScenes thật nếu có (việc B2 kiểm chứng ~200 box)."""
     from pathlib import Path
+    import os
     from pointsnap.adapters.nuscenes import NuScenesReader
 
     from test_real_nuscenes import ROOT

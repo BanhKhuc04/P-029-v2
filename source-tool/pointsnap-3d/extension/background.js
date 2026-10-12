@@ -11,30 +11,88 @@ const EARLY_JS = ['src/core.js', 'src/cvat-dom.js', 'src/cvat-api.js', 'src/seed
 const PANEL_JS = ['src/panel-css.js', 'src/content.js'];
 
 function originPattern(url) {
-  return `${new URL(url).origin}/*`;
+  return `${httpOrigin(url)}/*`;
 }
 
-async function callPointSnap({ method, path, body }) {
-  if (!METHODS.has(method) || typeof path !== 'string' || !path.startsWith('/api/') || path.includes('..')) {
-    return { ok: false, error: 'Yêu cầu không hợp lệ' };
+function httpOrigin(value) {
+  const url = new URL(value);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('URL không hợp lệ');
+  return url.origin;
+}
+
+function sameCvatOrigin(a, b) {
+  const normalize = value => {
+    const url = new URL(httpOrigin(value));
+    const host = ['localhost','127.0.0.1','[::1]'].includes(url.hostname) ? 'localhost' : url.hostname;
+    return `${url.protocol}//${host}:${url.port || (url.protocol === 'https:' ? 443 : 80)}`;
+  };
+  return normalize(a) === normalize(b);
+}
+
+async function fetchPointSnap(base, path, method = 'GET', body) {
+  const res = await fetch(`${base}${path}`, {
+    method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    redirect: 'error', signal: AbortSignal.timeout(10000),
+  });
+  const data = await res.json().catch(() => null);
+  return { ok: res.ok, status: res.status, data };
+}
+
+function requestRoute(method, path, body, sender) {
+  if (!METHODS.has(method) || typeof path !== 'string' || !path.startsWith('/api/') || path.includes('..') || path.includes('#')) return null;
+  const url = new URL(path, 'http://pointsnap.invalid');
+  if (url.pathname.includes('%') || url.origin !== 'http://pointsnap.invalid') return null;
+  if ((sender.url || '').startsWith(chrome.runtime.getURL(''))) {
+    return method === 'GET' && path === '/api/projects' ? { options: true } : null;
   }
+  const page = new URL(sender.url);
+  const job = page.pathname.match(/^\/tasks\/\d+\/jobs\/(\d+)\/?$/);
+  if (!job) return null;
+  const jobId = Number(job[1]);
+  if (method === 'GET' && (url.pathname === `/api/extension/jobs/${jobId}` || url.pathname === '/api/extension/poll')) {
+    const keys = [...url.searchParams.keys()];
+    if (keys.some(k => !['cvat_url','job_id','after'].includes(k)) || keys.length !== new Set(keys).size) return null;
+    if (httpOrigin(url.searchParams.get('cvat_url')) !== page.origin) return null;
+    if (url.pathname.endsWith('/poll') && Number(url.searchParams.get('job_id')) !== jobId) return null;
+    return { jobId, origin: page.origin };
+  }
+  if (url.search) return null;
+  const match = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans(?:\/(\d{8}-\d{6}(?:-\d+)?-job\d+)(?:\/(reviews)(?:\/(\d+))?)?)?$/);
+  if (!match) return null;
+  const [,slug,runId,reviews,index] = match;
+  if (method === 'POST' && !runId && body && Number.isInteger(body.job_id) && body.job_id === jobId && typeof body.flag === 'boolean'
+      && Object.keys(body).every(k => ['job_id','flag'].includes(k))) return { slug, jobId, origin: page.origin };
+  if (method === 'GET' && runId && index === undefined) return { slug, runId, jobId, origin: page.origin };
+  if (method === 'PUT' && reviews && index !== undefined && body && [null,'ok','fp'].includes(body.verdict)
+      && Object.keys(body).length === 1) return { slug, runId, jobId, origin: page.origin };
+  return null;
+}
+
+async function callPointSnap({ method, path, body }, sender) {
   const { pointsnapUrl } = await chrome.storage.sync.get(DEFAULTS);
-  const base = String(pointsnapUrl || DEFAULTS.pointsnapUrl).replace(/\/+$/, '');
   try {
-    const res = await fetch(`${base}${path}`, {
-      method,
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
-    });
-    const data = await res.json().catch(() => null);
+    const route = requestRoute(method, path, body, sender);
+    if (!route) return { ok: false, error: 'Endpoint hoặc job không được phép' };
+    const base = httpOrigin(pointsnapUrl || DEFAULTS.pointsnapUrl);
+    if (route.slug) {
+      const project = await fetchPointSnap(base, `/api/projects/${route.slug}`);
+      if (!project.ok || !sameCvatOrigin(project.data.cvat_url, route.origin)) return { ok: false, error: 'Project không thuộc CVAT đang mở' };
+      if (route.runId) {
+        const run = await fetchPointSnap(base, `/api/projects/${route.slug}/scans/${route.runId}`);
+        if (!run.ok || run.data.job_id !== route.jobId || (run.data.summary?.cvat_url && !sameCvatOrigin(run.data.summary.cvat_url, route.origin))) return { ok: false, error: 'Run không thuộc job đang mở' };
+        if (method === 'GET' && !path.endsWith('/reviews')) return run;
+      }
+    }
+    const res = await fetchPointSnap(base, path, method, body);
+    const data = res.data;
     if (!res.ok) {
       const detail = data && data.detail;
       return { ok: false, status: res.status, error: typeof detail === 'string' ? detail : `PointSnap trả ${res.status}` };
     }
     return { ok: true, status: res.status, data };
   } catch (_) {
-    return { ok: false, error: `Không kết nối được PointSnap ở ${base}` };
+    return { ok: false, error: 'URL/yêu cầu không hợp lệ hoặc không kết nối được PointSnap' };
   }
 }
 
@@ -43,10 +101,12 @@ const BUILT_IN_CVAT = ['http://localhost:8080', 'http://127.0.0.1:8080'];
 /** Chỉ nhận yêu cầu từ trang của chính extension hoặc từ trang CVAT đã cấu hình, không từ trang web khác. */
 async function trustedSender(sender) {
   if (sender.id !== chrome.runtime.id) return false;
+  if (sender.frameId != null && sender.frameId !== 0) return false;
   if ((sender.url || '').startsWith(chrome.runtime.getURL(''))) return true;
+  if (!sender.tab) return false;
   let origin;
   try {
-    origin = new URL(sender.url || '').origin;
+    origin = httpOrigin(new URL(sender.url || '').origin);
   } catch (_) {
     return false;
   }
@@ -74,7 +134,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (!message || message.type !== 'pointsnap') return false;
-  trustedSender(sender).then((ok) => (ok ? callPointSnap(message) : { ok: false, error: 'Nguồn yêu cầu không được phép' }))
+  trustedSender(sender).then((ok) => (ok ? callPointSnap(message, sender) : { ok: false, error: 'Nguồn yêu cầu không được phép' }))
     .then(sendResponse);
   return true;
 });
@@ -85,8 +145,9 @@ async function syncContentScripts() {
   const matches = [];
   for (const url of cvatUrls || []) {
     try {
+      if (BUILT_IN_CVAT.includes(httpOrigin(url))) continue;
       const pattern = originPattern(url);
-      if (await chrome.permissions.contains({ origins: [pattern] })) matches.push(pattern);
+      if (!matches.includes(pattern) && await chrome.permissions.contains({ origins: [pattern] })) matches.push(pattern);
     } catch (_) {
       // Bỏ qua địa chỉ không hợp lệ.
     }

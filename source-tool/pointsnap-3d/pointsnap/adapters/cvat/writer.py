@@ -13,12 +13,12 @@ from __future__ import annotations
 
 import copy
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
-from pointsnap.adapters.cvat.client import CvatClient
-from pointsnap.adapters.cvat.reader import JobData, LabelInfo
+from pointsnap.adapters.cvat.client import CvatClient, CvatError
+from pointsnap.adapters.cvat.reader import JobData, LabelInfo, annotations_to_cuboids
 from pointsnap.core.model import Cuboid, Finding
 from pointsnap.core.serialize import save_cuboids
 
@@ -37,6 +37,8 @@ def save_snapshot(job: JobData, path: str | Path, meta: dict[str, Any] | None = 
     }
     if meta:
         default_meta.update(meta)
+    if job.raw_annotations is not None:
+        default_meta["cvat_annotations"] = job.raw_annotations
     save_cuboids(path, job.cuboids, meta=default_meta)
 
 
@@ -49,11 +51,12 @@ def _update_shape_attributes(
     shape: dict[str, Any],
     spec_id: int,
     error_value: str | None,
+    force_empty: bool = False,
 ) -> bool:
     """Cập nhật thuộc tính `spec_id` trong `shape['attributes']`.
 
     - Nếu `error_value` có nội dung: gán giá trị mới.
-    - Nếu `error_value` là `None` hoặc rỗng `""`: xóa thuộc tính khỏi danh sách hoặc gán rỗng.
+    - Nếu `error_value` là `None` hoặc rỗng `""`: ghi giá trị rỗng để chặn kế thừa cờ mutable.
     Trả về `True` nếu thuộc tính thay đổi so với giá trị cũ.
     """
     attributes = list(shape.get("attributes", []))
@@ -67,18 +70,13 @@ def _update_shape_attributes(
             break
 
     new_val = error_value or ""
-    if old_value == new_val or (old_value is None and not new_val):
+    if old_value == new_val or (old_value is None and not new_val and not force_empty):
         return False
 
-    if new_val:
-        if target_idx is not None:
-            attributes[target_idx] = {"spec_id": spec_id, "value": new_val}
-        else:
-            attributes.append({"spec_id": spec_id, "value": new_val})
+    if target_idx is not None:
+        attributes[target_idx] = {"spec_id": spec_id, "value": new_val}
     else:
-        if target_idx is not None:
-            # Xóa thuộc tính cờ lỗi
-            attributes.pop(target_idx)
+        attributes.append({"spec_id": spec_id, "value": new_val})
 
     shape["attributes"] = attributes
     return True
@@ -104,7 +102,7 @@ def build_findings_map(findings: Iterable[Finding]) -> dict[FindingKey, str]:
     Nếu 1 box có nhiều finding, ghép các câu thông báo bằng `; `.
     """
     grouped: dict[FindingKey, list[str]] = {}
-    for f in findings:
+    for f in sorted(findings, key=lambda f: (f.sort_key(), f.message)):
         msgs = grouped.setdefault((f.track_id, f.source_id, f.frame), [])
         msg = format_finding_message(f)
         if msg not in msgs:
@@ -139,7 +137,10 @@ def _plan_flag_updates(
 
     def spec_of(label_id: Any) -> int | None:
         info = labels.get(label_id)
-        return info.attribute_ids.get(flag_attribute) if info else None
+        spec_id = info.attribute_ids.get(flag_attribute) if info else None
+        if info and info.attribute_mutable.get(spec_id) is False:
+            raise CvatError(f"Thuộc tính {flag_attribute} của {info.name} phải là mutable để ghi cờ từng keyframe")
+        return spec_id
 
     for raw_shape in raw_annotations.get("shapes", []):
         spec_id = spec_of(raw_shape.get("label_id"))
@@ -155,9 +156,22 @@ def _plan_flag_updates(
             continue
         track = copy.deepcopy(raw_track)
         changed = False
-        for shape in track.get("shapes", []):
+        original_value = next((a["value"] for a in track.get("attributes", []) if a["spec_id"] == spec_id), "")
+        planned_value = original_value
+        for shape in sorted(track.get("shapes", []), key=lambda s: s["frame"]):
             if shape.get("type") == "cuboid":
-                changed |= apply(shape, spec_id, value_for(track.get("id"), shape.get("id"), shape.get("frame")))
+                original_value = next((a["value"] for a in shape.get("attributes", []) if a["spec_id"] == spec_id), original_value)
+                value = value_for(track.get("id"), shape.get("id"), shape.get("frame"))
+                desired = original_value if value is _KEEP else (value or "")
+                explicit = next((a["value"] for a in shape.get("attributes", []) if a["spec_id"] == spec_id), planned_value)
+                if explicit != desired:
+                    changed |= _update_shape_attributes(shape, spec_id, desired, force_empty=True)
+                if original_value != desired:
+                    if desired:
+                        flagged += 1
+                    else:
+                        cleared += 1
+                planned_value = desired
         if changed:
             patch.setdefault("tracks", []).append(track)
 
@@ -207,14 +221,20 @@ def flag_job_errors(
     - Nếu `snapshot_path` được cung cấp: lưu bản chụp JSON trước khi ghi.
     - Không có finding nào vẫn chạy, để xóa cờ cũ khi `clear_stale=True`.
     """
+    raw_annos = _fresh_annotations(client, job, flag_attribute)
     if snapshot_path:
-        save_snapshot(job, snapshot_path)
+        save_snapshot(replace(job, cuboids=annotations_to_cuboids(raw_annos, job.labels), raw_annotations=raw_annos), snapshot_path)
 
-    findings_map = build_findings_map(findings)
-    raw_annos = client.get_job_annotations(job.job_id)
+    # CVAT update có thể cấp id mới cho keyframe. Chỉ khớp lại khi hình học/thuộc tính
+    # đã được kiểm là chưa đổi và finding thực sự thuộc box trong lượt scan này.
+    scanned = {(b.track_id, b.source_id, b.frame) for b in job.cuboids if b.track_id is not None}
+    current = {(b.track_id, b.frame): b.source_id for b in annotations_to_cuboids(raw_annos, job.labels) if b.track_id is not None}
+    rebound = [replace(f, source_id=current.get((f.track_id, f.frame), f.source_id))
+               if (f.track_id, f.source_id, f.frame) in scanned else f for f in findings]
+    findings_map = build_findings_map(rebound)
     patch_data, summary = build_error_patch(raw_annos, job.labels, findings_map, flag_attribute, clear_stale)
     if patch_data:
-        client.patch_job_annotations(job.job_id, patch_data, action="update")
+        _patch_if_unchanged(client, job.job_id, raw_annos, patch_data)
     return summary
 
 
@@ -233,19 +253,37 @@ def clear_job_errors(
     - Nếu `snapshot_path` được cung cấp: lưu bản chụp JSON trước khi xóa.
     - Trả về số lượng box được xóa cờ.
     """
+    raw_annos = _fresh_annotations(client, job, flag_attribute)
     if snapshot_path:
-        save_snapshot(job, snapshot_path)
+        save_snapshot(replace(job, cuboids=annotations_to_cuboids(raw_annos, job.labels), raw_annotations=raw_annos), snapshot_path)
 
     def value_for(tid: int | None, _shape_id: int | None, f: int) -> Any:
         if (track_id is not None and tid != track_id) or (frame is not None and f != frame):
             return _KEEP
         return None
 
-    raw_annos = client.get_job_annotations(job.job_id)
     patch_data, _, cleared = _plan_flag_updates(raw_annos, job.labels, flag_attribute, value_for)
     if patch_data:
-        client.patch_job_annotations(job.job_id, patch_data, action="update")
+        _patch_if_unchanged(client, job.job_id, raw_annos, patch_data)
     return cleared
+
+
+def _fresh_annotations(client: CvatClient, job: JobData, flag_attribute: str) -> dict[str, Any]:
+    raw = client.get_job_annotations(job.job_id)
+    current = annotations_to_cuboids(raw, job.labels)
+    def signature(boxes: Iterable[Cuboid]) -> list[str]:
+        return sorted(repr((b.frame, b.track_id, b.source_id if b.track_id is None else None,
+                            b.label, b.center, b.dims, b.yaw, b.keyframe, b.outside,
+                            sorted((k, v) for k, v in b.attrs.items() if k != flag_attribute))) for b in boxes)
+    if signature(current) != signature(job.cuboids):
+        raise CvatError("Nhãn đã thay đổi sau lượt scan; quét lại trước khi ghi/gỡ cờ")
+    return raw
+
+
+def _patch_if_unchanged(client: CvatClient, job_id: int, before: dict[str, Any], patch: dict[str, Any]) -> None:
+    if client.get_job_annotations(job_id) != before:
+        raise CvatError("Nhãn thay đổi khi chuẩn bị PATCH; quét lại trước khi ghi/gỡ cờ")
+    client.patch_job_annotations(job_id, patch, action="update")
 
 
 def verify_geometry_preserved(
@@ -255,10 +293,12 @@ def verify_geometry_preserved(
 ) -> None:
     """Kiểm tra hình học của các box trước và sau khi ghi/xóa cờ lỗi.
 
-    Báo lỗi nếu số lượng box khác nhau hoặc bất kỳ tọa độ tâm, kích thước, yaw nào bị xê dịch.
+    So theo frame/track/label và hình học, không phụ thuộc id keyframe CVAT cấp lại.
+    Kiểm cả roll/pitch, outside, occluded và keyframe; dung sai tuyệt đối theo mét/radian.
     """
-    before_list = list(before_cuboids)
-    after_list = list(after_cuboids)
+    key = lambda b: (b.frame, b.track_id if b.track_id is not None else -1, b.label, b.center, b.dims, b.yaw)
+    before_list = sorted(before_cuboids, key=key)
+    after_list = sorted(after_cuboids, key=key)
 
     if len(before_list) != len(after_list):
         raise ValueError(
@@ -266,22 +306,25 @@ def verify_geometry_preserved(
         )
 
     for b, a in zip(before_list, after_list):
-        if (b.frame, b.track_id, b.source_id) != (a.frame, a.track_id, a.source_id):
+        if (b.frame, b.track_id, b.label, b.outside, b.occluded, b.keyframe) != (a.frame, a.track_id, a.label, a.outside, a.occluded, a.keyframe):
             raise ValueError(f"Thứ tự hoặc định danh box bị thay đổi: {b} vs {a}")
 
         for i, name in enumerate(("x", "y", "z")):
-            if not math.isclose(b.center[i], a.center[i], abs_tol=tolerance):
+            if not math.isclose(b.center[i], a.center[i], abs_tol=tolerance, rel_tol=0):
                 raise ValueError(
                     f"Tâm box (frame={b.frame}, track={b.track_id}) bị lệch ở trục {name}: "
                     f"{b.center[i]} -> {a.center[i]}"
                 )
-            if not math.isclose(b.dims[i], a.dims[i], abs_tol=tolerance):
+            if not math.isclose(b.dims[i], a.dims[i], abs_tol=tolerance, rel_tol=0):
                 raise ValueError(
                     f"Kích thước box (frame={b.frame}, track={b.track_id}) bị thay đổi ở trục {name}: "
                     f"{b.dims[i]} -> {a.dims[i]}"
                 )
 
-        if not math.isclose(b.yaw, a.yaw, abs_tol=tolerance):
+        for attr in ("cvat_rx", "cvat_ry"):
+            if not math.isclose(float(b.attrs.get(attr, 0)), float(a.attrs.get(attr, 0)), abs_tol=tolerance, rel_tol=0):
+                raise ValueError(f"Roll/pitch box bị thay đổi: {attr}")
+        if not math.isclose(b.yaw, a.yaw, abs_tol=tolerance, rel_tol=0):
             raise ValueError(
                 f"Yaw của box (frame={b.frame}, track={b.track_id}) bị thay đổi: "
                 f"{b.yaw} -> {a.yaw}"

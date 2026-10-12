@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import datetime
-import json
 import logging
+import re
+import threading
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -15,14 +17,20 @@ from pointsnap.adapters.cvat.writer import flag_job_errors, save_snapshot
 from pointsnap.cli.common import frames_for_job
 from pointsnap.core.gate import gate_verdict
 from pointsnap.core.model import Finding, Severity
-from pointsnap.core.scanner import actionable, scan_cuboids
+from pointsnap.core.scanner import actionable, scan_coverage_gaps, scan_cuboids
 from pointsnap.report.csv_rep import generate_csv_report
 from pointsnap.report.html import generate_html_report
 from pointsnap.learn import apply as apply_learned
 from pointsnap.learn import load_model
 from pointsnap.web.projects import ProjectError, ProjectManager
+from pointsnap.web.storage import StorageError, read_json, write_json
 
 logger = logging.getLogger(__name__)
+RUN_ID_RE = re.compile(r"\d{8}-\d{6}(?:-\d+)?-job\d+")
+
+
+class ScanBusyError(ValueError):
+    """Giới hạn hàng đợi hoặc dự án đang được quét."""
 
 
 def finding_to_dict(
@@ -60,24 +68,65 @@ def finding_to_dict(
 
 
 class ScanRunner:
-    def __init__(self, project_manager: ProjectManager, max_workers: int = 1) -> None:
+    def __init__(self, project_manager: ProjectManager, max_workers: int = 1, max_pending: int = 16) -> None:
         self.pm = project_manager
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
         self._scans: dict[str, dict[str, Any]] = {}
+        self._lock = threading.RLock()
+        self.max_pending = max_pending
+
+    def run_dir(self, slug: str, run_id: str) -> Path:
+        self.pm.get_project(slug)
+        if not RUN_ID_RE.fullmatch(run_id):
+            raise ProjectError("run_id không hợp lệ")
+        parent = (self.pm._project_dir(slug) / "runs").resolve()
+        path = (parent / run_id).resolve()
+        if not path.is_relative_to(parent):
+            raise ProjectError("Lần quét nằm ngoài phạm vi dự án")
+        return path
+
+    def delete_project(self, slug: str) -> None:
+        with self._lock:
+            if any(r["project_slug"] == slug and r["status"] in ("queued", "running")
+                   for r in self._scans.values()):
+                raise ScanBusyError("Dự án đang có tác vụ quét; chờ hoàn tất trước khi xóa.")
+            self.pm.delete_project(slug)
+            self._scans = {key: value for key, value in self._scans.items() if value["project_slug"] != slug}
+
+    def _state(self, run_id: str, **updates: Any) -> None:
+        with self._lock:
+            info = self._scans[run_id]
+            info.update(updates)
+            write_json(self.run_dir(info["project_slug"], run_id) / "run.json", info)
 
     def start_scan(self, slug: str, job_id: int, flag: bool = False) -> str:
         """Bắt đầu quét một job trong luồng nền. Trả về `run_id`."""
-        self.pm.get_project(slug)  # kiểm tra dự án tồn tại
+        with self._lock:
+            if sum(r["status"] in ("queued", "running") for r in self._scans.values()) >= self.max_pending:
+                raise ScanBusyError("Hàng đợi quét đã đầy; hãy thử lại sau.")
+            return self._start_scan(slug, job_id, flag)
+
+    def _start_scan(self, slug: str, job_id: int, flag: bool) -> str:
+        source_project = self.pm.get_project(slug)
+        if job_id <= 0:
+            raise ProjectError("job_id phải là số nguyên dương")
         now = datetime.datetime.now()
-        # Điểm nhỏ 4: thêm millisecond để tránh run_id trùng khi bấm 2 lần trong 1 giây
         now_str = now.strftime("%Y%m%d-%H%M%S")
-        ms = now.microsecond // 1000
-        run_id = f"{now_str}-{ms:03d}-job{job_id}"
+        # Suffix ngắn cho đường dẫn Windows; mkdir độc quyền bảo đảm không đè run cũ.
+        while True:
+            run_id = f"{now_str}-{uuid.uuid4().int % 10**12:012d}-job{job_id}"
+            path = self.run_dir(slug, run_id)
+            try:
+                path.mkdir(exist_ok=False)
+                break
+            except FileExistsError:
+                continue
 
         run_info: dict[str, Any] = {
             "run_id": run_id,
             "project_slug": slug,
             "job_id": job_id,
+            "source_cvat_url": source_project["cvat_url"],
             "flag": flag,
             "status": "queued",
             "progress": 0,
@@ -87,19 +136,29 @@ class ScanRunner:
             "error": None,
             "summary": None,
         }
+        write_json(path / "run.json", run_info)
         self._scans[run_id] = run_info
-
-        self._executor.submit(self._execute_scan, run_id, slug, job_id, flag)
+        try:
+            self._executor.submit(self._execute_scan, run_id, slug, job_id, flag)
+        except RuntimeError:
+            self._state(run_id, status="failed", error="Không khởi động được worker", progress=100)
+            raise
         return run_id
 
     def _execute_scan(self, run_id: str, slug: str, job_id: int, flag: bool) -> None:
         info = self._scans[run_id]
-        info["status"] = "running"
         info["progress"] = 5
         info["message"] = "Đang nạp cấu hình và kết nối CVAT..."
 
+        client = None
+        token = None
         try:
+            self._state(run_id, status="running")
             config = self.pm.get_effective_config(slug)
+            source_url = info.get("source_cvat_url")
+            if not source_url or config.cvat.url.rstrip("/") != source_url.rstrip("/"):
+                raise ProjectError("Nguồn CVAT của job trong hàng đợi đã đổi hoặc bị thiếu; chọn lại job và quét mới.")
+            token = config.cvat.token
             proj = self.pm.get_project(slug)
 
             client = CvatClient(config.cvat.url, config.cvat.token)
@@ -108,8 +167,7 @@ class ScanRunner:
 
             job = load_job(client, job_id)
 
-            run_dir = self.pm._project_dir(slug) / "runs" / run_id
-            run_dir.mkdir(parents=True, exist_ok=True)
+            run_dir = self.run_dir(slug, run_id)
 
             # 1. Lưu snapshot
             info["progress"] = 35
@@ -138,11 +196,11 @@ class ScanRunner:
             # 4. Xuất báo cáo HTML / CSV
             info["progress"] = 80
             info["message"] = "Đang tạo báo cáo HTML và CSV..."
-            generate_html_report(job, findings, run_dir / "report.html")
+            coverage_gaps = scan_coverage_gaps(job, config, frames)
+            passed, reasons = gate_verdict(findings, config.gate, coverage_gaps=coverage_gaps)
+            generate_html_report(job, findings, run_dir / "report.html", coverage_gaps=coverage_gaps,
+                                 gate_passed=passed, gate_reasons=reasons)
             generate_csv_report(job, findings, run_dir / "report.csv")
-
-            # 5. Đánh giá Gate
-            passed, reasons = gate_verdict(findings, config.gate)
 
             # 6. Gắn cờ lỗi lên CVAT nếu được yêu cầu
             flag_summary: dict[str, int] | None = None
@@ -169,10 +227,7 @@ class ScanRunner:
                 )
                 for f in findings
             ]
-            (run_dir / "findings.json").write_text(
-                json.dumps(findings_dicts, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
+            write_json(run_dir / "findings.json", findings_dicts)
 
             # 8. Ghi summary.json
             counts = {
@@ -189,53 +244,84 @@ class ScanRunner:
                 "num_info": counts["info"],
                 "gate_passed": passed,
                 "gate_reasons": reasons,
+                "coverage_gaps": coverage_gaps,
                 "flagged": flag,
                 "flag_summary": flag_summary,
                 "note": note,
+                "config": config.to_dict(),
+                "cvat_url": config.cvat.url,
+                "task_id": job.task_id,
             }
-            (run_dir / "summary.json").write_text(
-                json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-            )
+            write_json(run_dir / "summary.json", summary)
 
-            info["status"] = "done"
             info["progress"] = 100
             info["message"] = "Hoàn tất."
             info["summary"] = summary
             info["finished_at"] = datetime.datetime.now(
                 datetime.timezone.utc
             ).isoformat()
+            self._state(run_id, status="done")
 
         except Exception as exc:
-            logger.exception("Lỗi khi quét job %s", job_id)
+            error = str(exc).replace(token, "***") if token else str(exc)
+            logger.error("Lỗi khi quét job %s: %s", job_id, error)
             info["status"] = "failed"
             info["progress"] = 100
-            info["message"] = f"Lỗi: {exc}"
-            info["error"] = str(exc)
+            info["message"] = f"Lỗi: {error}"
+            info["error"] = error
             info["finished_at"] = datetime.datetime.now(
                 datetime.timezone.utc
             ).isoformat()
+            try:
+                self._state(run_id)
+            except (OSError, ValueError):
+                logger.error("Không lưu được trạng thái thất bại của run %s", run_id)
+        finally:
+            if client is not None:
+                client.session.close()
 
     def get_run(
         self, slug: str, run_id: str, include_findings: bool = False
     ) -> dict[str, Any]:
         """Lấy trạng thái chi tiết của một lần quét."""
+        run_dir = self.run_dir(slug, run_id)
         # 1. Đang chạy trong memory
         if run_id in self._scans:
             run_data = dict(self._scans[run_id])
+            if run_data.get("project_slug") != slug:
+                raise ProjectError(f"Không tìm thấy lần quét '{run_id}' trong dự án '{slug}'")
+            if run_data.get("status") == "done":
+                self._check_outputs(run_dir)
+                run_data["summary"] = read_json(run_dir / "summary.json")
             if include_findings and run_data.get("status") == "done":
                 run_dir = self.pm._project_dir(slug) / "runs" / run_id
                 f_path = run_dir / "findings.json"
                 if f_path.is_file():
-                    run_data["findings"] = json.loads(f_path.read_text(encoding="utf-8"))
+                    run_data["findings"] = read_json(f_path, list)
             return run_data
 
         # 2. Đọc từ ổ đĩa
-        run_dir = self.pm._project_dir(slug) / "runs" / run_id
+        state_file = run_dir / "run.json"
+        if state_file.is_file():
+            res = read_json(state_file)
+            if res.get("project_slug") != slug or res.get("run_id") != run_id:
+                raise StorageError("run.json không thuộc dự án/lần quét đang yêu cầu")
+            if res.get("status") in ("queued", "running"):
+                res.update(status="failed", progress=100, error="Quét bị gián đoạn do khởi động lại server.",
+                           message="Quét bị gián đoạn; hãy quét lại.",
+                           finished_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
+                write_json(state_file, res)
+            if res.get("status") == "done":
+                self._check_outputs(run_dir)
+                res["summary"] = read_json(run_dir / "summary.json")
+                if include_findings:
+                    res["findings"] = read_json(run_dir / "findings.json", list)
+            return res
         sum_file = run_dir / "summary.json"
         if not sum_file.is_file():
             raise ProjectError(f"Không tìm thấy lần quét '{run_id}'")
 
-        summary = json.loads(sum_file.read_text(encoding="utf-8"))
+        summary = read_json(sum_file)
         res: dict[str, Any] = {
             "run_id": run_id,
             "project_slug": slug,
@@ -250,44 +336,44 @@ class ScanRunner:
         }
         if include_findings:
             f_path = run_dir / "findings.json"
-            if f_path.is_file():
-                res["findings"] = json.loads(f_path.read_text(encoding="utf-8"))
+            res["findings"] = read_json(f_path, list)
         return res
+
+    @staticmethod
+    def _check_outputs(run_dir: Path) -> None:
+        for name in ("summary.json", "findings.json", "snapshot.json", "report.html", "report.csv"):
+            if not (run_dir / name).is_file():
+                raise StorageError(f"Lần quét thiếu {name}; hãy quét lại.")
+        read_json(run_dir / "summary.json")
+        read_json(run_dir / "findings.json", list)
 
     def list_runs(self, slug: str) -> list[dict[str, Any]]:
         """Lấy danh sách tóm tắt các lần quét của dự án (sắp xếp mới nhất trước)."""
+        self.pm.get_project(slug)
         runs_dir = self.pm._project_dir(slug) / "runs"
         results: list[dict[str, Any]] = []
         seen_runs = set()
 
         # Đang active trong bộ nhớ
-        for r_id, r_info in self._scans.items():
+        with self._lock:
+            active = list(self._scans.items())
+        for r_id, r_info in active:
             if r_info.get("project_slug") == slug:
-                results.append(dict(r_info))
+                try:
+                    results.append(self.get_run(slug, r_id))
+                except (ProjectError, StorageError) as exc:
+                    results.append({"run_id": r_id, "project_slug": slug, "status": "failed",
+                                    "error": str(exc), "progress": 100})
                 seen_runs.add(r_id)
 
         # Đọc từ file
         if runs_dir.is_dir():
             for d in runs_dir.iterdir():
                 if d.is_dir() and d.name not in seen_runs:
-                    sum_file = d / "summary.json"
-                    if sum_file.is_file():
-                        try:
-                            s = json.loads(sum_file.read_text(encoding="utf-8"))
-                            results.append(
-                                {
-                                    "run_id": d.name,
-                                    "project_slug": slug,
-                                    "job_id": s.get("job_id"),
-                                    "status": "done",
-                                    "progress": 100,
-                                    "message": "Hoàn tất.",
-                                    "started_at": s.get("timestamp"),
-                                    "finished_at": s.get("timestamp"),
-                                    "summary": s,
-                                }
-                            )
-                        except Exception:
-                            continue
+                    try:
+                        results.append(self.get_run(slug, d.name))
+                    except (ProjectError, StorageError) as exc:
+                        results.append({"run_id": d.name, "project_slug": slug, "status": "failed",
+                                        "error": str(exc), "progress": 100})
 
         return sorted(results, key=lambda r: r.get("started_at") or "", reverse=True)

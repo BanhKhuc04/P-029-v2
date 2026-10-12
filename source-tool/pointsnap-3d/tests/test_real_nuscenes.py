@@ -32,7 +32,7 @@ def _nuscenes_root() -> str | None:
 ROOT = _nuscenes_root()
 
 pytestmark = pytest.mark.skipif(
-    not ROOT or not (Path(ROOT) / "v1.0-mini").is_dir(), reason="chưa có dữ liệu nuScenes (NUSCENES_ROOT)"
+    not ROOT, reason="chưa cấu hình dữ liệu nuScenes (NUSCENES_ROOT)"
 )
 
 

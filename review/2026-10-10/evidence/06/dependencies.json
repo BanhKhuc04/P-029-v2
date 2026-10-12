@@ -1,0 +1,18 @@
+{
+  "method": "installed metadata + packaging.Requirement, base requirements (pip unavailable)",
+  "versions": {
+    "pointsnap": "0.1.0",
+    "numpy": "2.5.3",
+    "pyyaml": "6.0.3",
+    "requests": "2.34.2",
+    "fastapi": "0.143.0",
+    "uvicorn": "0.54.0",
+    "pydantic": "2.14.0",
+    "starlette": "1.7.0",
+    "pytest": "9.1.1",
+    "httpx": "0.28.1"
+  },
+  "distributions_checked": 30,
+  "compatibility_issues": [],
+  "cve_audit": "not performed"
+}

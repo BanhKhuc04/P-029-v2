@@ -41,13 +41,13 @@ class MetricSummary:
     measurement_errors: list[float] = field(default_factory=list)
 
     @property
-    def recall(self) -> float:
-        return (self.true_positives / self.total_injected) if self.total_injected > 0 else 0.0
+    def recall(self) -> float | None:
+        return (self.true_positives / self.total_injected) if self.total_injected > 0 else None
 
     @property
-    def precision(self) -> float:
+    def precision(self) -> float | None:
         total_detected = self.true_positives + self.false_positives
-        return (self.true_positives / total_detected) if total_detected > 0 else 0.0
+        return (self.true_positives / total_detected) if total_detected > 0 else None
 
     @property
     def median_error(self) -> float:
@@ -65,14 +65,19 @@ class EvaluationReport:
     by_severity: dict[str, MetricSummary] = field(default_factory=dict)
     clean_boxes_total: int = 0
     clean_false_alarms: int = 0
+    clean_warning_count: int = 0
+    clean_error_count: int = 0
+    clean_evaluated: bool = False
 
     @property
-    def false_alarm_rate_per_100(self) -> float:
-        if self.clean_boxes_total == 0:
-            return 0.0
+    def false_alarm_rate_per_100(self) -> float | None:
+        if self.clean_boxes_total == 0 or not self.clean_evaluated:
+            return None
         return (self.clean_false_alarms / self.clean_boxes_total) * 100.0
 
     def to_markdown(self) -> str:
+        def pct(value): return f'{value*100:.1f}%' if value is not None else '—'
+        def status(value, target): return 'CHƯA ĐO' if value is None else ('ĐẠT' if value >= target else 'CHƯA ĐẠT')
         lines = [
             "# BẢNG CHỈ SỐ ĐÁNH GIÁ (MỤC 8.2)",
             "",
@@ -86,26 +91,23 @@ class EvaluationReport:
         for et in ("floating", "size", "track"):
             s = self.by_type.get(et, MetricSummary())
             target = 0.90
-            status = "ĐẠT" if s.recall >= target else "CHƯA ĐẠT"
             lines.append(
-                f"| Recall — {et} | ≥ 90% | **{s.recall*100:.1f}%** ({s.true_positives}/{s.total_injected}) | {status} |"
+                f"| Recall — {et} | ≥ 90% | **{pct(s.recall)}** ({s.true_positives}/{s.total_injected}) | {status(s.recall,target)} |"
             )
 
         # Recall theo mức độ
         for sev, target in (("error", 0.90), ("warning", 0.80)):
             s = self.by_severity.get(sev, MetricSummary())
-            status = "ĐẠT" if s.recall >= target else "CHƯA ĐẠT"
             lines.append(
-                f"| Recall — {sev} | ≥ {target*100:.0f}% | **{s.recall*100:.1f}%** ({s.true_positives}/{s.total_injected}) | {status} |"
+                f"| Recall — {sev} | ≥ {target*100:.0f}% | **{pct(s.recall)}** ({s.true_positives}/{s.total_injected}) | {status(s.recall,target)} |"
             )
 
         # Precision mỗi loại
         for et in ("floating", "size", "track"):
             s = self.by_type.get(et, MetricSummary())
             target = 0.70
-            status = "ĐẠT" if s.precision >= target else "CHƯA ĐẠT"
             lines.append(
-                f"| Precision — {et} | ≥ 70% | **{s.precision*100:.1f}%** (TP: {s.true_positives}, FP: {s.false_positives}) | {status} |"
+                f"| Precision — {et} | ≥ 70% | **{pct(s.precision)}** (TP: {s.true_positives}, FP: {s.false_positives}) | {status(s.precision,target)} |"
             )
 
         lines.extend([
@@ -114,7 +116,6 @@ class EvaluationReport:
             "",
             "| Chỉ số | Mục tiêu | Kết quả thực tế | Đánh giá |",
             "|---|---|---|---|",
-            f"| Báo động giả trên nhãn sạch | ≤ 2 Cảnh báo / 100 box | **{self.false_alarm_rate_per_100:.2f}** Cảnh báo / 100 box ({self.clean_false_alarms}/{self.clean_boxes_total} box) | {'ĐẠT' if self.false_alarm_rate_per_100 <= 2.0 else 'CHƯA ĐẠT'} |",
             "",
             "## 3. Độ chính xác số đo",
             "",
@@ -122,11 +123,19 @@ class EvaluationReport:
             "|---|---|---|---|",
         ])
 
+        rows=[]
+        for severity,count,target in [('warning',self.clean_warning_count,2.0),('error',self.clean_error_count,.5)]:
+            rate=count/self.clean_boxes_total*100 if self.clean_boxes_total and self.clean_evaluated else None
+            value=f'{rate:.2f} ({count}/{self.clean_boxes_total})' if rate is not None else '—'
+            verdict='CHƯA ĐO' if rate is None else ('ĐẠT' if rate<=target else 'CHƯA ĐẠT')
+            rows.append(f'| {severity} / 100 box | ≤ {target:g} | {value} | {verdict} |')
+        where=lines.index('## 3. Độ chính xác số đo')-1
+        lines[where:where]=rows
+
         for et in ("floating", "size"):
             s = self.by_type.get(et, MetricSummary())
-            lines.append(
-                f"| Sai số đo {et} | Trung vị < 3 cm | **{s.median_error*100:.2f} cm** | {s.p90_error*100:.2f} cm |"
-            )
+            measured=f'**{s.median_error*100:.2f} cm** | {s.p90_error*100:.2f} cm' if s.measurement_errors else '— | —'
+            lines.append(f"| Sai số đo {et} (n={len(s.measurement_errors)}) | Trung vị < 3 cm | {measured} |")
 
         return "\n".join(lines)
 
@@ -141,9 +150,11 @@ def evaluate_findings(
     report = EvaluationReport()
 
     # Nhóm findings theo (error_type, frame, track_id)
-    findings_by_key: dict[tuple[str, int, int | None], list[Finding]] = {}
+    findings_by_key: dict[tuple, list[Finding]] = {}
     for f in findings:
-        key = (f.error_type.value, f.frame, f.track_id)
+        if f.severity is Severity.INFO:
+            continue
+        key = (f.details.get('scene'), f.error_type.value, f.frame, f.track_id)
         findings_by_key.setdefault(key, []).append(f)
 
     matched_finding_ids = set()
@@ -162,8 +173,8 @@ def evaluate_findings(
         t_sum.total_injected += 1
         s_sum.total_injected += 1
 
-        key = (fault.error_type, fault.frame, fault.track_id)
-        candidates = findings_by_key.get(key, [])
+        key = (fault.details.get('scene'), fault.error_type, fault.frame, fault.track_id)
+        candidates = [c for c in findings_by_key.get(key, []) if not fault.rule or c.rule == fault.rule]
 
         # Tìm candidate khớp severity trước, nếu không lấy candidate bất kỳ cùng loại
         matched: Finding | None = None
@@ -183,8 +194,11 @@ def evaluate_findings(
             t_sum.true_positives += 1
             s_sum.true_positives += 1
 
-            if fault.delta > 0.0 and matched.value is not None:
-                err = abs(abs(matched.value) - fault.delta)
+            expected = fault.details.get('expected_value')
+            if expected is None and fault.error_type in ('floating', 'track') and fault.delta > 0:
+                expected = fault.delta
+            if expected is not None and matched.value is not None:
+                err = abs(abs(matched.value) - abs(float(expected)))
                 report.overall.measurement_errors.append(err)
                 t_sum.measurement_errors.append(err)
         else:
@@ -201,7 +215,10 @@ def evaluate_findings(
 
     # Báo động giả trên nhãn sạch
     report.clean_boxes_total = clean_boxes_total
-    if clean_findings:
+    report.clean_evaluated = clean_findings is not None
+    if clean_findings is not None:
+        report.clean_warning_count = sum(f.severity is Severity.WARNING for f in clean_findings)
+        report.clean_error_count = sum(f.severity is Severity.ERROR for f in clean_findings)
         report.clean_false_alarms = sum(1 for f in clean_findings if f.severity in (Severity.WARNING, Severity.ERROR))
 
     return report
@@ -213,7 +230,12 @@ def load_injected_faults(path: str | Path) -> list[InjectedFault]:
         data = json.load(f)
 
     faults = []
-    items = data if isinstance(data, list) else data.get("injected_faults", [])
+    if isinstance(data,list):
+        items=data
+    elif isinstance(data,dict) and isinstance(data.get('injected_faults'),list):
+        items=data['injected_faults']
+    else:
+        raise ValueError('Cần list hoặc schema injected_faults; log injected_errors dùng evaluator canonical, không tự đổi thành dữ liệu rỗng')
     for it in items:
         faults.append(
             InjectedFault(

@@ -1,0 +1,462 @@
+{
+  "original_metadata": {
+    "created_at": "2026-10-12T08:23:25.109100+00:00",
+    "python": "3.12.14",
+    "dataset_version": "v1.0-mini",
+    "scenes": [
+      "scene-0061",
+      "scene-0553",
+      "scene-0757",
+      "scene-0916",
+      "scene-1094"
+    ],
+    "rounds": 10,
+    "seed": 0,
+    "catalog": "all",
+    "error_rate": 0.1,
+    "config": {
+      "cvat": {
+        "url": "http://localhost:8080",
+        "flag_attribute": "pointsnap_error",
+        "token": null
+      },
+      "floating": {
+        "classes": [
+          "car",
+          "truck",
+          "bus",
+          "trailer",
+          "construction_vehicle",
+          "pedestrian",
+          "motorcycle",
+          "bicycle"
+        ],
+        "warning_m": 0.12,
+        "error_m": 0.22,
+        "ring_inner_m": 0.1,
+        "ring_outer_m": 0.8,
+        "min_ground_points": 15,
+        "error_min_abs_m": 0.15,
+        "single_warning_m": 0.15,
+        "single_error_m": 0.3,
+        "min_track_boxes": 2,
+        "sweeps": 4
+      },
+      "size": {
+        "class_range": {
+          "percentile_low": 1.0,
+          "percentile_high": 99.0,
+          "warning_margin": 0.1,
+          "error_margin": 0.25,
+          "min_instances": 20,
+          "stats": {
+            "barrier": {
+              "length": [
+                0.4,
+                0.76
+              ],
+              "width": [
+                1.73,
+                3.36
+              ],
+              "height": [
+                0.9,
+                1.35
+              ]
+            },
+            "car": {
+              "length": [
+                3.9,
+                5.79
+              ],
+              "width": [
+                1.58,
+                2.41
+              ],
+              "height": [
+                1.39,
+                2.41
+              ]
+            },
+            "pedestrian": {
+              "length": [
+                0.48,
+                1.1
+              ],
+              "width": [
+                0.5,
+                0.98
+              ],
+              "height": [
+                1.28,
+                2.0
+              ]
+            },
+            "traffic_cone": {
+              "length": [
+                0.35,
+                0.69
+              ],
+              "width": [
+                0.36,
+                0.96
+              ],
+              "height": [
+                0.55,
+                1.33
+              ]
+            }
+          }
+        },
+        "manual_ranges": {
+          "bus": {
+            "length": [
+              6.0,
+              18.5
+            ],
+            "width": [
+              2.2,
+              3.2
+            ],
+            "height": [
+              2.4,
+              4.5
+            ]
+          },
+          "trailer": {
+            "length": [
+              2.0,
+              18.0
+            ],
+            "width": [
+              1.5,
+              3.2
+            ],
+            "height": [
+              1.0,
+              4.5
+            ]
+          },
+          "construction_vehicle": {
+            "length": [
+              2.5,
+              12.0
+            ],
+            "width": [
+              1.5,
+              3.5
+            ],
+            "height": [
+              1.8,
+              5.0
+            ]
+          },
+          "truck": {
+            "length": [
+              4.5,
+              12.5
+            ],
+            "width": [
+              1.8,
+              3.2
+            ],
+            "height": [
+              1.9,
+              4.3
+            ]
+          },
+          "motorcycle": {
+            "length": [
+              1.5,
+              2.6
+            ],
+            "width": [
+              0.55,
+              1.2
+            ],
+            "height": [
+              1.0,
+              2.0
+            ]
+          },
+          "bicycle": {
+            "length": [
+              1.2,
+              2.1
+            ],
+            "width": [
+              0.4,
+              0.95
+            ],
+            "height": [
+              0.8,
+              2.0
+            ]
+          }
+        },
+        "in_track": {
+          "min_keyframes": 3,
+          "excluded_classes": [
+            "pedestrian"
+          ],
+          "warning_abs_m": 0.1,
+          "warning_rel": 0.05,
+          "error_abs_m": 0.3,
+          "error_rel": 0.15,
+          "suspect_id_rel": 0.3
+        },
+        "key_attributes": {}
+      },
+      "track": {
+        "keyframe_interval_s": 0.5,
+        "groups": {
+          "vehicle": {
+            "classes": [
+              "car",
+              "truck",
+              "bus",
+              "trailer",
+              "construction_vehicle"
+            ],
+            "jump_warning_m": 1.0,
+            "jump_error_m": 2.0,
+            "v_max_mps": 30.0,
+            "split_max_dist_m": 2.0
+          },
+          "two_wheeler": {
+            "classes": [
+              "motorcycle",
+              "bicycle"
+            ],
+            "jump_warning_m": 0.75,
+            "jump_error_m": 1.5,
+            "v_max_mps": 10.0,
+            "split_max_dist_m": 1.5
+          },
+          "pedestrian": {
+            "classes": [
+              "pedestrian"
+            ],
+            "jump_warning_m": 0.5,
+            "jump_error_m": 1.0,
+            "v_max_mps": 3.0,
+            "split_max_dist_m": 1.0
+          },
+          "static": {
+            "classes": [
+              "traffic_cone",
+              "barrier"
+            ],
+            "jump_warning_m": 0.3,
+            "jump_error_m": 0.6,
+            "v_max_mps": 0.5,
+            "split_max_dist_m": 0.5
+          }
+        },
+        "split_max_gap_frames": 3,
+        "long_interpolation": {
+          "enabled": true,
+          "min_frames": 2,
+          "min_motion_m": 1.0
+        },
+        "max_occluded_frames": 6
+      },
+      "gate": {
+        "max_errors": 0,
+        "max_warnings": 10
+      },
+      "rules": {
+        "floating": true,
+        "size_class_range": true,
+        "size_in_track": true,
+        "track_jump": true,
+        "track_split_id": true,
+        "track_long_interpolation": true,
+        "heading_flip": true,
+        "heading_motion": true,
+        "heading_points": true,
+        "fit_empty": true,
+        "fit_outside": true,
+        "fit_loose": true,
+        "fit_overlap": true,
+        "track_reuse_id": true,
+        "track_occluded_long": true,
+        "attr_missing": true,
+        "attr_invalid": true
+      },
+      "heading": {
+        "groups": {
+          "vehicle": {
+            "classes": [
+              "car",
+              "truck",
+              "bus",
+              "trailer",
+              "construction_vehicle"
+            ],
+            "min_speed_mps": 2.0,
+            "motion_warning_deg": 60.0,
+            "motion_error_deg": 135.0,
+            "flip_warning_deg": 45.0,
+            "flip_error_deg": 75.0,
+            "yaw_rate_max_dps": 60.0
+          },
+          "two_wheeler": {
+            "classes": [
+              "motorcycle",
+              "bicycle"
+            ],
+            "min_speed_mps": 1.5,
+            "motion_warning_deg": 60.0,
+            "motion_error_deg": 135.0,
+            "flip_warning_deg": 45.0,
+            "flip_error_deg": 75.0,
+            "yaw_rate_max_dps": 90.0
+          },
+          "pedestrian": {
+            "classes": [
+              "pedestrian"
+            ],
+            "min_speed_mps": 1.0,
+            "motion_warning_deg": 90.0,
+            "motion_error_deg": 150.0,
+            "flip_warning_deg": 120.0,
+            "flip_error_deg": 170.0,
+            "yaw_rate_max_dps": 180.0
+          }
+        },
+        "min_motion_m": 1.0,
+        "points": {
+          "classes": [
+            "car",
+            "truck",
+            "bus",
+            "trailer"
+          ],
+          "min_points": 60,
+          "min_aspect": 1.6,
+          "warning_deg": 15.0,
+          "error_deg": 30.0,
+          "max_range_m": 40.0
+        }
+      },
+      "fit": {
+        "empty_max_points": 0,
+        "sparse_warning_points": 0,
+        "outside_margin_m": 0.5,
+        "outside_margin_rel": 0.25,
+        "outside_min_points": 30,
+        "outside_warning_ratio": 0.5,
+        "outside_error_ratio": 0.7,
+        "ground_clearance_m": 0.25,
+        "loose_min_points": 40,
+        "loose_max_range_m": 30.0,
+        "loose_warning_m": 0.5,
+        "loose_error_m": 1.0,
+        "overlap_warning": 0.2,
+        "overlap_error": 0.5,
+        "overlap_classes": [
+          "car",
+          "truck",
+          "bus",
+          "trailer",
+          "construction_vehicle",
+          "motorcycle",
+          "bicycle",
+          "pedestrian"
+        ],
+        "overlap_allowed_pairs": [
+          [
+            "pedestrian",
+            "pedestrian"
+          ],
+          [
+            "pedestrian",
+            "bicycle"
+          ],
+          [
+            "pedestrian",
+            "motorcycle"
+          ],
+          [
+            "pedestrian",
+            "car"
+          ],
+          [
+            "pedestrian",
+            "truck"
+          ],
+          [
+            "pedestrian",
+            "construction_vehicle"
+          ],
+          [
+            "bicycle",
+            "bicycle"
+          ],
+          [
+            "motorcycle",
+            "motorcycle"
+          ],
+          [
+            "bicycle",
+            "motorcycle"
+          ],
+          [
+            "truck",
+            "trailer"
+          ],
+          [
+            "car",
+            "trailer"
+          ],
+          [
+            "construction_vehicle",
+            "trailer"
+          ]
+        ]
+      },
+      "spec": {
+        "required_attributes": {},
+        "allowed_values": {}
+      }
+    },
+    "config_sha256": "56fa54580ca73647805dd63d7fe7145bee121a368ffa64920b37b17a9ef7fd5e",
+    "matching": "same rule family and track/frame; warning+; each finding credited to one injection; precision is finding-level matching, not manual truth",
+    "source_commit": "19157f608b11ae168f3bcf2cf65ffc892d99a47b"
+  },
+  "analysis_commit": "edfbed533d35ba1ccba73c0567a7cc5addfd9293",
+  "applicability_sha256": "fc7109c1196b4005ecfd5eae68cf8959b6a5abbfbd1049b04df5a7e5402e3af2",
+  "reclassified_outcomes": 5,
+  "detector_config_changed": false,
+  "condition": "postprocess only rule-scope class/min_frames/min_keyframes; scans/matches unchanged, preserved originals; no threshold tuning on held-out scenes",
+  "confidence": "Wilson95 illustrative binomial interval; repeated same-scene/track samples are clustered, not a proof of independent-sample significance",
+  "manual_precision_reviewed_samples": 0,
+  "denominators": {
+    "scene-0061": {
+      "raw_annotations": 3333,
+      "visible_boxes": 3333,
+      "markers_or_occluded": 567
+    },
+    "scene-0553": {
+      "raw_annotations": 1288,
+      "visible_boxes": 1288,
+      "markers_or_occluded": 79
+    },
+    "scene-0757": {
+      "raw_annotations": 531,
+      "visible_boxes": 531,
+      "markers_or_occluded": 39
+    },
+    "scene-0916": {
+      "raw_annotations": 1964,
+      "visible_boxes": 1964,
+      "markers_or_occluded": 190
+    },
+    "scene-1094": {
+      "raw_annotations": 1548,
+      "visible_boxes": 1548,
+      "markers_or_occluded": 168
+    }
+  }
+}

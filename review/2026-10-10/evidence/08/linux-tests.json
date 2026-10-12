@@ -1,0 +1,26 @@
+{
+  "name": "pytest",
+  "errors": "0",
+  "failures": "0",
+  "skipped": "7",
+  "tests": "493",
+  "time": "19.935",
+  "timestamp": "2026-10-12T09:51:16.363502+00:00",
+  "hostname": "761c2daa53a1",
+  "passed": 486,
+  "source_commit": "94dac32",
+  "test_commit": "79849b4",
+  "condition": "Docker Linux Python 3.11.17; editable install in /tmp from clean source archive; no CVAT PAT/network test opt-in/dataset mount",
+  "skip_reasons": {
+    "live_cvat": 3,
+    "real_dataset": 4
+  },
+  "pip_check": "No broken requirements found",
+  "initial_build_error": "pip ReadTimeoutError at numpy download; no source failure",
+  "retry_change": "Temporary Dockerfile only adds pip --timeout 120 --retries 3; package source and deps declarations unchanged",
+  "logs_sha256": {
+    "review08-linux-build.log": "3bfadd292ef45661f158c8823fe1969eef106aba43bd7777ade8abaccf8b6ea8",
+    "review08-linux-build-retry.log": "f6e460c3082c83fb3557fe3be0514a866323950f0e728fc87efeca438ca7ecfa",
+    "review08-linux-tests.log": "99ed967f83e73a2d7ef89ee99fe728f5a7e4eb7ffc36a35dc04671b17490085f"
+  }
+}

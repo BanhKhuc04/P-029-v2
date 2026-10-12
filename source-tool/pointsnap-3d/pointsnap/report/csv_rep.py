@@ -10,6 +10,11 @@ from pointsnap.adapters.cvat.reader import JobData, frame_url
 from pointsnap.core.model import Finding
 
 
+def _text_cell(value: str) -> str:
+    visible = value.lstrip(' \t\r\n\v\f\ufeff\u200b')
+    return "'" + value if visible.startswith(("=", "+", "-", "@")) else value
+
+
 def generate_csv_report(
     job: JobData,
     findings: Iterable[Finding],
@@ -49,11 +54,11 @@ def generate_csv_report(
                 finding.frame,
                 finding.track_id if finding.track_id is not None else "",
                 finding.source_id if finding.source_id is not None else "",
-                finding.label,
+                _text_cell(finding.label),
                 finding.severity.value,
                 finding.error_type.value,
-                finding.rule,
-                finding.message,
+                _text_cell(finding.rule),
+                _text_cell(finding.message),
                 finding.value if finding.value is not None else "",
                 finding.threshold if finding.threshold is not None else "",
                 url,

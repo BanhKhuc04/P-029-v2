@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import math
 import os
 import threading
@@ -15,6 +14,7 @@ from pointsnap.adapters.cvat.reader import ManifestFrames, find_manifest
 from pointsnap.cli.common import export_dirs
 from pointsnap.core.model import Cuboid
 from pointsnap.core.serialize import load_cuboids
+from pointsnap.web.storage import read_json, StorageError, write_json
 
 
 class PreviewError(ValueError):
@@ -49,6 +49,8 @@ def _find_box(cuboids: list[Cuboid], finding: dict[str, Any]) -> Cuboid | None:
     frame, track_id, source_id = finding.get("frame"), finding.get("track_id"), finding.get("source_id")
     boxes = [c for c in cuboids if not c.outside]
     if track_id is None:
+        if source_id is None:
+            return None
         return next((c for c in boxes if c.source_id == source_id and c.frame == frame), None)
     same_track = [c for c in boxes if c.track_id == track_id]
     if not same_track:
@@ -60,17 +62,20 @@ def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[
     findings_path, snapshot_path = run_dir / "findings.json", run_dir / "snapshot.json"
     if not findings_path.is_file() or not snapshot_path.is_file():
         raise PreviewError("Lần quét này thiếu findings.json hoặc snapshot.json")
-    findings = json.loads(findings_path.read_text(encoding="utf-8"))
+    findings = read_json(findings_path, list)
     if not 0 <= index < len(findings):
         raise PreviewError(f"Không có mục số {index}")
     finding = findings[index]
 
-    cuboids, meta = load_cuboids(snapshot_path)
+    try:
+        cuboids, meta = load_cuboids(snapshot_path)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PreviewError("snapshot.json không hợp lệ; hãy quét lại") from exc
     box = _find_box(cuboids, finding)
     if box is None:
         raise PreviewError("Không tìm thấy box của mục này trong bản chụp nhãn")
 
-    manifest = find_manifest(meta.get("task_id"), export_dirs(project.get("export_dirs") or None))
+    manifest = find_manifest(meta.get("task_id"), export_dirs(project.get("export_dirs") or None), url=meta.get("url"))
     if manifest is None:
         raise PreviewError("Không tìm thấy manifest.json của task: kiểm tra thư mục bản xuất ở tab Kết nối CVAT")
     dataroot = project.get("nuscenes_root") or os.environ.get("NUSCENES_ROOT") or None
@@ -93,7 +98,10 @@ def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[
 
 def load_reviews(run_dir: Path) -> dict[str, str]:
     path = run_dir / "reviews.json"
-    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    reviews = read_json(path) if path.is_file() else {}
+    if any(not key.isdigit() or value not in ("ok", "fp") for key, value in reviews.items()):
+        raise StorageError("reviews.json có kết luận không hợp lệ")
+    return reviews
 
 
 _REVIEWS_LOCK = threading.Lock()
@@ -111,7 +119,5 @@ def save_review(run_dir: Path, index: int, verdict: str | None) -> dict[str, str
             reviews.pop(str(index), None)
         else:
             reviews[str(index)] = verdict
-        tmp = run_dir / "reviews.json.tmp"
-        tmp.write_text(json.dumps(reviews, indent=2), encoding="utf-8")
-        os.replace(tmp, run_dir / "reviews.json")
+        write_json(run_dir / "reviews.json", reviews)
         return reviews

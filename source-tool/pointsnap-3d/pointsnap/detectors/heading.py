@@ -57,8 +57,9 @@ def _world(
 
 
 def _times(boxes: Sequence[Cuboid], interval_s: float, timestamps: Mapping[int, float] | None) -> np.ndarray:
-    return np.array([float(timestamps[b.frame]) if timestamps and b.frame in timestamps else b.frame * interval_s
-                     for b in boxes])
+    if timestamps and all(b.frame in timestamps for b in boxes):
+        return np.array([float(timestamps[b.frame]) for b in boxes])
+    return np.array([b.frame * interval_s for b in boxes])
 
 
 def _runs(headings: np.ndarray, times: np.ndarray, grp: HeadingGroupConfig) -> list[list[int]]:
@@ -184,7 +185,7 @@ def detect_heading_track(
     """Luật `heading.flip` và `heading.motion` trên mọi track."""
     findings: list[Finding] = []
     for boxes in group_by_track(cuboids).values():
-        active = [b for b in boxes if b.visible]
+        active = [b for b in boxes if b.visible and b.keyframe]
         if len(active) < 2:
             continue
         grp = config.group_for(active[0].label)
@@ -255,10 +256,12 @@ def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: Headi
         others = list(by_track.get(box.track_id, [])) if box.track_id is not None else []
         if others:
             others.remove(dev)
-        # Trục hình chữ nhật chỉ xác định theo modulo 90°: đưa các frame khác về cùng nhánh với box đang xét
-        # (−44° và +44° chỉ cách nhau 2°) rồi mới lấy trung vị.
-        others = [dev + _wrap90(o - dev) for o in others]
-        reference = float(np.median(others)) if len(others) >= 2 else 0.0
+        if len(others) >= 2:
+            anchor = min(others)
+            # Trung vị trên trục modulo 90 độ: +44 và -44 phải gần nhau, không gần 0.
+            reference = anchor + float(np.median((np.asarray(others) - anchor + 45) % 90 - 45))
+        else:
+            reference = 0.0
         deviation = abs(_wrap90(dev - reference))
         if deviation <= cfg.warning_deg:
             continue

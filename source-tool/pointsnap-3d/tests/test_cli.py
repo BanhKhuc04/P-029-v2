@@ -69,8 +69,11 @@ def test_nuscenes_errors_are_reported(tmp_path, capsys, monkeypatch):
 
 
 def test_load_dotenv_sets_missing_vars_only(tmp_path, monkeypatch):
+    import os
     from pointsnap.cli.main import load_dotenv
 
+    # load_dotenv tự ghi env; cô lập cả mapping để token giả không lọt sang test live.
+    monkeypatch.setattr(os, "environ", os.environ.copy())
     env_file = tmp_path / ".env"
     env_file.write_text('# bí mật\nCVAT_TOKEN="abc123"\nNUSCENES_ROOT=D:/data/nuscenes\nCVAT_URL=http://from-file\n\nbad line\n',
                         encoding="utf-8")
@@ -78,8 +81,6 @@ def test_load_dotenv_sets_missing_vars_only(tmp_path, monkeypatch):
     monkeypatch.delenv("NUSCENES_ROOT", raising=False)
     monkeypatch.setenv("CVAT_URL", "http://already-set")
     load_dotenv(env_file)
-    import os
-
     assert os.environ["CVAT_TOKEN"] == "abc123"
     assert os.environ["NUSCENES_ROOT"] == "D:/data/nuscenes"
     assert os.environ["CVAT_URL"] == "http://already-set"  # không ghi đè

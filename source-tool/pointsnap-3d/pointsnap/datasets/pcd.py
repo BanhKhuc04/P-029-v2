@@ -35,7 +35,9 @@ def write_pcd(path: str | Path, points: np.ndarray) -> None:
     pts = np.asarray(points)
     if pts.ndim != 2 or pts.shape[1] < 3:
         raise ValueError(f"points phải có shape (N, ≥3), nhận {pts.shape}")
-    data = np.zeros((len(pts), 4), dtype=np.float32)
+    if pts.dtype.kind not in "fiu" or not np.isfinite(pts[:, :4]).all() or np.any(np.abs(pts[:, :4]) > np.finfo(np.float32).max):
+        raise ValueError("PCD cần tọa độ/intensity hữu hạn biểu diễn được bằng float32")
+    data = np.zeros((len(pts), 4), dtype='<f4')
     data[:, : min(4, pts.shape[1])] = pts[:, :4]
     Path(path).write_bytes(_header(len(pts)) + data.tobytes())
 
@@ -46,8 +48,11 @@ def read_pcd(path: str | Path) -> np.ndarray:
     header: dict[str, str] = {}
     offset = 0
     while True:
-        end = raw.index(b"\n", offset)
-        line = raw[offset:end].decode("ascii").strip()
+        try:
+            end = raw.index(b"\n", offset)
+            line = raw[offset:end].decode("ascii").strip()
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise ValueError(f"{path}: thiếu hoặc hỏng header PCD") from exc
         offset = end + 1
         if not line or line.startswith("#"):
             continue
@@ -57,8 +62,19 @@ def read_pcd(path: str | Path) -> np.ndarray:
             break
     if header.get("DATA") != "binary" or header.get("FIELDS") != " ".join(FIELDS):
         raise ValueError(f"{path}: chỉ đọc được PCD binary với FIELDS {' '.join(FIELDS)}")
-    count = int(header["POINTS"])
-    data = np.frombuffer(raw, dtype=np.float32, offset=offset)
+    if (header.get("SIZE") != '4 4 4 4' or header.get("TYPE") != 'F F F F'
+            or header.get("COUNT", '1 1 1 1') != '1 1 1 1'):
+        raise ValueError(f"{path}: chỉ đọc được 4 trường float32, COUNT=1 mỗi trường")
+    try:
+        count = int(header["POINTS"])
+        width, height = int(header["WIDTH"]), int(header["HEIGHT"])
+    except (KeyError, ValueError) as exc:
+        raise ValueError(f"{path}: thiếu hoặc sai POINTS/WIDTH/HEIGHT") from exc
+    if count < 0 or width < 0 or height <= 0 or width * height != count:
+        raise ValueError(f"{path}: WIDTH×HEIGHT không khớp POINTS")
+    data = np.frombuffer(raw, dtype='<f4', offset=offset)
     if data.size != count * 4:
         raise ValueError(f"{path}: tiêu đề ghi {count} điểm nhưng dữ liệu có {data.size / 4:g} điểm")
+    if not np.isfinite(data).all():
+        raise ValueError(f"{path}: dữ liệu có NaN hoặc Inf")
     return data.reshape(count, 4)

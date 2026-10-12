@@ -12,8 +12,9 @@ from pointsnap.adapters.cvat.reader import JobData
 from pointsnap.adapters.nuscenes import NuScenesReader
 from pointsnap.cli.scan_cmd import print_summary
 from pointsnap.core.config import Config
+from pointsnap.core.gate import gate_verdict
 from pointsnap.core.model import Finding, add_track_markers
-from pointsnap.core.scanner import actionable, scan_cuboids
+from pointsnap.core.scanner import actionable, scan_coverage_gaps, scan_cuboids
 from pointsnap.core.synthetic import InjectedError, inject_dataset, save_injection_log
 from pointsnap.datasets.nuscenes.to_cvat import export_scene, upload_scene
 from pointsnap.report.csv_rep import generate_csv_report
@@ -130,7 +131,10 @@ def _scan(reader: NuScenesReader, args: argparse.Namespace, config: Config) -> i
     job = JobData(url="", task_id=0, job_id=0, start_frame=0, stop_frame=frames.num_frames - 1, labels={},
                   cuboids=boxes)
     html_path, csv_path = out_dir / f"report_{name}.html", out_dir / f"report_{name}.csv"
-    generate_html_report(job, findings, html_path, source_name=f"nuScenes {name}")
+    gaps = scan_coverage_gaps(job, config, frames)
+    passed, reasons = gate_verdict(findings, config.gate, coverage_gaps=gaps)
+    generate_html_report(job, findings, html_path, source_name=f"nuScenes {name}",
+                         coverage_gaps=gaps, gate_passed=passed, gate_reasons=reasons)
     generate_csv_report(job, findings, csv_path)
     print(f"-> Báo cáo HTML: {html_path}")
     print(f"-> Báo cáo CSV:  {csv_path}")

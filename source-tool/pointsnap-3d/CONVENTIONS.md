@@ -10,7 +10,7 @@ Ký hiệu: ✅ đã xác minh · ⬜ chưa xác minh (ghi việc sẽ xác minh
 |---|---|
 | Đơn vị | Mét, giây, radian |
 | Hệ trục | Tay phải, **z hướng lên** |
-| Box nằm trong hệ nào | Hệ tọa độ point cloud của chính frame đó. Khi xuất sang CVAT (`to-cvat`, việc A2), point cloud và box được xoay 90° quanh trục z sang hệ **xe thu** (x hướng trước, y sang trái, z hướng lên, [QĐ-008](../../so-quyet-dinh.md#qđ-008)) để xe thu và dòng xe chạy dọc trục +x của canvas 3D (mũi tên đỏ) và camera perspective nhìn thẳng dọc đường |
+| Box nằm trong hệ nào | Hệ tọa độ point cloud của chính frame đó. Khi xuất sang CVAT (`to-cvat`, A2), chuyển sang hệ **xe thu** bằng `(x,y,z) → (y,-x,z)`, yaw mới = yaw cũ − π/2: quay **−90°** theo quy ước toán học nhìn từ +z. Hệ xe thu: x trước, y trái, z lên ([QĐ-008](../../so-quyet-dinh.md#qđ-008)); dùng đúng `LIDAR_TO_EGO_ROT` cho point cloud, box và pose |
 | `Cuboid.center` | Tâm hình học của box |
 | `Cuboid.dims` | `(length, width, height)`. **length nằm dọc trục x local của box** (hướng đầu xe, [QĐ-008](../../so-quyet-dinh.md#qđ-008)), width theo y local, height theo z |
 | `Cuboid.yaw` | Góc quay quanh trục z, đi từ trục +x của hệ point cloud tới trục x local của box, ngược chiều kim đồng hồ nhìn từ trên xuống. Luôn chuẩn hóa về [-π, π) |
@@ -120,3 +120,45 @@ Mức: `error` (Lỗi) · `warning` (Cảnh báo) · `info` (Thông tin). Câu t
 - `CVAT_AUTH_SCHEME`: `Bearer` (mặc định, dùng cho Personal Access Token tạo trong giao diện CVAT) hoặc `Token` (token cũ lấy từ `/api/auth/login`).
 - `NUSCENES_ROOT`: thư mục dữ liệu nuScenes, dùng làm mặc định cho `--dataroot`.
 - Không commit dữ liệu nuScenes, file `.pcd`, báo cáo hay bản chụp nhãn (đã có trong `.gitignore`).
+
+## 6. Gate và dữ liệu kiểm tra (review 01, 11/10/2026)
+
+- `gate_verdict` trả `(passed, reasons)`; caller CLI/Web truyền `coverage_gaps` do `scan_coverage_gaps` xác định theo luật đang bật. Hàm gate không tự đọc dataset.
+- Thiếu nguồn point cloud cho `floating`, `heading_points`, `fit_empty`, `fit_outside`, `fit_loose` trên job có box nhìn thấy: kiểm tra một phần, gate KHÔNG ĐẠT.
+- Thiếu pose ở bất kỳ frame có box nhìn thấy thuộc track khi bật `track_jump`, `track_split_id`, `track_long_interpolation` (và `track.long_interpolation.enabled`), `heading_flip` hoặc `heading_motion`: gate KHÔNG ĐẠT. Kiểm tra ở cấp job mang tính bảo thủ, không suy ra pose đủ chỉ vì có `FrameSource`.
+- `floating.no_evidence` giữ mức Thông tin, không ghi cờ lỗi hình học vào CVAT, nhưng chặn gate vì chưa đủ bằng chứng mặt đất. Các mục Thông tin khác không tự động chặn gate.
+- Luật tắt không yêu cầu dữ liệu; `fit.overlap`, kích thước, thuộc tính và luật vòng đời track có thể chạy không cần LiDAR. ĐẠT chỉ có nghĩa đạt ngưỡng trong cấu hình đã dùng, không chứng nhận sót đối tượng hoặc mọi box đã được kiểm đủ.
+- CLI: 0 = ĐẠT; 1 = vượt ngưỡng hoặc thiếu dữ liệu đã xác định; 3 = lỗi đọc/quét dữ liệu. Web lưu `gate_passed`, `gate_reasons`, `coverage_gaps` trong `summary.json`. Báo cáo cũ không được đánh giá lại tự động.
+
+## 7. Điều kiện kiểm luật sau review 02
+
+- `FrameData.points`: mảng số `(N, ≥3)`, chỉ x/y/z phải hữu hạn; mảng rỗng phải có shape `(0, ≥3)`. Pose nếu có là phép quay tay phải + tịnh tiến 4×4 hữu hạn, không chứa scale/shear; kiểm trực chuẩn và hàng cuối với dung sai 1e-6. Timestamp nếu có phải hữu hạn, tính bằng giây.
+- Quaternion được chuẩn hóa sau khi chia cho thành phần có trị tuyệt đối lớn nhất, tránh tràn/thiếu số; thành phần NaN/Inf hoặc quaternion 0 bị từ chối.
+- Ngưỡng số và khoảng min/max trong YAML phải hữu hạn; `track.keyframe_interval_s > 0`. Không đổi ngưỡng phát hiện mặc định trong phần 02.
+- Điểm trên mặt/cạnh/góc cuboid được tính trong box; dung sai số học `points_in_cuboid` là **1e-9 m**, tách khỏi margin thực tế do caller chọn. Vùng lọc thô ground/box khác phải bao trọn footprint đã xoay.
+- Size class/track, jump và heading theo track chỉ dùng box nhìn thấy **và keyframe nhập tay**. Long interpolation đo khoảng vắng giữa keyframe thật, kể cả caller cung cấp thêm box nội suy. Các luật vòng đời track vẫn dùng outside/occluded.
+- Size chia baseline theo `(track_id, khóa tra khoảng kích thước)`, có thể là class/subtype. Nếu không có range cho subtype thì giữ fallback class đã quy định, không tự tạo ngưỡng mới.
+- Hướng trục LiDAR dùng modulo 90°; unwrap các hướng quanh một mốc trước khi tính trung vị, tránh hiểu +44° và −44° là quanh 0°.
+- Thiếu pose ở một ứng viên split: dùng cùng hệ local cho toàn bộ phép ghép, ghi `has_world_pose=False`. Gate vẫn áp dụng hợp đồng thiếu dữ liệu của phần 01.
+- Thiếu timestamp trong một chuỗi: dùng thời gian tương đối theo `keyframe_interval_s` cho toàn chuỗi, không trộn timestamp epoch với frame×interval. Fallback này giả định lấy mẫu đều theo cấu hình.
+- Khi quét `JobData`, scanner truyền `stop_frame`: track không có outside sau keyframe cuối vẫn tồn tại đến cuối job; occluded ở cuối track cũng kéo dài đến `stop_frame`. Danh sách Cuboid thuần không có biên job nên giữ cách suy ra từ các frame được cung cấp; caller cần JobData/biên job nếu muốn kiểm đúng phần đuôi CVAT.
+- `track.split_id` đối chiếu class/subtype theo `size.key_attributes` được cấu hình, không ghép hai subtype khác nhau chỉ vì cùng label tổng.
+- Finding được sắp ổn định thêm theo label/source_id; overlap dùng thứ tự box xác định khi chọn mục tiêu. Không sửa hình học hoặc thuộc tính của đầu vào khi kiểm luật.
+
+Ma trận 18 mã luật, ca biên và bằng chứng: [review phần 02](../../review/2026-10-10/02-report.md).
+
+## 8. Dữ liệu và writer sau review 03
+
+- Manifest của bản xuất toàn scene kiểm số frame, tên file/sample_token, pose/time và transform trước scan. Auto tìm theo URL CVAT + task_id; bản cũ thiếu URL cần xác minh và chỉ manifest rõ hoặc cập nhật metadata.
+- PCD chỉ hỗ trợ binary XYZ/intensity float32, COUNT=1; kiểm SIZE/TYPE/count/byte và finite. nuScenes bin cần 5 float32/điểm, không âm thầm bỏ byte cuối. Sweep thiếu dùng số có; sweep corrupt báo lỗi.
+- Tên hệ export `ego` là hệ hiển thị quay cố định −90° giữ gốc LiDAR, chưa phải biến đổi calibration đầy đủ về gốc xe. Pose đi kèm bảo toàn world; core vẫn mô hình yaw.
+- Thuộc tính mutable kế thừa theo frame tới lần đổi/reset rõ. Cờ reset bằng chuỗi rỗng ở keyframe kế tiếp khi cần; không xóa entry rồi để cờ trước đó kế thừa lại.
+- Writer so nhãn fresh với lượt scan, GET lại trước PATCH; thay đổi yêu cầu quét lại. Còn race sau GET cuối nếu client khác sửa cùng lúc, chưa có bảo đảm atomic. Tránh sửa cùng job lúc ghi cờ.
+- CVAT có thể cấp source ID keyframe mới. Chỉ rebind theo track/frame khi đúng keyframe đã scan và nhãn chưa đổi; ID lạ unmatched. Flag attribute phải mutable.
+- Snapshot load từ API có thêm `meta.cvat_annotations` là payload gốc; không token, giữ ngoài Git. So geometry/state theo key ổn định và dung sai tuyệt đối, không dựa vào ID cấp lại.
+
+Mapping/18 ca/16 findings và bằng chứng: [review phần 03](../../review/2026-10-10/03-report.md).
+
+### Bổ sung coverage khi review lại ba nhánh
+
+FrameSource có mặt nhưng point cloud rỗng ở frame có box nhìn thấy vẫn là thiếu dữ liệu cho các luật LiDAR đang bật. Gate chặn cả khi floating tắt; không dùng sự tồn tại của nguồn frame thay cho bằng chứng có điểm.

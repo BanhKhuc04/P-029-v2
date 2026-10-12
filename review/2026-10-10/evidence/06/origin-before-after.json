@@ -1,0 +1,13 @@
+{
+  "before": {
+    "status": 200,
+    "rule_before": false,
+    "rule_after": true
+  },
+  "after": {
+    "status": 403,
+    "rule_before": false,
+    "rule_after": false
+  },
+  "method": "App source from 43812b9 vs current; same current ProjectManager/config, in-process TestClient and private fixture home"
+}

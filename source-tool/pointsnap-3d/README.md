@@ -171,3 +171,9 @@ Mọi thay đổi qua nhánh + PR, không push thẳng `main`; chỉnh ngưỡng
 | Vũ Bảo Khánh | Báo cáo, slide |
 | Nhữ Đình Chiến | Test quy trình trên CVAT, video demo |
 | Nguyễn Văn Hân | Xem tay cảnh báo, bảng chỉ số |
+
+## Cài package và giới hạn review
+
+Cài từ repo với `python -m venv .venv`, rồi `.venv/Scripts/python -m pip install -e ".[dev]"` trên Windows; Linux dùng `.venv/bin/python`. Chạy `python -m pointsnap --help` hoặc `python -m pointsnap ui --no-browser`. Xem [Docker](README-Docker.md), [bảo mật local](docs/local-security.md) và [review08](../../review/2026-10-10/08-report.md) để biết các môi trường đã kiểm tra.
+
+Gate chỉ xét luật đang bật và dữ liệu đủ bằng chứng. Tool không tự sửa hình học box; `diff` và khôi phục nhãn tự động chưa triển khai. Precision xem tay và nghiệm thu extension MV3 còn cần xác minh theo báo cáo review.

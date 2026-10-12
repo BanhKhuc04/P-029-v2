@@ -112,6 +112,8 @@ test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám 
     'cam.mismatch': 'Box chiếu lên ảnh CAM_FRONT: 48% thân vật trên ảnh nằm ngoài khung box, các frame khác của track chỉ 6% (IoU 41%): box lệch hoặc nhỏ so với vật',
     'cam.class': 'Ảnh camera nhận vật là người ở 5/6 lần nhìn rõ, nhãn là car: nghi sai class',
     'cam.missing': 'Ảnh CAM_FRONT thấy xe (độ tin cậy 97%, cách ~18 m, 120 điểm LiDAR) nhưng không có box 3D nào: nghi sót đối tượng',
+    'cam.sparse': 'Vật chỉ có ≤ 5 điểm LiDAR ở mọi keyframe và ảnh camera cũng không thấy (frame 0–3): spec 4.2 không nên gán vật quá ít điểm khiến kích thước / hướng không đáng tin',
+    'lidar.missing': 'Cụm điểm LiDAR cỡ xe (4.2 × 1.8 × 1.5 m, ~120 điểm) di chuyển 12.3 m qua 4 keyframe (3–6) mà không có box: nghi sót đối tượng (spec 4.2)',
     'critic.box': 'Box Critic: box nghi vẽ sai (xác suất 93%); gợi ý sửa: dời (+0.32, -0.05, +0.00) m, kích thước (+0.00, +0.00, +0.00) m, xoay +3.1°',
   };
   for (const [rule, text] of Object.entries(cases)) {

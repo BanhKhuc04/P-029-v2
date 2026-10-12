@@ -256,7 +256,9 @@ def test_estimate_ground_real_nuscenes():
     from pathlib import Path
     from pointsnap.adapters.nuscenes import NuScenesReader
 
-    data_dir = Path(__file__).resolve().parent.parent / "data" / "nuscenes"
+    from test_real_nuscenes import ROOT
+
+    data_dir = Path(ROOT) if ROOT else Path(__file__).resolve().parent.parent / "data" / "nuscenes"
     if not (data_dir / "v1.0-mini").is_dir():
         pytest.skip("Chưa có dữ liệu nuScenes v1.0-mini local")
 

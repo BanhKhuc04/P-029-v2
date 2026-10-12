@@ -64,7 +64,7 @@ class ScanRunner:
 
     def start_scan(self, slug: str, job_id: int, flag: bool = False) -> str:
         """Bắt đầu quét một job trong luồng nền. Trả về `run_id`."""
-        self.pm.get_project(slug)  # kiểm tra dự án tồn tại
+        source_project = self.pm.get_project(slug)
         now = datetime.datetime.now()
         # Điểm nhỏ 4: thêm millisecond để tránh run_id trùng khi bấm 2 lần trong 1 giây
         now_str = now.strftime("%Y%m%d-%H%M%S")
@@ -75,6 +75,7 @@ class ScanRunner:
             "run_id": run_id,
             "project_slug": slug,
             "job_id": job_id,
+            "source_cvat_url": source_project["cvat_url"],
             "flag": flag,
             "status": "queued",
             "progress": 0,
@@ -97,6 +98,9 @@ class ScanRunner:
 
         try:
             config = self.pm.get_effective_config(slug)
+            source_url = info.get("source_cvat_url")
+            if not source_url or config.cvat.url.rstrip("/") != source_url.rstrip("/"):
+                raise ProjectError("Nguồn CVAT của job trong hàng đợi đã đổi hoặc bị thiếu; chọn lại job và quét mới.")
             proj = self.pm.get_project(slug)
 
             client = CvatClient(config.cvat.url, config.cvat.token)

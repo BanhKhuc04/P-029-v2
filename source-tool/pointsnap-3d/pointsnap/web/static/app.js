@@ -1201,7 +1201,7 @@
     document.getElementById('detail-message-desc').textContent = f.message || '—';
 
     // Gợi ý cách sửa từ từ điển A13
-    const fixTip = RULE_FIX_TIPS[f.rule] || DEFAULT_FIX_TIP;
+    const fixTip = findingFixTip(f);
     document.getElementById('detail-fix-hint').textContent = fixTip;
 
     // Nút mở CVAT
@@ -2046,5 +2046,12 @@
       const url = new URL(value);
       return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';
     } catch (_) { return ''; }
+  }
+
+  function findingFixTip(f) {
+    if (f.rule === 'floating' && /\(lún\)|nằm dưới mặt đất/i.test(f.message || '')) {
+      return 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
+    }
+    return RULE_FIX_TIPS[f.rule] || DEFAULT_FIX_TIP;
   }
 })();

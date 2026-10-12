@@ -6,7 +6,7 @@
   "A05": [["test_export_scene_adds_camera_images_as_cvat_context_images"], "Kiểm cấu trúc ảnh xuất; chưa xác minh hình camera khớp đối tượng/thời điểm trong CVAT."],
   "A06": [["test_frames_for_job_reports_missing_manifest", "test_scan_runs_floating_only_with_point_cloud"], "Kiểm thiếu manifest và bỏ detector; chưa đổi đường dẫn qua form hoặc kiểm thông báo toàn luồng."],
   "B01": [["test_floating_scene_flags_only_the_lifted_keyframe", "test_detect_floating_error_box_raised_25cm"], "Có đáp án trên point cloud tổng hợp; chưa nâng 40 cm rồi Save/quét qua CVAT thật."],
-  "B02": [["test_estimate_ground_sunk_box", "test_detect_sunk_warning_box_lowered_15cm"], "Kiểm dấu/số đo lún trên dữ liệu tổng hợp. Code web còn gợi ý Hạ đáy box chung; chưa đạt phần hướng dẫn cho box lún."],
+  "B02": [["test_estimate_ground_sunk_box", "test_detect_sunk_warning_box_lowered_15cm"], "Kiểm dấu/số đo lún trên dữ liệu tổng hợp. Web đã có regression gợi ý nâng box lún; còn kiểm bằng mắt khi sửa box thật."],
   "B03": [["test_floating_scene_single_box_uses_absolute_distance", "test_detect_normal_grounded_box_no_finding", "test_floating_scene_ignores_offset_shared_by_whole_track"], "Kiểm nhiều điều kiện detector; chưa quét đủ mọi giá trị sát ranh giới 12/22/15/30 cm của checklist."],
   "B04": [["test_estimate_ground_inclined_surface_with_obstacles", "test_detect_insufficient_points_reports_no_evidence", "test_floating_scene_no_ground_points_is_one_info_per_track"], "Dốc/thiếu điểm có ca tổng hợp; xác nhận bờ vỉa, che khuất và lỗi ground trên cảnh thật vẫn cần xem hình."],
   "B05": [["test_class_range_error_box_too_small", "test_class_range_reports_once_per_track_on_extreme_keyframe"], "Kiểm class_range và gộp track; chưa thực hiện chỉnh chiều rộng 5 m qua CVAT thật."],

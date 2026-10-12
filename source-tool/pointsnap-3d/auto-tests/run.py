@@ -108,8 +108,7 @@ def write_checklist_report(out, results):
         cells = [case['id'], titles[case['id']], case['code_status'], evidence, case['remaining']]
         text.append('| ' + ' | '.join(cell.replace('|', '/') for cell in cells) + ' |')
     text += ['', '## Vấn đề đã thấy từ code', '',
-             '- B02: web đang dùng cùng gợi ý `Hạ đáy box...` cho luật floating, kể cả box lún.',
-             '  Đây là phát hiện từ đọc code; bảng test thuật toán đạt không xóa vấn đề hướng dẫn này.',
+             '- B02: gợi ý Web cho box lún đã có regression Node; kiểm bằng mắt trên CVAT vẫn cần thực hiện.',
              '- B12/F03: cần nhãn tham chiếu hoặc lỗi chèn có đáp án để đo bỏ sót/precision. Không dùng',
              '  chính finding của tool làm đáp án đúng cho tool.',
              '- C09: kết luận Báo nhầm không tự loại finding khỏi gate.', '',

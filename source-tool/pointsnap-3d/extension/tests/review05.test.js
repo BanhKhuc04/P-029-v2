@@ -19,7 +19,7 @@ function web(fetch, confirm = () => false) {
     createElement(){return el();}, querySelectorAll(){return [];}, querySelector(){return null;},
     addEventListener(){}, documentElement:el(), activeElement:null};
   const source=fs.readFileSync(path.join(__dirname,'../../pointsnap/web/static/app.js'),'utf8');
-  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline'];
+  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline','findingFixTip'];
   const context={document,fetch, console, URLSearchParams, URL, Map, Set, Date, Math,
     localStorage:{getItem(){return null;},setItem(){}},sessionStorage:{getItem(){return null;},setItem(){}},
     window:{location:{search:'',hash:''},matchMedia(){return {matches:false};},addEventListener(){}},
@@ -143,4 +143,9 @@ test('confirmed reset discards dirty draft and reloads the saved default',async(
   const w=web(async()=>({ok:true,json:async()=>({config:{size:{manual_ranges:{}},gate:{max_errors:0}},yaml:'default'})}),()=>true);
   w.state.currentSlug='a';w.state.currentGuideline={gate:{max_errors:5}};w.state.guidelineDirty=true;
   await w.handleResetGuideline();assert.equal(w.state.guidelineDirty,false);assert.equal(w.state.currentGuideline.gate.max_errors,0);
+});
+
+test('floating sunk-box advice matches the extension and moves the box upwards',()=>{
+  const w=web();assert.match(w.findingFixTip({rule:'floating',message:'Đáy box nằm dưới mặt đất 31 cm (lún)'}),/^Nâng/);
+  assert.match(w.findingFixTip({rule:'floating',message:'Đáy box cách mặt đất 18 cm (lơ lửng)'}),/^Hạ/);
 });

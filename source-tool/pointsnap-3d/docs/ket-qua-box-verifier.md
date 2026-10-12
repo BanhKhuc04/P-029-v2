@@ -32,12 +32,15 @@ Phân mức đúng 100% (30/30) như trước.
 |---|---|---|
 | Mục tiêu | ≤ 2,0 | ≤ 0,5 |
 | PR #37 — 5 cảnh kiểm tra | 3,42 | 0,55 |
-| **Box Verifier — 5 cảnh kiểm tra** | **3,67** | **0,57** |
+| Box Verifier, ngưỡng lơ lửng / lún 12 cm — kiểm tra | 3,67 | 0,57 |
+| **Box Verifier, ngưỡng 15 cm — 5 cảnh kiểm tra** | **2,83** | **0,57** |
 | PR #37 — 5 cảnh tinh chỉnh | 1,92 | 0,35 |
-| **Box Verifier — 5 cảnh tinh chỉnh** | **1,99** ✅ | **0,36** ✅ |
+| **Box Verifier, ngưỡng 15 cm — 5 cảnh tinh chỉnh** | **1,36** ✅ | **0,36** ✅ |
 
-Luật mới thêm 0,26 Cảnh báo / 0,02 Lỗi trên 100 box ở cảnh kiểm tra (`track.static_shift` 0,15, `heading.static`
-0,11 / 0,02). Cảnh báo vẫn vượt mục tiêu chủ yếu do lơ lửng / lún (2,41), không đổi so với PR #37.
+Luật Box Verifier thêm 0,26 Cảnh báo / 0,02 Lỗi trên 100 box ở cảnh kiểm tra (`track.static_shift` 0,15,
+`heading.static` 0,11 / 0,02). Nâng ngưỡng Cảnh báo lơ lửng / lún từ 12 lên 15 cm (mục 6) giảm luật này từ 2,41 xuống
+1,56 ở cảnh kiểm tra mà không mất lỗi chèn nào bắt được. Cảnh báo vẫn vượt mục tiêu ở cảnh kiểm tra, phần lớn vẫn do lơ
+lửng / lún.
 
 Số lỗi mỗi mức chỉ 8 – 14 nên mỗi lỗi bắt thêm / sót là 7 – 12 điểm %; xu hướng giống nhau ở cả hai bộ cảnh.
 
@@ -173,7 +176,24 @@ loại thì thử thêm mô hình logistic (luật, mức, class, độ vượt 
 `learning.adjust_severity` (tắt mặc định) hạ Cảnh báo có độ tin cậy < 15% xuống Thông tin khi luật đã có ≥ 20 kết luận.
 Kiểm thử trên dữ liệu giả lập; dữ liệu thật hiện mới có 1 kết luận nên chưa có số liệu.
 
-## 6. Hiệu năng
+## 6. Ngưỡng lơ lửng / lún 12 → 15 cm
+
+Phân tích báo nhầm trên 5 cảnh tinh chỉnh: mục báo nhầm tập trung ở box xa (20 – 30 m: 49% box bị báo) và box ít điểm
+mặt đất (< 150 điểm: 22%), nơi ước lượng mặt đất kém chắc. Mô phỏng trên nhiễu đo thật (cộng lệch 10 / 20 / 40 cm vào box
+chuẩn):
+
+| Ngưỡng Cảnh báo | Báo nhầm / 100 box | Bắt lệch 10 / 20 / 40 cm (box có bằng chứng) |
+|---|---|---|
+| 12 cm (cũ) | 1,49 | 32% / 90% / 100% |
+| **15 cm** | **0,87** | 18% / 83% / 99% |
+| 18 cm | 0,52 | 11% / 70% / 99% |
+| Ngưỡng theo khoảng cách + số điểm | 0,85 | 23% / 82% / 99% |
+
+Ngưỡng thay đổi theo độ chắc không tốt hơn ngưỡng cố định nên chọn 15 cm. Mức Lỗi giữ 22 cm. Đã thử và bỏ **mặt đất v3**
+(bản đồ mặt đất gộp mọi keyframe trong hệ toàn cục): đo được 93% box nhưng nhiễu gấp nhiều lần v2 vì pose xe của nuScenes
+không có độ nghiêng dọc (pitch); gộp ±1 giây vẫn kém v2 (báo nhầm 5,35 so với 1,94 / 100 box tiếp đất).
+
+## 7. Hiệu năng
 
 Lần đầu chạy ảnh camera: ~1 phút / cảnh 40 frame × 6 ảnh (RTX 3050), lưu đệm ở `~/.pointsnap/cache/det2d`; các lần quét
 sau quét một cảnh mất 7 – 25 giây như trước. Không có GPU / PyTorch thì lớp 2 tự tắt.

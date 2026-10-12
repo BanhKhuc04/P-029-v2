@@ -286,3 +286,28 @@ def test_hybrid_falls_back_to_maskrcnn_without_transformers(monkeypatch):
     assert CameraConfig(model="gdino-sam2").effective_model() == "gdino-sam2"  # ngưỡng khác thang: không lùi
     monkeypatch.setattr(detector2d, "available", lambda model="maskrcnn": True)
     assert CameraConfig(model="hybrid").effective_model() == "hybrid"
+
+
+def test_cam_sparse_box_without_points_or_image_evidence():
+    """C8: box không có điểm LiDAR (khung `_Frames` rỗng); ảnh cũng không thấy vật → một mục Thông tin cho track."""
+    from pointsnap.detectors.camera import sparse_unconfirmed
+
+    boxes = _track(n=4)
+
+    class _Nothing(_Detector):
+        def detect(self, path):
+            return Detections(np.zeros((0, 4)), np.zeros(0), [], [])
+
+    found = sparse_unconfirmed(boxes, _Frames(4), _Nothing({}), CameraConfig())
+    assert len(found) == 1 and found[0].rule == "cam.sparse" and found[0].severity is Severity.INFO
+    assert found[0].details["frames"] == [0, 1, 2, 3]
+
+    class _SeesIt(_Detector):
+        def detect(self, path):
+            self.frame = 0
+            return super().detect(path)
+
+    # Ảnh thấy vật trùng khung chiếu (ở frame 0) → frame đó không bị báo
+    seen = sparse_unconfirmed(boxes[:1], _Frames(1), _SeesIt({0: boxes[0]}), CameraConfig())
+    assert seen == []
+    assert sparse_unconfirmed(boxes, _Frames(4), _Nothing({}), CameraConfig(sparse_max_points=0)) == []

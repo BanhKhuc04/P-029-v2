@@ -217,7 +217,8 @@ def estimate_scene_ground(
         for index, box in enumerate(boxes):
             if box.label in classes:
                 results.append((box, ring_ground_for_box(
-                    cloud.without_others(index), box, ring_inner_m=config.ring_inner_m,
+                    cloud.without_others(index, reach=max(box.dims[:2]) / 2.0 + config.ring_outer_m + 0.5), box,
+                    ring_inner_m=config.ring_inner_m,
                     ring_outer_m=config.ring_outer_m, min_ground_points=min_points,
                 )))
     return results
@@ -269,6 +270,12 @@ def floating_findings_by_track(
                        f"(trung vị {reference * 100:+.0f} cm)")
             value = offset
         else:
+            # Không có track để so: so tuyệt đối, nên dùng điểm tiếp xúc trên mặt phẳng dốc nếu có (C4) — trên dốc trung vị
+            # ở tâm box lệch với đáy box đúng spec tan(dốc) × nửa chiều dài box.
+            if est.contact_distance is not None:
+                d = float(est.contact_distance)
+                details["distance"] = d
+                details["contact_plane"] = True
             if abs(d) > config.single_error_m:
                 severity, threshold = Severity.ERROR, config.single_error_m
             elif abs(d) > config.single_warning_m:

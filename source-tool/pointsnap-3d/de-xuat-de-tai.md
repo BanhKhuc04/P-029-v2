@@ -220,9 +220,10 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 |---|---|
 | **Đại lượng đo** | `d = z_đáy_box − z_mặt_đất_cục_bộ`. d > 0 là lơ lửng, d < 0 là lún |
 | **Cách đo mặt đất** | Lấy điểm trong **vành đai 0,1–0,8 m** quanh footprint, bỏ điểm thuộc box khác, lọc điểm thấp theo lưới (min-Z), lấy **trung vị**. Không dùng điểm dưới gầm xe |
-| **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **12 cm** → Cảnh báo; > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
+| **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **15 cm** → Cảnh báo (12 cm đến C3); > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
 | **Áp dụng cho** | Class tiếp đất: ô tô, xe tải, xe buýt, rơ-moóc, xe công trình, người, xe đạp, xe máy |
 | **Chống báo động giả** | Vành đai < 15 điểm mặt đất → "thiếu bằng chứng" (Thông tin), gộp một mục cho mỗi track |
+| **Mặt đất dốc (C4)** | Box lẻ / track ít box (so tuyệt đối) trên dốc ≥ 5° khớp được mặt phẳng rõ: so đáy box với **điểm tiếp xúc thấp nhất** của mặt phẳng dưới 4 góc đáy (spec 4.2), vì trung vị ở tâm box cao hơn điểm đó tan(dốc) × nửa chiều dài box. Box thuộc track vẫn dùng trung vị (độ dốc đều triệt tiêu khi so với track; mặt phẳng trên LiDAR thật quá nhiễu để dùng cho mọi box) — `docs/kiem-chung-ground.md` mục 4 |
 | **Kiểm chứng ground** | Tiêu chí tuyệt đối ban đầu (trung vị \|d\| < 5 cm, 90% < 10 cm) **không đạt** trên nhãn chuẩn (trung vị 7,9 cm, p90 22,2 cm) do LiDAR thưa và chính nhãn chuẩn; sau khi đổi sang so với track, độ lệch trên nhãn sạch còn trung vị 3,4 cm, p90 14,7 cm — `docs/kiem-chung-ground.md` |
 
 #### b) Sai kích thước
@@ -251,7 +252,7 @@ cục bằng pose xe thu trước khi so.
 | Luật | Định nghĩa | Ngưỡng Cảnh báo / Lỗi (xe) |
 |---|---|---|
 | `heading.flip` | Cắt track tại chỗ hướng đổi giữa hai keyframe nhanh hơn tốc độ quay hợp lý (xe 60°/s, xe hai bánh 90°/s, người 180°/s); đoạn dài nhất là chuẩn, mọi box ở đoạn khác bị báo | 45° / 75° (xoay ngang, lật đầu) |
-| `heading.motion` | Vật chạy nhanh hơn `min_speed` (xe 2 m/s): hướng box so với hướng di chuyển giữa hai keyframe lân cận; xe lùi chậm không bị xét | 60° / 135° (ngược chiều) |
+| `heading.motion` | Vật chạy nhanh hơn `min_speed` (xe 2 m/s): hướng box so với hướng di chuyển giữa hai keyframe lân cận; xe chậm hơn không bị xét; box ngược cả đoạn khi xe ≤ 3 m/s: một Cảnh báo "có thể đang lùi" (C5) | 60° / 135° (ngược chiều) |
 | `heading.points` | Trục box so với hướng hình chữ nhật khớp cụm điểm LiDAR nhất (khớp hình chữ L, Zhang et al. 2017), rồi so với trung vị của track để bỏ phần lệch do hình dạng vật; chỉ xe 4 bánh dài, ≥ 60 điểm, < 40 m | 15° / 30° |
 
 #### e) Box lệch khỏi vật (giai đoạn 3)
@@ -416,13 +417,18 @@ Mỗi luật kiểm một điều khoản **đo được bằng số** của *An
 | Điều khoản spec | Nội dung | Luật PointSnap |
 |---|---|---|
 | 3.1.3 | Thuộc tính bắt buộc khi object thuộc phạm vi; giá trị theo danh sách | `attr.missing`, `attr.invalid` (`spec:` trong guideline) |
+| 3.1.2, 4.3B/C | Thuộc tính đúng với vật (tư thế, nhóm tuổi, có người lái) | `attr.height` (C6) |
+| 4.3B | Không gán người bên trong xe | `spec.inside` (C6) |
+| 4.3C | Người lái nằm trong box xe hai bánh | `spec.rider_double` (C6) |
 | 3.1.2 | Phân loại chi tiết bằng thuộc tính (`subtype`, `rider_state`, …) | Kích thước tra theo `Class/thuộc tính` (`size.key_attributes`) |
 | 4.2 | Box bao trọn vật thể, không dư thừa quá mức | `size.class_range`, `size.in_track`, `fit.outside`, `fit.loose` |
 | 4.2 | Hướng box trùng hướng chuyển động; đứng yên theo trục dài | `heading.flip`, `heading.motion`, `heading.points` |
 | 4.2 | Đáy box đặt trên mặt tiếp xúc, không cao bất thường | `floating` (mặt đất v2) |
 | 4.2 | Không gán box khi vật quá ít điểm | `fit.empty` (+ `sparse_warning_points` khi chốt P-009) |
+| 4.2 | Nên gán box khi vật rõ trong point cloud | `lidar.missing` (C7: cụm LiDAR di chuyển không có box), `cam.missing` (ảnh) |
 | 4.3B, 4.3E | Nhóm người / động vật sát nhau: gán từng con, box được phép chồng | `fit.overlap` với `overlap_allowed_pairs` |
 | 4.4.1–4.4.2 | Giữ track_id ổn định, không nhảy, không tách | `track.jump`, `track.split_id`, `track.long_interpolation` |
+| 4.4.6 | Không nối các vật khác nhau thành một track | `track.id_swap` (C5) |
 | 4.4.3–4.4.4 | Sau khi kết thúc (outside) không gán tiếp; xuất hiện lại phải là track mới | `track.reuse_id` |
 | 4.4.5, CVAT | Che khuất dùng `occluded`, tối đa 6 frame | `track.occluded_long`; box occluded không kiểm hình học |
 
@@ -573,7 +579,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 
 | Chỉ số | Mục tiêu | Giai đoạn 3 → Box Verifier |
 |---|---|---|
-| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 → 3,67 · 0,57; cảnh tinh chỉnh 1,92 · 0,35 → 1,99 · 0,36 ✅ |
+| **Báo nhầm trên nhãn sạch / 100 box** | ≤ 2 Cảnh báo · ≤ 0,5 Lỗi | 3,42 · 0,55 → **2,83 · 0,57** (ngưỡng lơ lửng / lún 12 → 15 cm); cảnh tinh chỉnh 1,92 · 0,35 → 1,36 · 0,36 ✅ |
 | **Recall box dời 0,3 / 0,5 / 1,0 m** (mọi lỗi chèn) | — | 0% / 14% / 7% → **44% / 36% / 29%** |
 | **Recall xoay 15° / 30°** | — | 7% / 9% → **29% / 27%** |
 | **Recall nhảy vị trí 0,5 / 1,0 m** | — | 45% / 50% → **55% / 75%** |
@@ -641,7 +647,7 @@ Theo góp ý mentor: hoàn thiện phát hiện trước, rồi mở rộng sang
 **Mở rộng khác:**
 - Đọc point cloud qua API của CVAT để dùng với mọi task, không cần thư mục nuScenes; gộp sweeps LiDAR cho mặt đất dày điểm hơn.
 - Bộ lỗi thật (tự gán nhãn lại một cảnh) + lệnh `diff`; đo thời gian review thực tế.
-- Cảnh báo sót đối tượng và "ý kiến thứ hai" từ mô hình phát hiện 3D huấn luyện sẵn (CenterPoint / PointPillars), chỉ ở mức Thông tin; Pre-Box Generator. (Ngược yaw, box rỗng, chồng lấn, thiếu thuộc tính: xong ở giai đoạn 3.)
+- Sót đối tượng **đứng yên** (cần ảnh camera xác nhận) và "ý kiến thứ hai" từ mô hình phát hiện 3D huấn luyện sẵn (CenterPoint / PointPillars); Pre-Box Generator từ cụm `lidar.missing`. (Sót vật **di chuyển**: xong ở C7.) (Ngược yaw, box rỗng, chồng lấn, thiếu thuộc tính: xong ở giai đoạn 3.)
 - Adapter cho nền tảng và bộ dữ liệu khác (Segments.ai, Label Studio; KITTI, Waymo Open); chạy trên CVAT và dữ liệu thật của tổ chức.
 - Webhook tự quét khi job chuyển sang bước review; bảng chất lượng theo annotator.
 

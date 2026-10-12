@@ -44,6 +44,9 @@ class GroundEstimate:
     num_ground_points: int = 0
     num_inliers: int = 0
     status: str = "ok"
+    contact_distance: float | None = None
+    """Đáy box − điểm tiếp xúc thấp nhất trên mặt phẳng dốc dưới 4 góc đáy (C4); `None` nếu không khớp được mặt phẳng dốc
+    rõ. Luật lơ lửng dùng cho box không có track để so (so tuyệt đối)."""
 
     @property
     def is_valid(self) -> bool:
@@ -256,6 +259,45 @@ def estimate_ground_for_box(
     )
 
 
+SLOPE_MIN_DEG = 5.0
+"""Vành đai dốc hơn mức này (khớp mặt phẳng rõ) thì tính thêm `contact_distance` (C4)."""
+PLANE_BAND_M = 1.2
+"""Dải độ cao quanh đáy box để khớp mặt phẳng: rộng hơn `band_m` vì trên dốc 10° đầu kia vành đai cao hơn đáy ~0,5 m."""
+PLANE_MIN_SPREAD_M = 0.5
+"""Điểm khớp mặt phẳng phải trải ≥ chừng này (p10 – p90) theo cả hai trục box, nếu không độ dốc không xác định."""
+PLANE_INLIER_M = 0.06
+PLANE_MIN_INLIER_RATIO = 0.6
+"""Ít hơn tỉ lệ này số điểm nằm trên mặt phẳng (bậc vỉa hè, nhiều tầng) thì không dùng mặt phẳng."""
+
+
+def _contact_plane(ground: np.ndarray, cuboid: Cuboid, min_points: int) -> tuple[float, float, float, float] | None:
+    """Mặt phẳng mặt đất quanh box nếu khớp rõ và đủ dốc (≥ `SLOPE_MIN_DEG`); `None` thì dùng trung vị như cũ."""
+    from pointsnap.core.geometry import to_box_frame
+
+    if len(ground) < max(min_points, 3):
+        return None
+    plane, inliers = fit_plane_ransac(ground, distance_threshold=PLANE_INLIER_M, max_iterations=60,
+                                      min_inliers=max(min_points, int(PLANE_MIN_INLIER_RATIO * len(ground))))
+    if plane is None:
+        return None
+    if math.degrees(math.acos(min(1.0, plane[2]))) < SLOPE_MIN_DEG:
+        return None
+    local = to_box_frame(ground[inliers], cuboid)
+    spread = np.percentile(local[:, :2], 90, axis=0) - np.percentile(local[:, :2], 10, axis=0)
+    if float(np.min(spread)) < PLANE_MIN_SPREAD_M:
+        return None
+    return plane
+
+
+def _lowest_corner_z(plane: tuple[float, float, float, float], cuboid: Cuboid) -> float:
+    """Độ cao thấp nhất của mặt phẳng dưới 4 góc đáy box: điểm tiếp xúc của box 7-DoF (không pitch / roll) trên dốc."""
+    from pointsnap.core.geometry import footprint
+
+    a, b, c, d = plane
+    corners = footprint(cuboid)
+    return float(np.min(-(a * corners[:, 0] + b * corners[:, 1] + d) / c))
+
+
 def ring_ground_for_box(
     points: np.ndarray,
     cuboid: Cuboid,
@@ -272,26 +314,39 @@ def ring_ground_for_box(
     trong khoảng ±`band_m` quanh đáy box, lọc lưới min-Z rồi lấy trung vị z. Trên 10 cảnh nuScenes mini cách này
     cho độ lệch so với trung vị track nhỏ hơn (p90 ~15 cm so với ~20 cm), xem docs/kiem-chung-ground.md.
     `points` nên đã bỏ điểm thuộc các box khác (`OtherBoxPoints`), nếu không thân xe bên cạnh bị tính là đất.
+
+    Mặt đất dốc (C4, spec 4.2 "đáy box trên mặt tiếp xúc"): khớp thêm mặt phẳng bền (RANSAC) trên vành đai; nếu khớp rõ,
+    điểm trải đủ theo hai trục và dốc ≥ `SLOPE_MIN_DEG` thì `contact_distance` = đáy box − **điểm thấp nhất của mặt phẳng
+    dưới 4 góc đáy** (box không pitch / roll chạm dốc ở góc thấp nhất; trung vị ở tâm lệch tan(dốc) × nửa chiều dài box:
+    dốc 6°, xe 4,5 m → 24 cm). `distance` vẫn theo trung vị: trên LiDAR thật, mặt phẳng khớp trên vành đai hẹp nhiễu
+    (nuScenes mini, đường gần như bằng: độ dốc khớp được trung vị 3°, p90 7°), dùng nó cho mọi box tăng báo nhầm.
     """
     pts = np.asarray(points, dtype=np.float64)[:, :3]
     reach = max(cuboid.dims[:2]) / 2.0 + ring_outer_m + 0.1
     near = pts[(np.abs(pts[:, 0] - cuboid.center[0]) <= reach) & (np.abs(pts[:, 1] - cuboid.center[1]) <= reach)]
     if len(near) == 0:
         return GroundEstimate(status="no_evidence")
-    ring = near[footprint_ring_mask(near, cuboid, inner=ring_inner_m, outer=ring_outer_m)]
-    ring = ring[np.abs(ring[:, 2] - cuboid.bottom_z) <= band_m]
-    if len(ring) < min_ground_points:
+    ring_all = near[footprint_ring_mask(near, cuboid, inner=ring_inner_m, outer=ring_outer_m)]
+    ring = ring_all[np.abs(ring_all[:, 2] - cuboid.bottom_z) <= band_m]
+    wide = ring_all[np.abs(ring_all[:, 2] - cuboid.bottom_z) <= max(band_m, PLANE_BAND_M)]
+    wide = wide[filter_min_z_grid(wide, cell_size=cell_size, height_threshold=min_z_threshold)]
+    plane = _contact_plane(wide, cuboid, min_ground_points)
+    contact = cuboid.bottom_z - _lowest_corner_z(plane, cuboid) if plane is not None else None
+    if len(ring) < min_ground_points or len(ground := ring[filter_min_z_grid(
+            ring, cell_size=cell_size, height_threshold=min_z_threshold)]) < min_ground_points:
+        if contact is not None:  # trung vị thiếu điểm (dốc làm vành đai ra khỏi dải band_m) nhưng mặt phẳng rõ
+            return GroundEstimate(ground_z=cuboid.bottom_z - contact, distance=contact, plane=plane,
+                                  num_ground_points=len(wide), num_inliers=len(wide), contact_distance=contact)
         return GroundEstimate(status="no_evidence", num_ground_points=len(ring))
-    ground = ring[filter_min_z_grid(ring, cell_size=cell_size, height_threshold=min_z_threshold)]
-    if len(ground) < min_ground_points:
-        return GroundEstimate(status="no_evidence", num_ground_points=len(ground))
     ground_z = float(np.median(ground[:, 2]))
     return GroundEstimate(
         ground_z=ground_z,
         distance=cuboid.bottom_z - ground_z,
+        plane=plane,
         num_ground_points=len(ground),
         num_inliers=len(ground),
         status="ok",
+        contact_distance=contact,
     )
 
 
@@ -300,27 +355,47 @@ class OtherBoxPoints:
 
     Điểm nằm trong một box (nới `margin` mét) là điểm của đối tượng, không phải mặt đất. Điểm trong chính box
     đang xét vẫn giữ: box bị lún thì mặt đất thật nằm trong box, không được bỏ.
+
+    Điểm được sắp theo x một lần để tìm nhanh các điểm quanh một box (`near`), thay vì quét cả point cloud cho mỗi box.
     """
 
     def __init__(self, points: np.ndarray, cuboids: Sequence[Cuboid], margin: float = 0.15) -> None:
         from pointsnap.core.geometry import points_in_cuboid
 
         self.points = np.asarray(points, dtype=np.float64)[:, :3]
+        self._order = np.argsort(self.points[:, 0], kind="stable")
+        self._sorted_x = self.points[self._order, 0]
         self._count = np.zeros(len(self.points), dtype=np.int32)
         self._inside: list[np.ndarray] = []
         for cuboid in cuboids:
-            reach = max(cuboid.dims) / 2.0 + margin
-            idx = np.flatnonzero((np.abs(self.points[:, 0] - cuboid.center[0]) <= reach)
-                                 & (np.abs(self.points[:, 1] - cuboid.center[1]) <= reach))
+            idx = self.near(cuboid.center[0], cuboid.center[1], max(cuboid.dims) / 2.0 + margin)
             idx = idx[points_in_cuboid(self.points[idx], cuboid, margin=margin)] if len(idx) else idx
             self._count[idx] += 1
             self._inside.append(idx)
+        self._boxes_center = [c.center for c in cuboids]
 
-    def without_others(self, index: int) -> np.ndarray:
-        """Các điểm không thuộc box nào ngoài box thứ `index` (theo thứ tự `cuboids` lúc tạo)."""
-        count = self._count.copy()
-        count[self._inside[index]] -= 1
-        return self.points[count == 0]
+    def near(self, x: float, y: float, reach: float) -> np.ndarray:
+        """Chỉ số (tăng dần) các điểm có |x − `x`| ≤ `reach` và |y − `y`| ≤ `reach`."""
+        lo = int(np.searchsorted(self._sorted_x, x - reach, side="left"))
+        hi = int(np.searchsorted(self._sorted_x, x + reach, side="right"))
+        idx = self._order[lo:hi]
+        idx = idx[np.abs(self.points[idx, 1] - y) <= reach]
+        return np.sort(idx)
+
+    def without_others(self, index: int, reach: float | None = None) -> np.ndarray:
+        """Các điểm không thuộc box nào ngoài box thứ `index` (theo thứ tự `cuboids` lúc tạo).
+
+        `reach`: chỉ trả các điểm trong hình vuông nửa cạnh `reach` quanh tâm box (giữ thứ tự gốc), đủ cho các phép đo
+        cục bộ như `ring_ground_for_box` mà không phải chép cả point cloud cho mỗi box.
+        """
+        if reach is None:
+            count = self._count.copy()
+            count[self._inside[index]] -= 1
+            return self.points[count == 0]
+        box = self._boxes_center[index]
+        idx = self.near(box[0], box[1], reach)
+        own = np.isin(idx, self._inside[index], assume_unique=True)
+        return self.points[idx[(self._count[idx] - own) == 0]]
 
     def belongs_to_others(self, index: int, idx: np.ndarray) -> np.ndarray:
         """Mask cho các điểm có chỉ số `idx` thuộc ít nhất một box khác ngoài box thứ `index`."""

@@ -14,7 +14,9 @@ Spec 4.2: hướng box trùng với hướng chuyển động chính của vật
    trung vị của các box khác cùng track. Chỉ xét box dài (≥ `min_aspect`), đủ điểm, gần cảm biến. Lệch >
    `warning_deg` là Cảnh báo, > `error_deg` là Lỗi.
 
-Không có pose xe thu thì hướng trong hệ cảm biến đổi theo xe thu: hai luật theo track chỉ báo ở mức Cảnh báo.
+Không có pose xe thu thì hướng trong hệ cảm biến đổi theo xe thu: `heading.flip` chỉ báo ở mức Cảnh báo, còn
+`heading.motion` không xét (chuyển động thấy trong hệ cảm biến là chuyển động của vật trừ chuyển động của xe thu: xe đỗ
+bên đường trông như đang chạy lùi).
 """
 
 from __future__ import annotations
@@ -117,7 +119,7 @@ def _motion_findings(
     boxes: list[Cuboid], centers: np.ndarray, headings: np.ndarray, times: np.ndarray, grp: HeadingGroupConfig,
     min_motion_m: float, has_world: bool, skip: set[int],
 ) -> list[Finding]:
-    findings: list[Finding] = []
+    rows = []
     n = len(boxes)
     for i in range(n):
         if i in skip:
@@ -130,20 +132,42 @@ def _motion_findings(
         dt = float(times[b] - times[a])
         if dt <= 0 or distance < min_motion_m or distance / dt < grp.min_speed_mps:
             continue
-        direction = math.atan2(motion[1], motion[0])
-        deviation = angle_diff_deg(headings[i], direction)
+        deviation = angle_diff_deg(headings[i], math.atan2(motion[1], motion[0]))
+        rows.append((i, a, b, distance / dt, deviation))
+    # Xe lùi thật (C5): box ngược chiều ở gần hết các frame đang chạy và vật chạy chậm. Không phân biệt được với box vẽ
+    # ngược trên xe chạy chậm, nên hạ xuống Cảnh báo; xe chạy nhanh mà box ngược vẫn là Lỗi.
+    reversed_rows = [r for r in rows if r[4] >= grp.motion_error_deg]
+    maybe_reversing = (grp.reverse_max_mps > 0 and len(reversed_rows) >= 2
+                       and len(reversed_rows) >= 0.8 * len(rows)
+                       and max(r[3] for r in reversed_rows) <= grp.reverse_max_mps)
+    findings: list[Finding] = []
+    if maybe_reversing:
+        # Một mục cho cả đoạn: người duyệt chỉ cần xác nhận xe có lùi không.
+        first, last = reversed_rows[0], reversed_rows[-1]
+        speed = max(r[3] for r in reversed_rows)
+        deviation = float(np.median([r[4] for r in reversed_rows]))
+        message = (f"Hướng box ngược chiều chuyển động ở {len(reversed_rows)}/{len(rows)} keyframe đang chạy (frame "
+                   f"{boxes[first[0]].frame}–{boxes[last[0]].frame}) khi vật chạy chậm (≤ {speed:.1f} m/s): có thể đang "
+                   f"lùi thật, nếu không thì xoay box 180° ở cả đoạn")
+        findings.append(_finding("heading.motion", Severity.WARNING, boxes[first[0]], message, deviation,
+                                 grp.motion_error_deg, {"deviation_deg": deviation, "speed_mps": speed,
+                                                        "has_world_pose": has_world, "maybe_reversing": True,
+                                                        "frames": [boxes[r[0]].frame for r in reversed_rows]}))
+        rows = [r for r in rows if r[4] < grp.motion_error_deg]
+    for i, a, b, speed, deviation in rows:
         if deviation <= grp.motion_warning_deg:
             continue
-        is_error = deviation >= grp.motion_error_deg and has_world
+        is_reverse = deviation >= grp.motion_error_deg
+        is_error = is_reverse and has_world
         severity = Severity.ERROR if is_error else Severity.WARNING
-        threshold = grp.motion_error_deg if deviation >= grp.motion_error_deg else grp.motion_warning_deg
-        kind = "ngược chiều" if deviation >= grp.motion_error_deg else "lệch"
+        threshold = grp.motion_error_deg if is_reverse else grp.motion_warning_deg
+        kind = "ngược chiều" if is_reverse else "lệch"
         message = (f"Hướng box {kind} {deviation:.0f}° so với hướng chuyển động của vật "
-                   f"({distance / dt:.1f} m/s, frame {boxes[a].frame}–{boxes[b].frame}; ngưỡng {threshold:.0f}°)")
+                   f"({speed:.1f} m/s, frame {boxes[a].frame}–{boxes[b].frame}; ngưỡng {threshold:.0f}°)")
         if not has_world:
             message += " [chưa có toạ độ toàn cục]"
         findings.append(_finding("heading.motion", severity, boxes[i], message, deviation, threshold, {
-            "deviation_deg": deviation, "speed_mps": distance / dt, "has_world_pose": has_world,
+            "deviation_deg": deviation, "speed_mps": speed, "has_world_pose": has_world,
         }))
     return findings
 
@@ -170,7 +194,7 @@ def detect_heading_track(
         times = _times(active, keyframe_interval_s, timestamps)
         flips = _flip_findings(active, headings, times, grp, has_world) if flip else []
         findings.extend(flips)
-        if motion:
+        if motion and has_world:
             flagged = {i for i, b in enumerate(active) if any(f.frame == b.frame for f in flips)}
             findings.extend(_motion_findings(active, centers, headings, times, grp, config.min_motion_m, has_world,
                                              flagged))
@@ -210,6 +234,11 @@ def heading_points_measure(item: BoxPointSet, cfg: HeadingPointsConfig) -> float
     return -math.degrees(rectangle_angle(item.local[:, :2]))
 
 
+def _wrap90(deg: float) -> float:
+    """Góc (độ) quy về [−45°, 45°)."""
+    return (deg + 45.0) % 90.0 - 45.0
+
+
 def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: HeadingPointsConfig) -> list[Finding]:
     """Luật `heading.points`: so độ lệch trục của từng box với **trung vị độ lệch của các box khác cùng track**.
 
@@ -226,8 +255,11 @@ def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: Headi
         others = list(by_track.get(box.track_id, [])) if box.track_id is not None else []
         if others:
             others.remove(dev)
+        # Trục hình chữ nhật chỉ xác định theo modulo 90°: đưa các frame khác về cùng nhánh với box đang xét
+        # (−44° và +44° chỉ cách nhau 2°) rồi mới lấy trung vị.
+        others = [dev + _wrap90(o - dev) for o in others]
         reference = float(np.median(others)) if len(others) >= 2 else 0.0
-        deviation = abs((dev - reference + 45.0) % 90.0 - 45.0)  # trục hình chữ nhật chỉ xác định theo modulo 90°
+        deviation = abs(_wrap90(dev - reference))
         if deviation <= cfg.warning_deg:
             continue
         severity = Severity.ERROR if deviation > cfg.error_deg else Severity.WARNING

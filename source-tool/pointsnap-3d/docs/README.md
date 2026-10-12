@@ -9,3 +9,4 @@ Tạo file đúng tên để link trong [`giao-viec/`](../giao-viec/) mở đư�
 | `danh-gia.md` | T2 — bảng chỉ số đánh giá theo mục 8.2 của bản đề xuất | Nguyễn Văn Hân (chủ trì), Nhữ Đình Chiến | 12h 09/10 |
 | `loi-khi-test.md` | T1 — lỗi gặp khi test quy trình trên CVAT theo README | Nhữ Đình Chiến | Sáng 09/10 |
 | `thu-extension.md` | A15 — kết quả thử extension trên CVAT: spike S1–S4, tiêu chí xong mục 4.6 | Khúc Việt Anh | 08/10 (đã xong) |
+| `ban-giao-12-10.md` | Bàn giao giữa tuần gia hạn: PR chờ merge, thứ tự merge, kiểm lại, việc còn lại | Khúc Việt Anh | 12/10 (đã xong) |

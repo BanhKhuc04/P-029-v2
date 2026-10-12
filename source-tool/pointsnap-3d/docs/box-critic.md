@@ -52,6 +52,33 @@ luật `critic.box` so **logit của box với trung vị các frame khác của
 0,5% box chuẩn bị báo, bắt được 35% box dời > 0,3 m, 33% box xoay > 10°, 27% box sai kích thước > 0,3 m (scene-0916 để
 riêng). Muốn tốt hơn nữa thì cần **thêm dữ liệu** (nuScenes trainval, dữ liệu Việt Nam đã gán).
 
+**Ensemble (11/10).** Với 4 cảnh huấn luyện, kết quả phụ thuộc nhiều vào seed: cùng cấu hình, ở mức 0,5% box chuẩn của
+scene-0916 bị báo, model bắt được 18,8% hoặc 26,1% mẫu sai tùy seed. `--ensemble 5` huấn luyện 5 model với seed khác nhau
+và lấy trung bình logit / giá trị sửa (một file TorchScript, cùng hợp đồng mục 3, ~265 nghìn tham số, chấm 200 box mất
+~0,2 s trên CPU). Các thử nghiệm trên scene-0916 để riêng (so theo track, 0,5% box chuẩn bị báo):
+
+| Cấu hình | Mẫu sai bắt được |
+|---|---|
+| 1 model (seed 0) | 26,1% |
+| 1 model, width 64, dropout 0,5 | 30,7% |
+| 1 model, 12 epoch | 22,5% |
+| 1 model, weight decay 1e-2 | 26,0% |
+| **5 model (mặc định khác giữ nguyên)** | **31,4%** (xác suất thô, 1% box chuẩn bị báo: 32,0%) |
+| 5 model, width 64, dropout 0,5 | 31,7% (xác suất thô: 29,1%) |
+| 5 model, width 32, dropout 0,5 | 22,4% |
+
+Chọn 5 model cấu hình mặc định, ngưỡng từ scene-0916: `min_logit_rise: 5.3`, `error_logit_rise: 6.7`. Đo một lần trên 5 cảnh
+kiểm tra (chỉ bật `critic.box`, 30 vòng chèn lỗi, ~30 mẫu mỗi mức), so với model v2 (1 model, ngưỡng 4,4 / 6,0):
+
+| | v2 | **5 model** |
+|---|---|---|
+| `critic.box` báo nhầm Cảnh báo / Lỗi trên 100 box | 0,18 / 0,06 | **0,13** / 0,06 |
+| Lỗi chèn bắt được (tổng 436) | 64 | **69** |
+| Co x0,7 / phóng x1,3 | 13% / 3% | **19% / 6%** |
+| Xoay 60° / 90° | 26% / 15% | **29% / 21%** |
+| Xoay 15° | 16% | 10% |
+| Dời 0,5 m · nhảy 1 m | 25% · 22% | 25% · 25% |
+
 ### Huấn luyện trên Google Colab (GPU miễn phí)
 
 Colab cho GPU T4 16 GB, đủ cho mạng lớn hơn và nhiều dữ liệu hơn RTX 3050 4 GB.
@@ -92,8 +119,8 @@ Trong guideline của dự án (tab Guideline → YAML, hoặc file `--config`):
 critic:
   model: D:/models/critic.pt
   min_points: 20          # chỉ chấm box có ≥ 20 điểm của vật
-  min_logit_rise: 4.4     # box thuộc track: logit sai cao hơn trung vị các frame khác của track > 4.4: Cảnh báo
-  error_logit_rise: 6.0   # > 6.0: Lỗi  (hai số này lấy từ dòng "Ngưỡng gợi ý" của script huấn luyện)
+  min_logit_rise: 5.3     # box thuộc track: logit sai cao hơn trung vị các frame khác của track > 5.3: Cảnh báo
+  error_logit_rise: 6.7   # > 6.7: Lỗi  (hai số này lấy từ dòng "Ngưỡng gợi ý" của script huấn luyện)
   min_probability: 0.7    # box lẻ không thuộc track: xác suất sai ≥ 0.7: Cảnh báo
   error_probability: 0.9  # ≥ 0.9: Lỗi
 ```

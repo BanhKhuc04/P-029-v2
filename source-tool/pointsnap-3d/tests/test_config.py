@@ -12,7 +12,7 @@ def test_default_config_loads():
     cfg = load_config(env={})
     assert cfg.cvat.url == "http://localhost:8080"
     assert cfg.cvat.token is None
-    assert cfg.floating.warning_m == pytest.approx(0.12)
+    assert cfg.floating.warning_m == pytest.approx(0.15)
     assert cfg.floating.error_m == pytest.approx(0.22)
     assert "pedestrian" in cfg.size.in_track.excluded_classes
     assert cfg.size.manual_ranges["bus"]["length"] == (6.0, 18.5)
@@ -48,7 +48,7 @@ def test_user_file_overrides_only_given_keys(tmp_path):
     user.write_text("floating:\n  error_m: 0.25\ngate:\n  max_warnings: 3\n", encoding="utf-8")
     cfg = load_config(user, env={})
     assert cfg.floating.error_m == pytest.approx(0.25)
-    assert cfg.floating.warning_m == pytest.approx(0.12)  # giữ mặc định
+    assert cfg.floating.warning_m == pytest.approx(0.15)  # giữ mặc định
     assert cfg.gate.max_warnings == 3
 
 

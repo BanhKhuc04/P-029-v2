@@ -96,6 +96,10 @@ class BoxPointSet:
         return int(len(self.local) - int(self.inside.sum()))
 
 
+RING_REACH_M = 1.5
+"""`ring_ground_for_box` chỉ dùng điểm cách tâm box ≤ nửa cạnh dài + vành đai (0,8 m) + 0,1 m: lấy dư cho chắc."""
+
+
 def box_point_sets(
     points: np.ndarray, boxes: Sequence[Cuboid], margin: float, clearance: float, margin_rel: float = 0.0,
 ) -> list[BoxPointSet]:
@@ -107,11 +111,12 @@ def box_point_sets(
         half = np.asarray(box.dims) / 2.0
         pad = np.maximum(margin, margin_rel * np.asarray(box.dims[:2]))
         reach = math.hypot(*(half[:2] + pad)) + 0.1
-        near_mask = (np.abs(pts[:, 0] - box.center[0]) <= reach) & (np.abs(pts[:, 1] - box.center[1]) <= reach)
-        near_idx = np.flatnonzero(near_mask)
+        near_idx = cloud.near(box.center[0], box.center[1], reach + 1e-6)
+        near_idx = near_idx[(np.abs(pts[near_idx, 0] - box.center[0]) <= reach)
+                            & (np.abs(pts[near_idx, 1] - box.center[1]) <= reach)]
         local_all = to_box_frame(pts[near_idx], box)
 
-        own = cloud.without_others(index)
+        own = cloud.without_others(index, reach=max(box.dims[:2]) / 2.0 + RING_REACH_M)
         ground = ring_ground_for_box(own, box)
         ground_z = ground.ground_z if ground.is_valid else None
         base = (ground_z if ground_z is not None else box.bottom_z) - box.center[2]

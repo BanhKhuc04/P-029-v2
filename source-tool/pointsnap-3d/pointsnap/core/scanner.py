@@ -24,7 +24,7 @@ from pointsnap.core.model import (
     group_by_track,
 )
 from pointsnap.detectors.attributes import detect_attribute_errors
-from pointsnap.detectors.fit import fit_findings_for_frame, outside_findings, overlap_findings
+from pointsnap.detectors.fit import fit_findings_for_frame, loose_findings, outside_findings, overlap_findings
 from pointsnap.detectors.floating import detect_floating_scene
 from pointsnap.detectors.static import detect_static_errors
 from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
@@ -155,7 +155,12 @@ def check_floating(job: JobData, config: Config, frames: FrameSource | None = No
 
 def check_size(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Sai kích thước theo class và trong track (B4, `detectors.size`)."""
-    return detect_size(job.cuboids, config.size)
+    findings = detect_size(job.cuboids, config.size)
+    if frames is not None:
+        from pointsnap.detectors.size import relax_filled_oversize
+
+        findings = relax_filled_oversize(findings, job.cuboids, frames, config.size.cargo_classes)
+    return findings
 
 
 def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -196,6 +201,7 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
     findings: list[Finding] = []
     measures = []
     outside = []
+    loose = []
     for frame, boxes in group_by_frame(c for c in job.cuboids if c.visible).items():
         if r.fit_overlap:
             findings.extend(overlap_findings(boxes, config.fit, typed=lambda b: _typed_label(b, config)))
@@ -204,15 +210,17 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
         points = frames.frame_data(frame).points
         items = box_point_sets(points, boxes, margin=config.fit.outside_margin_m,
                                clearance=config.fit.ground_clearance_m, margin_rel=config.fit.outside_margin_rel)
-        frame_findings, frame_outside = fit_findings_for_frame(items, config.fit, points[:, :3], empty=r.fit_empty,
-                                                               outside=r.fit_outside, loose=r.fit_loose)
+        frame_findings, frame_outside, frame_loose = fit_findings_for_frame(
+            items, config.fit, points[:, :3], empty=r.fit_empty, outside=r.fit_outside, loose=r.fit_loose)
         findings.extend(frame_findings)
         outside.extend(frame_outside)
+        loose.extend(frame_loose)
         if r.heading_points:
             measures.extend((item.box, dev) for item in items
                             if (dev := heading_points_measure(item, config.heading.points)) is not None)
     findings.extend(heading_points_findings(measures, config.heading.points))
     findings.extend(outside_findings(outside, config.fit))
+    findings.extend(loose_findings(loose, config.fit))
     return findings
 
 
@@ -244,7 +252,22 @@ def check_camera(job: JobData, config: Config, frames: FrameSource | None = None
     observations, missing = collect_observations(job.cuboids, frames, _detector(config.camera.effective_model()),
                                                   config.camera)
     findings = camera_findings(observations, config.camera, mismatch=r.cam_mismatch, wrong_class=r.cam_class)
+    if r.cam_sparse:
+        from pointsnap.detectors.camera import sparse_unconfirmed
+
+        findings += sparse_unconfirmed(job.cuboids, frames, _detector(config.camera.effective_model()), config.camera)
     return findings + (missing if r.cam_missing else [])
+
+
+def check_missing(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Sót đối tượng bằng LiDAR (C7, `detectors.missing`). Cần point cloud và pose xe thu."""
+    if frames is None:
+        return []
+    from pointsnap.detectors.missing import detect_missing_objects
+
+    detector = (_detector(config.camera.effective_model())
+                if hasattr(frames, "camera_views") and config.camera.active() else None)
+    return detect_missing_objects(job.cuboids, frames, config.missing, detector, config.camera)[0]
 
 
 def check_critic(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -262,12 +285,19 @@ def check_critic(job: JobData, config: Config, frames: FrameSource | None = None
 
 def check_attributes(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
-    return detect_attribute_errors(job.cuboids, config.spec)
+    from pointsnap.detectors.attributes import detect_attribute_height, detect_rider_state, detect_spec_geometry
+
+    sensor_to_world, _ = _poses(job, frames)
+    return (detect_attribute_errors(job.cuboids, config.spec) + detect_attribute_height(job.cuboids, config.spec)
+            + detect_spec_geometry(job.cuboids, config.spec)
+            + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s))
 
 
 _RULE_SWITCH = {
-    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long",
-    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid",
+    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
+    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid", "attr.height": "attr_height",
+    "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double", "lidar.missing": "lidar_missing",
+    "attr.rider_state": "attr_rider_state", "cam.sparse": "cam_sparse",
     "track.static_shift": "track_static_shift", "heading.static": "heading_static",
     "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
     "critic.box": "critic_box",
@@ -306,6 +336,7 @@ DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_static,
     check_camera,
     check_critic,
+    check_missing,
 )
 
 
@@ -333,20 +364,23 @@ def scan_cuboids(
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
         if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
-                or r.track_occluded_long):
+                or r.track_occluded_long or r.track_id_swap):
             active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)
         if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:
             active_detectors.append(check_box_points)
-        if r.attr_missing or r.attr_invalid:
+        if (r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double
+                or r.attr_rider_state):
             active_detectors.append(check_attributes)
         if r.track_static_shift or r.heading_static:
             active_detectors.append(check_static)
-        if r.cam_mismatch or r.cam_class or r.cam_missing:
+        if r.cam_mismatch or r.cam_class or r.cam_missing or r.cam_sparse:
             active_detectors.append(check_camera)
         if r.critic_box:
             active_detectors.append(check_critic)
+        if r.lidar_missing:
+            active_detectors.append(check_missing)
 
     findings: list[Finding] = []
     for detector in active_detectors:

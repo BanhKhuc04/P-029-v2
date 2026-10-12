@@ -191,7 +191,7 @@ class HeadingConfig:
     min_motion_m: float = 1.0
     """Quãng đường tối thiểu giữa hai keyframe lân cận để ước lượng hướng chuyển động."""
     points: HeadingPointsConfig = dataclasses.field(default_factory=lambda: HeadingPointsConfig(
-        ("car", "truck", "bus", "trailer"), 60, 1.6, 15.0, 30.0, 40.0))
+        ("car", "truck", "bus", "trailer"), 60, 1.6, 12.0, 30.0, 40.0))
 
     def group_for(self, label: str) -> HeadingGroupConfig | None:
         for group in self.groups.values():

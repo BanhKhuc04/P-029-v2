@@ -152,7 +152,7 @@ heading:                              # sai hướng box (C1), spec 4.2: hướn
     classes: [car, truck, bus, trailer]  # xe công trình có cần, gầu làm cụm điểm không vuông: không xét
     min_points: 60                    # cần đủ điểm của vật
     min_aspect: 1.6                   # box đủ dài so với bề ngang thì trục mới rõ
-    warning_deg: 15
+    warning_deg: 12                   # 15 → 12 (12/10): box xoay 15° bắt 38% → 86% trên cảnh kiểm tra, báo nhầm +0,12 / 100 box
     error_deg: 30
     max_range_m: 40.0
 

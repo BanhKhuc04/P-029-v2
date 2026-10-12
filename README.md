@@ -45,3 +45,7 @@ Một người có thể giữ nhiều vị trí, nhưng **không review job do 
 - **Link CVAT**: trỏ tới đúng job và frame (`.../jobs/<id>?frame=<n>`), không trỏ tới cả task —
   người đọc phải mở ra là thấy ngay chỗ có vấn đề.
 - **Mục guideline**: ghi số mục (`§3.2`) để ai cũng tra lại được.
+
+## Review PointSnap
+
+[Bàn giao review 01–08](review/2026-10-10/08-handoff.md), [kế hoạch và trạng thái](REVIEW-PLAN.md). Nhánh kết quả tiếp nối nhau, chưa merge main. Các báo cáo phân biệt test đạt với quality/manual/MV3 và deployment chưa xác minh.

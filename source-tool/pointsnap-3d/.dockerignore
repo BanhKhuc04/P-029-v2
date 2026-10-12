@@ -1,0 +1,9 @@
+*
+!Dockerfile
+!Dockerfile.api
+!pyproject.toml
+!README.md
+!pointsnap/
+!pointsnap/**
+**/__pycache__/
+**/*.pyc

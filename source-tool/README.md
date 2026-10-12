@@ -2,7 +2,7 @@
 
 **Giải quyết:** [P-010](../problem-backlog.md#p-010) — khó căn đáy cuboid sát mặt đất, box lơ lửng / lún · [P-011](../problem-backlog.md#p-011) — lỗi 3D chỉ phát hiện ở khâu review thủ công, gây rework lớn · [P-012](../problem-backlog.md#p-012) — duyệt tuần tự các box có cờ và ghi kết luận qua Web/extension.
 
-> **Trạng thái đối chiếu ngày 11/10/2026:** mã nguồn CLI, Web, extension và luật giai đoạn 3 đã có. Kết quả G2 trong nhật ký là bằng chứng lịch sử trên CVAT local; chưa đủ để kết luận toàn bộ sản phẩm đã nghiệm thu. `diff` chưa triển khai; test mock không chứng nhận CVAT thật hoặc thao tác trình duyệt. Xem [review phần 01](../review/2026-10-10/01-report.md), [bản đề xuất](pointsnap-3d/de-xuat-de-tai.md) và [bảng phân việc](pointsnap-3d/TASKS.md).
+> **Đối chiếu 12/10/2026:** review 01–08 có báo cáo trên các nhánh tiếp nối, chưa merge main. Xem [bàn giao tổng](../review/2026-10-10/08-handoff.md). CLI/Web/package/Docker đã có kiểm tra riêng; extension MV3 thật và manual precision còn thiếu bằng chứng. Quality proxy hiện còn vượt mục tiêu. `diff`, khôi phục nhãn tự động và kiểm sót đối tượng chưa triển khai.
 
 ## Pain point
 
@@ -61,7 +61,7 @@ Giao diện Web trực quan (FastAPI + HTML/JS thuần) thay thế hoàn toàn d
 ```bash
 pointsnap ui
 ```
-*Mặc định máy chủ lắng nghe tại `http://127.0.0.1:8765` và tự động mở trình duyệt. Có thể tùy chỉnh `--host 0.0.0.0`, `--port 8765`, hoặc `--no-browser`.*
+*Mặc định máy chủ lắng nghe tại `http://127.0.0.1:8765` và tự động mở trình duyệt. Có thể tùy chỉnh `--port 8765` hoặc `--no-browser`. Web dành cho một người dùng local tin cậy; LAN cần cơ chế xác thực/proxy và kiểm riêng theo [bảo mật](pointsnap-3d/docs/local-security.md).*
 
 *Lưu ý khi bấm link "Mở CVAT":*
 - Link trỏ thẳng tới đúng đối tượng bị báo (`&type=track&serverID=<id>`), chỉ đúng với **lần quét mới nhất** (do CVAT tạo lại id khi annotation được lưu hoặc gắn cờ). Sau khi sửa box xong, hãy quét lại rồi mới bấm link.
@@ -95,7 +95,7 @@ pointsnap gate --job 12
 
 **Ý nghĩa gate:** chỉ ĐẠT khi không vượt ngưỡng của các luật đang bật và không có thiếu dữ liệu đã được kiểm tra. Thiếu point cloud cho luật đang bật trên box nhìn thấy, thiếu pose cho luật track/hướng trên box thuộc track, hoặc có `floating.no_evidence` thì KHÔNG ĐẠT (mã 1), kèm lý do kiểm tra một phần. Lỗi đọc frame khi quét `gate` trả mã 3. Luật được chủ động tắt không yêu cầu dữ liệu; ĐẠT không chứng nhận những luật đó, đối tượng bị sót hoặc độ đúng tuyệt đối của nhãn.
 
-**Chạy thử không cần CVAT** (đọc thẳng nuScenes, cùng 3 bộ phát hiện):
+**Chạy thử không cần CVAT** (đọc nuScenes, dùng scanner hiện hành):
 
 ```bash
 # Chèn lỗi giả vào 30% số track rồi quét; in lỗi chèn nào có / không có finding đúng loại
@@ -120,7 +120,7 @@ Gán nhãn xong
 - **Ra:**
   - Báo cáo **HTML**: chia mức Lỗi / Cảnh báo / Thông tin, nhóm theo track, mỗi dòng có số đo cụ thể và link mở thẳng frame trên CVAT.
   - File **CSV** cùng nội dung để thống kê.
-  - **Bản chụp nhãn** (JSON) lưu mỗi lần quét, dùng để so sánh trước / sau và khôi phục nếu cần.
+  - **Bản chụp nhãn** (JSON) lưu mỗi lần quét, giữ làm bằng chứng so sánh và phục hồi thủ công; chưa có CLI restore tự động.
   - Với `--flag`: thuộc tính `pointsnap_error` trên box lỗi, ví dụ *"LỖI: lơ lửng 22 cm"*. Cờ tự xóa khi box hết lỗi ở lần quét sau.
 - **Đưa lại vào CVAT:** không cần import. Cờ lỗi được ghi thẳng qua API; chỉ cần tải lại trang.
 
@@ -128,15 +128,16 @@ Gán nhãn xong
 
 Các tài liệu lịch sử ghi kiểm thử trên **nuScenes v1.0-mini** (10 cảnh, ~400 frame có nhãn): 5 cảnh chỉnh ngưỡng, 5 cảnh báo cáo. Bảng dưới thuộc báo cáo cũ [`docs/danh-gia.md`](pointsnap-3d/docs/danh-gia.md), thiếu commit/config hash/seed nên không coi là đo lại trên phiên bản hiện hành.
 
-Snapshot giai đoạn 3 ngày 10/10/2026: **3,42 Cảnh báo và 0,55 Lỗi / 100 box** trên 5 cảnh kiểm tra (5 440 box), vẫn vượt mục tiêu ≤ 2 và ≤ 0,5. Xem [kết quả giai đoạn 3](pointsnap-3d/docs/ket-qua-giai-doan-3.md). Đây là đánh giá tự động; precision xem tay và metadata tái lập còn phải xác minh ở phần 07.
+Đánh giá tái lập [phần 07](../review/2026-10-10/07-report.md), seed 0, 10 cảnh × 10 vòng: 5 cảnh held-out có **5 440 box**, **194 warning / 30 error**, tương ứng **3,566 / 0,551 trên 100 box**, vượt mục tiêu ≤ 2 / ≤ 0,5. Đây là finding trên GT làm proxy, chưa xác minh từng finding có thật là báo nhầm. Manual precision **0 mẫu**. Config được giữ trước held-out; số liệu lịch sử bên dưới không dùng để chứng nhận bản hiện hành.
 
+Benchmark serial hai cảnh (531/3 333 box): **3,17–9,86 giây** không sweeps, **7,53–24,62 giây** với 4 sweeps; gồm I/O, đo trên máy local và dataset cache có sẵn. Không phải cam kết latency mọi máy. RAM peak tiến trình 209,35 MiB.
 | Chỉ số | Mục tiêu | Kết quả |
 |---|---|---|
 | Recall trên lỗi chèn giả (lơ lửng ≥ 20 cm, kích thước ≥ 15%) | ≥ 90% | **92.0%** (floating error) / 90.7% (error chung) |
 | Precision mỗi loại lỗi | ≥ 70% | 17.6% (floating) / 13.5% (size)* |
 | Báo động giả trên nhãn chuẩn | ≤ 2 Cảnh báo / 100 box | Có cảnh báo cho các lỗi thật có sẵn trên nhãn nuScenes |
 | Sai số ước lượng mặt đất (~200 box chuẩn) | Trung vị < 5 cm | **8.2 cm** (P90: 33.5 cm) |
-| Thời gian chạy `scan` | < 2 phút / cảnh | **~2 giây / cảnh** (< 0.1s / frame) |
+| Thời gian chạy `scan` | < 2 phút / cảnh | Số lịch sử ~2 giây/cảnh; dùng benchmark phần 07 khi đối chiếu hiện hành |
 
 ## Giới hạn
 

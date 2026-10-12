@@ -35,6 +35,11 @@ def frames_for_job(
     lún bị bỏ qua và luật đứt track chỉ báo mức Cảnh báo.
     """
     path = manifest or find_manifest(job.task_id, export_dirs(custom_export_dirs), url=job.url or None)
+    # Operator khai báo cặp backend/web URL cho cùng CVAT khi container dùng DNS nội bộ.
+    # Chỉ fallback cho đúng backend đó; project server khác vẫn cần manifest của chính nó.
+    if (path is None and os.environ.get('CVAT_WEB_URL')
+            and job.url.rstrip('/') == os.environ.get('CVAT_URL', '').rstrip('/')):
+        path = find_manifest(job.task_id, export_dirs(custom_export_dirs), url=os.environ['CVAT_WEB_URL'])
     skipped = ("bỏ qua luật lơ lửng / lún và hướng/fit dùng LiDAR; "
                "luật chuyển động dùng tọa độ từng frame khi thiếu pose; gate kiểm tra dữ liệu theo luật đang bật")
     if path is None:

@@ -224,7 +224,7 @@ def main(argv=None):
         rows.append({'name': 'extension core (Node)', 'status': 'SKIP', 'detail': 'Node or tests missing; use --node'})
     if args.dataset:
         dataset_env = dict(clean_env, NUSCENES_ROOT=str(args.dataset.resolve()))
-        pytest_phase('dataset', ['tests/test_real_nuscenes.py'], dataset_env)
+        pytest_phase('dataset', ['tests/test_real_nuscenes.py', 'tests/test_ground.py::test_estimate_ground_real_nuscenes'], dataset_env)
     else:
         rows.append({'name': 'real nuScenes', 'status': 'SKIP', 'detail': 'Use --dataset DIRECTORY'})
     if args.live_cvat:

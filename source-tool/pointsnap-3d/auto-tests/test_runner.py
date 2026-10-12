@@ -91,4 +91,3 @@ def test_checklist_mapping_has_every_documented_case():
     cases = module.checklist_cases([{'name': 'tests.demo::one', 'status': 'PASS'}],
                                   {'A01': [['one'], 'UI not checked']})
     assert cases[0]['code_status'] == 'PASS' and not cases[0]['full_checklist_passed']
-

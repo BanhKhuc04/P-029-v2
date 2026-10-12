@@ -237,14 +237,19 @@ class _GroundedSam2:
         self.sam = Sam2Model.from_pretrained(SAM2_ID).to(device).eval()
 
     def __call__(self, image) -> Detections:
+        import contextlib
+
         import torch
 
-        with torch.inference_mode(), torch.autocast("cuda", dtype=torch.float16, enabled=self.device == "cuda"):
+        # Chỉ bật fp16 khi chạy GPU; trên CPU không gọi autocast("cuda") (PyTorch cảnh báo khi không có CUDA).
+        half = (torch.autocast("cuda", dtype=torch.float16) if str(self.device).startswith("cuda")
+                else contextlib.nullcontext())
+        with torch.inference_mode(), half:
             inputs = self.gdino_proc(images=image, text=self.text, return_tensors="pt").to(self.device)
             out = self.gdino(**inputs)
         res = self.gdino_proc.post_process_grounded_object_detection(
             out, inputs.input_ids, threshold=self.min_score, text_threshold=0.25, target_sizes=[image.size[::-1]])[0]
-        names = [str(n) for n in res.get("text_labels", res["labels"])]
+        names = [str(n) for n in (res["text_labels"] if "text_labels" in res else res["labels"])]
         boxes = res["boxes"].float().cpu()
         scores = res["scores"].float().cpu().numpy().astype(np.float32)
         masks: list[np.ndarray] = []

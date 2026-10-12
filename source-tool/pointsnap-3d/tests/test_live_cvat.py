@@ -29,7 +29,11 @@ pytestmark = pytest.mark.skipif(os.environ.get("POINTSNAP_LIVE_CVAT") != "1", re
 def client():
     load_dotenv(TOOL_DIR / ".env")
     config = load_config()
-    return CvatClient(config.cvat.url, config.cvat.token, auth_scheme=os.environ.get("CVAT_AUTH_SCHEME", "Bearer"))
+    connection=CvatClient(config.cvat.url, config.cvat.token, auth_scheme=os.environ.get("CVAT_AUTH_SCHEME", "Bearer"))
+    try:
+        yield connection
+    finally:
+        connection.session.close()
 
 
 def test_upload_then_read_back_matches_ground_truth(tmp_path, client):

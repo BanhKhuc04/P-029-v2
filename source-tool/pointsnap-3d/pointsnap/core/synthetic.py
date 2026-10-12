@@ -423,8 +423,12 @@ def inject_dataset(
     """
     if catalog not in ("core", "c1", "all"):
         raise ValueError(f"catalog phải là core, c1 hoặc all, nhận {catalog!r}")
+    if not 0 <= error_rate <= 1:
+        raise ValueError('error_rate phải nằm trong [0, 1]')
     rng = random.Random(seed)
     cuboid_list = list(cuboids)
+    if error_rate == 0:
+        return cuboid_list, []
     tracks = group_by_track(cuboid_list)
 
     # Lọc các track hợp lệ có ít nhất 3 frame hoạt động

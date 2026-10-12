@@ -1826,6 +1826,7 @@
         throw new Error(errorDetail(err.detail, 'Không thể lưu thông tin kết nối'));
       }
 
+      if (!scope.current()) return;
       showToast('Đã lưu cấu hình kết nối thành công', 'success');
       checkCvatConnectionStatus();
       loadConnectionTab();

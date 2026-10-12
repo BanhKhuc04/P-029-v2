@@ -10,7 +10,7 @@ import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urljoin, urlsplit
 
 import requests
 
@@ -35,9 +35,11 @@ class ReportCvatClient(CvatClient):
     """Giữ giới hạn origin và mã HTTP trong adapter của API bổ sung."""
 
     def _request(self, method, path, *, expected=(200,), **kwargs):
-        url = path if path.startswith("http") else f"{self.url}/api/{path.lstrip('/')}"
+        url = urljoin(f"{self.url}/api/", path)
         origin, target = urlsplit(self.url), urlsplit(url)
-        if (origin.scheme, origin.netloc) != (target.scheme, target.netloc):
+        def identity(parts):
+            return parts.scheme, parts.hostname, parts.port or (443 if parts.scheme == 'https' else 80)
+        if identity(origin) != identity(target) or target.username or target.password:
             raise ReportCvatError("CVAT trả đường dẫn ngoài origin cấu hình")
         try:
             response = self.session.request(method, url, timeout=self.timeout,

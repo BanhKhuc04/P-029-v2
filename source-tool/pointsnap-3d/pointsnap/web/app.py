@@ -238,7 +238,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
     def _validate_run_id(run_id: str) -> None:
         """Điểm nhỏ 3: chặn path traversal qua run_id độc hại (vd: ../../etc/passwd)."""
-        if not _RUN_ID_RE.match(run_id):
+        if not _RUN_ID_RE.fullmatch(run_id):
             raise HTTPException(
                 status_code=400,
                 detail=f"run_id không hợp lệ: '{run_id}'. Định dạng: YYYYMMDD-HHMMSS-job<id>.",
@@ -306,6 +306,30 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return {"reviews": load_reviews(run_dir), "rev": link.reviews_rev}
+
+    @application.get("/api/projects/{slug}/learn")
+    def get_learning(slug: str) -> dict[str, Any]:
+        """Kết quả học từ kết luận đã duyệt hiện đang dùng (lớp 4 của Box Verifier)."""
+        from pointsnap.learn import load_model, report
+
+        try:
+            pm.get_project(slug)
+            model = load_model(pm._project_dir(slug))
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"model": model.to_dict() if model else None, "report": report(model) if model else None}
+
+    @application.post("/api/projects/{slug}/learn")
+    def post_learning(slug: str) -> dict[str, Any]:
+        """Học lại từ mọi kết luận Đúng / Báo nhầm của dự án; áp dụng từ lần quét sau."""
+        from pointsnap.learn import learn_project, report
+
+        try:
+            pm.get_project(slug)
+            model = learn_project(pm._project_dir(slug))
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"model": model.to_dict(), "report": report(model)}
 
     @application.post("/api/projects/{slug}/scans/{run_id}/flag", status_code=202)
     def flag_scan(slug: str, run_id: str) -> dict[str, Any]:

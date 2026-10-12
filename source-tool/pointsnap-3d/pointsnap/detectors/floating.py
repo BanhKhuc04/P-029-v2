@@ -11,7 +11,7 @@ Hai cách dùng:
 - `detect_floating_scene` (bộ quét dùng, A10): cả job. Nhãn chuẩn nuScenes tự nó đã lệch mặt đất ước lượng khá
   nhiều (bờ vỉa, dốc, LiDAR thưa: trung vị |d| ~8 cm, p90 ~25 cm) nhưng phần lệch đó ổn định trong một track, nên so
   `d` của box với **trung vị d của các box khác cùng track**; mặt đất đo bằng trung vị điểm thấp trong vành đai sát
-  box, đã bỏ điểm của box khác (`ring_ground_for_box`). Kiểm chứng: docs/kiem-chung-ground.md.
+  box, đã bỏ điểm của box khác (`ring_ground_for_box`). Kiểm chứng: docs/ket-qua/kiem-chung-ground.md.
 """
 
 from __future__ import annotations
@@ -217,7 +217,8 @@ def estimate_scene_ground(
         for index, box in enumerate(boxes):
             if box.label in classes:
                 results.append((box, ring_ground_for_box(
-                    cloud.without_others(index), box, ring_inner_m=config.ring_inner_m,
+                    cloud.without_others(index, reach=max(box.dims[:2]) / 2.0 + config.ring_outer_m + 0.5), box,
+                    ring_inner_m=config.ring_inner_m,
                     ring_outer_m=config.ring_outer_m, min_ground_points=min_points,
                 )))
     return results
@@ -238,11 +239,17 @@ def floating_findings_by_track(
       `|d| > error_min_abs_m`.
     - Box lẻ, hoặc track có ít hơn `min_track_boxes` box khác đo được: so `|d|` với `single_warning_m` / `single_error_m`.
     - Box không đủ điểm mặt đất: không kết luận, gộp một mục Thông tin cho mỗi track.
+    - Track đi qua mặt dốc (C4): box bị báo theo trung vị nhưng khi so **điểm tiếp xúc** (`contact_distance`, box trên dốc
+      rõ) / `distance` (box trên đường bằng) với các frame khác thì không lệch → bỏ mục báo. Chỉ bỏ bớt, không thêm mục.
     """
     by_track: dict[int, list[int]] = defaultdict(list)
     for i, (box, est) in enumerate(estimates):
         if box.track_id is not None and est.is_valid:
             by_track[box.track_id].append(i)
+
+    def contact_or_distance(j: int) -> float:
+        est = estimates[j][1]
+        return float(est.contact_distance if est.contact_distance is not None else est.distance)
 
     findings: list[Finding] = []
     no_evidence: dict[int | None, list[Cuboid]] = defaultdict(list)
@@ -264,11 +271,22 @@ def floating_findings_by_track(
                 severity, threshold = Severity.WARNING, config.warning_m
             else:
                 continue
+            peers = [j for j in by_track[box.track_id] if j != i]
+            if est.contact_distance is not None or any(estimates[j][1].contact_distance is not None for j in peers):
+                on_contact = contact_or_distance(i) - float(np.median([contact_or_distance(j) for j in peers]))
+                if abs(on_contact) <= config.warning_m:
+                    continue  # lệch chỉ do track đi từ đường bằng lên dốc (hoặc ngược lại)
             direction = "cao hơn" if offset > 0 else "thấp hơn"
             message = (f"{_describe(d)}; {direction} {abs(offset) * 100:.0f} cm so với các frame khác của track "
                        f"(trung vị {reference * 100:+.0f} cm)")
             value = offset
         else:
+            # Không có track để so: so tuyệt đối, nên dùng điểm tiếp xúc trên mặt phẳng dốc nếu có (C4) — trên dốc trung vị
+            # ở tâm box lệch với đáy box đúng spec tan(dốc) × nửa chiều dài box.
+            if est.contact_distance is not None:
+                d = float(est.contact_distance)
+                details["distance"] = d
+                details["contact_plane"] = True
             if abs(d) > config.single_error_m:
                 severity, threshold = Severity.ERROR, config.single_error_m
             elif abs(d) > config.single_warning_m:

@@ -4,7 +4,8 @@ Ba kiểu phát hiện:
 1. Kiểu 1 (`track.jump`): Nhảy vị trí bất thường.
    - Xét mọi keyframe có mặt theo thời gian, nội suy cả qua đoạn đối tượng tạm vắng (`outside`).
    - Box giữa track: lệch so với vị trí nội suy tuyến tính theo thời gian từ 2 keyframe lân cận. Box ở đầu / cuối
-     track: so với vị trí ngoại suy từ 2 keyframe kế tiếp, ngưỡng nhân `END_FACTOR`.
+     track: so với vị trí ngoại suy từ 2 keyframe kế tiếp, ngưỡng nhân `END_FACTOR` × độ dài khoảng ngoại suy (so với
+     khoảng giữa 2 keyframe đó).
    - Một cú nhảy làm lệch cả box kề bên, nên với mỗi cụm vượt ngưỡng chỉ báo box mà khi bỏ đi các box còn lại khớp
      nhất. Track chỉ có 2 box: kiểm thô tốc độ > `v_max_mps`.
    - Ngưỡng theo nhóm class: vehicle (1.0/2.0 m), two_wheeler (0.75/1.5 m), pedestrian (0.5/1.0 m), static (0.3/0.6 m).
@@ -31,6 +32,23 @@ if TYPE_CHECKING:
 
 END_FACTOR = 1.5
 """Ở hai đầu đoạn vị trí được ngoại suy (kém chắc hơn nội suy): ngưỡng nhảy nhân thêm hệ số này."""
+
+
+STATIC_RADIUS_M = 1.0
+"""Track có mọi vị trí trong bán kính này quanh trung vị được coi là vật đứng yên."""
+
+
+def _end_factor(horizon: float, moving: bool = True) -> float:
+    """Hệ số ngưỡng ở đầu / cuối track. `horizon` = khoảng ngoại suy / khoảng giữa hai box dùng để ước lượng vận tốc.
+
+    Vật đang chạy: sai số vận tốc nhân lên theo khoảng ngoại suy (box đầu ở frame 1 mà hai box kế tiếp ở frame 5, 6 thì vị
+    trí dự đoán kém chắc gấp ~4 lần), nên ngưỡng nhân theo `horizon`. Trên 5 cảnh tinh chỉnh, 8 / 12 báo nhầm `track.jump`
+    ở hai đầu track là ca này. Vật đứng yên (`moving` = False): vận tốc ~0 nên ngoại suy xa vẫn chắc, giữ `END_FACTOR` —
+    trên job 2 (scene-0061) ba cọc tiêu bị dời ở đầu track mà Chiến xem tay xác nhận là lỗi thật vẫn được báo.
+    """
+    if not moving:
+        return END_FACTOR
+    return END_FACTOR * max(1.0, horizon)
 
 
 def _get_world_centers(
@@ -75,7 +93,8 @@ def _segments(track_boxes: Sequence[Cuboid]) -> list[list[Cuboid]]:
     return [s for s in segments if s]
 
 
-def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -> tuple[float, bool] | None:
+def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int,
+                  moving: bool = True) -> tuple[float, float] | None:
     """Độ lệch (x, y) của box `order[i]` so với vị trí dự đoán từ các box lân cận trong `order`, không dùng chính nó.
 
     Box ở giữa: nội suy tuyến tính theo thời gian. Box ở đầu / cuối: ngoại suy từ hai box kế tiếp.
@@ -87,20 +106,26 @@ def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -
         a, b = order[i - 1], order[i + 1]
         span = times[b] - times[a]
         ratio = (times[k] - times[a]) / span if span > 0 else 0.5
-        return float(np.linalg.norm(xy[k] - (xy[a] + (xy[b] - xy[a]) * ratio))), False
+        return float(np.linalg.norm(xy[k] - (xy[a] + (xy[b] - xy[a]) * ratio))), 1.0
     if n < 3:
         return None
     a, b = (order[1], order[2]) if i == 0 else (order[n - 2], order[n - 3])
     dt = times[a] - times[b]
     ratio = (times[k] - times[a]) / dt if dt != 0 else 1.0
-    return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), True
+    return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), _end_factor(abs(ratio), moving)
 
 
-def _normalized(result: tuple[float, bool] | None) -> float:
+def _speed(xy: np.ndarray, times: np.ndarray, pair: list[int]) -> float:
+    a, b = pair
+    dt = abs(times[b] - times[a])
+    return float(np.linalg.norm(xy[b] - xy[a])) / dt if dt > 0 else float("inf")
+
+
+def _normalized(result: tuple[float, float] | None) -> float:
     if result is None:
         return 0.0
-    r, at_end = result
-    return r / END_FACTOR if at_end else r
+    r, factor = result
+    return r / factor
 
 
 def _segment_jumps(
@@ -108,7 +133,8 @@ def _segment_jumps(
 ) -> list[Finding]:
     n = len(segment)
     order = list(range(n))
-    raw = [_loo_residual(xy, times, order, i) for i in order]
+    moving = bool(np.max(np.linalg.norm(xy - np.median(xy, axis=0), axis=1)) > STATIC_RADIUS_M) if n else True
+    raw = [_loo_residual(xy, times, order, i, moving) for i in order]
     score = [_normalized(r) for r in raw]
     findings: list[Finding] = []
 
@@ -120,18 +146,21 @@ def _segment_jumps(
         end = k
         while end + 1 < n and score[end + 1] >= grp.jump_warning_m:
             end += 1
-        # Chọn box mà khi bỏ đi, các box còn lại quanh cụm khớp nhất.
-        best: tuple[float, float, int] | None = None
+        # Chọn box mà khi bỏ đi, các box còn lại quanh cụm khớp nhất. Track 3 box: bỏ box nào cũng còn 2 box, không
+        # kiểm được; chọn giả thuyết để 2 box còn lại có tốc độ thấp nhất (box giữa nhảy 4 m thì hai đầu "chạy" 8 m mỗi
+        # keyframe nếu đổ lỗi cho một đầu).
+        best: tuple[float, float, float, int] | None = None
         for c in range(max(0, k - 1), min(n, end + 2)):
             rest = [i for i in order if i != c]
             window = [j for j, i in enumerate(rest) if k - 2 <= i <= end + 2]
-            remaining = max((_normalized(_loo_residual(xy, times, rest, j)) for j in window), default=0.0)
-            candidate = (remaining, -score[c], c)
+            remaining = max((_normalized(_loo_residual(xy, times, rest, j, moving)) for j in window), default=0.0)
+            speed = _speed(xy, times, rest) if len(rest) == 2 else 0.0
+            candidate = (remaining, speed, -score[c], c)
             if best is None or candidate < best:
                 best = candidate
-        peak = best[2]
-        dev, at_end = raw[peak] if raw[peak] is not None else (0.0, False)
-        factor = END_FACTOR if at_end else 1.0
+        peak = best[3]
+        dev, factor = raw[peak] if raw[peak] is not None else (0.0, 1.0)
+        at_end = factor != 1.0
         if dev >= grp.jump_warning_m * factor:
             if dev >= grp.jump_error_m * factor and has_world:
                 severity, thresh = Severity.ERROR, grp.jump_error_m * factor
@@ -346,6 +375,80 @@ def detect_track_spec(track_boxes: Sequence[Cuboid], config: TrackConfig) -> lis
     return findings
 
 
+SWAP_MAX_GAP_S = 1.5
+"""Chỉ dự đoán vị trí từ 2 keyframe trước đó cách nhau không quá mức này."""
+
+
+def _predict(track: list[tuple[int, float, np.ndarray]], k: int) -> np.ndarray | None:
+    """Vị trí dự đoán ở phần tử `k` từ 2 phần tử trước (vận tốc không đổi)."""
+    if k < 2:
+        return None
+    (_, t2, p2), (_, t1, p1), (_, t0, _) = track[k - 2], track[k - 1], track[k]
+    if t1 - t2 <= 0 or t0 - t1 > SWAP_MAX_GAP_S or t1 - t2 > SWAP_MAX_GAP_S:
+        return None
+    return p1 + (p1 - p2) * (t0 - t1) / (t1 - t2)
+
+
+def detect_id_swaps(
+    cuboids: Sequence[Cuboid],
+    config: TrackConfig,
+    sensor_to_world_by_frame: Mapping[int, np.ndarray] | None = None,
+    timestamps_by_frame: Mapping[int, float] | None = None,
+) -> list[Finding]:
+    """`track.id_swap` (C5, spec 4.4.6): hai track cùng nhóm đổi chỗ nhau ở một frame.
+
+    Ở mỗi frame có cả hai track, so tổng lệch khỏi quỹ đạo dự đoán (vận tốc không đổi từ 2 keyframe trước) khi giữ
+    nguyên ID và khi đổi ID cho nhau. Đổi ID khớp hơn hẳn (≤ 35% tổng lệch khi giữ nguyên, và giữ nguyên lệch quá
+    `jump_warning_m`) → nghi người gán nối nhầm hai vật, vd hai xe máy chạy song song. Cú nhảy của từng track có thể nhỏ
+    hơn ngưỡng `track.jump` vì vật bên cạnh chỉ cách vài chục cm.
+    """
+    tracks: dict[int, list[tuple[int, float, np.ndarray]]] = {}
+    labels: dict[int, Cuboid] = {}
+    has_world_all = True
+    for tid, boxes in group_by_track(cuboids).items():
+        visible = sorted((b for b in boxes if b.visible), key=lambda b: b.frame)
+        if len(visible) < 3 or config.group_for(visible[0].label) is None:
+            continue
+        centers, has_world = _get_world_centers(visible, sensor_to_world_by_frame)
+        has_world_all &= has_world
+        tracks[tid] = [(b.frame, _time(b.frame, config, timestamps_by_frame), centers[i, :2])
+                       for i, b in enumerate(visible)]
+        labels[tid] = visible[0]
+    findings: list[Finding] = []
+    ids = sorted(tracks)
+    for x, a in enumerate(ids):
+        grp = config.group_for(labels[a].label)
+        for b in ids[x + 1:]:
+            if config.group_for(labels[b].label) is not grp:
+                continue
+            index_b = {f: i for i, (f, _, _) in enumerate(tracks[b])}
+            for ka, (frame, _, pa) in enumerate(tracks[a]):
+                kb = index_b.get(frame)
+                if kb is None:
+                    continue
+                pred_a, pred_b = _predict(tracks[a], ka), _predict(tracks[b], kb)
+                if pred_a is None or pred_b is None:
+                    continue
+                pb = tracks[b][kb][2]
+                keep = float(np.linalg.norm(pa - pred_a) + np.linalg.norm(pb - pred_b))
+                swap = float(np.linalg.norm(pa - pred_b) + np.linalg.norm(pb - pred_a))
+                if keep <= grp.jump_warning_m or swap > 0.35 * keep:
+                    continue
+                strong = has_world_all and keep > 2 * grp.jump_warning_m and swap <= 0.2 * keep
+                box = next(c for c in cuboids if c.track_id == a and c.frame == frame)
+                findings.append(Finding(
+                    error_type=ErrorType.TRACK, rule="track.id_swap",
+                    severity=Severity.ERROR if strong else Severity.WARNING, frame=frame, label=box.label,
+                    track_id=a, source_id=box.source_id, value=keep, threshold=grp.jump_warning_m,
+                    message=(f"Track {a} và track {b} đổi chỗ nhau ở frame {frame}: vị trí mỗi box khớp quỹ đạo của "
+                             f"track kia (lệch {swap:.2f} m, giữ nguyên ID lệch {keep:.2f} m): nghi gán nhầm ID, kiểm "
+                             f"tra hai track từ frame này (spec 4.4.6)"),
+                    details={"other_track_id": b, "keep_m": keep, "swap_m": swap},
+                ))
+                break  # một mục cho mỗi cặp track
+    return findings
+
+
 def detect_track_errors(
     cuboids: Sequence[Cuboid],
     config: TrackConfig,
@@ -369,6 +472,9 @@ def detect_track_errors(
     # Luật track theo spec 4.4 (C2)
     for track_boxes in tracks.values():
         findings.extend(detect_track_spec(track_boxes, config))
+
+    # Đổi nhầm ID giữa hai track (C5)
+    findings.extend(detect_id_swaps(cuboids, config, sensor_to_world_by_frame, timestamps_by_frame))
 
     # Kiểu 2: tách ID
     findings.extend(detect_track_splits(

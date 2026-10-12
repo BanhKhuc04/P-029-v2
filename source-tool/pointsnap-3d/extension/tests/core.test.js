@@ -99,9 +99,22 @@ test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám 
     'fit.loose': 'Mặt đầu của box cách điểm gần nhất của vật 80 cm dù nhìn thấy rõ từ LiDAR: box dư so với vật (ngưỡng 50 cm)',
     'fit.overlap': 'Box chồng 90% diện tích lên box car (track 2): nghi vẽ trùng một vật hoặc hai box lấn nhau (ngưỡng 50%)',
     'track.reuse_id': 'Track đã kết thúc (outside) ở frame 2 rồi xuất hiện lại ở frame 4 sau 2 frame vắng: vật chỉ bị che tạm thời thì bỏ outside, đánh dấu occluded (spec 4.4.5)',
+    'attr.height': 'Pedestrian có standing, adult nhưng box cao 1.30 m, ngoài khoảng hợp lý [1.45, 2.20] m (12 keyframe (0–11)): kiểm tra lại thuộc tính hoặc chiều cao box',
+    'spec.inside': 'Box Pedestrian nằm bên trong box Vehicle (track 4) ở 3 keyframe (từ frame 2): spec 4.3B không gán người bên trong xe (trừ người đứng trên nóc / thùng xe)',
+    'spec.rider_double': 'Box Pedestrian chồng lên box Two-wheels (track 2) đã có người lái (with_rider) ở frame 5: spec 4.3C người lái nằm trong box xe, không gán thêm box riêng; người đã xuống xe thì đổi xe sang without_rider',
+    'attr.rider_state': 'Two-wheels ghi rider_state=without_rider nhưng chạy 6.2 m/s (từ frame 3; dắt xe chỉ ~1,3 m/s): có người lái mà chưa đổi sang with_rider? (spec 4.3C)',
+    'track.id_swap': 'Track 1 và track 2 đổi chỗ nhau ở frame 6: vị trí mỗi box khớp quỹ đạo của track kia (lệch 0.05 m, giữ nguyên ID lệch 2.40 m): nghi gán nhầm ID, kiểm tra hai track từ frame này (spec 4.4.6)',
     'track.occluded_long': 'Box đánh occluded 8 frame liền (frame 1–8), quá 6 frame: spec 4.4.5 chỉ dùng occluded cho che khuất tạm thời',
     'attr.missing': 'Vehicle thiếu thuộc tính bắt buộc `subtype` (2 keyframe, từ frame 0); spec 3.1.3: không chắc thì chọn other',
     'attr.invalid': "Thuộc tính `pose` = 'walking' không có trong danh sách cho phép (standing, sitting, bending) (frame 0)",
+    'track.static_shift': 'Vật đứng yên (các keyframe khác tụ trong 3 cm) nhưng box ở frame này lệch 31 cm so với vị trí chung (ngưỡng 20 cm)',
+    'heading.static': 'Vật đứng yên nhưng hướng box ở frame này lệch 14.3° so với các keyframe khác của track (ngưỡng 10°)',
+    'cam.mismatch': 'Box chiếu lên ảnh CAM_FRONT: 48% thân vật trên ảnh nằm ngoài khung box, các frame khác của track chỉ 6% (IoU 41%): box lệch hoặc nhỏ so với vật',
+    'cam.class': 'Ảnh camera nhận vật là người ở 5/6 lần nhìn rõ, nhãn là car: nghi sai class',
+    'cam.missing': 'Ảnh CAM_FRONT thấy xe (độ tin cậy 97%, cách ~18 m, 120 điểm LiDAR) nhưng không có box 3D nào: nghi sót đối tượng',
+    'cam.sparse': 'Vật chỉ có ≤ 5 điểm LiDAR ở mọi keyframe và ảnh camera cũng không thấy (frame 0–3): spec 4.2 không nên gán vật quá ít điểm khiến kích thước / hướng không đáng tin',
+    'lidar.missing': 'Cụm điểm LiDAR cỡ xe (4.2 × 1.8 × 1.5 m, ~120 điểm) di chuyển 12.3 m qua 4 keyframe (3–6) mà không có box: nghi sót đối tượng (spec 4.2)',
+    'critic.box': 'Box Critic: box nghi vẽ sai (xác suất 93%); gợi ý sửa: dời (+0.32, -0.05, +0.00) m, kích thước (+0.00, +0.00, +0.00) m, xoay +3.1°',
   };
   for (const [rule, text] of Object.entries(cases)) {
     const items = core.parseFlag(`[Lỗi] ${text}`);

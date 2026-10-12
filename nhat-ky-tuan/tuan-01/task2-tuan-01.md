@@ -46,7 +46,7 @@
     - [x] Boundary bám sát biên nhìn thấy của vật thể, không suy đoán vùng bị che khuất (Occlusion) hoặc ngoài biên (Truncation).
     - [x] Kiểm tra ngẫu nhiên ít nhất 10 ảnh/job trước khi nghiệm thu cuối cùng.
 - **Tình trạng giải quyết các vướng mắc / Edge case:**
-  - Các edge case [P-005](../problem-backlog.md#p-005), [P-006](../problem-backlog.md#p-006), [P-007](../problem-backlog.md#p-007) đã được đề xuất phương án và đưa vào Sổ quyết định để làm chuẩn cho việc nghiệm thu cuối cùng.
+  - Các edge case [P-005](../../problem-backlog.md#p-005), [P-006](../../problem-backlog.md#p-006), [P-007](../../problem-backlog.md#p-007) đã được đề xuất phương án và đưa vào Sổ quyết định để làm chuẩn cho việc nghiệm thu cuối cùng.
   - Vấn đề mask vụn và lem viền công cụ đã được các thành viên xử lý dứt điểm trước khi bàn giao review.
 
 ## Vướng mắc

@@ -1,7 +1,16 @@
 # Bàn giao PointSnap 3D — 12/10/2026
 
 Tình trạng sản phẩm giữa tuần gia hạn (giai đoạn 3, nộp 18/10): việc nào đã xong, PR nào đang chờ, merge theo thứ tự nào,
-kiểm lại thế nào, còn lại việc gì. Kế hoạch tuần và cổng G6 – G8: [`giao-viec/tuan-gia-han.md`](../giao-viec/tuan-gia-han.md).
+kiểm lại thế nào, còn lại việc gì. Kế hoạch tuần và cổng G6 – G8: [`quan-ly/giao-viec/tuan-gia-han.md`](giao-viec/tuan-gia-han.md).
+
+## 0. Cập nhật sau khi merge (12/10, chiều)
+
+Đã merge vào `main` theo đúng thứ tự mục 3: [#50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50), [#44](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/44), [#42](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/42), [#41](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/41), [#46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46),
+[#43](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/43), [#47](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/47), [#49](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/49), [#40](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/40) (xung đột giải như mục 3, kèm sửa `scanner.py`) và
+[#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45). **#48 để ngỏ** vì làm báo nhầm `fit.outside` tăng 0,04 → 0,24 / 100 box trong khi cảnh kiểm tra chưa đạt
+G7. `main` sau khi merge: `pytest` 334 passed, 2 skipped, 1 xfailed; extension 7 / 7. Số eval sau khi merge: mục 5.
+
+Các mục 2 – 4 dưới đây giữ nguyên để tra lại quá trình.
 
 ## 1. Đã có trên `main`
 
@@ -72,7 +81,7 @@ Phần lớn báo nhầm còn lại trên cảnh kiểm tra là lơ lửng / lú
 | Việc | Người | Ghi chú |
 |---|---|---|
 | Review, merge theo mục 3; quyết #45, #48 | Việt Anh, Huy | Claude không tự merge |
-| Chạy lại `pointsnap eval --scenes test --rounds 10 --errors all` **một lần** sau khi merge, ghi số vào `docs/ket-qua-giai-doan-3.md` | Huy | Cổng G7 |
+| Chạy lại `pointsnap eval --scenes test --rounds 10 --errors all` **một lần** sau khi merge, ghi số vào `docs/ket-qua/ket-qua-giai-doan-3.md` | Huy | Cổng G7 |
 | Hỏi mentor về model làm bằng chứng phụ (Box Verifier lớp 2, 3; Grounding DINO) | Việt Anh | Trước khi đưa vào demo |
 | Tạo task spec-vn trên CVAT, cập nhật CAI-DAT bước tạo task spec-vn | Việt Anh | Ghi lên CVAT nên chưa làm |
 | Demo / test trên **job 4** (task 4, scene-0061 tạo lại 12/10), không dùng job 2 | Chiến | Job 2 tạo bằng `to-cvat` cũ: 424 / 473 Cảnh báo là `track.reuse_id` |

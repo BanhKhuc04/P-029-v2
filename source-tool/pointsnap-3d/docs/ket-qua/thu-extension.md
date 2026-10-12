@@ -7,7 +7,7 @@ Cách thử:
 - Nạp phần content script vào trang CVAT đã đăng nhập trong trình duyệt của Claude, rồi đo bằng script.
 - Nạp extension thật vào Edge chạy ẩn (`--load-extension`) để thử service worker và trang Tùy chọn.
 
-![Bảng PointSnap trên job 3D](screenshots/extension-cvat-panel.jpg)
+![Bảng PointSnap trên job 3D](../hinh/giao-dien/extension-cvat-panel.jpg)
 
 ## Spike S1–S4 (cổng G4)
 
@@ -34,7 +34,7 @@ Extension thật nạp trong Edge:
 - Service worker gọi `GET /api/extension/jobs/2` thẳng tới PointSnap (không cần CORS), từ chối đường dẫn ngoài `/api/` và phương thức `DELETE`.
 - Trang Tùy chọn kiểm tra kết nối báo "Kết nối được PointSnap: 1 dự án".
 
-![Trang Tùy chọn](screenshots/extension-options.png)
+![Trang Tùy chọn](../hinh/giao-dien/extension-options.png)
 
 ## Lỗi tìm thấy khi thử và đã sửa
 
@@ -45,5 +45,5 @@ Extension thật nạp trong Edge:
 
 ## Còn lại
 
-- Chiến cài extension theo [README](../extension/README.md) và thử trên máy khác (Chrome và Edge).
+- Chiến cài extension theo [README](../../extension/README.md) và thử trên máy khác (Chrome và Edge).
 - Lần thử tới bấm **Quét + gắn cờ** thật để đồng bộ 17 cờ cũ, rồi đo lại.

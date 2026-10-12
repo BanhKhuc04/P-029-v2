@@ -12,8 +12,8 @@ Repo làm việc của một đội gán nhãn. Mỗi đội nhận một bản 
 | [`nhat-ky-tuan/`](nhat-ky-tuan/) | Ai giữ vị trí nào, được phân công gì, xong tới đâu | Đầu tuần phân công, cuối tuần chốt |
 | [`problem-backlog.md`](problem-backlog.md) | Edge case gặp khi gán nhãn mà guideline chưa trả lời được, kèm link CVAT | **Ngay khi gặp** |
 | [`so-quyet-dinh.md`](so-quyet-dinh.md) | Những gì đội đã chốt, và vì sao | Mỗi lần chốt một vấn đề |
-| [`source-tool/`](source-tool/) | Source code công cụ đội tự viết để gỡ pain point khi gán nhãn | Khi đã xác định được pain point đáng làm tool |
-| [`source-tool/CAI-DAT.md`](source-tool/CAI-DAT.md) | **Hướng dẫn cài toàn bộ PointSnap 3D**: CVAT, nuScenes, PointSnap, extension | Khi có máy mới hoặc bản mới |
+| [`source-tool/`](source-tool/pointsnap-3d/) | Source code công cụ đội tự viết để gỡ pain point khi gán nhãn | Khi đã xác định được pain point đáng làm tool |
+| [`source-tool/CAI-DAT.md`](source-tool/pointsnap-3d/CAI-DAT.md) | **Hướng dẫn cài toàn bộ PointSnap 3D**: CVAT, nuScenes, PointSnap, extension | Khi có máy mới hoặc bản mới |
 
 ## Các file nối với nhau thế nào
 

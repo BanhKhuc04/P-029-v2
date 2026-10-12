@@ -5,7 +5,7 @@ task 3D có kèm ảnh 6 camera. Từ hôm nay **phần review và test do Khán
 giảm báo nhầm và làm giao diện web, Huy chỉnh ngưỡng.
 
 Lỗi hay chỗ khó hiểu nào cũng ghi lại (bước làm, kết quả mong đợi, kết quả thật, ảnh chụp) vào file của mình trong
-[`docs/`](../docs/) và nhắn Việt Anh. Không sửa code, không push lên `main`: tài liệu cũng làm trên branch rồi mở PR.
+[`docs/`](../../docs/) và nhắn Việt Anh. Không sửa code, không push lên `main`: tài liệu cũng làm trên branch rồi mở PR.
 
 ## Trạng thái code cần biết
 
@@ -51,9 +51,9 @@ Mục tiêu: biết cảnh báo nào đúng, cảnh báo nào báo nhầm, để
 - [ ] **Xem tay 50 mục** (lấy đều: ~20 lơ lửng / lún, ~15 kích thước, ~15 đứt track; ưu tiên mức Lỗi). Với mỗi mục:
   mở frame trong CVAT, nhìn point cloud và ảnh camera, ghi **Đúng** (nhãn thật sự sai) / **Báo nhầm** /
   **Không chắc**, kèm một câu lý do (ví dụ "đáy box nằm trên bờ vỉa, mặt đường thấp hơn").
-  Ghi vào bảng trong `docs/danh-gia.md` (thêm cột "Xem tay").
+  Ghi vào bảng trong `docs/ket-qua/danh-gia.md` (thêm cột "Xem tay").
 - [ ] Từ bảng trên tính **precision đã xem tay** cho từng loại lỗi = Đúng / (Đúng + Báo nhầm).
-- [ ] Điền các chỉ số mục 8.2 của [bản đề xuất](../de-xuat-de-tai.md#82-chỉ-số) vào `docs/danh-gia.md`, ghi rõ số nào
+- [ ] Điền các chỉ số mục 8.2 của [bản đề xuất](../../docs/thiet-ke/de-xuat-de-tai.md#82-chỉ-số-và-kết-quả-hiện-tại) vào `docs/ket-qua/danh-gia.md`, ghi rõ số nào
   lấy từ script tự động (Huy, Việt Anh) và số nào do mình xem tay. Hạn: 12h 09/10 (G3); khi Việt Anh báo đã giảm báo
   nhầm thì chạy lại `scan` và cập nhật.
 
@@ -66,7 +66,7 @@ Mục tiêu: biết cảnh báo nào đúng, cảnh báo nào báo nhầm, để
 ## Vũ Bảo Khánh — báo cáo, slide, review tài liệu
 
 - [ ] **R1** — khung `docs/bao-cao-ket-qua.md` và slide: bối cảnh, vấn đề, giải pháp, cách đánh giá (lấy từ
-  [bản đề xuất](../de-xuat-de-tai.md)), để trống số liệu. Hạn: tối 08/10.
+  [bản đề xuất](../../docs/thiet-ke/de-xuat-de-tai.md)), để trống số liệu. Hạn: tối 08/10.
 - [ ] **Review tài liệu**: đọc [README của tool](../../README.md) như người mới, đánh dấu câu khó hiểu, thiếu bước;
   góp ý trong PR hoặc nhắn Việt Anh.
 - [ ] **R2, R3** (09/10): điền số liệu từ Hân vào báo cáo và slide; chốt nhật ký tuần 04; nộp cuối ngày.

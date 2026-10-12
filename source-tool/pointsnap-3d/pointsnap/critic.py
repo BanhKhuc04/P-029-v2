@@ -1,6 +1,6 @@
 """Box Critic: dữ liệu huấn luyện và chỗ cắm model (việc C3, lớp 3 của Box Verifier).
 
-Nhóm tự huấn luyện model (xem `docs/box-critic.md`); module này chỉ lo hai đầu:
+Nhóm tự huấn luyện model (xem `docs/huong-dan/huan-luyen-box-critic.md`); module này chỉ lo hai đầu:
 
 - **Xuất dữ liệu** (`export_dataset`, lệnh `pointsnap critic-data`): lấy box nhãn chuẩn nhìn thấy được, làm nhiễu có kiểm
   soát (dời, xoay, co / phóng, nâng / hạ) hoặc giữ nguyên, rồi lấy điểm LiDAR quanh **box đã làm nhiễu** đúng như bộ quét

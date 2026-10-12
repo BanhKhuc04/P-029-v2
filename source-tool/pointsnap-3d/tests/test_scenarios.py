@@ -1,4 +1,4 @@
-"""Tình huống giao thông thực tế (việc C5, `giao-viec/C5-tinh-huong-thuc-te.md`) trên bộ mô phỏng `scenario_sim`.
+"""Tình huống giao thông thực tế (việc C5, `quan-ly/giao-viec/C5-tinh-huong-thuc-te.md`) trên bộ mô phỏng `scenario_sim`.
 
 Mỗi tình huống ghi rõ các luật được phép báo (Cảnh báo / Lỗi) và mức; "sạch" nghĩa là không có mục Cảnh báo / Lỗi nào.
 """

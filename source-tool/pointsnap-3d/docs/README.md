@@ -1,7 +1,7 @@
 # Báo cáo và đánh giá
 
 Tài liệu do nhóm báo cáo và test viết (Khánh, Chiến, Hân). Ca kiểm thử có đáp án do người làm sản phẩm viết thẳng thành test trong `tests/`.
-Tạo file đúng tên để link trong [`giao-viec/`](../giao-viec/) mở được.
+Tạo file đúng tên để link trong [`quan-ly/giao-viec/`](../quan-ly/giao-viec/) mở được.
 
 | File | Nội dung | Người viết | Hạn |
 |---|---|---|---|

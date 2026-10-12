@@ -1,5 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (test, 10 vòng chèn lỗi, bộ lỗi all)
-> Guideline mặc định sau C8 (ngưỡng lơ lửng / lún 15 cm, C5, C7, C8). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md), [C5](../giao-viec/C5-tinh-huong-thuc-te.md), [sót đối tượng](../ket-qua-sot-doi-tuong.md).
+> Có Box Critic: model huấn luyện bằng `scripts/train_critic_example.py` trên 4 cảnh tinh chỉnh (để riêng scene-0916), `critic.min_logit_rise: 4.4`, `error_logit_rise: 6.0`. Xem [ket-qua-box-verifier.md](../../ket-qua-box-verifier.md).
 
 Cảnh: scene-0103, scene-0655, scene-0796, scene-1077, scene-1100 · 5440 box nhãn chuẩn
 
@@ -9,26 +9,27 @@ Cảnh: scene-0103, scene-0655, scene-0796, scene-1077, scene-1100 · 5440 box n
 |---|---|---|---|
 | `cam.mismatch` | info | 41 | 0.75 |
 | `cam.missing` | info | 133 | 2.44 |
+| `critic.box` | error | 3 | 0.06 |
+| `critic.box` | warning | 10 | 0.18 |
 | `fit.empty` | warning | 1 | 0.02 |
 | `fit.loose` | warning | 14 | 0.26 |
 | `fit.outside` | error | 1 | 0.02 |
 | `fit.outside` | warning | 1 | 0.02 |
 | `floating.no_evidence` | info | 387 | 7.11 |
 | `floating` | error | 17 | 0.31 |
-| `floating` | warning | 85 | 1.56 |
+| `floating` | warning | 131 | 2.41 |
 | `heading.points` | error | 4 | 0.07 |
 | `heading.points` | warning | 5 | 0.09 |
 | `heading.static` | error | 1 | 0.02 |
 | `heading.static` | warning | 6 | 0.11 |
-| `lidar.missing` | warning | 3 | 0.06 |
 | `size.class_range` | error | 4 | 0.07 |
 | `size.class_range` | warning | 21 | 0.39 |
 | `track.jump` | error | 4 | 0.07 |
 | `track.jump` | warning | 12 | 0.22 |
 | `track.split_id` | warning | 1 | 0.02 |
 | `track.static_shift` | warning | 8 | 0.15 |
-| **Tổng** | warning | | **2.88** (mục tiêu ≤ 2.0) |
-| **Tổng** | error | | **0.57** (mục tiêu ≤ 0.5) |
+| **Tổng** | warning | | **3.86** (mục tiêu ≤ 2.0) |
+| **Tổng** | error | | **0.62** (mục tiêu ≤ 0.5) |
 
 ## Recall trên lỗi chèn giả
 
@@ -39,20 +40,20 @@ Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đấ
 | Kiểu lỗi | Mức chèn | Số lỗi | Bắt được | Bắt được (thuộc phạm vi) | Báo ở mức Lỗi | Bắt được (box có đủ điểm mặt đất) |
 |---|---|---|---|---|---|---|
 | fit_duplicate | - | 8 | 62% (5/8) | 100% (5/5) | 62% (5/8) |  |
-| fit_scale | x0.7 | 11 | 9% (1/11) | 25% (1/4) | 0% (0/11) |  |
-| fit_scale | x1.3 | 8 | 0% (0/8) | 0% (0/2) | 0% (0/8) |  |
+| fit_scale | x0.7 | 11 | 27% (3/11) | 50% (2/4) | 9% (1/11) |  |
+| fit_scale | x1.3 | 8 | 12% (1/8) | 50% (1/2) | 0% (0/8) |  |
 | fit_shift | 0.3 | 9 | 44% (4/9) | 50% (2/4) | 0% (0/9) |  |
-| fit_shift | 0.5 | 14 | 36% (5/14) | 20% (1/5) | 14% (2/14) |  |
+| fit_shift | 0.5 | 14 | 64% (9/14) | 80% (4/5) | 29% (4/14) |  |
 | fit_shift | 1.0 | 14 | 29% (4/14) | 33% (1/3) | 29% (4/14) |  |
 | floating | 0.05 | 19 | 0% (0/19) | 0% (0/16) | 0% (0/19) | 0% (0/1) |
 | floating | 0.1 | 22 | 5% (1/22) | 5% (1/21) | 5% (1/22) | 25% (1/4) |
 | floating | 0.2 | 20 | 10% (2/20) | 11% (2/19) | 5% (1/20) | 100% (2/2) |
 | floating | 0.4 | 21 | 19% (4/21) | 24% (4/17) | 19% (4/21) | 100% (4/4) |
 | heading_reverse | 180 | 6 | 33% (2/6) | 100% (2/2) | 33% (2/6) |  |
-| heading_rotate | 15 | 14 | 14% (2/14) | — | 7% (1/14) |  |
+| heading_rotate | 15 | 14 | 36% (5/14) | — | 21% (3/14) |  |
 | heading_rotate | 180 | 14 | 93% (13/14) | 100% (13/13) | 93% (13/14) |  |
-| heading_rotate | 30 | 11 | 18% (2/11) | 100% (1/1) | 18% (2/11) |  |
-| heading_rotate | 60 | 8 | 88% (7/8) | 100% (7/7) | 50% (4/8) |  |
+| heading_rotate | 30 | 11 | 55% (6/11) | 100% (1/1) | 45% (5/11) |  |
+| heading_rotate | 60 | 8 | 88% (7/8) | 100% (7/7) | 62% (5/8) |  |
 | heading_rotate | 90 | 8 | 100% (8/8) | 100% (7/7) | 100% (8/8) |  |
 | size_class_range | other_class | 14 | 100% (14/14) | 100% (14/14) | 100% (14/14) |  |
 | size_class_range | x0.6 | 10 | 100% (10/10) | 100% (10/10) | 90% (9/10) |  |
@@ -63,7 +64,7 @@ Thuộc phạm vi = class mà luật xét (lơ lửng / lún: class tiếp đấ
 | track_interpolation | 1 | 14 | 0% (0/14) | 0% (0/5) | 0% (0/14) |  |
 | track_interpolation | 2 | 13 | 62% (8/13) | 100% (8/8) | 0% (0/13) |  |
 | track_interpolation | 3 | 10 | 20% (2/10) | 67% (2/3) | 0% (0/10) |  |
-| track_jump | 0.5 | 11 | 55% (6/11) | 55% (6/11) | 9% (1/11) |  |
+| track_jump | 0.5 | 11 | 73% (8/11) | 73% (8/11) | 45% (5/11) |  |
 | track_jump | 1.0 | 8 | 75% (6/8) | 75% (6/8) | 50% (4/8) |  |
 | track_jump | 2.0 | 8 | 100% (8/8) | 100% (8/8) | 62% (5/8) |  |
 | track_jump | 4.0 | 6 | 100% (6/6) | 100% (6/6) | 100% (6/6) |  |
@@ -77,11 +78,11 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 | Loại | Finding (Cảnh báo+) | Khớp lỗi chèn cùng loại | Precision | Trên box bị chèn lỗi bất kỳ |
 |---|---|---|---|---|
-| floating | 1044 | 7 | 1% (7/1044) | 4% (45/1044) |
+| floating | 1513 | 7 | 0% (7/1513) | 4% (56/1513) |
 | size | 326 | 60 | 18% (60/326) | 25% (81/326) |
 | track | 338 | 67 | 20% (67/338) | 27% (92/338) |
-| heading | 277 | 76 | 27% (76/277) | 36% (101/277) |
-| fit | 305 | 9 | 3% (9/305) | 22% (67/305) |
+| heading | 280 | 79 | 28% (79/280) | 37% (104/280) |
+| fit | 434 | 35 | 8% (35/434) | 23% (101/434) |
 
 ## Độ chính xác của số đo (trung vị sai số tuyệt đối)
 
@@ -96,8 +97,8 @@ Finding không khớp lỗi chèn nào bị tính là báo nhầm; trong đó c�
 
 Thời gian quét nhãn sạch (đọc point cloud + mọi bộ phát hiện), mỗi cảnh:
 
-- scene-0103: 66.2 s
-- scene-0655: 50.4 s
-- scene-0796: 22.3 s
-- scene-1077: 27.7 s
-- scene-1100: 28.9 s
+- scene-0103: 37.7 s
+- scene-0655: 28.4 s
+- scene-0796: 5.5 s
+- scene-1077: 5.2 s
+- scene-1100: 7.9 s

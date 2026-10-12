@@ -4,8 +4,8 @@
 được đánh dấu đoạn vắng theo spec 4.4 (`add_track_markers`); lỗi chỉ chèn vào box nhìn thấy (không `occluded`); số box
 chỉ tính box nhìn thấy. So sánh với `main` trước giai đoạn 3 (commit `6ed37fe`, cùng 5 cảnh kiểm tra, bộ lỗi 6 loại cũ).
 
-Báo cáo đầy đủ: [kiểm tra](eval-giai-doan-3/kiem-tra.md) · [tinh chỉnh](eval-giai-doan-3/tinh-chinh.md) ·
-[`main` trước giai đoạn 3](eval-giai-doan-3/main-truoc-giai-doan-3.md).
+Báo cáo đầy đủ: [kiểm tra](eval/giai-doan-3/kiem-tra.md) · [tinh chỉnh](eval/giai-doan-3/tinh-chinh.md) ·
+[`main` trước giai đoạn 3](eval/giai-doan-3/main-truoc-giai-doan-3.md).
 
 ## 1. Báo nhầm trên nhãn sạch (số mục / 100 box)
 

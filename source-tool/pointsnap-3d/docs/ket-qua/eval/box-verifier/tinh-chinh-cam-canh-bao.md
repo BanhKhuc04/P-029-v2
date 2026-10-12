@@ -1,5 +1,5 @@
 # Kết quả đánh giá PointSnap 3D (tuning, 10 vòng chèn lỗi, bộ lỗi all)
-> Phiên bản trung gian: `cam.mismatch` ở mức Cảnh báo (trước khi đổi mặc định sang Thông tin). Xem [ket-qua-box-verifier.md](../ket-qua-box-verifier.md).
+> Phiên bản trung gian: `cam.mismatch` ở mức Cảnh báo (trước khi đổi mặc định sang Thông tin). Xem [ket-qua-box-verifier.md](../../ket-qua-box-verifier.md).
 
 Cảnh: scene-0061, scene-0553, scene-0757, scene-0916, scene-1094 · 8664 box nhãn chuẩn
 

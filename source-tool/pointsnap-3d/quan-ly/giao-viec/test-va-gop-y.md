@@ -1,7 +1,7 @@
 # Quy trình kiểm thử PointSnap 3D — Khánh, Chiến, Hân
 
 > **Từ 09/10:** danh sách ca, cách ghi kết quả, chuẩn báo lỗi và chuẩn xem tay theo
-> [docs/test/CHUAN-KIEM-THU.md](../docs/test/CHUAN-KIEM-THU.md) (toàn app, gồm cả extension). File này giữ lại phần
+> [docs/test/CHUAN-KIEM-THU.md](../../docs/test/CHUAN-KIEM-THU.md) (toàn app, gồm cả extension). File này giữ lại phần
 > phân công và tổng hợp lỗi.
 
 Code đã xong và đã vào `main` (PR #18 – #23), gồm cả **giao diện web** (`pointsnap ui`).
@@ -233,6 +233,6 @@ Gợi ý chia việc khi điền "Giao cho":
 
 ## Sau khi tổng hợp
 
-- Hân dùng bảng mục 3 để điền độ chính xác xem tay vào `docs/danh-gia.md`.
+- Hân dùng bảng mục 3 để điền độ chính xác xem tay vào `docs/ket-qua/danh-gia.md`.
 - Khánh đưa mục 4 vào phần Hướng phát triển của báo cáo kết quả, rồi hoàn thiện báo cáo và slide.
 - Chiến quay video demo 3 – 5 phút bằng giao diện web, theo đúng TC-11 → TC-21.

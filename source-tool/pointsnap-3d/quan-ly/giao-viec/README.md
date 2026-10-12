@@ -16,7 +16,7 @@ Mở file của **hôm nay**, tìm tên mình, làm hết các ô ☐ trong ph�
 
 - Việt Anh và Huy họp nhanh 10 phút đầu ngày: hôm qua xong gì, hôm nay làm gì, đang kẹt gì.
 - **Không có ngày dự phòng.** Trễ thì cắt theo thứ tự đã định, không dời cổng.
-- Xong hay bị kẹt việc nào thì cập nhật cột **Trạng thái** trong [`TASKS.md`](../TASKS.md).
+- Xong hay bị kẹt việc nào thì cập nhật cột **Trạng thái** trong [`quan-ly/TASKS.md`](../TASKS.md).
 - Mọi thay đổi (code và tài liệu) làm trên branch riêng rồi mở Pull Request; **không push thẳng lên `main`**.
-- Báo cáo và bảng đánh giá để trong [`docs/`](../docs/).
-- Tiêu chí xong chi tiết của từng mã việc (B1, T1, …): xem [`TASKS.md`](../TASKS.md).
+- Báo cáo và bảng đánh giá để trong [`docs/`](../../docs/).
+- Tiêu chí xong chi tiết của từng mã việc (B1, T1, …): xem [`quan-ly/TASKS.md`](../TASKS.md).

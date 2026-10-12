@@ -312,7 +312,7 @@ def ring_ground_for_box(
 
     Khác `estimate_ground_for_box` (RANSAC trên vành đai 0,5–1,5 m): vành đai hẹp sát footprint, chỉ lấy điểm
     trong khoảng ±`band_m` quanh đáy box, lọc lưới min-Z rồi lấy trung vị z. Trên 10 cảnh nuScenes mini cách này
-    cho độ lệch so với trung vị track nhỏ hơn (p90 ~15 cm so với ~20 cm), xem docs/kiem-chung-ground.md.
+    cho độ lệch so với trung vị track nhỏ hơn (p90 ~15 cm so với ~20 cm), xem docs/ket-qua/kiem-chung-ground.md.
     `points` nên đã bỏ điểm thuộc các box khác (`OtherBoxPoints`), nếu không thân xe bên cạnh bị tính là đất.
 
     Mặt đất dốc (C4, spec 4.2 "đáy box trên mặt tiếp xúc"): khớp thêm mặt phẳng bền (RANSAC) trên vành đai; nếu khớp rõ,

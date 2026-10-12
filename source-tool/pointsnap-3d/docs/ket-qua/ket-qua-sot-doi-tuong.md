@@ -1,7 +1,7 @@
 # Phát hiện sót đối tượng bằng LiDAR (C7, 12/10/2026)
 
 Spec 4.2: *NÊN gán box khi vật xuất hiện rõ trong point cloud*. Trước C7 chỉ có `cam.missing` (ảnh camera thấy vật mà
-không có box, mức Thông tin). C7 thêm `lidar.missing` (Cảnh báo) — thuật toán: [detectors/missing.py](../pointsnap/detectors/missing.py).
+không có box, mức Thông tin). C7 thêm `lidar.missing` (Cảnh báo) — thuật toán: [detectors/missing.py](../../pointsnap/detectors/missing.py).
 
 ## Cách làm
 

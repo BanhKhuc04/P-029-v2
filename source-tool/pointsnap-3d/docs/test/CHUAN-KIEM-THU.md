@@ -1,10 +1,10 @@
 # Chuẩn kiểm thử toàn app PointSnap 3D
 
 Áp dụng cho **mọi lần kiểm thử** PointSnap 3D (Khánh, Chiến, Hân và người test sau này). Thay thế phần "Mẫu file kết quả"
-của [giao-viec/test-va-gop-y.md](../../giao-viec/test-va-gop-y.md) và mở rộng danh sách ca ra **toàn app**: cài đặt, CLI,
+của [giao-viec/test-va-gop-y.md](../../quan-ly/giao-viec/test-va-gop-y.md) và mở rộng danh sách ca ra **toàn app**: cài đặt, CLI,
 giao diện web (gồm màn chào và duyệt nhanh), tích hợp CVAT, extension CVAT, liên kết web ↔ extension.
 
-Cài đặt làm theo [CAI-DAT.md](../../../CAI-DAT.md). Chỗ nào CAI-DAT.md thiếu hoặc sai so với thực tế thì ghi thành lỗi
+Cài đặt làm theo [CAI-DAT.md](../../CAI-DAT.md). Chỗ nào CAI-DAT.md thiếu hoặc sai so với thực tế thì ghi thành lỗi
 nhóm **Cài đặt / README**.
 
 ---

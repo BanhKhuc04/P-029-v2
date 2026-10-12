@@ -1,13 +1,13 @@
 # Kết quả Box Verifier (C3, 10/10/2026)
 
-Box Verifier thêm 4 lớp kiểm box ngoài các luật C1 / C2 (thiết kế: [đề xuất 4.1 f](../de-xuat-de-tai.md)). Đo bằng
+Box Verifier thêm 4 lớp kiểm box ngoài các luật C1 / C2 (thiết kế: [đề xuất 4.1 f](../thiet-ke/de-xuat-de-tai.md)). Đo bằng
 `pointsnap eval --scenes test|tuning --rounds 10 --errors all` trên nuScenes v1.0-mini, guideline mặc định, cùng cách
 đo với [giai đoạn 3](ket-qua-giai-doan-3.md) (so với kết quả PR #37 đã merge). Máy đo: RTX 3050 Laptop 4 GB, PyTorch
 2.6 CUDA 12.4, nên lớp 2 (ảnh camera) chạy.
 
-Báo cáo đầy đủ: [kiểm tra](eval-box-verifier/kiem-tra.md) · [tinh chỉnh](eval-box-verifier/tinh-chinh.md) ·
-[tinh chỉnh, tắt ảnh camera](eval-box-verifier/tinh-chinh-tat-anh.md) ·
-[tinh chỉnh, `cam.mismatch` mức Cảnh báo](eval-box-verifier/tinh-chinh-cam-canh-bao.md).
+Báo cáo đầy đủ: [kiểm tra](eval/box-verifier/kiem-tra.md) · [tinh chỉnh](eval/box-verifier/tinh-chinh.md) ·
+[tinh chỉnh, tắt ảnh camera](eval/box-verifier/tinh-chinh-tat-anh.md) ·
+[tinh chỉnh, `cam.mismatch` mức Cảnh báo](eval/box-verifier/tinh-chinh-cam-canh-bao.md).
 
 ## 1. Kết quả chính (5 cảnh kiểm tra, 5 440 box)
 
@@ -151,11 +151,11 @@ Kết luận: **mặc định vẫn là `maskrcnn`** (không cần thêm thư vi
 `critic.model: ""` (tắt).
 
 **Lần huấn luyện đầu** (Colab, script bản đầu): học thuộc. Box chuẩn bị báo sai 0,8% trên cảnh đã học nhưng 30% trên cảnh
-mới; quét 5 cảnh kiểm tra báo **9,45 / 100 box** trên nhãn sạch. Nguyên nhân và cách sửa: [box-critic.md](box-critic.md)
+mới; quét 5 cảnh kiểm tra báo **9,45 / 100 box** trên nhãn sạch. Nguyên nhân và cách sửa: [box-critic.md](../huong-dan/huan-luyen-box-critic.md)
 mục 2 (kiểm tra theo cảnh, bỏ kích thước tuyệt đối, tăng dữ liệu, và luật so logit với trung vị track).
 
 **Sau khi sửa** (huấn luyện lại trên 4 cảnh tinh chỉnh, ngưỡng chọn trên scene-0916 để riêng, đo trên 5 cảnh kiểm tra —
-[báo cáo](eval-box-verifier/kiem-tra-box-critic.md)):
+[báo cáo](eval/box-verifier/kiem-tra-box-critic.md)):
 
 | Lỗi chèn | Box Verifier không Box Critic | **+ Box Critic** |
 |---|---|---|

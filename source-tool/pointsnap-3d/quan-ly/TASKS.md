@@ -1,7 +1,7 @@
 # PointSnap 3D — Bảng phân việc (4 ngày: 06/10 – 09/10/2026)
 
-Chia nhỏ [kế hoạch 4 ngày](de-xuat-de-tai.md#7-kế-hoạch-triển-khai-4-ngày-có-cổng-kiểm-soát) thành từng việc có người phụ trách, hạn, việc phụ thuộc và tiêu chí xong.
-Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhật cột **Trạng thái** mỗi khi bắt đầu hoặc xong một việc.
+Chia nhỏ [kế hoạch 4 ngày](../docs/thiet-ke/de-xuat-de-tai.md#7-kế-hoạch-triển-khai) thành từng việc có người phụ trách, hạn, việc phụ thuộc và tiêu chí xong.
+Việc của từng người theo ngày: [`quan-ly/giao-viec/`](giao-viec/). Cập nhật cột **Trạng thái** mỗi khi bắt đầu hoặc xong một việc.
 
 **Phân công:** **Việt Anh và Huy làm toàn bộ sản phẩm** (môi trường, dữ liệu, code, tự kiểm). **Khánh, Chiến, Hân viết báo cáo, và test khi sản phẩm xong** (sau cổng G2).
 
@@ -13,11 +13,11 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 2. **Xong thì mở Pull Request**; người code còn lại review rồi mới merge vào `main`.
 3. **Không ai push thẳng lên `main`**, kể cả tài liệu.
 4. **Việt Anh và Huy họp nhanh 10 phút đầu mỗi ngày:** hôm qua xong gì, hôm nay làm gì, đang kẹt gì.
-5. **Không có ngày dự phòng:** trễ thì cắt theo thứ tự ở [mục 7 của đề xuất](de-xuat-de-tai.md#7-kế-hoạch-triển-khai-4-ngày-có-cổng-kiểm-soát), không dời cổng.
+5. **Không có ngày dự phòng:** trễ thì cắt theo thứ tự ở [mục 7 của đề xuất](../docs/thiet-ke/de-xuat-de-tai.md#7-kế-hoạch-triển-khai), không dời cổng.
 6. **Tiêu chí xong chung cho mọi việc code:**
    - `pytest` chạy xanh; việc mới có test đi kèm.
    - Không commit token, dữ liệu nuScenes, file sinh ra (`.pcd`, báo cáo, bản chụp).
-   - Đổi quy ước tọa độ hay định dạng thì cập nhật [`CONVENTIONS.md`](CONVENTIONS.md) trong cùng PR.
+   - Đổi quy ước tọa độ hay định dạng thì cập nhật [`CONVENTIONS.md`](../CONVENTIONS.md) trong cùng PR.
 
 ## Cổng kiểm soát
 
@@ -48,7 +48,7 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 | **A11** | Giao diện web (FastAPI + HTML/JS) thay CLI; hồ sơ guideline theo từng dự án (class, ngưỡng, luật bật/tắt, tiêu chí `gate`, kết nối CVAT) | 09/10 | A6 | Tạo dự án, quét job, xem / lọc lỗi, gắn cờ, `gate` trên giao diện | ✅ [PR #23](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/23) |
 | **A13** | Làm lại giao diện web theo thiết kế phần mềm doanh nghiệp (thanh trên navy, dropdown dự án, 2 nhóm menu, bảng chi tiết kết quả, IBM Plex, theme sáng/tối) | 08/10 | A11 | Đầy đủ chức năng, khớp bản vẽ `.dc.html`, chụp ảnh sáng/tối, test xanh | ✅ [PR #28](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/28) |
 | **A14** | Màn chào có nút Bắt đầu (logo động khi tải); Duyệt nhanh: xem point cloud quanh box (từ trên, nhìn ngang), J / K chuyển mục, ghi kết luận Đúng / Báo nhầm (`reviews.json`, precision xem tay); hướng dẫn sửa hàng loạt trong CVAT bằng bộ lọc | 08/10 | A13 | Duyệt hết lỗi của một job mà không mở lại CVAT; test xanh | ✅ [PR #29](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/29) |
-| **A15** | Extension "PointSnap cho CVAT" (Chrome / Edge, Manifest V3): tự bật bộ lọc box có `pointsnap_error`, thông báo lỗi khi chọn box, Lỗi tiếp theo / trước không tải lại trang, danh sách lỗi + Quét lại qua API PointSnap — chỉ đọc giao diện và bấm hộ nút, không đụng nội bộ CVAT (đề xuất mục 4.6) | 11/10 | A14 | Đạt spike S1–S4 (G4) và tiêu chí xong mục 4.6 trên CVAT local job 2 (kết quả: `docs/thu-extension.md`) | ✅ [PR #31](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/31) |
+| **A15** | Extension "PointSnap cho CVAT" (Chrome / Edge, Manifest V3): tự bật bộ lọc box có `pointsnap_error`, thông báo lỗi khi chọn box, Lỗi tiếp theo / trước không tải lại trang, danh sách lỗi + Quét lại qua API PointSnap — chỉ đọc giao diện và bấm hộ nút, không đụng nội bộ CVAT (đề xuất mục 4.6) | 11/10 | A14 | Đạt spike S1–S4 (G4) và tiêu chí xong mục 4.6 trên CVAT local job 2 (kết quả: `docs/ket-qua/thu-extension.md`) | ✅ [PR #31](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/31) |
 
 ## Đặng Văn Huy — code thuật toán
 
@@ -64,34 +64,34 @@ Việc của từng người theo ngày: [`giao-viec/`](giao-viec/). Cập nhậ
 
 ## Giai đoạn 3 — tuần gia hạn 11/10 – 17/10 (nộp 18/10)
 
-Việc từng người và cổng G6 – G8: [`giao-viec/tuan-gia-han.md`](giao-viec/tuan-gia-han.md). Tình trạng bàn giao ngày 12/10,
-thứ tự merge và cách kiểm lại: [`docs/ban-giao-12-10.md`](docs/ban-giao-12-10.md).
+Việc từng người và cổng G6 – G8: [`quan-ly/giao-viec/tuan-gia-han.md`](giao-viec/tuan-gia-han.md). Tình trạng bàn giao ngày 12/10,
+thứ tự merge và cách kiểm lại: [`quan-ly/ban-giao-12-10.md`](ban-giao-12-10.md).
 
 | Mã | Việc | Tiêu chí xong | Trạng thái |
 |---|---|---|---|
-| **C1** | Sai hướng box (`heading.*`), box lệch khỏi vật (`fit.*`), mặt đất v2 | Lật / xoay 90° bắt 100%; số liệu `docs/ket-qua-giai-doan-3.md` | ✅ [PR #37](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/37) |
+| **C1** | Sai hướng box (`heading.*`), box lệch khỏi vật (`fit.*`), mặt đất v2 | Lật / xoay 90° bắt 100%; số liệu `docs/ket-qua/ket-qua-giai-doan-3.md` | ✅ [PR #37](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/37) |
 | **C2** | Track theo spec 4.4 (occluded, `track.reuse_id`), thuộc tính (`attr.*`), bộ class spec-vn | Demo trên task spec-vn | ✅ [PR #37](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/37) |
-| **C3** | Box Verifier 4 lớp: vật đứng yên, ảnh camera, Box Critic, học từ kết luận | Số liệu `docs/ket-qua-box-verifier.md` | ✅ [PR #39](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/39); ngưỡng lơ lửng 15 cm trong PR bàn giao |
-| **C4** | Lơ lửng / lún trên mặt đất dốc, đá, vỉa hè ([giao việc](giao-viec/C4-mat-dat-nghieng.md)) | Test tổng hợp đúng hết; báo nhầm `floating` trên cảnh tinh chỉnh không tăng; recall không giảm | 🔍 [PR #49](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/49) (14 / 15 ca, 1 xfail đã biết) |
-| **C5** | Tình huống giao thông thực tế ([giao việc](giao-viec/C5-tinh-huong-thuc-te.md)): bộ mô phỏng tình huống, `track.id_swap` | Test mô phỏng đúng hết; eval 10 vòng không tăng báo nhầm, không giảm recall | 🔍 PR bàn giao (23 / 23 tình huống; đổi ID bắt 94%, 0 báo nhầm) |
-| **C6** | Bám spec theo hình học ([giao việc](giao-viec/C6-bam-spec.md)): `attr.height`, `spec.inside`, `spec.rider_double` | Như C5 | 🔍 PR bàn giao (báo nhầm 0,03 / 0,02 trên 100 box; bắt đổi tư thế 91–95%, người trong xe 100%) |
-| **C7** | Sót đối tượng bằng LiDAR `lidar.missing` | Như C5; số liệu `docs/ket-qua-sot-doi-tuong.md` | 🔍 PR bàn giao (tìm lại vật bị xóa box 66% / 71%, 1 mục báo nhầm / 5 cảnh) |
-| **C8** | Sót vật đứng yên (LiDAR + ảnh), `attr.rider_state`, `cam.sparse` | Như C5 | 🔍 PR bàn giao (vật đứng yên tìm lại 31% / 15%; eval kiểm tra 2,85 → 2,88) |
-| — | Cải tiến sau đánh giá đêm 11/10: camera Grounding DINO + SAM 2.1, `track.jump` hai đầu track, `heading.motion` khi không có pose, Box Critic ensemble, quét nhanh ~3 lần, CAI-DAT token | Mỗi PR có số liệu trước / sau | 🔍 [#40](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/40) · [#41](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/41) · [#42](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/42) · [#43](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/43) · [#44](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/44) · [#46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46) · [#47](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/47) |
-| — | Đổi ngưỡng lấy tỉ lệ bắt (tăng báo nhầm): `heading.points` 12°, `fit.outside` nhạy hơn | **Nhóm quyết** có merge không | 🔍 [#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45) · [#48](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/48) |
+| **C3** | Box Verifier 4 lớp: vật đứng yên, ảnh camera, Box Critic, học từ kết luận | Số liệu `docs/ket-qua/ket-qua-box-verifier.md` | ✅ [PR #39](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/39); ngưỡng lơ lửng 15 cm trong [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) |
+| **C4** | Lơ lửng / lún trên mặt đất dốc, đá, vỉa hè ([giao việc](giao-viec/C4-mat-dat-nghieng.md)) | Test tổng hợp đúng hết; báo nhầm `floating` trên cảnh tinh chỉnh không tăng; recall không giảm | ✅ [PR #49](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/49) (14 / 15 ca, 1 xfail đã biết) |
+| **C5** | Tình huống giao thông thực tế ([giao việc](giao-viec/C5-tinh-huong-thuc-te.md)): bộ mô phỏng tình huống, `track.id_swap` | Test mô phỏng đúng hết; eval 10 vòng không tăng báo nhầm, không giảm recall | ✅ [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) (23 / 23 tình huống; đổi ID bắt 94%, 0 báo nhầm) |
+| **C6** | Bám spec theo hình học ([giao việc](giao-viec/C6-bam-spec.md)): `attr.height`, `spec.inside`, `spec.rider_double` | Như C5 | ✅ [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) (báo nhầm 0,03 / 0,02 trên 100 box; bắt đổi tư thế 91–95%, người trong xe 100%) |
+| **C7** | Sót đối tượng bằng LiDAR `lidar.missing` | Như C5; số liệu `docs/ket-qua/ket-qua-sot-doi-tuong.md` | ✅ [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) (tìm lại vật bị xóa box 66% / 71%, 1 mục báo nhầm / 5 cảnh) |
+| **C8** | Sót vật đứng yên (LiDAR + ảnh), `attr.rider_state`, `cam.sparse` | Như C5 | ✅ [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) (vật đứng yên tìm lại 31% / 15%; eval kiểm tra 2,85 → 2,88) |
+| — | Cải tiến sau đánh giá đêm 11/10: camera Grounding DINO + SAM 2.1, `track.jump` hai đầu track, `heading.motion` khi không có pose, Box Critic ensemble, quét nhanh ~3 lần, CAI-DAT token | Mỗi PR có số liệu trước / sau | ✅ [#40](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/40) · [#41](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/41) · [#42](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/42) · [#43](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/43) · [#44](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/44) · [#46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46) · [#47](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/47) |
+| — | Đổi ngưỡng lấy tỉ lệ bắt (tăng báo nhầm): `heading.points` 12°, `fit.outside` nhạy hơn | **Nhóm quyết** có merge không | ✅ [#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45) đã merge (12/10); 🔍 [#48](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/48) để ngỏ (báo nhầm `fit.outside` 0,04 → 0,24) |
 
 ## Khánh, Chiến, Hân — báo cáo và test (khi sản phẩm xong)
 
-**Từ 07/10 phần review và test do Khánh, Hân, Chiến làm** (quy trình đã chạy được trên CVAT). Các bước chi tiết: [`giao-viec/review-test.md`](giao-viec/review-test.md).
+**Từ 07/10 phần review và test do Khánh, Hân, Chiến làm** (quy trình đã chạy được trên CVAT). Các bước chi tiết: [`quan-ly/giao-viec/review-test.md`](giao-viec/review-test.md).
 
 | Mã | Việc | Người | Hạn | Cần trước | Tiêu chí xong | Trạng thái |
 |---|---|---|---|---|---|---|
 | **R1** | Khung báo cáo kết quả và slide: bối cảnh, vấn đề, giải pháp, cách đánh giá (lấy từ bản đề xuất), để trống phần số liệu | Khánh | Tối 08/10 | — | `docs/bao-cao-ket-qua.md` + slide khung | ⬜ |
 | **T1** | Test quy trình trên CVAT theo README: cài trên máy khác, `scan --flag`, lọc box lỗi trong CVAT, sửa vài box, `scan` lại, `gate`; ghi lỗi gặp phải | Chiến | Sáng 09/10 | G2 | Danh sách lỗi gửi Việt Anh; README không còn chỗ thiếu | ⬜ |
-| **T2** | Test thuật toán: xem tay các cảnh báo không khớp lỗi chèn nào (đúng hay báo nhầm); điền bảng chỉ số | Hân (chủ trì), Chiến | 12h 09/10 | B7 | `docs/danh-gia.md` đủ mọi chỉ số mục 8 (G3) | ⬜ |
+| **T2** | Test thuật toán: xem tay các cảnh báo không khớp lỗi chèn nào (đúng hay báo nhầm); điền bảng chỉ số | Hân (chủ trì), Chiến | 12h 09/10 | B7 | `docs/ket-qua/danh-gia.md` đủ mọi chỉ số mục 8 (G3) | ⬜ |
 | **R2** | Hoàn thiện báo cáo kết quả, slide (điền số liệu từ T2); quay video demo 3–5 phút | Khánh (báo cáo, slide), Chiến (video) | Cuối ngày 09/10 | G3 | Đủ hồ sơ nộp | ⬜ |
 | **R3** | Nhật ký tuần 04: ghi kết quả các cổng, việc trễ, việc cắt | Khánh | Cuối ngày 09/10 | — | Nhật ký chốt | ⬜ |
 
 ## Đã cắt khỏi kế hoạch 4 ngày
 
-Tự gán nhãn lại một cảnh (bộ lỗi thật), lệnh `diff`, đo thời gian review, luật khoảng nội suy dài, so khớp hai adapter, đọc point cloud qua API của CVAT. Xem [Hướng phát triển](de-xuat-de-tai.md#11-hướng-phát-triển).
+Tự gán nhãn lại một cảnh (bộ lỗi thật), lệnh `diff`, đo thời gian review, luật khoảng nội suy dài, so khớp hai adapter, đọc point cloud qua API của CVAT. Xem [Hướng phát triển](../docs/thiet-ke/de-xuat-de-tai.md#11-hướng-phát-triển).

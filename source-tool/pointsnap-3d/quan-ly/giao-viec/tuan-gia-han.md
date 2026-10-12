@@ -18,7 +18,7 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 | C2 | Track theo spec 4.4: `to-cvat` dùng **occluded** cho đoạn vắng ≤ 6 frame, tách track khi vắng lâu; luật `track.reuse_id`, `track.occluded_long` | Box occluded không bị kiểm hình học |
 | C2 | Luật **thiếu / sai thuộc tính** `attr.missing`, `attr.invalid` (spec 3.1.3); kích thước theo **Class/thuộc tính** | — |
 | C2 | Bộ class **spec-vn** (`--taxonomy spec-vn`) + guideline mẫu `pointsnap/guidelines/spec-vn.yaml` | Demo trên task có label Vehicle / Two-wheels / Pedestrian / Animal / Obstacle |
-| — | Web, extension, báo cáo, chèn lỗi giả và `pointsnap eval --errors c1` cho mọi luật mới | Số liệu: `docs/ket-qua-giai-doan-3.md` |
+| — | Web, extension, báo cáo, chèn lỗi giả và `pointsnap eval --errors c1` cho mọi luật mới | Số liệu: `docs/ket-qua/ket-qua-giai-doan-3.md` |
 | C3 | **Box Verifier** lớp 1: box dịch / xoay của vật đứng yên trong hệ toàn cục (`track.static_shift`, `heading.static`) | Cảnh kiểm tra: box dời 0,3 m 0% → 44%, xoay 15° 7% → 29%, nhảy 1 m 50% → 75% |
 | C3 | Lớp 2: đối chiếu ảnh camera (`cam.mismatch`, `cam.class`, `cam.missing`), Mask R-CNN huấn luyện sẵn | Thông tin là chính; bắt thêm ít (4/400 lỗi chèn) |
 | C3 | Lớp 3: Box Critic — dữ liệu (`pointsnap critic-data`), script + notebook Colab, chỗ cắm `critic.model` | Chờ nhóm huấn luyện |
@@ -26,18 +26,18 @@ Thông tin / Cảnh báo, tắt được trong guideline (`camera.enabled: false
 
 ## Cập nhật 12/10 (bàn giao)
 
-Chi tiết, thứ tự merge và cách kiểm lại: [`docs/ban-giao-12-10.md`](../docs/ban-giao-12-10.md).
+Đã merge vào `main` ngày 12/10 (trừ #48). Chi tiết và cách kiểm lại: [`quan-ly/ban-giao-12-10.md`](../ban-giao-12-10.md).
 
 | Mã | Việc | Kết quả | PR |
 |---|---|---|---|
-| C3 | Ngưỡng Cảnh báo lơ lửng / lún 12 → 15 cm | — | PR bàn giao |
+| C3 | Ngưỡng Cảnh báo lơ lửng / lún 12 → 15 cm | — | [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) |
 | C4 | Lơ lửng / lún trên mặt đất dốc, đá, vỉa hè ([giao việc](C4-mat-dat-nghieng.md)) | Test tổng hợp 14 / 15 ca (code cũ sai 7); cảnh tinh chỉnh không đổi | [#49](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/49) |
-| C5 | Tình huống giao thông thực tế ([giao việc](C5-tinh-huong-thuc-te.md)): bộ mô phỏng, sửa 4 lỗi, luật `track.id_swap` | 23 / 23 tình huống; đổi ID bắt 94%, 0 báo nhầm | PR bàn giao |
-| C6 | Bám spec theo hình học ([giao việc](C6-bam-spec.md)): `attr.height`, `spec.inside`, `spec.rider_double`, `attr.rider_state` | Báo nhầm 0,03 / 0,02 trên 100 box | PR bàn giao |
-| C7 | **Sót đối tượng** bằng LiDAR: `lidar.missing` | Tìm lại vật bị xóa box 66% (tinh chỉnh) / 71% (kiểm tra) | PR bàn giao |
-| C8 | Sót vật đứng yên (LiDAR + ảnh), vật quá ít điểm `cam.sparse` | Vật đứng yên tìm lại 31% / 15% | PR bàn giao |
+| C5 | Tình huống giao thông thực tế ([giao việc](C5-tinh-huong-thuc-te.md)): bộ mô phỏng, sửa 4 lỗi, luật `track.id_swap` | 23 / 23 tình huống; đổi ID bắt 94%, 0 báo nhầm | [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) |
+| C6 | Bám spec theo hình học ([giao việc](C6-bam-spec.md)): `attr.height`, `spec.inside`, `spec.rider_double`, `attr.rider_state` | Báo nhầm 0,03 / 0,02 trên 100 box | [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) |
+| C7 | **Sót đối tượng** bằng LiDAR: `lidar.missing` | Tìm lại vật bị xóa box 66% (tinh chỉnh) / 71% (kiểm tra) | [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) |
+| C8 | Sót vật đứng yên (LiDAR + ảnh), vật quá ít điểm `cam.sparse` | Vật đứng yên tìm lại 31% / 15% | [PR #50](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/50) |
 | — | Camera Grounding DINO + SAM 2.1 (tùy chọn), `track.jump` hai đầu track, `heading.motion` khi không có pose, Box Critic ensemble, quét nhanh ~3 lần, `fit.loose` theo track | Mỗi PR có số liệu trước / sau | [#40](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/40) – [#44](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/44), [#46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46), [#47](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/47) |
-| — | `heading.points` 12°, `fit.outside` nhạy hơn: tăng tỉ lệ bắt nhưng tăng báo nhầm | **Nhóm quyết** | [#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45), [#48](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/48) |
+| — | `heading.points` 12°, `fit.outside` nhạy hơn: tăng tỉ lệ bắt nhưng tăng báo nhầm | #45 đã merge; #48 để ngỏ | [#45](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/45), [#48](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/48) |
 
 Eval 10 vòng mới nhất (Cảnh báo / Lỗi trên 100 box, nhãn sạch): cảnh tinh chỉnh **1,39 / 0,36** (đạt G7), cảnh kiểm tra
 **2,88 / 0,57** (chưa đạt ≤ 2 / ≤ 0,5; phần lớn là lơ lửng / lún).
@@ -48,9 +48,9 @@ Eval 10 vòng mới nhất (Cảnh báo / Lỗi trên 100 box, nhãn sạch): c�
 - [x] Review và merge PR giai đoạn 3 ([#37](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/37), [#39](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/39)); tạo **lại** task scene-0061 bằng `to-cvat` mới
       (đoạn vắng thành occluded): **task 4 / job 4** trên CVAT local, demo trên job này. Task 2 giữ nguyên.
 - [ ] Tạo task spec-vn: `pointsnap nuscenes --taxonomy spec-vn to-cvat --scene scene-0061 --out D:/data/cvat-vn --upload`.
-- [ ] Cập nhật CAI-DAT.md: bước tạo token **bỏ tích Read-only** (lỗi CHIEN-01) — [PR #46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46) chờ merge; bước
-      tạo task spec-vn.
-- [x] Huấn luyện **Box Critic** trên Google Colab theo `docs/box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
+- [x] Cập nhật CAI-DAT.md: bước tạo token **bỏ tích Read-only** (lỗi CHIEN-01) — [PR #46](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/46); bước
+      tạo task spec-vn (CAI-DAT mục 5b).
+- [x] Huấn luyện **Box Critic** trên Google Colab theo `docs/huong-dan/huan-luyen-box-critic.md` (dữ liệu chỉ từ 5 cảnh tinh chỉnh), khai
       `critic.model`, đo `pointsnap eval --scenes test --errors all` so với không có Box Critic. Đang dùng bản v3
       ensemble 5 model; cách huấn luyện ensemble và số liệu ở [PR #43](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/43).
 - [ ] Hỏi mentor về việc dùng model làm bằng chứng phụ (Box Verifier lớp 2, 3).
@@ -65,14 +65,14 @@ Eval 10 vòng mới nhất (Cảnh báo / Lỗi trên 100 box, nhãn sạch): c�
 
 ### Nhữ Đình Chiến · test
 - [ ] Hoàn tất PR #36 theo review.
-- [ ] Test **TC-70 – TC-80** (mục 5.7 của [chuẩn kiểm thử](../docs/test/CHUAN-KIEM-THU.md)) trên task tạo lại và task spec-vn.
+- [ ] Test **TC-70 – TC-80** (mục 5.7 của [chuẩn kiểm thử](../../docs/test/CHUAN-KIEM-THU.md)) trên task tạo lại và task spec-vn.
 - [ ] Quay video demo: quét → extension đi qua lỗi (có lỗi lật box và vẽ trùng) → sửa → quét lại → `gate` ĐẠT với guideline
       mặc định.
 
 ### Nguyễn Văn Hân · đánh giá
 - [ ] Xem tay **20 mục mỗi luật mới** (`heading.*`, `fit.*`) trên scene-0061 theo mục 6 của chuẩn kiểm thử; precision
       riêng từng luật.
-- [ ] Cập nhật `docs/danh-gia.md` bằng `docs/ket-qua-giai-doan-3.md` và kết quả xem tay.
+- [ ] Cập nhật `docs/ket-qua/danh-gia.md` bằng `docs/ket-qua/ket-qua-giai-doan-3.md` và kết quả xem tay.
 - [ ] Ghi kết luận **Đúng / Báo nhầm** trên web cho các mục đã xem (≥ 40 mục, có cả hai loại), bấm *Học từ kết luận*
       (tab Lịch sử): precision ước lượng từng luật dùng cho báo cáo, lớp 4 Box Verifier dùng cho lần quét sau.
 - [ ] Xem tay 20 mục `cam.missing` (ảnh thấy vật mà không có box 3D) trên cảnh kiểm tra: sót thật hay model ảnh nhận nhầm.

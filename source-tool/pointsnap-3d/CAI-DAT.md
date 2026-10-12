@@ -132,6 +132,23 @@ Lệnh này tạo task 3D trên CVAT gồm point cloud, nhãn chuẩn dạng tra
 
 **Kiểm tra:** trong CVAT → **Tasks** có task *PointSnap scene-0061*; mở job thấy point cloud, box và ảnh camera bên cạnh. Ghi lại **id job** (số cuối trong URL `/tasks/<t>/jobs/<j>`).
 
+### 5b. Task theo spec gán nhãn giao thông VN (tùy chọn)
+
+Muốn demo các luật bám spec (`attr.*`, `spec.inside`, `spec.rider_double`, `attr.rider_state`), tạo thêm một task với
+bộ class spec-vn (5 class Vehicle, Two-wheels, Pedestrian, Animal, Obstacle, chi tiết ở thuộc tính):
+
+```powershell
+pointsnap nuscenes --taxonomy spec-vn to-cvat --scene scene-0061 --out D:/data/cvat-vn --upload
+```
+
+Task spec-vn dùng guideline riêng, nên ở bước 6 **tạo một dự án PointSnap riêng** cho nó (guideline lưu theo dự án):
+tab **Kết nối CVAT** điền thư mục bản xuất `D:/data/cvat-vn`; tab **Guideline** → **YAML**, dán nội dung
+`pointsnap-3d/pointsnap/guidelines/spec-vn.yaml` rồi lưu. Dùng dòng lệnh thì thêm
+`--config pointsnap/guidelines/spec-vn.yaml` trước lệnh `scan` / `gate`.
+
+**Kiểm tra:** task mới có label Vehicle / Two-wheels / Pedestrian / Animal / Obstacle; quét job của task này không có
+mục `attr.missing` trên nhãn chuẩn.
+
 ## 6. Chạy giao diện web PointSnap
 
 ```powershell
@@ -165,7 +182,7 @@ Dùng:
 - Tab **Danh sách**: mọi lỗi của job, bấm dòng để nhảy tới; **Quét lại / Quét + gắn cờ** ở cuối tab.
 - CVAT ở địa chỉ khác `localhost:8080`: bấm biểu tượng extension → **Tùy chọn** → thêm địa chỉ CVAT → **Lưu**.
 
-Chi tiết: [extension/README.md](pointsnap-3d/extension/README.md).
+Chi tiết: [extension/README.md](extension/README.md).
 
 **Kiểm tra:** bảng PointSnap hiện chấm xanh (PointSnap đang chạy); bấm `.` thì CVAT chuyển frame và box lỗi sáng lên.
 
@@ -221,6 +238,6 @@ Rồi tắt và chạy lại `pointsnap ui`; ở `chrome://extensions` bấm **�
 ## Tài liệu liên quan
 
 - [README công cụ](README.md) — tính năng, dòng lệnh, giới hạn.
-- [Đề xuất đề tài](pointsnap-3d/de-xuat-de-tai.md) — mục tiêu, thiết kế, chỉ số.
-- [Kết quả thử extension](pointsnap-3d/docs/thu-extension.md) · [Kết quả đánh giá tự động](pointsnap-3d/docs/ket-qua-danh-gia-tu-dong.md).
-- [Quy trình kiểm thử của nhóm](pointsnap-3d/giao-viec/test-va-gop-y.md).
+- [Đề xuất đề tài](docs/thiet-ke/de-xuat-de-tai.md) — mục tiêu, thiết kế, chỉ số.
+- [Kết quả thử extension](docs/ket-qua/thu-extension.md) · [Kết quả đánh giá tự động](docs/ket-qua/ket-qua-danh-gia-tu-dong.md).
+- [Quy trình kiểm thử của nhóm](quan-ly/giao-viec/test-va-gop-y.md).

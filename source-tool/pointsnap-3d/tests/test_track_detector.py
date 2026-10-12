@@ -37,7 +37,7 @@ def track_config():
 
 
 def test_track_jump_cluster_peaks_only(track_config):
-    """Một cú nhảy 2.5 m ở frame 2 làm lệch cả cụm, nhưng CHỈ BÁO FRAME 2 (tiêu chí TASKS.md)."""
+    """Một cú nhảy 2.5 m ở frame 2 làm lệch cả cụm, nhưng CHỈ BÁO FRAME 2 (tiêu chí quan-ly/TASKS.md)."""
     # Xe đi thẳng x = 0, 2, 4, 6, 8 ở frame 0, 1, 2, 3, 4
     # Frame 2 nhảy từ x=4 lên x=6.5 (+2.5 m)
     boxes = [

@@ -19,7 +19,7 @@
     thông VN: sai hướng box, box lệch khỏi vật, track và thuộc tính theo spec, mặt đất v2 ([mục 4.7](#47-bám-spec-gán-nhãn-giai-đoạn-3)).
 - **Dữ liệu:** **nuScenes v1.0-mini** (bộ dữ liệu công khai) — xem [mục 2.1](#21-dữ-liệu-nuscenes-v10-mini)
 - **Môi trường triển khai & kiểm chứng:** CVAT 2.77 Docker chạy local (`localhost:8080`)
-- **Liên kết backlog nội bộ:** [P-010](../../problem-backlog.md#p-010), [P-011](../../problem-backlog.md#p-011)
+- **Liên kết backlog nội bộ:** [P-010](../../../../problem-backlog.md#p-010), [P-011](../../../../problem-backlog.md#p-011)
 - **Trạng thái:** Mentor đã duyệt hướng đề tài (05/10/2026). **Bản 2 (08/10/2026):** cập nhật theo kết quả giai đoạn 1 và thêm phương án extension cho CVAT ([mục 4.6](#46-extension-pointsnap-cho-cvat-giai-đoạn-2)). Bản 1 xem lịch sử git của file này.
 
 ---
@@ -93,9 +93,9 @@ Các số liệu dưới đây là **quan sát nội bộ / ước lượng** t�
 
 | Lỗi | Thực tế thao tác trên CVAT | Thời gian & thao tác lãng phí (quan sát nội bộ) |
 |---|---|---|
-| **Lơ lửng / lún đất** ([P-010](../../problem-backlog.md#p-010)) | Không có mặt phẳng tham chiếu; phải xoay và zoom camera để ước lượng bằng mắt | Chỉnh cao độ Z chiếm ~35–40% thời gian tạo box. Lỗi lơ lửng/lún chiếm ~30% ca bị bắt sửa |
-| **Sai kích thước** ([P-011](../../problem-backlog.md#p-011)) | Chỉnh l, w, h thủ công từng frame; dễ lệch giữa các frame của cùng một xe | Reviewer phải so kích thước bằng mắt qua nhiều frame |
-| **Đứt track** ([P-011](../../problem-backlog.md#p-011)) | Reviewer tự lướt từng frame để thấy track nhảy, tách ID, hoặc box nội suy lệch khỏi đối tượng | ~3–5 phút/frame cho review thủ công nói chung. Rework chiếm ~25–35% thời lượng của đội |
+| **Lơ lửng / lún đất** ([P-010](../../../../problem-backlog.md#p-010)) | Không có mặt phẳng tham chiếu; phải xoay và zoom camera để ước lượng bằng mắt | Chỉnh cao độ Z chiếm ~35–40% thời gian tạo box. Lỗi lơ lửng/lún chiếm ~30% ca bị bắt sửa |
+| **Sai kích thước** ([P-011](../../../../problem-backlog.md#p-011)) | Chỉnh l, w, h thủ công từng frame; dễ lệch giữa các frame của cùng một xe | Reviewer phải so kích thước bằng mắt qua nhiều frame |
+| **Đứt track** ([P-011](../../../../problem-backlog.md#p-011)) | Reviewer tự lướt từng frame để thấy track nhảy, tách ID, hoặc box nội suy lệch khỏi đối tượng | ~3–5 phút/frame cho review thủ công nói chung. Rework chiếm ~25–35% thời lượng của đội |
 
 **Vấn đề phát sinh khi dùng thử (giai đoạn 1):** biết lỗi rồi vẫn tốn thời gian **đi tới** lỗi. Mỗi lần bấm link "Mở CVAT", CVAT tải lại cả job 3D (vài giây); job scene-0061 có 43 mục Lỗi / Cảnh báo. Đây là lý do của extension ở giai đoạn 2.
 
@@ -223,8 +223,8 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 | **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **15 cm** → Cảnh báo (12 cm đến C3); > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
 | **Áp dụng cho** | Class tiếp đất: ô tô, xe tải, xe buýt, rơ-moóc, xe công trình, người, xe đạp, xe máy |
 | **Chống báo động giả** | Vành đai < 15 điểm mặt đất → "thiếu bằng chứng" (Thông tin), gộp một mục cho mỗi track |
-| **Mặt đất dốc (C4)** | Box lẻ / track ít box (so tuyệt đối) trên dốc ≥ 5° khớp được mặt phẳng rõ: so đáy box với **điểm tiếp xúc thấp nhất** của mặt phẳng dưới 4 góc đáy (spec 4.2), vì trung vị ở tâm box cao hơn điểm đó tan(dốc) × nửa chiều dài box. Box thuộc track vẫn dùng trung vị (độ dốc đều triệt tiêu khi so với track; mặt phẳng trên LiDAR thật quá nhiễu để dùng cho mọi box) — `docs/kiem-chung-ground.md` mục 4 |
-| **Kiểm chứng ground** | Tiêu chí tuyệt đối ban đầu (trung vị \|d\| < 5 cm, 90% < 10 cm) **không đạt** trên nhãn chuẩn (trung vị 7,9 cm, p90 22,2 cm) do LiDAR thưa và chính nhãn chuẩn; sau khi đổi sang so với track, độ lệch trên nhãn sạch còn trung vị 3,4 cm, p90 14,7 cm — `docs/kiem-chung-ground.md` |
+| **Mặt đất dốc (C4)** | Box lẻ / track ít box (so tuyệt đối) trên dốc ≥ 5° khớp được mặt phẳng rõ: so đáy box với **điểm tiếp xúc thấp nhất** của mặt phẳng dưới 4 góc đáy (spec 4.2), vì trung vị ở tâm box cao hơn điểm đó tan(dốc) × nửa chiều dài box. Box thuộc track vẫn dùng trung vị (độ dốc đều triệt tiêu khi so với track; mặt phẳng trên LiDAR thật quá nhiễu để dùng cho mọi box) — `docs/ket-qua/kiem-chung-ground.md` mục 4 |
+| **Kiểm chứng ground** | Tiêu chí tuyệt đối ban đầu (trung vị \|d\| < 5 cm, 90% < 10 cm) **không đạt** trên nhãn chuẩn (trung vị 7,9 cm, p90 22,2 cm) do LiDAR thưa và chính nhãn chuẩn; sau khi đổi sang so với track, độ lệch trên nhãn sạch còn trung vị 3,4 cm, p90 14,7 cm — `docs/ket-qua/kiem-chung-ground.md` |
 
 #### b) Sai kích thước
 
@@ -271,13 +271,13 @@ với điểm trong / sát box, để cây, tường, cột bên cạnh không b
 #### f) Box Verifier — kiểm box bằng nhiều nguồn và học từ người duyệt (giai đoạn 3, C3)
 
 Bốn lớp, mỗi lớp thêm một nguồn bằng chứng; tool vẫn **chỉ phát hiện, cảnh báo và gợi ý**, không tự sửa box. Số liệu:
-[docs/ket-qua-box-verifier.md](docs/ket-qua-box-verifier.md).
+[docs/ket-qua-box-verifier.md](../ket-qua/ket-qua-box-verifier.md).
 
 | Lớp | Nguồn | Luật | Trạng thái |
 |---|---|---|---|
 | 1. Hình học theo thời gian | Vị trí / hướng box trong **hệ toàn cục** qua các keyframe | `track.static_shift`, `heading.static`: vật đứng yên (các keyframe khác tụ trong 10 cm) mà một keyframe dịch > 20 cm / xoay > 4° | Xong, mặc định bật |
 | 2. Ảnh camera | Chiếu box lên 6 ảnh, so với **mặt nạ vật** của Mask R-CNN (COCO, huấn luyện sẵn) | `cam.mismatch` (Thông tin), `cam.class` (Cảnh báo), `cam.missing` (Thông tin); frame ban đêm bỏ qua | Xong; tự bật khi có PyTorch + GPU |
-| 3. Box Critic | Model PointNet học từ box làm nhiễu có đáp án | `critic.box` kèm gợi ý sửa | Có dữ liệu, script / notebook Colab, chỗ cắm; **nhóm tự huấn luyện** ([docs/box-critic.md](docs/box-critic.md)) |
+| 3. Box Critic | Model PointNet học từ box làm nhiễu có đáp án | `critic.box` kèm gợi ý sửa | Có dữ liệu, script / notebook Colab, chỗ cắm; **nhóm tự huấn luyện** ([docs/box-critic.md](../huong-dan/huan-luyen-box-critic.md)) |
 | 4. Học từ kết luận | Kết luận Đúng / Báo nhầm của người duyệt | Độ tin cậy từng mục; tuỳ chọn hạ Cảnh báo kém tin cậy | Xong; cần ≥ 40 kết luận để dùng mô hình |
 
 Lớp 2 đo được nhưng yếu: trên cảnh tinh chỉnh chỉ bắt thêm 4/400 lỗi chèn so với luật LiDAR, báo nhầm tăng 0,24 – 0,75
@@ -402,7 +402,7 @@ extension/                     # Manifest V3, Chrome / Edge
 - Tắt PointSnap: E1–E4 vẫn chạy; bật lại: E5–E6 chạy.
 - Không lỗi console trên trang CVAT; extension không gửi yêu cầu nào ngoài URL CVAT và PointSnap đã cấu hình.
 
-**Kết quả thử 08/10** ([chi tiết](docs/thu-extension.md)), job 2 có 60 cờ ở 35 frame:
+**Kết quả thử 08/10** ([chi tiết](../ket-qua/thu-extension.md)), job 2 có 60 cờ ở 35 frame:
 - E2: bộ lọc bật sau 0,69–0,76 giây.
 - E3: đúng 10/10.
 - E4 / E5: 34 lần chuyển, 0 lần sai frame, 0 lần tải lại trang, đi hết job trong 7 giây; mở từng link mất 11–12,7 giây mỗi lần (43 mục ≈ 8,6 phút).
@@ -412,7 +412,7 @@ extension/                     # Manifest V3, Chrome / Edge
 ### 4.7. Bám spec gán nhãn (giai đoạn 3)
 
 Mỗi luật kiểm một điều khoản **đo được bằng số** của *Annotation Specification* (spec). Điều khoản cần phán đoán ngữ nghĩa
-(người trong xe, vật quá nhỏ để cán qua, phân loại subtype) vẫn do reviewer kiểm.
+(vật quá nhỏ để cán qua, phân loại subtype khi kích thước không phân biệt được) vẫn do reviewer kiểm.
 
 | Điều khoản spec | Nội dung | Luật PointSnap |
 |---|---|---|
@@ -420,12 +420,13 @@ Mỗi luật kiểm một điều khoản **đo được bằng số** của *An
 | 3.1.2, 4.3B/C | Thuộc tính đúng với vật (tư thế, nhóm tuổi, có người lái) | `attr.height` (C6) |
 | 4.3B | Không gán người bên trong xe | `spec.inside` (C6) |
 | 4.3C | Người lái nằm trong box xe hai bánh | `spec.rider_double` (C6) |
+| 4.3C | Lên / xuống xe thì đổi `rider_state` | `attr.rider_state` (C8: xe `without_rider` chạy nhanh; xe `with_rider` đứng yên mà người mới xuất hiện sát xe) |
 | 3.1.2 | Phân loại chi tiết bằng thuộc tính (`subtype`, `rider_state`, …) | Kích thước tra theo `Class/thuộc tính` (`size.key_attributes`) |
 | 4.2 | Box bao trọn vật thể, không dư thừa quá mức | `size.class_range`, `size.in_track`, `fit.outside`, `fit.loose` |
 | 4.2 | Hướng box trùng hướng chuyển động; đứng yên theo trục dài | `heading.flip`, `heading.motion`, `heading.points` |
-| 4.2 | Đáy box đặt trên mặt tiếp xúc, không cao bất thường | `floating` (mặt đất v2) |
-| 4.2 | Không gán box khi vật quá ít điểm | `fit.empty` (+ `sparse_warning_points` khi chốt P-009) |
-| 4.2 | Nên gán box khi vật rõ trong point cloud | `lidar.missing` (C7: cụm LiDAR di chuyển không có box), `cam.missing` (ảnh) |
+| 4.2 | Đáy box đặt trên mặt tiếp xúc, không cao bất thường | `floating` (mặt đất v2; C4: box lẻ trên mặt dốc) |
+| 4.2 | Không gán box khi vật quá ít điểm | `fit.empty`, `cam.sparse` (C8: mọi keyframe ≤ 5 điểm và ảnh không thấy; ngưỡng chờ chốt P-009) |
+| 4.2 | Nên gán box khi vật rõ trong point cloud | `lidar.missing` (C7: cụm LiDAR di chuyển không có box; C8: vật đứng yên khi ảnh xác nhận), `cam.missing` (ảnh) |
 | 4.3B, 4.3E | Nhóm người / động vật sát nhau: gán từng con, box được phép chồng | `fit.overlap` với `overlap_allowed_pairs` |
 | 4.4.1–4.4.2 | Giữ track_id ổn định, không nhảy, không tách | `track.jump`, `track.split_id`, `track.long_interpolation` |
 | 4.4.6 | Không nối các vật khác nhau thành một track | `track.id_swap` (C5) |
@@ -464,7 +465,7 @@ tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 - **Mô hình dữ liệu cố định:** `Cuboid(center, dims, yaw, label, frame, track_id, source_id, outside, attrs)`; core chỉ nhận và trả đối tượng này, đổi nền tảng chỉ cần viết thêm adapter.
 - **Thư viện:** numpy, pyyaml, requests, FastAPI, uvicorn; pytest, httpx khi phát triển. Extension: JavaScript thuần, không thư viện ngoài.
 - **Chi phí:** hạ tầng bằng 0 (laptop CPU, mã nguồn mở, dữ liệu công khai). Không cần GPU.
-- **Kiểm thử:** test có đáp án (box đặt lệch Z một lượng biết trước…), bộ lỗi chèn giả, vòng ghi – đọc – so sánh với CVAT; **CI GitHub Actions chạy `pytest` cho mọi PR**; nhóm test chạy quy trình kiểm thử chung (`giao-viec/test-va-gop-y.md`).
+- **Kiểm thử:** test có đáp án (box đặt lệch Z một lượng biết trước…), bộ lỗi chèn giả, vòng ghi – đọc – so sánh với CVAT; **CI GitHub Actions chạy `pytest` cho mọi PR**; nhóm test chạy quy trình kiểm thử chung (`quan-ly/giao-viec/test-va-gop-y.md`).
 - **Bảo mật:** token CVAT qua `.env` hoặc lưu riêng từng dự án, API không trả token; giao diện chỉ nghe `127.0.0.1`, không mở CORS; không commit token, dữ liệu nuScenes.
 - **Dùng AI agent hỗ trợ viết code** (ghi rõ trong báo cáo): mọi thay đổi qua branch + Pull Request có review, test đi kèm; agent không tự chạy lệnh ghi vào CVAT ngoài phạm vi việc được giao.
 
@@ -503,7 +504,7 @@ tests/                # pytest: test có đáp án, lỗi chèn giả, API web
 
 ### 7.4. Giai đoạn 3 (11–17/10, nộp 18/10)
 
-Chi tiết từng người: [giao-viec/tuan-gia-han.md](giao-viec/tuan-gia-han.md). Code của C1 (sai hướng, box lệch, mặt đất
+Chi tiết từng người: [giao-viec/tuan-gia-han.md](../../quan-ly/giao-viec/tuan-gia-han.md). Code của C1 (sai hướng, box lệch, mặt đất
 v2) và C2 (bám spec) đã xong trong PR giai đoạn 3; tuần này review, test TC-70 – 80, xem tay, chốt số liệu, video, báo cáo.
 
 | Cổng | Khi | Điều kiện |
@@ -545,7 +546,7 @@ Các mức nhỏ (5–10 cm, 5%, 0,5–1 m, 1 keyframe) nằm dưới hoặc sá
 
 ### 8.2. Chỉ số và kết quả hiện tại
 
-Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gia-tu-dong.md`.
+Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua/ket-qua-danh-gia-tu-dong.md`.
 
 | Chỉ số | Mục tiêu | Hiện tại (08/10) |
 |---|---|---|
@@ -561,7 +562,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Hiệu năng** | < 2 phút / cảnh | ~3–4 giây / job 39 frame ✅ |
 | **Thời gian đi hết các lỗi của một job** (extension) | Nhanh hơn mở từng link; không tải lại trang | **7 giây** cho 35 frame lỗi, 0 lần tải lại trang; mở từng link: 11–12,7 giây mỗi lần (≈ 8,6 phút cho 43 mục) ✅ |
 
-**Giai đoạn 3 (10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-giai-doan-3.md](docs/ket-qua-giai-doan-3.md).
+**Giai đoạn 3 (10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-giai-doan-3.md](../ket-qua/ket-qua-giai-doan-3.md).
 
 | Chỉ số | Mục tiêu | Giai đoạn 3 |
 |---|---|---|
@@ -575,7 +576,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua-danh-gi
 | **Phân mức đúng** | ≥ 80% | 100% ✅ |
 | **Hiệu năng** | < 2 phút / cảnh | 5–35 giây / cảnh ✅ (gộp 4 sweep) |
 
-**Box Verifier (C3, 10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-box-verifier.md](docs/ket-qua-box-verifier.md).
+**Box Verifier (C3, 10/10, 5 cảnh kiểm tra)** — chi tiết: [docs/ket-qua-box-verifier.md](../ket-qua/ket-qua-box-verifier.md).
 
 | Chỉ số | Mục tiêu | Giai đoạn 3 → Box Verifier |
 |---|---|---|

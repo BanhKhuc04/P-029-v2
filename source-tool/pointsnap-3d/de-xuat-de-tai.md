@@ -223,6 +223,7 @@ Mỗi loại lỗi có **định nghĩa định lượng**, **ngưỡng cấu h�
 | **So với chính track** | Nhãn chuẩn cũng lệch mặt đất ước lượng một lượng ổn định theo đoạn đường (bờ vỉa, dốc), nên so `d` của box với **trung vị `d` của các box khác cùng track**: lệch > **15 cm** → Cảnh báo (12 cm đến C3); > **22 cm** và \|d\| > 15 cm → Lỗi. Box lẻ / track ít box: \|d\| > 15 / 30 cm |
 | **Áp dụng cho** | Class tiếp đất: ô tô, xe tải, xe buýt, rơ-moóc, xe công trình, người, xe đạp, xe máy |
 | **Chống báo động giả** | Vành đai < 15 điểm mặt đất → "thiếu bằng chứng" (Thông tin), gộp một mục cho mỗi track |
+| **Mặt đất dốc (C4)** | Box lẻ / track ít box (so tuyệt đối) trên dốc ≥ 5° khớp được mặt phẳng rõ: so đáy box với **điểm tiếp xúc thấp nhất** của mặt phẳng dưới 4 góc đáy (spec 4.2), vì trung vị ở tâm box cao hơn điểm đó tan(dốc) × nửa chiều dài box. Box thuộc track vẫn dùng trung vị (độ dốc đều triệt tiêu khi so với track; mặt phẳng trên LiDAR thật quá nhiễu để dùng cho mọi box) — `docs/kiem-chung-ground.md` mục 4 |
 | **Kiểm chứng ground** | Tiêu chí tuyệt đối ban đầu (trung vị \|d\| < 5 cm, 90% < 10 cm) **không đạt** trên nhãn chuẩn (trung vị 7,9 cm, p90 22,2 cm) do LiDAR thưa và chính nhãn chuẩn; sau khi đổi sang so với track, độ lệch trên nhãn sạch còn trung vị 3,4 cm, p90 14,7 cm — `docs/kiem-chung-ground.md` |
 
 #### b) Sai kích thước

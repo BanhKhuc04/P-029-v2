@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 
+import numpy as np
 import pytest
 
 from pointsnap.core.config import SpecConfig, load_config
@@ -127,3 +128,43 @@ def test_size_range_keyed_by_subtype():
     assert detect_size([veh(0, track_id=None, subtype="car")], size) == []
     findings = detect_size([bus], size)
     assert findings and "Vehicle/bus" in findings[0].message
+
+
+# --- vật đứng yên (C3) -------------------------------------------------------------------------------
+
+
+def _parked(changes=None, n=6):
+    boxes = [Cuboid(center=(10.0, 5.0, 0.0), dims=(4.5, 1.9, 1.6), yaw=0.3, label="car", frame=f, track_id=1)
+             for f in range(n)]
+    for frame, kw in (changes or {}).items():
+        boxes[frame] = boxes[frame].replace(**kw)
+    return boxes
+
+
+POSES = {f: np.eye(4) for f in range(10)}
+
+
+def test_static_shift_and_rotation_detected():
+    from pointsnap.core.config import StaticConfig
+    from pointsnap.detectors.static import detect_static_errors
+
+    cfg = StaticConfig()
+    assert detect_static_errors(_parked(), cfg, POSES) == []
+    shifted = _parked({3: {"center": (10.3, 5.0, 0.0)}})
+    [f] = detect_static_errors(shifted, cfg, POSES)
+    assert (f.rule, f.frame, f.severity) == ("track.static_shift", 3, Severity.WARNING)
+    rotated = _parked({2: {"yaw": 0.3 + 0.25}})  # ~14°
+    [f] = detect_static_errors(rotated, cfg, POSES)
+    assert (f.rule, f.frame, f.severity) == ("heading.static", 2, Severity.ERROR)
+    assert detect_static_errors(rotated, cfg, None) == []  # không có pose xe thu thì không xét
+
+
+def test_static_rules_skip_moving_and_pedestrian_yaw():
+    from pointsnap.core.config import StaticConfig
+    from pointsnap.detectors.static import detect_static_errors
+
+    moving = [b.replace(center=(10.0 + 2 * b.frame, 5.0, 0.0)) for b in _parked()]
+    moving[3] = moving[3].replace(center=(16.4, 5.0, 0.0))
+    assert detect_static_errors(moving, StaticConfig(), POSES) == []
+    ped = [b.replace(label="pedestrian", dims=(0.7, 0.7, 1.7)) for b in _parked({2: {"yaw": 1.5}})]
+    assert detect_static_errors(ped, StaticConfig(), POSES) == []

@@ -202,6 +202,10 @@ class ManifestFrames:
             return FrameData(frame, points, sensor_to_world, data.timestamp, data.source_ref)
         return FrameData(frame, data.points, data.sensor_to_world, data.timestamp, data.source_ref)
 
+    def camera_views(self, frame: int):
+        """Ảnh camera của frame. Pose camera ở hệ toàn cục nên dùng chung được với `sensor_to_world` của frame."""
+        return self.reader.camera_views(self._refs[frame])
+
     def ground_sweeps(self, frame: int, sweeps: int) -> list[tuple[float, np.ndarray]]:
         """`sweeps` lượt quét LiDAR trung gian trước keyframe, cùng hệ với point cloud trên CVAT: [(thời điểm, điểm)]."""
         chunks = self.reader.load_sweeps(self._refs[frame], sweeps)

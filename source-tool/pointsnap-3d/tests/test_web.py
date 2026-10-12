@@ -713,3 +713,18 @@ def test_index_page_returns_pointsnap_3d(client: TestClient):
     assert res.status_code == 200
     assert "PointSnap 3D" in res.text
 
+
+
+def test_ids_with_trailing_newline_rejected():
+    """`re.match(r"^...$")` vẫn nhận chuỗi có xuống dòng ở cuối; slug / run_id phải khớp trọn."""
+    import re
+
+    from pointsnap.web.app import _RUN_ID_RE
+    from pointsnap.web.projects import ProjectError, validate_slug
+
+    assert re.match(r"^[a-z]+$", "abc\n")  # lý do phải dùng fullmatch
+    with pytest.raises(ProjectError):
+        validate_slug("du-an\n")
+    assert validate_slug("du-an") == "du-an"
+    assert _RUN_ID_RE.fullmatch("20261011-101010-job2")
+    assert not _RUN_ID_RE.fullmatch("20261011-101010-job2\n")

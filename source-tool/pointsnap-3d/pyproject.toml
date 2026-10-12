@@ -18,6 +18,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "httpx>=0.24"]
+# Lớp 2 của Box Verifier (đối chiếu ảnh camera). Bản GPU: cài torch theo https://pytorch.org trước, rồi ".[vision]".
+# transformers: model ảnh theo từ khóa (camera.model: gdino-sam2).
+vision = ["torch>=2.2", "torchvision>=0.17", "pillow>=10", "transformers>=5.0"]
 
 [project.scripts]
 pointsnap = "pointsnap.cli.main:main"

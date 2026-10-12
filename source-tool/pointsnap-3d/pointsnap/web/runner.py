@@ -104,7 +104,7 @@ class ScanRunner:
             return self._start_scan(slug, job_id, flag)
 
     def _start_scan(self, slug: str, job_id: int, flag: bool) -> str:
-        self.pm.get_project(slug)  # kiểm tra dự án tồn tại
+        source_project = self.pm.get_project(slug)
         if job_id <= 0:
             raise ProjectError("job_id phải là số nguyên dương")
         now = datetime.datetime.now()
@@ -123,6 +123,7 @@ class ScanRunner:
             "run_id": run_id,
             "project_slug": slug,
             "job_id": job_id,
+            "source_cvat_url": source_project["cvat_url"],
             "flag": flag,
             "status": "queued",
             "progress": 0,
@@ -151,6 +152,9 @@ class ScanRunner:
         try:
             self._state(run_id, status="running")
             config = self.pm.get_effective_config(slug)
+            source_url = info.get("source_cvat_url")
+            if not source_url or config.cvat.url.rstrip("/") != source_url.rstrip("/"):
+                raise ProjectError("Nguồn CVAT của job trong hàng đợi đã đổi hoặc bị thiếu; chọn lại job và quét mới.")
             token = config.cvat.token
             proj = self.pm.get_project(slug)
 

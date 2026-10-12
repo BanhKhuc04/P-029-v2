@@ -19,7 +19,7 @@ function web(fetch, confirm = () => false) {
     createElement(){return el();}, querySelectorAll(){return [];}, querySelector(){return null;},
     addEventListener(){}, documentElement:el(), activeElement:null};
   const source=fs.readFileSync(path.join(__dirname,'../../pointsnap/web/static/app.js'),'utf8');
-  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline'];
+  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline','handleSaveConnectionSettings'];
   const context={document,fetch, console, URLSearchParams, URL, Map, Set, Date, Math,
     localStorage:{getItem(){return null;},setItem(){}},sessionStorage:{getItem(){return null;},setItem(){}},
     window:{location:{search:'',hash:''},matchMedia(){return {matches:false};},addEventListener(){}},
@@ -36,12 +36,12 @@ test('identity matching cannot review another same-label box',()=>{
 });
 test('outside shapes cannot become navigable flags',()=>{
   const specs=new Map([[1,{name:'car',specId:2}]]);
-  assert.equal(core.collectFlags({shapes:[{id:1,type:'cuboid',outside:true,label_id:1,frame:0,attributes:[{spec_id:2,value:'[Lỗi] same'}]}]},specs).length,0);
+  assert.equal(core.collectFlags({shapes:[{id:1,type:'cuboid',outside:true,label_id:1,frame:0,attributes:[{spec_id:2,value:'[Lá»—i] same'}]}]},specs).length,0);
 });
 test('mutable flags carry through keyframes and explicit reset stops carry',()=>{
   const specs=new Map([[1,{name:'car',specId:2}]]);
   const shape=(frame,attributes)=>({frame,type:'cuboid',outside:false,attributes});
-  const flags=core.collectFlags({tracks:[{id:7,label_id:1,shapes:[shape(2,[{spec_id:2,value:''}]),shape(1,[]),shape(0,[{spec_id:2,value:'[Lỗi] same'}])]}]},specs);
+  const flags=core.collectFlags({tracks:[{id:7,label_id:1,shapes:[shape(2,[{spec_id:2,value:''}]),shape(1,[]),shape(0,[{spec_id:2,value:'[Lá»—i] same'}])]}]},specs);
   assert.deepEqual(flags.map(f=>f.frame),[0,1]);
 });
 test('manual ranges form reflects actual schema',()=>{
@@ -83,6 +83,19 @@ test('old project response cannot replace the newly selected project run',async(
   resolve({ok:true,json:async()=>({run_id:'old',status:'done',findings:[],summary:{}})});await pending;
   assert.equal(w.state.currentRun,b);
 });
+test('old connection save cannot reload the new project form',async()=>{
+  let resolve;
+  const calls=[];
+  const w=web(url=>{calls.push(url);return new Promise(r=>{resolve=r;});});
+  w.state.currentSlug='a';
+  const pending=w.handleSaveConnectionSettings();
+  w.state.currentSlug='b';w.state.projectEpoch++;
+  w.document.getElementById('conn-cvat-token').value='new-project-draft';
+  resolve({ok:true});await pending;
+  assert.deepEqual(calls,['/api/projects/a']);
+  assert.equal(w.document.getElementById('conn-cvat-token').value,'new-project-draft');
+});
+
 test('empty results clear the previous detail and review state',()=>{
   const w=web();w.state.currentRun={run_id:'old'};w.state.currentDetail={};w.showEmptyResults();
   assert.equal(w.state.currentRun,null);assert.equal(w.state.currentDetail,null);

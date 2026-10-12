@@ -92,3 +92,23 @@ def test_seed_repeat_is_identical_and_split_is_disjoint(tmp_path):
     boxes=NuScenesReader(build(tmp_path/'dataset')).annotations('scene-0001')
     assert inject_dataset(boxes,seed=17)==inject_dataset(boxes,seed=17)
     assert len(set(TUNING_SCENES)|set(TEST_SCENES))==10 and not set(TUNING_SCENES)&set(TEST_SCENES)
+
+
+def test_scene_scope_does_not_claim_finding_from_another_scene():
+    faults=[InjectedFault('floating',1,7,details={'scene':'a'}),InjectedFault('floating',1,7,details={'scene':'b'})]
+    report=evaluate_findings(faults,[replace(finding(),details={'scene':'b'})])
+    assert (report.overall.true_positives,report.overall.false_negatives)==(1,1)
+
+
+def test_wrong_injection_log_schema_cannot_become_an_empty_experiment(tmp_path):
+    from pointsnap.eval.metrics import load_injected_faults
+    p=tmp_path/'wrong.json';p.write_text('{"injected_errors": []}')
+    with pytest.raises(ValueError,match='schema'):load_injected_faults(p)
+
+
+def test_applicability_rejects_class_and_short_interpolation_outside_rule_scope():
+    cfg=load_config(env={})
+    jump=InjectedError('track_jump',4,7,1,None,'test',0,4)
+    assert not is_applicable(jump,'unknown_label',[],cfg,None)
+    gap=replace(jump,error_type='track_interpolation',magnitude=1)
+    assert not is_applicable(gap,'car',[],cfg,None)

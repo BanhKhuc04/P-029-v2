@@ -150,11 +150,11 @@ def evaluate_findings(
     report = EvaluationReport()
 
     # Nhóm findings theo (error_type, frame, track_id)
-    findings_by_key: dict[tuple[str, int, int | None], list[Finding]] = {}
+    findings_by_key: dict[tuple, list[Finding]] = {}
     for f in findings:
         if f.severity is Severity.INFO:
             continue
-        key = (f.error_type.value, f.frame, f.track_id)
+        key = (f.details.get('scene'), f.error_type.value, f.frame, f.track_id)
         findings_by_key.setdefault(key, []).append(f)
 
     matched_finding_ids = set()
@@ -173,7 +173,7 @@ def evaluate_findings(
         t_sum.total_injected += 1
         s_sum.total_injected += 1
 
-        key = (fault.error_type, fault.frame, fault.track_id)
+        key = (fault.details.get('scene'), fault.error_type, fault.frame, fault.track_id)
         candidates = [c for c in findings_by_key.get(key, []) if not fault.rule or c.rule == fault.rule]
 
         # Tìm candidate khớp severity trước, nếu không lấy candidate bất kỳ cùng loại
@@ -230,7 +230,12 @@ def load_injected_faults(path: str | Path) -> list[InjectedFault]:
         data = json.load(f)
 
     faults = []
-    items = data if isinstance(data, list) else data.get("injected_faults", [])
+    if isinstance(data,list):
+        items=data
+    elif isinstance(data,dict) and isinstance(data.get('injected_faults'),list):
+        items=data['injected_faults']
+    else:
+        raise ValueError('Cần list hoặc schema injected_faults; log injected_errors dùng evaluator canonical, không tự đổi thành dữ liệu rỗng')
     for it in items:
         faults.append(
             InjectedFault(

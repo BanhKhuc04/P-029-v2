@@ -176,6 +176,8 @@ def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], c
         return False
     if kind == 'track_interpolation' and not config.track.long_interpolation.enabled:
         return False
+    if kind in ('track_jump','track_split_id','track_interpolation') and config.track.group_for(label) is None:
+        return False
     if kind.startswith(("heading", "fit")):
         track = sorted((b for b in clean_boxes if b.track_id == error.track_id and not b.outside),
                        key=lambda b: b.frame)
@@ -198,8 +200,12 @@ def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], c
     if error.error_type == "floating":
         return label in config.floating.classes
     if error.error_type == "size_in_track":
-        return label not in config.size.in_track.excluded_classes
+        visible = [b for b in clean_boxes if b.track_id == error.track_id and b.visible and b.keyframe]
+        return (label not in config.size.in_track.excluded_classes
+                and len(visible) >= config.size.in_track.min_keyframes)
     if error.error_type == "track_interpolation":
+        if int(error.magnitude) < config.track.long_interpolation.min_frames:
+            return False
         track = {b.frame: b for b in clean_boxes if b.track_id == error.track_id and not b.outside}
         before, after = track.get(int(error.frame) - 1), track.get(int(error.frame) + int(error.magnitude))
         if before is None or after is None:
@@ -312,7 +318,10 @@ def summarize(stats: Sequence[SceneStats], outcomes: Sequence[ErrorOutcome]) -> 
         tot = sum(s.findings_total.get(category, 0) for s in stats)
         hit = sum(s.findings_matched.get(category, 0) for s in stats)
         any_hit = sum(s.findings_on_injected.get(category, 0) for s in stats)
-        precision[category] = {"findings": tot, "matched": hit, "on_injected": any_hit}
+        errors = [o for o in outcomes if CATEGORY[o.error_type] == category]
+        precision[category] = {"findings": tot, "matched": hit, "on_injected": any_hit,
+                               "finding_fp": tot-hit, "fault_tp":sum(o.detected for o in errors),
+                               "fault_fn":sum(not o.detected for o in errors), "fault_n":len(errors)}
 
     accuracy = {}
     for kind, unit in (("floating", 100.0), ("size_in_track", 100.0), ("track_jump", 1.0), ("heading_rotate", 1.0)):

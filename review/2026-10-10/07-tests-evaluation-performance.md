@@ -1,7 +1,7 @@
 # 07 — Review kiểm thử, đánh giá và hiệu năng
 
-**Nhánh:** `review/2026-10-10/07-tests-evaluation-performance`.
-**Trạng thái:** chưa thực hiện phần 07. Kết quả 19 test của phần 01 là bằng chứng tập trung đã có, chưa thay thế full suite.
+**Nhánh:** `review/07-tests-evaluation-performance`.
+**Trạng thái:** đã review/sửa ngày12/10;490pytest+36Node, eval10cảnh vàbenchmark; giới hạn quality/manual rõ trong [báo cáo](07-report.md), [bàn giao](07-handoff.md).
 **Đầu ra sẽ tạo:** `07-report.md`, ma trận yêu cầu ↔ test, bảng metrics có metadata, khoảng trống kiểm thử và benchmark tái lập.
 
 Đọc [quy trình chung](README.md), [mẫu báo cáo](report-template.md), `docs/test/CHUAN-KIEM-THU.md` và findings 01–06. Đường dẫn code tính từ tool root.

@@ -63,8 +63,9 @@ người đứng giữa nhóm người đã gán, sát công trình (điểm dí
 chỉnh: so khung chiếu theo "nằm trong" thay IoU (LiDAR chỉ thấy một mặt), chấp nhận mọi loại cụm trong chuỗi, coi vật
 trên ảnh là "đã có box" chỉ khi IoU ≥ 0,5 (bãi đỗ xe chồng khung), nới phần khung chiếu trong ảnh xuống 50% (4 → 11 / 35).
 
-Trong `pointsnap eval --rounds 10 --errors all` (tính cả `lidar.missing` vào báo nhầm trên nhãn sạch): kiểm tra
-2,83 → 2,85, tinh chỉnh 1,36 → 1,38 Cảnh báo / 100 box; recall và phân mức của mọi lỗi chèn khác không đổi.
+Trong `pointsnap eval --rounds 10 --errors all` (tính cả `lidar.missing` vào báo nhầm trên nhãn sạch): C7 (vật di chuyển)
+kiểm tra 2,83 → 2,85, tinh chỉnh 1,36 → 1,38; C8 (thêm vật đứng yên) kiểm tra 2,85 → 2,88, tinh chỉnh 1,38 → 1,39 Cảnh
+báo / 100 box; recall và phân mức của mọi lỗi chèn khác không đổi.
 
 Còn sót: người đi chậm / đứng lẫn trong nhóm, xe ở xa (> 30 m, điểm thưa), xe buýt chỉ thấy một phần.
 

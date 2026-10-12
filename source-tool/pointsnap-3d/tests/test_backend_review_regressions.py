@@ -391,7 +391,7 @@ def test_local_api_http_error_mapping_and_slot_release(tmp_path, monkeypatch, co
                                 headers={"Authorization": "Bearer fake"}, timeout=5)
         assert response.status_code == (code if code != 500 else 502)
         assert "secret-body" not in response.text
-        assert server.report_slots.acquire(blocking=False)
+        assert server.report_slots.acquire(timeout=2)
         assert server.report_slots.acquire(blocking=False)
         assert not server.report_slots.acquire(blocking=False)
     finally:

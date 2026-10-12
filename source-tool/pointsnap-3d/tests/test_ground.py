@@ -4,7 +4,7 @@ Kiểm tra trên point cloud giả lập:
 - Mặt phẳng nằm ngang và mặt phẳng nghiêng có nhiễu.
 - Có cụm điểm vật thể (xe/người/cột) trong không gian và trong vành đai.
 - Box chuẩn tiếp đất, box lơ lửng (+25 cm), box lún đất (-20 cm).
-- Tiêu chí xong theo TASKS.md / giao-viec: sai số ước lượng độ cao mặt đất < 2 cm.
+- Tiêu chí xong theo quan-ly/TASKS.md / giao-viec: sai số ước lượng độ cao mặt đất < 2 cm.
 """
 
 from __future__ import annotations

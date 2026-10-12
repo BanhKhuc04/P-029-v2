@@ -1,11 +1,11 @@
 # Nhật ký tuần 04 · 05/10 – 11/10/2026
 
 **Lead tuần này:** @Vũ Bảo Khánh
-**Dữ liệu / task CVAT:** nuScenes v1.0-mini (10 cảnh) trên CVAT 2.77.0 chạy Docker local, dùng để làm tool **PointSnap 3D** trong 4 ngày 06/10 – 09/10 ([bản đề xuất](../../source-tool/pointsnap-3d/de-xuat-de-tai.md) · [bảng phân việc](../../source-tool/pointsnap-3d/TASKS.md) · [giao việc theo ngày](../../source-tool/pointsnap-3d/giao-viec/))
+**Dữ liệu / task CVAT:** nuScenes v1.0-mini (10 cảnh) trên CVAT 2.77.0 chạy Docker local, dùng để làm tool **PointSnap 3D** trong 4 ngày 06/10 – 09/10 ([bản đề xuất](../../source-tool/pointsnap-3d/docs/thiet-ke/de-xuat-de-tai.md) · [bảng phân việc](../../source-tool/pointsnap-3d/quan-ly/TASKS.md) · [giao việc theo ngày](../../source-tool/pointsnap-3d/quan-ly/giao-viec/))
 
 > **Phân công:** Việt Anh và Huy làm sản phẩm. **Từ 07/10 phần review và test chuyển cho Khánh, Hân, Chiến** ([PR #20](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/20)); Việt Anh chuyển sang giảm báo nhầm (A10) và làm giao diện web (A11).
 > Cổng: **G0 (06/10)** ✅ · **G1 (07/10)** ✅ · **G2 (08/10)** 🟡 chạy được trọn quy trình, chờ merge PR · **G3 (12h 09/10)** ⬜ · **Nộp cuối ngày 09/10**.
-> Mã việc (B1, T1, …) trùng với [`TASKS.md`](../../source-tool/pointsnap-3d/TASKS.md); tiêu chí xong của từng việc ghi ở đó.
+> Mã việc (B1, T1, …) trùng với [`quan-ly/TASKS.md`](../../source-tool/pointsnap-3d/quan-ly/TASKS.md); tiêu chí xong của từng việc ghi ở đó.
 > Cập nhật ngày 08/10/2026.
 
 ## Thành viên và phân công
@@ -84,7 +84,7 @@ Mức hoàn thành: ✅ xong **và đã qua review** · 🟡 đang làm (ghi %) 
 ## Kế hoạch tuần sau
 
 - **Sáng 09/10:** merge #18 → #19 → #21, #20. Chiến chạy T1, Hân và Chiến xem tay cảnh báo (T2).
-- **12h 09/10 (G3):** chốt `docs/danh-gia.md` đủ chỉ số mục 8 của đề xuất.
+- **12h 09/10 (G3):** chốt `docs/ket-qua/danh-gia.md` đủ chỉ số mục 8 của đề xuất.
 - **Chiều 09/10:** Khánh điền số liệu vào báo cáo và slide, Chiến quay video demo 3–5 phút, chốt nhật ký và nộp.
 - **Sau khi nộp:**
   - Hoàn thiện A11 (giao diện web, guideline theo dự án).

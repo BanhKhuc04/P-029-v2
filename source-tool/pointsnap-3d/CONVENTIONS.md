@@ -95,7 +95,7 @@ Xác minh trên CVAT 2.77.1 chạy thật (06/10, task thử tạo từ bộ nuS
 | `cam.mismatch` | Box lệch khỏi vật | Phần mặt nạ vật cùng nhóm trên ảnh camera (Mask R-CNN) nằm ngoài khung chiếu 8 góc box cao hơn trung vị các frame khác của track > 20 điểm %; model ảnh không thấy vật thì bỏ qua; frame ban đêm bỏ qua. Mức Thông tin (`camera.mismatch_severity`) (C3, cần PyTorch) |
 | `cam.class` | Thiếu / sai thuộc tính | Ở đa số (≥ 60%) lần nhìn rõ, vật trên ảnh trùng khung chiếu thuộc nhóm khác với nhãn (người / xe hai bánh / xe / động vật). Mức Cảnh báo (C3) |
 | `cam.missing` | Box lệch khỏi vật | Ảnh thấy vật chắc chắn (điểm ≥ 0.85, cao ≥ 40 px, ≥ 15 điểm LiDAR) mà không có box 3D chiếu tới. Mức Thông tin, không gắn cờ CVAT (C3) |
-| `critic.box` | Box lệch khỏi vật | Box Critic (model nhóm tự huấn luyện, `critic.model`) cho xác suất box sai ≥ 0.7, kèm gợi ý sửa (C3, `docs/box-critic.md`) |
+| `critic.box` | Box lệch khỏi vật | Box Critic (model nhóm tự huấn luyện, `critic.model`) cho xác suất box sai ≥ 0.7, kèm gợi ý sửa (C3, `docs/huong-dan/huan-luyen-box-critic.md`) |
 | `attr.height` | Thiếu / sai thuộc tính | Thuộc tính không khớp chiều cao box (trung vị đoạn cùng giá trị): `spec.attribute_height`, khóa `Class/giá trị[/giá trị]`. Mức Cảnh báo (C6) |
 | `spec.inside` | Thiếu / sai thuộc tính | Tâm box vật trong nằm trong footprint box vật bao, đáy không cao hơn `inside_min_lift_m` (0,6 m): `spec.inside_forbidden`, vd người trong xe (spec 4.3B). Mức Cảnh báo (C6) |
 | `spec.rider_double` | Thiếu / sai thuộc tính | Box người chồng ≥ 50% footprint lên box xe hai bánh `with_rider` cùng frame (spec 4.3C): `spec.rider_double`. Mức Cảnh báo (C6) |

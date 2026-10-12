@@ -1,7 +1,7 @@
 # Cấu hình mặc định của PointSnap 3D.
 #
 # Đơn vị: mét, giây, radian. Tỉ lệ ghi dạng thập phân (0.05 = 5%).
-# Ngưỡng là mặc định đề xuất ở mục 4.1 của de-xuat-de-tai.md, sẽ chốt ở việc B7.
+# Ngưỡng là mặc định đề xuất ở mục 4.1 của docs/thiet-ke/de-xuat-de-tai.md, sẽ chốt ở việc B7.
 # Muốn đổi cho riêng mình: tạo file YAML chỉ chứa phần cần đổi, chạy `pointsnap --config <file> ...`.
 # Token CVAT KHÔNG ghi ở đây: đặt qua biến môi trường CVAT_TOKEN.
 
@@ -41,7 +41,7 @@ rules:                                # bật / tắt từng luật theo guideli
   cam_missing: true                   # C3: ảnh thấy vật, có điểm LiDAR, nhưng không có box 3D (Thông tin)
   critic_box: true                    # C3: Box Critic (model tự huấn luyện) nghi box sai; chỉ chạy khi có critic.model
 
-floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/kiem-chung-ground.md
+floating:                             # lơ lửng / lún đất (B3); kiểm chứng trên 10 cảnh mini: docs/ket-qua/kiem-chung-ground.md
   classes: [car, truck, bus, trailer, construction_vehicle, pedestrian, motorcycle, bicycle]
   warning_m: 0.15                     # |d − trung vị d của các box khác trong track| > 15 cm: Cảnh báo (B7; 12 → 15 cm ở C3)
   error_m: 0.22                       # > 22 cm: Lỗi, nếu |d| tuyệt đối cũng > error_min_abs_m
@@ -201,7 +201,7 @@ camera:                               # đối chiếu ảnh camera (C3); cần 
   model: maskrcnn                     # maskrcnn (Mask R-CNN COCO) | hybrid (Mask R-CNN + Grounding DINO cho cọc tiêu; nên dùng khi có
                                       # GPU, cần transformers, thiếu thì tự lùi về maskrcnn) | gdino-sam2 (chỉ Grounding DINO + SAM 2.1:
                                       # đặt min_score 0.3, mask_rise_warning 0.25, class_min_score 0.6, missing_min_score 0.6).
-                                      # Số liệu: docs/ket-qua-box-verifier.md mục 3.1
+                                      # Số liệu: docs/ket-qua/ket-qua-box-verifier.md mục 3.1
   min_score: 0.5                      # độ tin cậy tối thiểu của vật trên ảnh (Mask R-CNN COCO)
   min_inside: 0.85                    # chỉ xét box chiếu nằm gần trọn trong ảnh
   max_depth_m: 50
@@ -227,7 +227,7 @@ camera:                               # đối chiếu ảnh camera (C3); cần 
     traffic_cone: [traffic_cone]      # chỉ gdino-sam2 nhận được cọc tiêu / rào chắn
     barrier: [barrier]
 
-missing:                              # sót đối tượng bằng LiDAR (C7); đo trên nuScenes: docs/ket-qua-sot-doi-tuong.md
+missing:                              # sót đối tượng bằng LiDAR (C7); đo trên nuScenes: docs/ket-qua/ket-qua-sot-doi-tuong.md
   max_range_m: 40
   min_points: 15                      # cụm ít điểm hơn bỏ qua
   min_points_per_cell: 1.2            # mật độ điểm / ô: nhiễu mưa, bụi ~1 (mô phỏng mưa 10 000 điểm / frame không báo)
@@ -239,7 +239,7 @@ missing:                              # sót đối tượng bằng LiDAR (C7); 
   static_min_iou: 0.5                 # phần khung chiếu cụm nằm trong khung vật trên ảnh
   static_min_score: 0.7
 
-critic:                               # Box Critic do nhóm tự huấn luyện (C3, lớp 3); xem docs/box-critic.md
+critic:                               # Box Critic do nhóm tự huấn luyện (C3, lớp 3); xem docs/huong-dan/huan-luyen-box-critic.md
   model: ""                           # đường dẫn TorchScript .pt; để trống thì không chạy
   min_points: 20
   min_probability: 0.7                # box không thuộc track: xác suất sai ≥ 0.7: Cảnh báo; ≥ 0.9: Lỗi

@@ -11,7 +11,7 @@ Hai cách dùng:
 - `detect_floating_scene` (bộ quét dùng, A10): cả job. Nhãn chuẩn nuScenes tự nó đã lệch mặt đất ước lượng khá
   nhiều (bờ vỉa, dốc, LiDAR thưa: trung vị |d| ~8 cm, p90 ~25 cm) nhưng phần lệch đó ổn định trong một track, nên so
   `d` của box với **trung vị d của các box khác cùng track**; mặt đất đo bằng trung vị điểm thấp trong vành đai sát
-  box, đã bỏ điểm của box khác (`ring_ground_for_box`). Kiểm chứng: docs/kiem-chung-ground.md.
+  box, đã bỏ điểm của box khác (`ring_ground_for_box`). Kiểm chứng: docs/ket-qua/kiem-chung-ground.md.
 """
 
 from __future__ import annotations

@@ -365,7 +365,7 @@ class MissingConfig:
 
 @dataclass(frozen=True)
 class CriticConfig:
-    """Box Critic do nhóm tự huấn luyện (C3, lớp 3; `docs/box-critic.md`). `model` rỗng thì không chạy."""
+    """Box Critic do nhóm tự huấn luyện (C3, lớp 3; `docs/huong-dan/huan-luyen-box-critic.md`). `model` rỗng thì không chạy."""
 
     model: str = ""
     """Đường dẫn file TorchScript (.pt)."""

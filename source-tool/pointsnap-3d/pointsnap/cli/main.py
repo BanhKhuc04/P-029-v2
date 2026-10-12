@@ -20,7 +20,7 @@ EXIT_OK = 0
 EXIT_GATE_FAILED = 1
 EXIT_RUNTIME_ERROR = 3
 
-# Lệnh đã khai báo nhưng chưa viết, kèm mã việc trong TASKS.md.
+# Lệnh đã khai báo nhưng chưa viết, kèm mã việc trong quan-ly/TASKS.md.
 _NOT_IMPLEMENTED = {"diff": "A8"}
 
 
@@ -110,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         return eval_cmd.run_critic(args, config)
 
     task = _NOT_IMPLEMENTED[args.command]
-    print(f"Lệnh '{args.command}' chưa có (việc {task} trong TASKS.md).", file=sys.stderr)
+    print(f"Lệnh '{args.command}' chưa có (việc {task} trong quan-ly/TASKS.md).", file=sys.stderr)
     return EXIT_RUNTIME_ERROR
 
 

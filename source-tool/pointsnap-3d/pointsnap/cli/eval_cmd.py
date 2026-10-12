@@ -31,7 +31,7 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
 
 
 def add_critic_parser(sub: argparse._SubParsersAction) -> None:
-    cd = sub.add_parser("critic-data", help="xuất dữ liệu huấn luyện Box Critic từ nhãn chuẩn nuScenes (docs/box-critic.md)")
+    cd = sub.add_parser("critic-data", help="xuất dữ liệu huấn luyện Box Critic từ nhãn chuẩn nuScenes (docs/huong-dan/huan-luyen-box-critic.md)")
     cd.add_argument("--dataroot", type=Path, default=os.environ.get("NUSCENES_ROOT"),
                     help="thư mục nuScenes (mặc định: biến môi trường NUSCENES_ROOT)")
     cd.add_argument("--scenes", nargs="+", default=["tuning"], help="tuning | test | all, hoặc tên cảnh (mặc định: tuning)")

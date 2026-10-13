@@ -296,21 +296,41 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
             + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s, timestamps))
 
 
-from pointsnap.core.rules import RULES_CATALOG, rule_switch_key
-
-_RULE_SWITCH = {r.id: r.switch_key for r in RULES_CATALOG}
+_RULE_SWITCH = {
+    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
+    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid", "attr.height": "attr_height",
+    "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double", "lidar.missing": "lidar_missing",
+    "attr.rider_state": "attr_rider_state", "cam.sparse": "cam_sparse",
+    "track.static_shift": "track_static_shift", "heading.static": "heading_static",
+    "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
+    "critic.box": "critic_box",
+    "heading.flip": "heading_flip", "heading.motion": "heading_motion", "heading.points": "heading_points",
+    "fit.empty": "fit_empty", "fit.outside": "fit_outside", "fit.loose": "fit_loose", "fit.overlap": "fit_overlap",
+}
 
 
 def is_rule_enabled(rule: str, config: Config) -> bool:
     """Kiểm tra một rule có được bật trong config.rules không."""
-    switch_key = rule_switch_key(rule)
-    return bool(getattr(config.rules, switch_key, True))
-
+    if rule in ("floating", "floating.no_evidence"):
+        return bool(config.rules.floating)
+    if rule in ("size.class_range", "size.manual_range"):
+        return bool(config.rules.size_class_range)
+    if rule in ("size.in_track", "size.in_track_manual"):
+        return bool(config.rules.size_in_track)
+    if rule == "track.jump":
+        return bool(config.rules.track_jump)
+    if rule == "track.split_id":
+        return bool(config.rules.track_split_id)
+    if rule == "track.long_interpolation":
+        return bool(config.rules.track_long_interpolation and config.track.long_interpolation.enabled)
+    switch = _RULE_SWITCH.get(rule)
+    return True if switch is None else bool(getattr(config.rules, switch))
 
 
 DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_floating,
     check_size,
+    check_track,
     check_heading,
     check_box_points,
     check_attributes,
@@ -344,6 +364,9 @@ def scan_cuboids(
             active_detectors.append(check_floating)
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
+        if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
+                or r.track_occluded_long or r.track_id_swap or r.track_static_shift):
+            active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)
         if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:

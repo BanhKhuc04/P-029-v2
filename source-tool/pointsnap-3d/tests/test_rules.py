@@ -63,17 +63,18 @@ def test_is_rule_enabled_with_catalog():
     config = load_config()
     assert is_rule_enabled("floating", config) is True
     assert is_rule_enabled("heading.flip", config) is True
-    assert is_rule_enabled("track.jump", config) is False
-    assert is_rule_enabled("fit.loose", config) is False
-    assert is_rule_enabled("fit.outside", config) is False
+    assert is_rule_enabled("track.jump", config) is True
+    assert is_rule_enabled("fit.loose", config) is True
+    assert is_rule_enabled("fit.outside", config) is True
 
     # Thay đổi cờ luật (RulesConfig là frozen dataclass)
     import dataclasses
-    new_rules = dataclasses.replace(config.rules, floating=False, track_jump=True)
+    new_rules = dataclasses.replace(config.rules, floating=False, track_jump=False, fit_loose=False)
     config = dataclasses.replace(config, rules=new_rules)
     assert is_rule_enabled("floating", config) is False
     assert is_rule_enabled("floating.no_evidence", config) is False
-    assert is_rule_enabled("track.jump", config) is True
+    assert is_rule_enabled("track.jump", config) is False
+    assert is_rule_enabled("fit.loose", config) is False
     assert is_rule_enabled("heading.flip", config) is True
 
 

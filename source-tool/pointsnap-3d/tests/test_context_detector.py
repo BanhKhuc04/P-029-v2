@@ -20,7 +20,7 @@ class DummyFrameSource:
         self.num_frames = num_frames
 
     def frame_data(self, frame: int, with_points: bool = True) -> FrameData:
-        pts = np.zeros((10, 3), dtype=np.float32) if with_points else None
+        pts = np.zeros((10, 3), dtype=np.float32) if with_points else np.empty((0, 3), dtype=np.float32)
         s2w = np.eye(4, dtype=np.float64)
         return FrameData(frame=frame, points=pts, sensor_to_world=s2w, timestamp=frame * 0.5)
 

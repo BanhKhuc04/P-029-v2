@@ -84,7 +84,7 @@ SCENARIOS = {
         {"heading.static": "error"}),
     "S9 hai xe máy song song bị đổi ID: Lỗi": (lambda: Scene([
         Obj(1, "motorcycle", MOTO, straight(0, 4.0, 0, 7), labelled=_swap),
-        Obj(2, "motorcycle", MOTO, straight(0, 5.2, 0, 7), labelled=_swap)]), {}),
+        Obj(2, "motorcycle", MOTO, straight(0, 5.2, 0, 7), labelled=_swap)]), {"track.id_swap": "error"}),
     "N9a xe máy vượt nhau": (lambda: Scene([
         Obj(1, "motorcycle", MOTO, straight(0, 4.0, 0, 9)), Obj(2, "motorcycle", MOTO, straight(4, 5.2, 0, 6))]), {}),
     "N9b hai người đi cắt chéo": (lambda: Scene([
@@ -97,7 +97,7 @@ SCENARIOS = {
     "S12b che 8 frame, đánh occluded": (lambda: Scene([
         Obj(1, "car", CAR, parked(14, 4, 0), hidden=set(range(2, 10)),
             labelled=lambda f, b: b.replace(attrs={**b.attrs, "occluded": True}) if 2 <= f < 10 else b)]),
-        {}),
+        {"track.occluded_long": "warning"}),
     "S13 xe xa 42 m": (lambda: Scene([Obj(1, "car", CAR, straight(42, 3, math.pi / 2, 5))]), {}),
 }
 

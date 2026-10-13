@@ -47,6 +47,10 @@ class GroundEstimate:
     contact_distance: float | None = None
     """Đáy box − điểm tiếp xúc thấp nhất trên mặt phẳng dốc dưới 4 góc đáy (C4); `None` nếu không khớp được mặt phẳng dốc
     rõ. Luật lơ lửng dùng cho box không có track để so (so tuyệt đối)."""
+    pitch_deg: float | None = None
+    """Độ dốc mặt đường dọc thân box (độ, dương = phía đầu box cao hơn), từ mặt phẳng khớp vành đai bất kể dốc ít hay
+    nhiều; `None` nếu điểm không đủ trải để xác định. Chỉ để giải thích / hiển thị: box không có pitch nên trên dốc đầu
+    hoặc đuôi box luôn lệch mặt đường, không dùng để đổi kết luận."""
 
     @property
     def is_valid(self) -> bool:
@@ -270,8 +274,8 @@ PLANE_MIN_INLIER_RATIO = 0.6
 """Ít hơn tỉ lệ này số điểm nằm trên mặt phẳng (bậc vỉa hè, nhiều tầng) thì không dùng mặt phẳng."""
 
 
-def _contact_plane(ground: np.ndarray, cuboid: Cuboid, min_points: int) -> tuple[float, float, float, float] | None:
-    """Mặt phẳng mặt đất quanh box nếu khớp rõ và đủ dốc (≥ `SLOPE_MIN_DEG`); `None` thì dùng trung vị như cũ."""
+def _surface_plane(ground: np.ndarray, cuboid: Cuboid, min_points: int) -> tuple[float, float, float, float] | None:
+    """Mặt phẳng mặt đất quanh box nếu khớp rõ (đủ inlier) và điểm trải đủ theo hai trục box, bất kể độ dốc."""
     from pointsnap.core.geometry import to_box_frame
 
     if len(ground) < max(min_points, 3):
@@ -280,13 +284,22 @@ def _contact_plane(ground: np.ndarray, cuboid: Cuboid, min_points: int) -> tuple
                                       min_inliers=max(min_points, int(PLANE_MIN_INLIER_RATIO * len(ground))))
     if plane is None:
         return None
-    if math.degrees(math.acos(min(1.0, plane[2]))) < SLOPE_MIN_DEG:
-        return None
     local = to_box_frame(ground[inliers], cuboid)
     spread = np.percentile(local[:, :2], 90, axis=0) - np.percentile(local[:, :2], 10, axis=0)
     if float(np.min(spread)) < PLANE_MIN_SPREAD_M:
         return None
     return plane
+
+
+def _is_steep(plane: tuple[float, float, float, float] | None) -> bool:
+    """Mặt phẳng đủ dốc (≥ `SLOPE_MIN_DEG`) để tính `contact_distance` (C4); dưới mức này dùng trung vị như cũ."""
+    return plane is not None and math.degrees(math.acos(min(1.0, plane[2]))) >= SLOPE_MIN_DEG
+
+
+def pitch_along_box(plane: tuple[float, float, float, float], cuboid: Cuboid) -> float:
+    """Độ dốc (độ) của mặt phẳng theo hướng đầu box; dương = mặt đường cao dần về phía đầu box."""
+    a, b, c, _ = plane
+    return math.degrees(math.atan2(-(a * math.cos(cuboid.yaw) + b * math.sin(cuboid.yaw)), c))
 
 
 def _lowest_corner_z(plane: tuple[float, float, float, float], cuboid: Cuboid) -> float:
@@ -330,14 +343,17 @@ def ring_ground_for_box(
     ring = ring_all[np.abs(ring_all[:, 2] - cuboid.bottom_z) <= band_m]
     wide = ring_all[np.abs(ring_all[:, 2] - cuboid.bottom_z) <= max(band_m, PLANE_BAND_M)]
     wide = wide[filter_min_z_grid(wide, cell_size=cell_size, height_threshold=min_z_threshold)]
-    plane = _contact_plane(wide, cuboid, min_ground_points)
+    surface = _surface_plane(wide, cuboid, min_ground_points)
+    pitch = pitch_along_box(surface, cuboid) if surface is not None else None
+    plane = surface if _is_steep(surface) else None
     contact = cuboid.bottom_z - _lowest_corner_z(plane, cuboid) if plane is not None else None
     if len(ring) < min_ground_points or len(ground := ring[filter_min_z_grid(
             ring, cell_size=cell_size, height_threshold=min_z_threshold)]) < min_ground_points:
         if contact is not None:  # trung vị thiếu điểm (dốc làm vành đai ra khỏi dải band_m) nhưng mặt phẳng rõ
             return GroundEstimate(ground_z=cuboid.bottom_z - contact, distance=contact, plane=plane,
-                                  num_ground_points=len(wide), num_inliers=len(wide), contact_distance=contact)
-        return GroundEstimate(status="no_evidence", num_ground_points=len(ring))
+                                  num_ground_points=len(wide), num_inliers=len(wide), contact_distance=contact,
+                                  pitch_deg=pitch)
+        return GroundEstimate(status="no_evidence", num_ground_points=len(ring), pitch_deg=pitch)
     ground_z = float(np.median(ground[:, 2]))
     return GroundEstimate(
         ground_z=ground_z,
@@ -347,6 +363,7 @@ def ring_ground_for_box(
         num_inliers=len(ground),
         status="ok",
         contact_distance=contact,
+        pitch_deg=pitch,
     )
 
 

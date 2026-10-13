@@ -44,6 +44,18 @@ def points_around_box(
     return local
 
 
+def preview_ground(finding: dict[str, Any], box: Cuboid) -> dict[str, float] | None:
+    """Mặt đất đo được của finding lơ lửng / lún, theo hệ của box: độ cao tại tâm (z, gốc ở tâm box) và độ dốc dọc
+    thân box (độ, dương = đầu box phía cao) để vẽ đường mặt đất nghiêng; `None` nếu finding không đo mặt đất."""
+    details = finding.get("details") or {}
+    ground_z = details.get("ground_z")
+    if not isinstance(ground_z, (int, float)) or isinstance(ground_z, bool) or not math.isfinite(ground_z):
+        return None
+    pitch = details.get("pitch_deg")
+    ok_pitch = isinstance(pitch, (int, float)) and not isinstance(pitch, bool) and math.isfinite(pitch)
+    return {"z": round(float(ground_z) - box.center[2], 3), "pitch_deg": round(float(pitch), 2) if ok_pitch else 0.0}
+
+
 def _find_box(cuboids: list[Cuboid], finding: dict[str, Any]) -> Cuboid | None:
     """Box của finding: cùng frame và track (hoặc id shape lẻ); không có thì keyframe gần nhất của track."""
     frame, track_id, source_id = finding.get("frame"), finding.get("track_id"), finding.get("source_id")
@@ -86,6 +98,7 @@ def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[
 
     local = points_around_box(points, box)
     return {
+        "ground": preview_ground(finding, box) if box.frame == finding.get("frame") else None,
         "frame": box.frame,
         "exact_frame": box.frame == finding.get("frame"),
         "label": box.label,

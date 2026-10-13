@@ -108,3 +108,13 @@ def test_learn_endpoint_uses_reviews(client_with_run: TestClient):
     assert client_with_run.get("/api/projects/a14/learn").json()["model"]["version"] == 1
     assert client_with_run.post("/api/projects/a14/learn").json()["model"]["version"] == 2
     assert client_with_run.post("/api/projects/khong-co/learn").status_code == 404
+
+
+def test_preview_ground_is_in_box_frame_and_only_for_measured_findings():
+    from pointsnap.web.preview import preview_ground
+
+    box = Cuboid(center=(10.0, 0.0, -0.9), dims=(4.0, 2.0, 1.6), yaw=0.0, label="car", frame=0, track_id=1)
+    assert preview_ground({"details": {"ground_z": -1.9, "pitch_deg": 2.5}}, box) == {"z": -1.0, "pitch_deg": 2.5}
+    assert preview_ground({"details": {"ground_z": -1.9}}, box) == {"z": -1.0, "pitch_deg": 0.0}
+    assert preview_ground({"details": {}}, box) is None
+    assert preview_ground({"details": {"ground_z": float("nan")}}, box) is None

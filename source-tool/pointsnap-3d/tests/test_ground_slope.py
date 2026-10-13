@@ -7,6 +7,7 @@ dưới dốc); phần còn lại của đáy box nằm dưới mặt dốc. M�
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import numpy as np
@@ -74,7 +75,8 @@ def test_floating_or_sunk_box_on_slope_flagged(offset):
     h = _slope(6)
     box = _box(h, offset=offset)
     est = _estimate(_ground(h), box)
-    assert _flagged([(box, est)]) == [0]
+    single = dataclasses.replace(CFG, single_box=True)  # box lẻ: so tuyệt đối theo điểm tiếp xúc (C4)
+    assert sorted(f.frame for f in floating_findings_by_track([(box, est)], single) if f.rule == "floating") == [0]
     assert est.contact_distance == pytest.approx(offset, abs=0.07)
 
 
@@ -134,3 +136,21 @@ def test_one_sided_points_on_lateral_slope_not_flagged():
     box = _box(h)
     pts = _ground(h, keep=lambda x, y: y > 0.95)
     assert _flagged([(box, _estimate(pts, box))]) == []
+
+
+@pytest.mark.parametrize("axis,yaw,expected", [(0, 0.0, 3.0), (0, math.pi, -3.0), (1, 0.0, 0.0)])
+def test_pitch_along_box_reported_without_changing_contact(axis, yaw, expected):
+    """Dốc 3° (dưới SLOPE_MIN_DEG): ghi độ dốc dọc thân box (dương = đầu box phía cao), không bật contact C4."""
+    h = _slope(3, axis)
+    box = dataclasses.replace(_box(h), yaw=yaw)
+    est = _estimate(_ground(h), box)
+    assert est.pitch_deg == pytest.approx(expected, abs=0.5)
+    assert est.contact_distance is None
+
+
+def test_floating_on_gentle_slope_explains_box_without_pitch():
+    """Frame lơ lửng 25 cm trên dốc 3°: vẫn báo, và câu báo nói rõ mặt đường dốc dọc thân box."""
+    findings = [f for f in floating_findings_by_track(_track([_slope(3)] * 5, [0.25 if f == 2 else 0.0 for f in range(5)]),
+                                                       CFG) if f.rule == "floating"]
+    assert [f.frame for f in findings] == [2]
+    assert "Mặt đường dốc 3." in findings[0].message and findings[0].details["pitch_deg"] == pytest.approx(3, abs=0.5)

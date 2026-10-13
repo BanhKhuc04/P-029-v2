@@ -20,6 +20,8 @@ from pointsnap.detectors.track import detect_track_jumps_for_track
 
 
 CFG = load_config(env={})
+SINGLE = dataclasses.replace(CFG.floating, single_box=True)
+"""Luật box lẻ (so tuyệt đối) đã tắt trong config mặc định từ 13/10; các ca dưới kiểm chính thuật toán đó."""
 
 
 def box(frame=0, **changes):
@@ -70,7 +72,7 @@ def test_reference_never_mixes_classes_with_same_track_id(rule):
     peers = [box(i, label="truck") for i in (0, 1, 3)]
     if rule == "floating":
         estimates = [(b, GroundEstimate(ground_z=0, distance=0.25)) for b in peers + [target]]
-        findings = floating_findings_by_track(estimates, CFG.floating)
+        findings = floating_findings_by_track(estimates, SINGLE)
     elif rule == "heading":
         findings = heading_points_findings([(b, 25.0) for b in peers + [target]], CFG.heading.points)
     elif rule == "loose":
@@ -136,7 +138,7 @@ def test_heading_points_threshold_boundary(level, delta):
 @pytest.mark.parametrize("level,delta", [("warning", -1e-6), ("warning", 0), ("warning", 1e-6),
                                          ("error", -1e-6), ("error", 0), ("error", 1e-6)])
 def test_floating_single_threshold_boundary(level, delta):
-    cfg = CFG.floating
+    cfg = SINGLE
     distance = (cfg.single_warning_m if level == "warning" else cfg.single_error_m) + delta
     found = floating_findings_by_track([(box(track_id=None), GroundEstimate(ground_z=0, distance=distance))], cfg)
     expected = None if level == "warning" and delta <= 0 else (

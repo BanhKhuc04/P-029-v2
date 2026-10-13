@@ -19,8 +19,8 @@ function web(fetch, confirm = () => false) {
     createElement(){return el();}, querySelectorAll(){return [];}, querySelector(){return null;},
     addEventListener(){}, documentElement:el(), activeElement:null};
   const source=fs.readFileSync(path.join(__dirname,'../../pointsnap/web/static/app.js'),'utf8');
-  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline','findingFixTip','handleSaveConnectionSettings'];
-  const context={document,fetch, console, URLSearchParams, URL, Map, Set, Date, Math,
+  const exports=['state','populateGuidelineForm','handleSaveGuideline','loadRunDetails','markReview','loadLatestRun','showEmptyResults','setGuidelineMode','safeHttpLink','renderHistoryRuns','handleResetGuideline','findingFixTip','handleSaveConnectionSettings','drawPreview'];
+  const context={document,fetch, console, getComputedStyle:()=>({getPropertyValue:(k)=>k}), URLSearchParams, URL, Map, Set, Date, Math,
     localStorage:{getItem(){return null;},setItem(){}},sessionStorage:{getItem(){return null;},setItem(){}},
     window:{location:{search:'',hash:''},matchMedia(){return {matches:false};},addEventListener(){}},
     setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},confirm};
@@ -170,4 +170,20 @@ test('results view without a project shows only the empty state, not a gate verd
   await w.loadLatestRun();
   assert.equal(w.document.getElementById('results-content-box').style.display,'none');
   assert.equal(w.document.getElementById('results-empty-state').style.display,'block');
+});
+test('preview marks the box front with a red arrow and draws the measured ground along the slope',()=>{
+  const w=web();
+  const calls=[];
+  const ctx=new Proxy({},{get:(t,k)=>k in t?t[k]:(...a)=>calls.push([k,...a]),
+    set:(t,k,v)=>{t[k]=v;calls.push(['set',k,v]);return true;}});
+  const canvas={clientWidth:200,clientHeight:100,getContext:()=>ctx};
+  const data={box:{length:4,width:2,height:1.6},points:[],color:'warn',ground:{z:-0.8,pitch_deg:10}};
+  w.drawPreview(canvas,data,'side');
+  assert.ok(calls.some(c=>c[0]==='set'&&c[1]==='fillStyle'&&c[2]==='--error'),'red arrow');
+  const line=calls.filter(c=>c[0]==='moveTo'||c[0]==='lineTo');
+  const [, x0, y0]=line[0], [, x1, y1]=line[1];
+  assert.ok(x1>x0&&y1<y0,'ground rises toward the box front on canvas');
+  calls.length=0;
+  w.drawPreview(canvas,{...data,ground:null},'top');
+  assert.ok(!calls.some(c=>c[0]==='setLineDash'),'no ground line without a measured ground');
 });

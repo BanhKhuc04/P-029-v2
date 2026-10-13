@@ -231,6 +231,19 @@ def _describe(d: float) -> str:
     return f"Đáy box nằm dưới mặt đất {-d * 100:.0f} cm (lún)"
 
 
+SLOPE_NOTE_DEG = 1.5
+"""Mặt đường dốc dọc thân box từ mức này thì ghi thêm vào finding: box không nghiêng theo dốc trông "méo" so với xe."""
+
+
+def _slope_note(box: Cuboid, est: GroundEstimate) -> str:
+    if est.pitch_deg is None or abs(est.pitch_deg) < SLOPE_NOTE_DEG:
+        return ""
+    end = "đầu" if est.pitch_deg > 0 else "đuôi"
+    half = box.length / 2 * math.tan(math.radians(abs(est.pitch_deg)))
+    return (f". Mặt đường dốc {abs(est.pitch_deg):.1f}° dọc thân box ({end} box phía cao): box không nghiêng theo dốc "
+            f"nên hai đầu lệch mặt đường ±{half * 100:.0f} cm, xe trông lệch so với box ở mặt cắt dọc")
+
+
 def floating_findings_by_track(
     estimates: Sequence[tuple[Cuboid, GroundEstimate]], config: FloatingConfig,
 ) -> list[Finding]:
@@ -270,7 +283,7 @@ def floating_findings_by_track(
             peers = comparable
         others = [estimates[j][1].distance for j in peers]
         details = {"distance": d, "ground_z": est.ground_z, "bottom_z": box.bottom_z,
-                   "num_ground_points": est.num_ground_points}
+                   "num_ground_points": est.num_ground_points, "pitch_deg": est.pitch_deg}
         if len(others) >= config.min_track_boxes:
             reference = float(np.median(others))
             offset = d - reference
@@ -291,8 +304,10 @@ def floating_findings_by_track(
                     continue  # lệch chỉ do track đi từ đường bằng lên dốc (hoặc ngược lại)
             direction = "cao hơn" if offset > 0 else "thấp hơn"
             message = (f"{_describe(absolute_distance)}; {direction} {abs(offset) * 100:.0f} cm so với các frame khác của track "
-                       f"(trung vị {reference * 100:+.0f} cm)")
+                       f"(trung vị {reference * 100:+.0f} cm){_slope_note(box, est)}")
             value = offset
+        elif not config.single_box:
+            continue  # không đủ frame cùng track để so: không kết luận theo độ cao tuyệt đối
         else:
             # Không có track để so: so tuyệt đối, nên dùng điểm tiếp xúc trên mặt phẳng dốc nếu có (C4) — trên dốc trung vị
             # ở tâm box lệch với đáy box đúng spec tan(dốc) × nửa chiều dài box.
@@ -306,7 +321,7 @@ def floating_findings_by_track(
                 severity, threshold = Severity.WARNING, config.single_warning_m
             else:
                 continue
-            message = _describe(d)
+            message = _describe(d) + _slope_note(box, est)
             value = d
         findings.append(Finding(
             error_type=ErrorType.FLOATING, rule="floating", severity=severity, frame=box.frame, label=box.label,

@@ -1157,7 +1157,7 @@
   }
 
   function clearPreviewCanvases() {
-    ['preview-canvas-top', 'preview-canvas-side'].forEach((id) => {
+    ['preview-canvas-top', 'preview-canvas-side', 'preview-canvas-front'].forEach((id) => {
       const c = document.getElementById(id);
       c.getContext('2d').clearRect(0, 0, c.width, c.height);
     });
@@ -1166,9 +1166,12 @@
   function drawPreviewViews(data) {
     drawPreview(document.getElementById('preview-canvas-top'), data, 'top');
     drawPreview(document.getElementById('preview-canvas-side'), data, 'side');
+    drawPreview(document.getElementById('preview-canvas-front'), data, 'front');
   }
 
-  // Vẽ điểm trong hệ của box: x dọc chiều dài; nhìn từ trên dùng y, nhìn ngang dùng z (mặt đất ở dưới).
+  // Vẽ điểm trong hệ của box (x dọc chiều dài, hướng đầu box; y theo chiều rộng; z lên), như ba khung Top / Side / Front
+  // của CVAT: nhìn từ trên (x, y), nhìn ngang (x, z) và nhìn từ đầu box (y, z). Mũi tên đỏ chỉ đầu box; đường đứt
+  // là mặt đất đo được của finding lơ lửng / lún, nghiêng theo độ dốc dọc thân box.
   function drawPreview(canvas, data, view) {
     const css = getComputedStyle(document.documentElement);
     const w = canvas.clientWidth;
@@ -1182,30 +1185,63 @@
 
     const { length: L, width: W, height: H } = data.box;
     const margin = 2.0;
-    const xr = L / 2 + margin;
+    // Trục ngang của khung: x (top, side) hoặc y (front); trục dọc: y (top) hoặc z (side, front).
+    const hr = view === 'front' ? W / 2 + margin : L / 2 + margin;
     const [v0, v1] = view === 'top' ? [-(W / 2 + margin), W / 2 + margin] : [-H / 2 - 1.5, H / 2 + 1.0];
-    const scale = Math.min((w - 8) / (2 * xr), (h - 8) / (v1 - v0));
+    const scale = Math.min((w - 8) / (2 * hr), (h - 8) / (v1 - v0));
     const vc = (v0 + v1) / 2;
-    const px = (x) => w / 2 + x * scale;
+    const px = (u) => w / 2 + u * scale;
     const py = (v) => h / 2 - (v - vc) * scale;
+    const project = ([x, y, z]) => view === 'top' ? [x, y] : view === 'side' ? [x, z] : [y, z];
 
     const outside = css.getPropertyValue('--text-3').trim();
     const inside = css.getPropertyValue('--text').trim();
-    data.points.forEach(([x, y, z]) => {
+    data.points.forEach((p) => {
+      const [x, y, z] = p;
       const isIn = Math.abs(x) <= L / 2 && Math.abs(y) <= W / 2 && Math.abs(z) <= H / 2;
+      const [u, v] = project(p);
       ctx.fillStyle = isIn ? inside : outside;
-      ctx.fillRect(px(x) - 0.75, py(view === 'top' ? y : z) - 0.75, 1.5, 1.5);
+      ctx.fillRect(px(u) - 0.75, py(v) - 0.75, 1.5, 1.5);
     });
+
+    if (data.ground && view !== 'top') {
+      const slope = view === 'side' ? Math.tan((data.ground.pitch_deg || 0) * Math.PI / 180) : 0;
+      ctx.save();
+      ctx.strokeStyle = css.getPropertyValue('--success').trim();
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(px(-hr), py(data.ground.z - slope * hr));
+      ctx.lineTo(px(hr), py(data.ground.z + slope * hr));
+      ctx.stroke();
+      ctx.restore();
+    }
 
     ctx.strokeStyle = css.getPropertyValue(`--${data.color}`).trim();
     ctx.lineWidth = 1.5;
-    const half = view === 'top' ? W / 2 : H / 2;
-    ctx.strokeRect(px(-L / 2), py(half), L * scale, 2 * half * scale);
-    if (view === 'top') {
+    const halfU = view === 'front' ? W / 2 : L / 2;
+    const halfV = view === 'top' ? W / 2 : H / 2;
+    ctx.strokeRect(px(-halfU), py(halfV), 2 * halfU * scale, 2 * halfV * scale);
+
+    // Mũi tên đỏ từ tâm ra quá mép đầu box (top, side); nhìn từ đầu box thì là chấm đỏ ở tâm (mũi tên hướng về người xem).
+    ctx.strokeStyle = ctx.fillStyle = css.getPropertyValue('--error').trim();
+    ctx.lineWidth = 2;
+    if (view === 'front') {
       ctx.beginPath();
-      ctx.moveTo(px(L / 2), py(0));
-      ctx.lineTo(px(L / 2) + 8, py(0));
+      ctx.arc(px(0), py(0), 4, 0, 2 * Math.PI);
+      ctx.fill();
+    } else {
+      const tip = px(L / 2) + 14;
+      ctx.beginPath();
+      ctx.moveTo(px(0), py(0));
+      ctx.lineTo(tip, py(0));
       ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(tip + 2, py(0));
+      ctx.lineTo(tip - 6, py(0) - 5);
+      ctx.lineTo(tip - 6, py(0) + 5);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 

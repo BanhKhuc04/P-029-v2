@@ -86,3 +86,14 @@ def test_link_goes_offline_and_tracks_review_versions(tmp_path: Path):
     data = client.get(url).json()
     assert data == {"reviews": {"0": "ok"}, "rev": rev0 + 1}
     assert client.get("/api/extension/status", params={"job_id": 2}).json()["reviews_rev"] == rev0 + 1
+
+
+def test_extension_poll_reports_latest_run_id(tmp_path: Path):
+    client = TestClient(create_app(tmp_path))
+    client.post("/api/projects", json={"name": "local", "slug": "local", "cvat_url": "http://localhost:8080"})
+    poll1 = client.get("/api/extension/poll", params={"job_id": 2}).json()
+    assert poll1["latest_run_id"] is None
+
+    _write_run(tmp_path, "local", "20261008-150000-job2", 2, "2026-10-08T15:00:00+00:00", [{"frame": 1}])
+    poll2 = client.get("/api/extension/poll", params={"job_id": 2}).json()
+    assert poll2["latest_run_id"] == "20261008-150000-job2"

@@ -134,6 +134,14 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     async def scan_busy(request, exc):
         return JSONResponse(status_code=429, content={"detail": str(exc)})
 
+    # --- API Danh mục quy tắc kiểm tra (Rule Catalog - Single Source of Truth) ---
+
+    @application.get("/api/rules")
+    def get_rules_catalog() -> dict[str, Any]:
+        """Danh mục toàn bộ quy tắc kiểm tra nhãn 3D, nhãn hiển thị và gợi ý sửa lỗi."""
+        from pointsnap.core.rules import rules_catalog_dict
+        return rules_catalog_dict()
+
     # --- API Quản lý dự án ---
 
     @application.get("/api/projects")
@@ -442,7 +450,25 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.get("/api/extension/poll")
     def extension_poll(job_id: int, after: int = -1, cvat_url: str = "") -> dict[str, Any]:
         """Extension trên tab CVAT hỏi lệnh mới (mỗi giây); cũng là tín hiệu tab đó đang mở job."""
-        return link.poll(job_id, after, scope=_extension_scope(cvat_url))
+        res = link.poll(job_id, after, scope=_extension_scope(cvat_url))
+        projects = pm.list_projects()
+        latest_done = None
+        active_scan = None
+        for p in projects:
+            for r in runner.list_runs(p["slug"]):
+                if r.get("job_id") == job_id:
+                    if r.get("status") in ("queued", "running") and active_scan is None:
+                        active_scan = {
+                            "run_id": r.get("run_id"),
+                            "status": r.get("status"),
+                            "progress": r.get("progress", 0),
+                            "message": r.get("message", "Đang quét..."),
+                        }
+                    elif r.get("status") == "done" and latest_done is None:
+                        latest_done = r.get("run_id")
+        res["latest_run_id"] = latest_done
+        res["active"] = active_scan
+        return res
 
     @application.get("/api/extension/status")
     def extension_status(job_id: int, cvat_url: str = "") -> dict[str, Any]:

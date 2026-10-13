@@ -72,6 +72,17 @@ track:
       v_max_mps: 0.5
       split_max_dist_m: 0.5
 
+rules:
+  fit_outside: false                  # Tắt: tránh báo nhầm khi vật thể sát tường/rào/cây
+  fit_loose: false                    # Tắt: tránh báo nhầm trên xe lớn do LiDAR một phía
+  track_jump: false                   # Tắt: bài toán đứt track đã loại bỏ
+  track_split_id: false
+  track_long_interpolation: false
+  track_reuse_id: false
+  track_occluded_long: false
+  track_id_swap: false
+  track_static_shift: false
+
 heading:
   groups:
     vehicle:

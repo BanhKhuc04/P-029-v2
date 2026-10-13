@@ -124,3 +124,35 @@ test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám 
     assert.notEqual(items[0].tip, core.parseFlag('[Lỗi] câu lạ')[0].tip, rule);
   }
 });
+
+test('flagsFromFindings chuyển findings từ scan thành danh sách cờ chuẩn', () => {
+  const findings = [
+    { frame: 5, label: 'car', track_id: 10, severity: 'warning', message: 'Tâm box nhảy vị trí', rule: 'track.jump' },
+    { frame: 2, label: 'pedestrian', source_id: 20, severity: 'error', message: 'Kích thước lạ', rule: 'size.class_range' },
+  ];
+  const flags = core.flagsFromFindings(findings);
+  assert.equal(flags.length, 2);
+  assert.equal(flags[0].frame, 2);
+  assert.equal(flags[0].kind, 'shape');
+  assert.equal(flags[0].severity, 'error');
+  assert.equal(flags[1].frame, 5);
+  assert.equal(flags[1].kind, 'track');
+  assert.equal(flags[1].objectId, 10);
+  assert.equal(core.flaggedFrames(flags).length, 2);
+});
+
+test('ruleLabel và setRulesCatalog đồng bộ danh mục quy tắc', () => {
+  assert.equal(core.ruleLabel('floating'), 'Lơ lửng / lún');
+  assert.equal(core.ruleLabel('track.jump'), 'Nhảy vị trí');
+
+  core.setRulesCatalog({
+    labels: { 'custom.rule': 'Luật tùy chỉnh' },
+    tips: { 'custom.rule': 'Gợi ý tùy chỉnh' },
+    rules: [{ id: 'custom.rule', patterns: ['tùy chỉnh ở frame'] }],
+  });
+
+  assert.equal(core.ruleLabel('custom.rule'), 'Luật tùy chỉnh');
+  const items = core.parseFlag('[Cảnh báo] Lỗi tùy chỉnh ở frame 10');
+  assert.equal(items[0].rule, 'custom.rule');
+  assert.equal(items[0].tip, 'Gợi ý tùy chỉnh');
+});

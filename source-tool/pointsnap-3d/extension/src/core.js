@@ -41,11 +41,50 @@
     'cam.missing': 'Mở ảnh camera và point cloud của frame: có vật thật mà chưa gán thì vẽ thêm box (spec: gán mọi vật trong vùng quan tâm).',
     'critic.box': 'Box Critic nghi box sai: xem gợi ý sửa (dời / kích thước / xoay) trong chi tiết, đối chiếu point cloud rồi chỉnh tay.',
   };
-  const SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
-  const DEFAULT_FIX_TIP = 'Kiểm tra lại box và nhãn theo hướng dẫn gán nhãn của dự án.';
+  let sinkFixTip = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
+  let defaultFixTip = 'Kiểm tra lại box và nhãn theo hướng dẫn gán nhãn của dự án.';
+
+  // Tên tiếng Việt hiển thị của luật (đồng bộ với PointSnap Backend)
+  const RULE_LABEL = {
+    'floating': 'Lơ lửng / lún',
+    'floating.no_evidence': 'Thiếu bằng chứng mặt đất',
+    'size.class_range': 'Kích thước lạ so với class',
+    'size.in_track': 'Kích thước lệch trong track',
+    'track.jump': 'Nhảy vị trí',
+    'track.split_id': 'Nghi tách ID',
+    'track.long_interpolation': 'Nội suy dài',
+    'track.reuse_id': 'Dùng lại track sau outside',
+    'track.occluded_long': 'Che khuất quá lâu',
+    'track.id_swap': 'Nghi đổi nhầm ID',
+    'track.static_shift': 'Vật đứng yên: box dịch',
+    'heading.flip': 'Hướng đổi đột ngột',
+    'heading.motion': 'Ngược hướng chuyển động',
+    'heading.points': 'Lệch trục cụm điểm',
+    'heading.static': 'Vật đứng yên: box xoay',
+    'fit.empty': 'Box rỗng',
+    'fit.outside': 'Điểm của vật ngoài box',
+    'fit.loose': 'Box dư',
+    'fit.overlap': 'Hai box chồng nhau',
+    'attr.missing': 'Thiếu thuộc tính',
+    'attr.invalid': 'Thuộc tính sai giá trị',
+    'attr.height': 'Thuộc tính lệch chiều cao',
+    'attr.rider_state': 'Quên đổi trạng thái người lái',
+    'spec.inside': 'Người bên trong xe',
+    'spec.rider_double': 'Người lái bị gán 2 lần',
+    'lidar.missing': 'Nghi sót đối tượng (LiDAR)',
+    'cam.sparse': 'Box quá ít điểm, ảnh không thấy',
+    'cam.mismatch': 'Box lệch vật trên ảnh',
+    'cam.class': 'Ảnh camera thấy class khác',
+    'cam.missing': 'Ảnh thấy vật chưa có box',
+    'critic.box': 'Box Critic nghi box sai',
+  };
+
+  function ruleLabel(ruleId) {
+    return RULE_LABEL[ruleId] || ruleId || '';
+  }
 
   // Cờ trên CVAT chỉ chứa câu thông báo, nên nhận luật từ mẫu câu của từng bộ phát hiện.
-  const RULE_PATTERNS = [
+  let RULE_PATTERNS = [
     ['cam.mismatch', /^Box chiếu lên ảnh/i],
     ['cam.class', /^Ảnh camera nhận vật là/i],
     ['cam.missing', /không có box 3D nào/i],
@@ -106,8 +145,38 @@
 
   /** Gợi ý sửa của một câu thông báo; box lún thì nâng lên thay vì hạ xuống. */
   function fixTip(rule, text) {
-    if (rule === 'floating' && /\(lún\)|nằm dưới mặt đất/i.test(text || '')) return SINK_FIX_TIP;
-    return RULE_FIX_TIPS[rule] || DEFAULT_FIX_TIP;
+    if (rule === 'floating' && /\(lún\)|nằm dưới mặt đất/i.test(text || '')) return sinkFixTip;
+    return RULE_FIX_TIPS[rule] || defaultFixTip;
+  }
+
+  /** Nạp danh mục quy tắc động từ PointSnap API (GET /api/rules) để đồng bộ 100%. */
+  function setRulesCatalog(catalog) {
+    if (!catalog || typeof catalog !== 'object') return;
+    if (catalog.tips && typeof catalog.tips === 'object') {
+      Object.assign(RULE_FIX_TIPS, catalog.tips);
+    }
+    if (catalog.labels && typeof catalog.labels === 'object') {
+      Object.assign(RULE_LABEL, catalog.labels);
+    }
+    if (catalog.sink_fix_tip) sinkFixTip = String(catalog.sink_fix_tip);
+    if (catalog.default_fix_tip) defaultFixTip = String(catalog.default_fix_tip);
+    if (Array.isArray(catalog.rules)) {
+      const dynamicPatterns = [];
+      for (const r of catalog.rules) {
+        if (r.id && Array.isArray(r.patterns)) {
+          for (const pat of r.patterns) {
+            try {
+              dynamicPatterns.push([r.id, new RegExp(pat, 'i')]);
+            } catch (_) {
+              // Bỏ qua regex không hợp lệ
+            }
+          }
+        }
+      }
+      if (dynamicPatterns.length > 0) {
+        RULE_PATTERNS = dynamicPatterns;
+      }
+    }
   }
 
   /**
@@ -237,9 +306,41 @@
     return out;
   }
 
+  /**
+   * Chuyển đổi danh sách findings của lần quét PointSnap thành định dạng cờ (flags)
+   * để extension hiển thị và điều hướng ngay lập tức kể cả khi CVAT chưa được gắn cờ.
+   */
+  function flagsFromFindings(findings) {
+    const SEV_TEXT = { error: 'Lỗi', warning: 'Cảnh báo', info: 'Thông tin' };
+    return (findings || []).map((f) => {
+      const sev = f.severity || 'warning';
+      const msg = f.message || '';
+      const rule = f.rule || null;
+      const items = [{
+        severity: sev,
+        text: msg,
+        rule,
+        tip: fixTip(rule, msg),
+      }];
+      return {
+        frame: f.frame,
+        label: f.label || '',
+        kind: f.track_id != null ? 'track' : 'shape',
+        objectId: f.track_id != null ? f.track_id : f.source_id,
+        value: `[${SEV_TEXT[sev] || 'Cảnh báo'}] ${msg}`,
+        items,
+        severity: sev,
+        fromScan: true,
+      };
+    }).sort((a, b) => a.frame - b.frame || SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+  }
+
   const api = {
     FLAG_ATTR,
     RULE_FIX_TIPS,
+    RULE_LABEL,
+    ruleLabel,
+    setRulesCatalog,
     parseJobUrl,
     normalizeBase,
     ruleOfMessage,
@@ -253,6 +354,7 @@
     adjustName,
     filterLogic,
     matchFindings,
+    flagsFromFindings,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

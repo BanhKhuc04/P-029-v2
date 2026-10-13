@@ -199,7 +199,6 @@
                     <option value="">Mọi loại lỗi</option>
                     <option value="floating">Lơ lửng / lún</option>
                     <option value="size">Kích thước</option>
-                    <option value="track">Đứt track</option>
                     <option value="heading">Sai hướng box</option>
                     <option value="fit">Box lệch khỏi vật</option>
                     <option value="attribute">Thiếu / sai thuộc tính</option>
@@ -351,7 +350,7 @@
           <div class="page-header-row">
             <div>
               <h1 class="page-title">Quét job</h1>
-              <div class="page-subtitle">Kiểm lơ lửng / lún, kích thước và đứt track theo guideline của dự án</div>
+              <div class="page-subtitle">Kiểm lơ lửng / lún, kích thước, hướng box và khớp cụm điểm theo guideline của dự án</div>
             </div>
           </div>
 
@@ -605,8 +604,8 @@
                     <div style="font-size: 13px; color: var(--text-2);">Box nhỏ hoặc lệch: nhiều điểm của vật nằm ngoài box</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 10px;">
-                    <span id="label-rule-fit-outside" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
-                    <button role="switch" aria-checked="true" aria-label="Điểm của vật ngoài box" id="rule-fit-outside" class="switch-btn"><span class="switch-thumb"></span></button>
+                    <span id="label-rule-fit-outside" style="font-size: 13px; color: var(--text-3); min-width: 28px; text-align: right;">Tắt</span>
+                    <button role="switch" aria-checked="false" aria-label="Điểm của vật ngoài box" id="rule-fit-outside" class="switch-btn"><span class="switch-thumb"></span></button>
                   </div>
                 </div>
 
@@ -616,8 +615,8 @@
                     <div style="font-size: 13px; color: var(--text-2);">Mặt box nhìn thấy được cách xa điểm của vật</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 10px;">
-                    <span id="label-rule-fit-loose" style="font-size: 13px; color: var(--text-2); min-width: 28px; text-align: right;">Bật</span>
-                    <button role="switch" aria-checked="true" aria-label="Box dư" id="rule-fit-loose" class="switch-btn"><span class="switch-thumb"></span></button>
+                    <span id="label-rule-fit-loose" style="font-size: 13px; color: var(--text-3); min-width: 28px; text-align: right;">Tắt</span>
+                    <button role="switch" aria-checked="false" aria-label="Box dư" id="rule-fit-loose" class="switch-btn"><span class="switch-thumb"></span></button>
                   </div>
                 </div>
 

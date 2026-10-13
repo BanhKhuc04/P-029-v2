@@ -171,8 +171,6 @@ def check_track(job: JobData, config: Config, frames: FrameSource | None = None)
     return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps,
                                stop_frame=getattr(job, "stop_frame", None),
                                class_key=lambda box: _typed_label(box, config))
-
-
 def _poses(job: JobData, frames: FrameSource | None):
     if frames is None:
         return None, None
@@ -223,15 +221,17 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
             measures.extend((item.box, dev) for item in items
                             if (dev := heading_points_measure(item, config.heading.points)) is not None)
     findings.extend(heading_points_findings(measures, config.heading.points))
-    findings.extend(outside_findings(outside, config.fit))
-    findings.extend(loose_findings(loose, config.fit))
+    if r.fit_outside:
+        findings.extend(outside_findings(outside, config.fit))
+    if r.fit_loose:
+        findings.extend(loose_findings(loose, config.fit))
     return findings
 
 
 def check_static(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
-    """Box dịch / xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
+    """Box xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
     sensor_to_world, _ = _poses(job, frames)
-    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=config.rules.track_static_shift,
+    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=False,
                                 rotate=config.rules.heading_static)
 
 
@@ -312,22 +312,20 @@ _RULE_SWITCH = {
 
 def is_rule_enabled(rule: str, config: Config) -> bool:
     """Kiểm tra một rule có được bật trong config.rules không."""
-    r = config.rules
     if rule in ("floating", "floating.no_evidence"):
-        return r.floating
-    if rule == "size.class_range":
-        return r.size_class_range
-    if rule == "size.in_track":
-        return r.size_in_track
+        return bool(config.rules.floating)
+    if rule in ("size.class_range", "size.manual_range"):
+        return bool(config.rules.size_class_range)
+    if rule in ("size.in_track", "size.in_track_manual"):
+        return bool(config.rules.size_in_track)
     if rule == "track.jump":
-        return r.track_jump
+        return bool(config.rules.track_jump)
     if rule == "track.split_id":
-        return r.track_split_id
+        return bool(config.rules.track_split_id)
     if rule == "track.long_interpolation":
-        return r.track_long_interpolation
-    if rule in _RULE_SWITCH:
-        return getattr(r, _RULE_SWITCH[rule])
-    return True
+        return bool(config.rules.track_long_interpolation and config.track.long_interpolation.enabled)
+    switch = _RULE_SWITCH.get(rule)
+    return True if switch is None else bool(getattr(config.rules, switch))
 
 
 DEFAULT_DETECTORS: Sequence[DetectorFn] = (
@@ -353,7 +351,7 @@ def scan_cuboids(
     """Chạy toàn bộ các bộ phát hiện trên các box của job (hoặc danh sách box) và trả về danh sách finding.
 
     `frames` cung cấp point cloud và pose theo frame (`ManifestFrames` khi quét job CVAT, `NuScenesFrames` khi quét
-    thẳng nuScenes). Không có thì bỏ luật lơ lửng / lún và luật đứt track dùng tọa độ của từng frame.
+    thẳng nuScenes).
     """
     if not hasattr(job, "cuboids"):
         job = SimpleNamespace(cuboids=list(job))
@@ -368,7 +366,7 @@ def scan_cuboids(
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
         if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
-                or r.track_occluded_long or r.track_id_swap):
+                or r.track_occluded_long or r.track_id_swap or r.track_static_shift):
             active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)
@@ -377,7 +375,7 @@ def scan_cuboids(
         if (r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double
                 or r.attr_rider_state):
             active_detectors.append(check_attributes)
-        if r.track_static_shift or r.heading_static:
+        if r.heading_static:
             active_detectors.append(check_static)
         if r.cam_mismatch or r.cam_class or r.cam_missing or r.cam_sparse:
             active_detectors.append(check_camera)
@@ -386,9 +384,16 @@ def scan_cuboids(
         if r.lidar_missing:
             active_detectors.append(check_missing)
 
+    from pointsnap.core.context import DetectionContext
+    from pointsnap.detectors.base import BaseDetector
+
+    ctx = DetectionContext.from_job(job, config, frames)
     findings: list[Finding] = []
     for detector in active_detectors:
-        findings.extend(detector(job, config, frames))
+        if isinstance(detector, BaseDetector):
+            findings.extend(detector(ctx))
+        else:
+            findings.extend(detector(job, config, frames))
 
     filtered = [f for f in findings if is_rule_enabled(f.rule, config)]
     filtered = apply_evidence_gate(filtered, job.cuboids, config, frames)
@@ -467,7 +472,6 @@ def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None)
         if missing:
             gaps.append(f"Kiểm tra một phần: thiếu pose ở {len(missing)} frame cho luật " + ", ".join(enabled_pose))
     return gaps
-
 
 def actionable(findings: Iterable[Finding]) -> list[Finding]:
     """Finding mức Lỗi / Cảnh báo: những mục được gắn cờ lên CVAT và tính ở `gate`."""

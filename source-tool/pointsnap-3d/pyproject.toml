@@ -33,3 +33,4 @@ pointsnap = ["config.yaml", "guidelines/*.yaml", "web/static/*", "web/static/fon
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]

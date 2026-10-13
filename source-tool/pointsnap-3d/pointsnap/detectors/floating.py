@@ -28,6 +28,7 @@ from pointsnap.core.model import ErrorType, Finding, Severity, group_by_frame
 
 if TYPE_CHECKING:
     from pointsnap.core.config import FloatingConfig
+    from pointsnap.core.context import DetectionContext
     from pointsnap.core.model import Cuboid, FrameSource
 
 
@@ -298,10 +299,13 @@ def floating_findings_by_track(
                 severity, threshold = Severity.WARNING, config.warning_m
             else:
                 continue
-            if est.contact_distance is not None or any(estimates[j][1].contact_distance is not None for j in peers):
-                on_contact = contact_or_distance(i) - float(np.median([contact_or_distance(j) for j in peers]))
+            peers_all = [j for j in by_track.get((box.track_id, box.label), []) if j != i]
+            if est.contact_distance is not None or any(estimates[j][1].contact_distance is not None for j in peers_all):
+                on_contact = contact_or_distance(i) - float(np.median([contact_or_distance(j) for j in peers_all]))
                 if abs(on_contact) <= config.warning_m:
                     continue  # lệch chỉ do track đi từ đường bằng lên dốc (hoặc ngược lại)
+            if getattr(est, "is_curb_supported", False):
+                continue  # đỗ gác bánh vỉa hè / lề đường
             direction = "cao hơn" if offset > 0 else "thấp hơn"
             message = (f"{_describe(absolute_distance)}; {direction} {abs(offset) * 100:.0f} cm so với các frame khác của track "
                        f"(trung vị {reference * 100:+.0f} cm){_slope_note(box, est)}")
@@ -311,6 +315,8 @@ def floating_findings_by_track(
         else:
             # Không có track để so: so tuyệt đối, nên dùng điểm tiếp xúc trên mặt phẳng dốc nếu có (C4) — trên dốc trung vị
             # ở tâm box lệch với đáy box đúng spec tan(dốc) × nửa chiều dài box.
+            if getattr(est, "is_curb_supported", False):
+                continue  # đỗ gác bánh vỉa hè / lề đường
             if est.contact_distance is not None:
                 d = float(est.contact_distance)
                 details["distance"] = d
@@ -349,3 +355,18 @@ def detect_floating_scene(
 ) -> list[Finding]:
     """Lơ lửng / lún trên cả job: ước lượng mặt đất từng box rồi so với các frame khác của track."""
     return floating_findings_by_track(estimate_scene_ground(cuboids, frames, config), config)
+
+
+from pointsnap.detectors.base import BaseDetector
+
+
+class FloatingDetector(BaseDetector):
+    """Bộ phát hiện lỗi lơ lửng / lún đất trên toàn bộ scene/job."""
+
+    rule_id = "floating"
+    switch_key = "floating"
+
+    def detect(self, ctx: DetectionContext) -> list[Finding]:
+        if ctx.frames is None:
+            return []
+        return detect_floating_scene(ctx.cuboids, ctx.frames, ctx.config.floating)

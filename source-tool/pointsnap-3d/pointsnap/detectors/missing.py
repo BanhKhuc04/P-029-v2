@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 
-from pointsnap.core.geometry import points_in_cuboid
+from pointsnap.core.geometry import points_in_cuboid, validate_pose
 from pointsnap.core.ground import fit_plane_ransac
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_frame
 
@@ -109,10 +109,12 @@ def _components(cells: np.ndarray, far: np.ndarray) -> list[np.ndarray]:
         while stack:
             i, j = stack.pop()
             members.extend(index[(i, j)])
-            reach = (-2, -1, 0, 1, 2) if (i, j) in far_cell else (-1, 0, 1)
+            reach = (-2, -1, 0, 1, 2)
             for di in reach:
                 for dj in reach:
                     nb = (i + di, j + dj)
+                    if max(abs(di), abs(dj)) > 1 and (i, j) not in far_cell and nb not in far_cell:
+                        continue
                     if nb in index and nb not in seen:
                         seen.add(nb)
                         stack.append(nb)
@@ -124,6 +126,9 @@ def frame_clusters(points: np.ndarray, boxes: Sequence[Cuboid], sensor_to_world:
                    cfg: MissingConfig, frame: int, occupancy: set | None = None) -> list[Cluster]:
     """Cụm giống vật của một frame. `occupancy` (nếu có) được điền các ô (hệ toàn cục) có điểm không phải mặt đất,
     ngoài box nhãn — dùng để biết chỗ cụm đứng có còn bị chiếm ở frame kề không."""
+    if sensor_to_world is None:
+        return []  # World motion cannot be inferred from an unknown ego pose.
+    m = validate_pose(sensor_to_world)
     pts = np.asarray(points, dtype=np.float64)[:, :3]
     rng = np.hypot(pts[:, 0], pts[:, 1])
     pts = pts[(rng >= cfg.min_range_m) & (rng <= cfg.max_range_m)]
@@ -135,12 +140,11 @@ def frame_clusters(points: np.ndarray, boxes: Sequence[Cuboid], sensor_to_world:
     for box in boxes:
         if box.outside:
             continue
-        reach = max(box.dims[:2]) / 2 + cfg.box_margin_m
+        reach = math.hypot(*(d / 2 + cfg.box_margin_m for d in box.dims[:2]))
         near = np.flatnonzero((np.abs(pts[:, 0] - box.center[0]) <= reach) & (np.abs(pts[:, 1] - box.center[1]) <= reach))
         if len(near):
             keep[near[points_in_cuboid(pts[near], box, margin=cfg.box_margin_m)]] = False
     pts, above = pts[keep], above[keep]
-    m = np.asarray(sensor_to_world) if sensor_to_world is not None else np.eye(4)
     world_xy = (pts @ m[:3, :3].T + m[:3, 3])[:, :2]
     world_cells = np.floor(world_xy / cfg.cell_m).astype(np.int64)
     if occupancy is not None:
@@ -255,8 +259,10 @@ def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig
     num_frames = getattr(frames, "num_frames", None) or (max(boxes_by_frame) + 1 if boxes_by_frame else 0)
     by_frame: dict[int, list[Cluster]] = {}
     occupied: dict[int, set] = {}
+    timestamps = {}
     for f in range(num_frames):
         data = frames.frame_data(f)
+        timestamps[f] = data.timestamp
         occupied[f] = set()
         by_frame[f] = frame_clusters(data.points, boxes_by_frame.get(f, []), data.sensor_to_world, cfg, f, occupied[f])
     # Vật đứng yên vẫn chiếm chỗ cũ ở frame kề; vật di chuyển thì chỗ cũ trống. Tách cụm đứng yên ra để đối chiếu ảnh.
@@ -269,7 +275,7 @@ def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig
         static_by_frame[f] = [c for c in clusters if c.persistence > cfg.static_min_persistence]
         by_frame[f] = [c for c in clusters if c.persistence <= cfg.max_persistence]
     chains = [c for c in _link(by_frame, cfg) if len(c) >= cfg.min_frames]
-    findings = []
+    findings, accepted = [], []
     for chain in chains:
         disp = float(np.linalg.norm(chain[-1].world - chain[0].world))
         size = (float(np.median([c.length for c in chain])), float(np.median([c.width for c in chain])),
@@ -281,21 +287,27 @@ def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig
         if disp < need_motion or len(chain) < need_frames or not _steady(chain):
             continue
         first, last = chain[0], chain[-1]
-        dt = (last.frame - first.frame) * cfg.keyframe_interval_s
+        start_time, stop_time = timestamps[first.frame], timestamps[last.frame]
+        dt = (stop_time - start_time if start_time is not None and stop_time is not None and stop_time > start_time
+              else (last.frame - first.frame) * cfg.keyframe_interval_s)
+        accepted.append(chain)
         findings.append(Finding(
             error_type=ErrorType.FIT, rule="lidar.missing", severity=Severity.WARNING, frame=first.frame, label=kind,
-            value=disp / dt if dt > 0 else 0.0, threshold=cfg.min_motion_m,
+            value=disp, threshold=need_motion,
             message=(f"Cụm điểm LiDAR cỡ {kind} ({size[0]:.1f} × {size[1]:.1f} × {size[2]:.1f} m, ~"
                      f"{int(np.median([c.num_points for c in chain]))} điểm) di chuyển {disp:.1f} m qua {len(chain)} "
                      f"keyframe ({first.frame}–{last.frame}) mà không có box: nghi sót đối tượng (spec 4.2)"),
             details={"frames": [c.frame for c in chain],
                      "centers": [[round(float(v), 2) for v in c.center] for c in chain],
-                     "size_m": [round(v, 2) for v in size], "moving": True},
+                     "size_m": [round(v, 2) for v in size], "moving": True,
+                     "speed_m_s": disp / dt if dt > 0 else 0., "duration_s": dt},
         ))
     if detector is not None and hasattr(frames, "camera_views"):
+        moving_ids = {id(c) for chain in accepted for c in chain}
+        static_by_frame = {f: [c for c in rows if id(c) not in moving_ids] for f, rows in static_by_frame.items()}
         findings.extend(_static_confirmed(_link_static(static_by_frame, cfg), cuboids, frames, detector, cfg,
                                           camera_cfg))
-    return findings, chains
+    return findings, accepted
 
 
 def _link_static(by_frame: dict[int, list[Cluster]], cfg: MissingConfig) -> list[list[Cluster]]:
@@ -308,7 +320,7 @@ def _link_static(by_frame: dict[int, list[Cluster]], cfg: MissingConfig) -> list
             if chain[-1].frame != frame - 1:
                 chains.append(chain)
                 continue
-            anchor = np.mean([c.world for c in chain], axis=0)
+            anchor = chain[0].world
             best = min(free, key=lambda c: np.linalg.norm(c.world - anchor), default=None)
             if best is not None and np.linalg.norm(best.world - anchor) <= cfg.static_gate_m:
                 chain.append(best)
@@ -339,18 +351,24 @@ def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], fr
                       camera_cfg) -> list[Finding]:
     """Chuỗi cụm đứng yên mà ảnh camera thấy vật cùng loại trùng khung chiếu ở ≥ `static_min_views` keyframe."""
     from pointsnap.core.camera import iou_2d, project_box
+    from pointsnap.core.config import CameraConfig
+    from pointsnap.vision.detector2d import group_of_name
 
+    camera_cfg = camera_cfg or CameraConfig()
     findings = []
     boxes_by_frame = group_by_frame(c for c in cuboids if not c.outside)
     for chain in chains:
+        chain = sorted({c.frame: c for c in chain}.values(), key=lambda c: c.frame)
+        if len(chain) < cfg.min_frames:
+            continue
         size = (float(np.median([c.length for c in chain])), float(np.median([c.width for c in chain])),
                 float(np.median([c.height for c in chain])))
         # Phần nhìn thấy đổi theo góc nhìn (xe đỗ nhìn nghiêng chỉ lộ một đoạn, giống xe hai bánh): chấp nhận mọi loại
         # cụm từng mang trong chuỗi, loại vật lấy theo ảnh camera.
         kinds = {k for c in chain if (k := _kind(c.length, c.width, c.height))}
-        wanted = {name for k in kinds for name in COCO_FOR_KIND[k]}
+        wanted = {group_of_name(name) for k in kinds for name in COCO_FOR_KIND[k]}
         views_ok, names = [], []
-        for c in chain[:: max(1, len(chain) // 6)]:
+        for c in chain:
             data = frames.frame_data(c.frame, with_points=False)
             if data.sensor_to_world is None:
                 continue
@@ -362,15 +380,19 @@ def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], fr
             bright = [d.brightness for d in dets if d.brightness is not None]
             if bright and float(np.median(bright)) < camera_cfg.min_brightness:
                 continue
-            seen = None
+            seen = []
             for view, det in zip(views, dets):
+                if det.brightness is not None and det.brightness < camera_cfg.min_brightness:
+                    continue
                 proj = project_box(pseudo, data.sensor_to_world, view)
                 if proj is None or proj.inside_ratio < 0.5 or proj.depth > cfg.max_range_m:
                     continue
                 labelled = [p.box for b in boxes_by_frame.get(c.frame, [])
                             if (p := project_box(b, data.sensor_to_world, view)) is not None]
                 for box2d, name, score in zip(det.boxes, det.names, det.scores):
-                    if name not in wanted or score < cfg.static_min_score:
+                    group = group_of_name(name)
+                    supported = getattr(detector, "supported_groups", None)
+                    if group not in wanted or (supported is not None and group not in supported) or score < cfg.static_min_score:
                         continue
                     b2 = tuple(float(v) for v in box2d)
                     # LiDAR thường chỉ thấy một mặt vật nên khung chiếu nhỏ hơn vật trên ảnh: xét phần khung chiếu
@@ -379,18 +401,24 @@ def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], fr
                         continue
                     if any(iou_2d(b2, lb) >= cfg.static_labelled_iou for lb in labelled):
                         continue  # vật trên ảnh là vật đã có box 3D (xe đỗ sát nhau thì khung ảnh chồng một phần)
-                    seen = (view.channel, name, float(score))
+                    seen.append((view.channel, name, float(score), group))
                     break
-                if seen:
-                    break
-            if seen:
+            if seen and len({item[3] for item in seen}) == 1:
                 views_ok.append(c.frame)
-                names.append(seen)
-        if len(views_ok) < cfg.static_min_views:
+                names.append(max(seen, key=lambda item: item[2]))
+        groups = [item[3] for item in names]
+        supported = getattr(detector, "supported_groups", None)
+        eligible = sorted({g for g in groups if groups.count(g) >= cfg.static_min_views
+                           and (supported is None or g in supported)}, key=lambda g: (-groups.count(g), g))
+        if not eligible:
             continue
+        group = eligible[0]
+        matching = [(f, n) for f, n in zip(views_ok, names) if n[3] == group]
+        views_ok, names = [f for f, _ in matching], [n for _, n in matching]
         first = chain[0]
-        name = max(set(n[1] for n in names), key=[n[1] for n in names].count)
-        kind = KIND_OF_COCO[name]
+        name = max(names, key=lambda n: n[2])[1]
+        kind = KIND_OF_COCO.get(name.lower().strip(),
+                               {"person": "người", "two_wheeler": "xe hai bánh", "vehicle": "xe"}[group])
         findings.append(Finding(
             error_type=ErrorType.FIT, rule="lidar.missing", severity=Severity.WARNING, frame=first.frame, label=kind,
             value=float(len(views_ok)), threshold=float(cfg.static_min_views),

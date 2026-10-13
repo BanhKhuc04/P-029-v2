@@ -1,6 +1,6 @@
 # Kế hoạch review tiếp phần 09–16 — tính năng mới trên main
 
-Ngày đối chiếu: **13/10/2026, Asia/Saigon**. Trạng thái: **đã lập kế hoạch; chưa thực hiện review/test các ca bên dưới**.
+Ngày đối chiếu: **13/10/2026, Asia/Saigon**. Cập nhật: **phần09 đã review/sửa và kiểm**, xem [báo cáo09](09-report.md); phần10–16 chưa thực hiện. Các ca/giới hạn bên dưới là kế hoạch gốc; kết quả hiện hành ghi trong báo cáo riêng.
 
 ## 1. Chốt lại phạm vi
 

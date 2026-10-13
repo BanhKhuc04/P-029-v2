@@ -14,7 +14,7 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 
 ## Review tiếp tính năng mới trên main — 13/10/2026
 
-Đợt 01–08 đã merge qua PR #54, nhưng tính năng mới của main nằm ngoài phạm vi nghiệm thu của đợt đó. Xem [kế hoạch phần 09–16](review/2026-10-13/REVIEW-PLAN-09-16.md): đối chiếu 14 PR sau nền `5dcc97f`, kiểm trên main `d18b1a9`, có 64 ca và inventory 131 file. Trạng thái hiện tại: đã lập kế hoạch, chưa thực hiện các ca mới. Bắt đầu từ phần 09 (hình học/C4/heading/fit/track).
+Đợt 01–08 đã merge qua PR #54, nhưng tính năng mới của main nằm ngoài phạm vi nghiệm thu của đợt đó. Xem [kế hoạch phần 09–16](review/2026-10-13/REVIEW-PLAN-09-16.md): đối chiếu 14 PR sau nền `5dcc97f`, kiểm trên main `d18b1a9`, có 64 ca và inventory 131 file. **Phần09 đã thực hiện trên nhánh codex/review-09-geometry**, sửa4 nhóm lỗi,631 Python +37 Node PASS;5 SKIP,0 XFAIL. Xem [báo cáo09](review/2026-10-13/09-report.md)/[bàn giao09](review/2026-10-13/09-handoff.md). Tiếp theo phần10; chất lượng và kiểm tay còn theo giới hạn trong báo cáo.
 
 ## Bộ hướng dẫn chi tiết
 

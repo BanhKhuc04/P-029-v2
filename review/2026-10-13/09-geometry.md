@@ -3,7 +3,7 @@
 - **Nhánh:** `codex/review-09-geometry`.
 - **Thứ tự:** 09 trong chuỗi 09 → 16.
 - **Dependency:** Không có phần mới phải chờ; đọc bàn giao 01–08 và bắt đầu ca C4 còn XFAIL.
-- **Trạng thái ban đầu:** 8 ca Chưa chạy. Nhánh hiện mới chứa mã nguồn main d18b1a9 và bộ tài liệu chuẩn bị.
+- **Kết quả ngày 13/10:** đã thực hiện 8 ca và sửa 4 nhóm lỗi; code `f22f2b6`. 631 Python +37 Node PASS;5 SKIP,0 XFAIL. Xem [báo cáo09](09-report.md) và [bàn giao09](09-handoff.md) để biết giới hạn và phần cần kiểm tay. Phần hướng dẫn bên dưới giữ quy trình đã dùng.
 - **Nguồn chung:** [kế hoạch 09–16](REVIEW-PLAN-09-16.md), [phân nhánh](README.md), [inventory 131 file](scope-inventory.tsv).
 
 ## Prompt để thực hiện phần này

@@ -172,8 +172,7 @@ def _cross_validate(samples: Sequence[Sample], seed: int = 0) -> tuple[float, fl
                  np.array([s.target for s in train], dtype=float))
         for s in test:
             p_rule.append(stats.get(s.rule, {}).get("precision", 0.5))
-            p_model.append(1.0 / (1.0 + math.exp(-float(vocab.features(s.rule, s.severity, s.label, s.value,
-                                                                        s.threshold) @ w))))
+            p_model.append(_sigmoid(float(vocab.features(s.rule, s.severity, s.label, s.value, s.threshold) @ w)))
             ys.append(s.target)
     y = np.array(ys, dtype=float)
     return _logloss(np.array(p_rule), y), _logloss(np.array(p_model), y)

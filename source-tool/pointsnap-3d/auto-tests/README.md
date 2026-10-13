@@ -1,5 +1,54 @@
 # Test tự động PointSnap trong thư mục riêng
 
+## Chạy toàn bộ các lớp kiểm tra
+
+`Run-AllTests.ps1` chạy pytest, các test của runner, dataset thật khi có
+`NUSCENES_ROOT`, 37 ca Node, kiểm tra cú pháp Python/JS/PowerShell, manifest,
+dependency, build wheel/sdist từ Git HEAD và cài wheel vào môi trường riêng.
+Kết quả từng pha, JUnit và log nằm trong `out/all-tests/<thời điểm>/`.
+
+```powershell
+# Cài công cụ build vào .venv trước lần chạy đầu
+.\.venv\Scripts\python.exe -m pip install build 'setuptools>=68' wheel
+
+.\auto-tests\Run-AllTests.ps1
+
+# Kiểm tra cả CVAT thật, Docker, model ảnh và 10 cảnh × 10 vòng chèn lỗi
+.\auto-tests\Run-AllTests.ps1 -Dataset D:\Vin_uni\data\nuscenes -LiveCvat -Docker -ModelSmoke -Evaluate -Rounds 10 -ReviewModel gpt-6.1-sol
+
+# Report API thật: tự tạo và xóa một task thử, so nhãn trước/sau các GET
+.\.venv\Scripts\python.exe .\auto-tests\smoke_services.py --out out\service-smoke
+```
+
+`-LiveCvat` và `smoke_services.py` chỉ ghi/xóa task thử do chính chúng tạo.
+`-Docker` tạo image tag riêng và chạy lại pytest Linux trong container tạm, sau đó
+tự xóa container. Linux không có torch/dataset/CVAT nên giữ SKIP tương ứng.
+Image/container của dịch vụ đang dùng được giữ nguyên.
+`-ModelSmoke` chạy inference mới trên ba ảnh CAM_FRONT cho Mask R-CNN,
+Grounding DINO + SAM 2.1 và hybrid bằng checkpoint đã tải; thiếu checkpoint trả
+SKIP, Hugging Face ở chế độ offline nên không tự tải model khác. Box Critic được kiểm
+bằng các TorchScript fixture trong pytest; không coi đó là kiểm chứng chất lượng
+của một model đã huấn luyện để triển khai.
+
+Runner phân biệt PASS/FAIL/SKIP/XFAIL. Pha thất bại không ngăn các pha sau chạy;
+exit 1 nếu có FAIL. Thành công của lệnh eval chỉ chứng minh lệnh chạy được:
+đọc `evaluation/summary.json` để xem các mục tiêu chất lượng.
+Sau eval, runner kiểm riêng 5 cảnh held-out bằng `check_quality.py`, so proxy
+cảnh báo/lỗi trên 100 box với ngưỡng 2,0/0,5. Các finding trên GT chưa được chấm
+tay nên không được gọi là false positive đã xác nhận; không lấy tập tuning gộp
+vào held-out để làm tỷ lệ thấp đi. Proxy vượt ngưỡng làm pha này FAIL.
+`-ReviewModel` chỉ ghi lại model đã thực hiện review trong báo cáo; không chọn hoặc
+thay model của ứng dụng hay model Codex đang chạy.
+
+`test_review_contracts.py` có ba regression độc lập cho lỗi tìm thấy trên main
+ngày 13/10/2026 (logit Critic quá âm, track ID 0, rider motion thiếu pose).
+Chúng cố ý giữ assertion đúng kỳ vọng và sẽ FAIL tới khi các lỗi được sửa;
+không đánh dấu xfail hoặc nới assertion để báo xanh. Package build lấy Git HEAD,
+vì vậy khi kiểm bản sửa production mới cần commit các sửa đó trước khi build.
+Workflow GitHub Actions cũng thu thập `tests` và `auto-tests` để các regression
+mới không bị bỏ qua; trên main chưa sửa, hai regression track/rider sẽ làm CI
+thất bại, còn regression Critic cần môi trường có torch để thực thi.
+
 Chạy từ thư mục `source-tool/pointsnap-3d` bằng PowerShell:
 
 ```powershell

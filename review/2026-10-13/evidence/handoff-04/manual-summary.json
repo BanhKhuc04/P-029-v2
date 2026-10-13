@@ -1,0 +1,29 @@
+{
+  "source": "review\\2026-10-13\\evidence\\g7\\verdicts-heldout.csv",
+  "rules": {
+    "floating": {
+      "counts": {
+        "true": 68,
+        "false": 2,
+        "unknown": 25,
+        "unreviewed": 4
+      },
+      "precision": 0.9714285714285714,
+      "decided_findings": 70,
+      "decided_tracks": 30
+    },
+    "size.class_range": {
+      "counts": {
+        "true": 1,
+        "false": 0,
+        "unknown": 22,
+        "unreviewed": 2
+      },
+      "precision": 1.0,
+      "decided_findings": 1,
+      "decided_tracks": 1
+    }
+  },
+  "g7_status": "UNASSESSED",
+  "reason": "Descriptive existing verdicts only; sample scope, independent split and coverage need review"
+}

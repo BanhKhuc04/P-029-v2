@@ -33,10 +33,14 @@ của một model đã huấn luyện để triển khai.
 Runner phân biệt PASS/FAIL/SKIP/XFAIL. Pha thất bại không ngăn các pha sau chạy;
 exit 1 nếu có FAIL. Thành công của lệnh eval chỉ chứng minh lệnh chạy được:
 đọc `evaluation/summary.json` để xem các mục tiêu chất lượng.
-Sau eval, runner kiểm riêng 5 cảnh held-out bằng `check_quality.py`, so proxy
-cảnh báo/lỗi trên 100 box với ngưỡng 2,0/0,5. Các finding trên GT chưa được chấm
-tay nên không được gọi là false positive đã xác nhận; không lấy tập tuning gộp
-vào held-out để làm tỷ lệ thấp đi. Proxy vượt ngưỡng làm pha này FAIL.
+Sau eval, runner đo riêng 5 cảnh reviewed-heldout bằng `check_quality.py`, báo
+proxy cảnh báo/lỗi trên 100 box và mức tham khảo 2,0/0,5. Finding trên GT chưa chấm
+tay không phải false positive đã xác nhận. Mặc định pha này `REPORT_ONLY`, không
+chứng nhận G7; dùng `--enforce-proxy` khi cần kiểm ngân sách proxy riêng. G7 theo
+quyết định 13/10 dùng precision tay từng luật, có mẫu và độ phủ; thiếu bằng chứng
+vẫn chưa nghiệm thu. `manual_precision.py --verdicts <csv> --out <json>` thống kê
+verdict sẵn có, kể cả Không rõ và số track có kết luận. Không coi scene đã dùng
+chỉnh luật là phép thử độc lập và không gộp tuning để làm tỷ lệ thấp đi.
 `-ReviewModel` chỉ ghi lại model đã thực hiện review trong báo cáo; không chọn hoặc
 thay model của ứng dụng hay model Codex đang chạy.
 

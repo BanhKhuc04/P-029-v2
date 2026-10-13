@@ -114,3 +114,23 @@ def test_token_query_is_rejected_and_not_logged(api_server, capsys):
     assert response.status_code == 400
     assert 'TEST-SECRET-URL-06' not in capsys.readouterr().err
     assert not calls
+
+
+def test_report_serializes_numpy_boolean_measurements_and_geometry(report_data):
+    import numpy as np
+    from dataclasses import replace
+    job, findings, config = report_data
+    finding = replace(findings[0], details={'terrain_reference':np.bool_(False),
+                      'distance':np.float32(.25),'centers':np.array([[1.,2.,3.]])})
+    data = json.loads(report_bytes(job,[finding],config,'json',{'coverage_gaps':[]}))
+    assert data['findings'][0]['details'] == {'terrain_reference':False,'distance':.25,'centers':[[1.,2.,3.]]}
+    assert data['passed'] is False
+
+
+def test_report_still_rejects_nonfinite_numpy_measurements(report_data):
+    import numpy as np
+    from dataclasses import replace
+    job, findings, config = report_data
+    finding = replace(findings[0], details={'distance':np.float32(np.nan)})
+    with pytest.raises(ValueError):
+        report_bytes(job,[finding],config,'json',{'coverage_gaps':[]})

@@ -97,7 +97,7 @@ class BoxPointSet:
 
 
 RING_REACH_M = 1.5
-"""`ring_ground_for_box` chỉ dùng điểm cách tâm box ≤ nửa cạnh dài + vành đai (0,8 m) + 0,1 m: lấy dư cho chắc."""
+"""Dư mỗi cạnh footprint khi lấy điểm ground; bán kính đường chéo giữ đủ góc box xoay."""
 
 
 def box_point_sets(
@@ -116,7 +116,7 @@ def box_point_sets(
                             & (np.abs(pts[near_idx, 1] - box.center[1]) <= reach)]
         local_all = to_box_frame(pts[near_idx], box)
 
-        own = cloud.without_others(index, reach=max(box.dims[:2]) / 2.0 + RING_REACH_M)
+        own = cloud.without_others(index, reach=math.hypot(*(half[:2] + RING_REACH_M)))
         ground = ring_ground_for_box(own, box)
         ground_z = ground.ground_z if ground.is_valid else None
         base = (ground_z if ground_z is not None else box.bottom_z) - box.center[2]

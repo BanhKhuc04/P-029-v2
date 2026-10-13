@@ -247,13 +247,13 @@ def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: Headi
     track, nên chỉ phần lệch khác thường so với chính track mới là lỗi. Box lẻ hoặc track có ít hơn 2 box khác đo được
     thì so độ lệch tuyệt đối.
     """
-    by_track: dict[int, list[float]] = {}
+    by_track: dict[tuple[int, str], list[float]] = {}
     for box, dev in measures:
         if box.track_id is not None:
-            by_track.setdefault(box.track_id, []).append(dev)
+            by_track.setdefault((box.track_id, box.label), []).append(dev)
     findings: list[Finding] = []
     for box, dev in measures:
-        others = list(by_track.get(box.track_id, [])) if box.track_id is not None else []
+        others = list(by_track.get((box.track_id, box.label), [])) if box.track_id is not None else []
         if others:
             others.remove(dev)
         if len(others) >= 2:

@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-13",
+  "timezone": "Asia/Saigon",
+  "branch": "codex/review-10-spec-scenarios",
+  "base": "cbeb41c",
+  "tested_code_commit": "c5ac54d26542513ac7c292b89b6d0018f5ff521a",
+  "tested_source_hashes": {
+    "detectors/attributes.py": "745c2d8c9640e79399ed219ba89c6907bef4398b405588e665841ef9bc1af19e",
+    "detectors/track.py": "a24f18b4c17f41604204a202571be076ad6c4162855a1e064ea1560effc57bf9",
+    "detectors/size.py": "f234542e19dcbefd0625425a0abc0ca1334513d169c03ed2f785cb2f0b931358",
+    "core/scanner.py": "ea4d39a82f2ba8aa6e7e2514201cd85bf000e9d640dba1ae1e65852a7dfa599f",
+    "core/config.py": "51cf75bd9cf7d1e69253873bcd60ea95ab4063ccefa1f4e3c83dc65501a49427"
+  },
+  "source_fingerprints_match": true,
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "baseline": {
+    "tests": 72,
+    "passed": 72,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "skip_cases": [],
+    "review10_cases": 0,
+    "junit_sha256": "01a3f6398ff382319fe1127ae5685314bb8aebbfefe989b031f6e7a5e26172b0"
+  },
+  "red": {
+    "tests": 19,
+    "passed": 0,
+    "failed": 19,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "skip_cases": [],
+    "review10_cases": 19,
+    "junit_sha256": "9bc27cfb3ba6d9d18ba2fc467775d7c6c511a185afe45c183a2a5846dca75982"
+  },
+  "iteration_boundary_red": {
+    "tests": 2,
+    "passed": 0,
+    "failed": 2,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "skip_cases": [],
+    "review10_cases": 2,
+    "junit_sha256": "5d3d9d6450fdb11eb5c57eadc5a8daf7aedd7fd6bed699afa5ca6524df84948d"
+  },
+  "cargo_direct_red": {
+    "tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "skip_cases": [],
+    "review10_cases": 1,
+    "junit_sha256": "73d137dea4be3ee6f6bd432103ceb84ce56b0e8c64753601a1b88d067747b519"
+  },
+  "focused": {
+    "tests": 146,
+    "passed": 146,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfailed": 0,
+    "skip_cases": [],
+    "review10_cases": 29,
+    "junit_sha256": "d934807c88c0a8f1368c4d5aef2a67dd7ab1b29bd3d9c345f0461e678f627991"
+  },
+  "full": {
+    "tests": 667,
+    "passed": 662,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 5,
+    "xfailed": 0,
+    "skip_cases": [
+      {
+        "name": "test_critic_findings_with_scripted_model",
+        "reason": "could not import 'torch': No module named 'torch'"
+      },
+      {
+        "name": "test_critic_track_relative",
+        "reason": "could not import 'torch': No module named 'torch'"
+      },
+      {
+        "name": "test_upload_then_read_back_matches_ground_truth",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      },
+      {
+        "name": "test_flag_then_rescan_on_live_cvat",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      },
+      {
+        "name": "test_flag_tilted_shapes_preserves_all_other_annotations",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      }
+    ],
+    "review10_cases": 31,
+    "junit_sha256": "32e028b18495f07075549e08f234713aba079733bf852a62736d90e82613fdd1"
+  },
+  "node": {
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0
+  },
+  "coverage": {
+    "pointsnap\\core\\config.py": {
+      "covered_lines": 625,
+      "num_statements": 652,
+      "percent_covered": 95.85889570552148,
+      "percent_covered_display": "96",
+      "missing_lines": 27,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.85889570552148,
+      "percent_statements_covered_display": "96"
+    },
+    "pointsnap\\core\\scanner.py": {
+      "covered_lines": 202,
+      "num_statements": 228,
+      "percent_covered": 88.59649122807018,
+      "percent_covered_display": "89",
+      "missing_lines": 26,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.59649122807018,
+      "percent_statements_covered_display": "89"
+    },
+    "pointsnap\\detectors\\attributes.py": {
+      "covered_lines": 162,
+      "num_statements": 162,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 2,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "pointsnap\\detectors\\size.py": {
+      "covered_lines": 198,
+      "num_statements": 209,
+      "percent_covered": 94.73684210526316,
+      "percent_covered_display": "95",
+      "missing_lines": 11,
+      "excluded_lines": 2,
+      "percent_statements_covered": 94.73684210526316,
+      "percent_statements_covered_display": "95"
+    },
+    "pointsnap\\detectors\\track.py": {
+      "covered_lines": 279,
+      "num_statements": 285,
+      "percent_covered": 97.89473684210526,
+      "percent_covered_display": "98",
+      "missing_lines": 6,
+      "excluded_lines": 2,
+      "percent_statements_covered": 97.89473684210526,
+      "percent_statements_covered_display": "98"
+    }
+  },
+  "whole_pointsnap_coverage": {
+    "covered_lines": 6337,
+    "num_statements": 6996,
+    "percent_covered": 90.58033161806746,
+    "percent_covered_display": "91",
+    "missing_lines": 659,
+    "excluded_lines": 31,
+    "percent_statements_covered": 90.58033161806746,
+    "percent_statements_covered_display": "91"
+  },
+  "execution": "Full suite unsandboxed for Windows TestClient socketpair; POINTSNAP_LIVE_CVAT=0; nuScenes read only",
+  "dataset_metadata_sha256": {
+    "scene.json": "cc4dfeac83ac4f5d3e7fc899f90156891a21fa08bc0f8a1ac0e0a27cc1a0bfa6",
+    "sample.json": "3c47794e2e6c09af4be7907b83f50750351180008d059899f42a9d405ed68586",
+    "sample_annotation.json": "49703705e98ddea281ca321aae3b7352a8b6495840fe654cf0717c5b7b721080"
+  },
+  "warning": "Existing Starlette/httpx deprecation; no dependency changes"
+}

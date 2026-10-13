@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-13",
+  "timezone": "Asia/Saigon",
+  "baseline": "5dcc97f1ffc1751d022e2474c0b50745e348af86",
+  "feature_main": "be1778c8c83c2f711016f5468245641118453b6f",
+  "review_target": "d18b1a9e915d358ab14d281ce256a87bbaab8855",
+  "fetched_remote_main": "d18b1a9e915d358ab14d281ce256a87bbaab8855",
+  "first_parent_pr_count": 14,
+  "inventory_rows": 131,
+  "inventory_paths_unique": 131,
+  "missing_non_deleted_files": 0,
+  "inventory_overlap_with_review54": 35,
+  "checklist_cases": 64,
+  "unique_checklist_cases": 64,
+  "broken_local_links": 0,
+  "missing_test_paths": [],
+  "plan_state": "Prepared; new checklist has not been executed"
+}

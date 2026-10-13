@@ -98,9 +98,6 @@ def test_track_from_flat_onto_slope_sunk_frame_flagged():
     assert _flagged(_track([_flat] * 5 + [_slope(8)] * 5, offsets)) == [7]
 
 
-@pytest.mark.xfail(strict=True, reason="giới hạn đã biết (C4): trên dốc 8° box lơ lửng 25 cm có d theo trung vị chỉ "
-                   "-6 cm, gần trung vị track (nửa bằng, nửa dốc) nên không bị báo; báo theo mặt phẳng dốc cho box thuộc "
-                   "track làm tăng báo nhầm trên nuScenes")
 def test_track_from_flat_onto_slope_floating_frame_flagged():
     """Track đi từ đường bằng lên dốc 8°, frame 7 lơ lửng 25 cm: nên báo frame 7."""
     offsets = [0.25 if f == 7 else 0.0 for f in range(10)]

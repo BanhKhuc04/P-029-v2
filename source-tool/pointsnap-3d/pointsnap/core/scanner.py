@@ -159,7 +159,8 @@ def check_size(job: JobData, config: Config, frames: FrameSource | None = None) 
     if frames is not None:
         from pointsnap.detectors.size import relax_filled_oversize
 
-        findings = relax_filled_oversize(findings, job.cuboids, frames, config.size.cargo_classes)
+        findings = relax_filled_oversize(findings, job.cuboids, frames, config.size.cargo_classes,
+                                        class_key=lambda box: _typed_label(box, config))
     return findings
 
 
@@ -289,10 +290,10 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
     from pointsnap.detectors.attributes import detect_attribute_height, detect_rider_state, detect_spec_geometry
 
-    sensor_to_world, _ = _poses(job, frames)
+    sensor_to_world, timestamps = _poses(job, frames)
     return (detect_attribute_errors(job.cuboids, config.spec) + detect_attribute_height(job.cuboids, config.spec)
             + detect_spec_geometry(job.cuboids, config.spec)
-            + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s))
+            + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s, timestamps))
 
 
 _RULE_SWITCH = {
@@ -399,7 +400,8 @@ def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None)
     Lỗi đọc frame được chuyển cho caller để lần quét thất bại, không trả ĐẠT.
     """
     cloud_rules = ("floating", "heading_points", "fit_empty", "fit_outside", "fit_loose")
-    pose_rules = ("track_jump", "track_split_id", "track_long_interpolation", "heading_flip", "heading_motion")
+    pose_rules = ("track_jump", "track_split_id", "track_long_interpolation", "heading_flip", "heading_motion",
+                  "attr_rider_state")
     gaps: list[str] = []
     enabled_cloud = [name for name in cloud_rules if getattr(config.rules, name)]
     if frames is None and enabled_cloud and any(c.visible for c in job.cuboids):
@@ -411,7 +413,9 @@ def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None)
             gaps.append(f"Kiểm tra một phần: point cloud rỗng ở {len(empty)} frame cho luật " + ", ".join(enabled_cloud))
 
     enabled_pose = [name for name in pose_rules if getattr(config.rules, name)
-                    and (name != "track_long_interpolation" or config.track.long_interpolation.enabled)]
+                    and (name != "track_long_interpolation" or config.track.long_interpolation.enabled)
+                    and (name != "attr_rider_state" or (config.spec.rider_state and any(
+                        c.visible and c.label == config.spec.rider_state["class"] for c in job.cuboids)))]
     tracked_frames = sorted({c.frame for c in job.cuboids if c.visible and c.track_id is not None})
     if enabled_pose and tracked_frames:
         missing = [frame for frame in tracked_frames

@@ -1,0 +1,170 @@
+{
+  "date": "2026-10-13",
+  "timezone": "Asia/Saigon",
+  "branch": "codex/review-09-geometry",
+  "baseline_commit": "3584000",
+  "tested_code_commit": "f22f2b6f6b0d60ba78953bc6d7937a1ec0d5281d",
+  "tested_source_hashes": {
+    "core/ground.py": "c54618a332717b2e32bcf2006faa1f272edc4fd96d30657ad9e3b2fad3904a4e",
+    "core/box_points.py": "735a582dd98167aff0976f415db3d0eeba478b23cdc5ecdc7e0d4db9ae468dd5",
+    "detectors/floating.py": "8e969ba99df694ba72b269303ac8c06760a9b8f4ccbed3a268190063bcfc19f4",
+    "detectors/track.py": "4cbe30eafe3d04447b4476509b696bf261d0e88a0694906b7ed5bd64913f188d",
+    "detectors/heading.py": "31be00cbd77fdeba3b1abe435d1144a0438dcc68826e0ba7849d9e081239eb8d",
+    "detectors/fit.py": "9e582f3113464a03882303c1c90c465fa0c2ddf1077041901a1c73e0f439feb5"
+  },
+  "source_hashes_match_committed_working_tree": true,
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "dataset_metadata_sha256": {
+    "scene.json": "cc4dfeac83ac4f5d3e7fc899f90156891a21fa08bc0f8a1ac0e0a27cc1a0bfa6",
+    "sample.json": "3c47794e2e6c09af4be7907b83f50750351180008d059899f42a9d405ed68586",
+    "sample_annotation.json": "49703705e98ddea281ca321aae3b7352a8b6495840fe654cf0717c5b7b721080"
+  },
+  "red": {
+    "tests": 45,
+    "passed": 36,
+    "failed": 9,
+    "errors": 0,
+    "skipped": 0,
+    "skip_cases": [],
+    "new_review09_cases": 28,
+    "junit_sha256": "8916c21691aeefd2a2f46d9833b784b110a048894e0179b0b897d3be4a1446cd"
+  },
+  "focused": {
+    "tests": 191,
+    "passed": 190,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 1,
+    "skip_cases": [
+      {
+        "name": "test_estimate_ground_real_nuscenes",
+        "reason": "Chưa có dữ liệu nuScenes v1.0-mini local"
+      }
+    ],
+    "new_review09_cases": 28,
+    "junit_sha256": "e373ba2d99e1de394a46016303fc68e4d636c4437b2188fee920a7036c9109be",
+    "xfailed": 0
+  },
+  "full": {
+    "tests": 636,
+    "passed": 631,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 5,
+    "skip_cases": [
+      {
+        "name": "test_critic_findings_with_scripted_model",
+        "reason": "could not import 'torch': No module named 'torch'"
+      },
+      {
+        "name": "test_critic_track_relative",
+        "reason": "could not import 'torch': No module named 'torch'"
+      },
+      {
+        "name": "test_upload_then_read_back_matches_ground_truth",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      },
+      {
+        "name": "test_flag_then_rescan_on_live_cvat",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      },
+      {
+        "name": "test_flag_tilted_shapes_preserves_all_other_annotations",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      }
+    ],
+    "new_review09_cases": 28,
+    "junit_sha256": "a151884dca71370cb86e3324dc78e55e3fb1b31e670d1ba201d01bb7eed95eae",
+    "xfailed": 0
+  },
+  "node": {
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0
+  },
+  "coverage_scope_files": {
+    "pointsnap\\core\\box_points.py": {
+      "covered_lines": 85,
+      "num_statements": 85,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "pointsnap\\core\\ground.py": {
+      "covered_lines": 201,
+      "num_statements": 209,
+      "percent_covered": 96.17224880382776,
+      "percent_covered_display": "96",
+      "missing_lines": 8,
+      "excluded_lines": 3,
+      "percent_statements_covered": 96.17224880382776,
+      "percent_statements_covered_display": "96"
+    },
+    "pointsnap\\detectors\\fit.py": {
+      "covered_lines": 179,
+      "num_statements": 184,
+      "percent_covered": 97.28260869565217,
+      "percent_covered_display": "97",
+      "missing_lines": 5,
+      "excluded_lines": 2,
+      "percent_statements_covered": 97.28260869565217,
+      "percent_statements_covered_display": "97"
+    },
+    "pointsnap\\detectors\\floating.py": {
+      "covered_lines": 166,
+      "num_statements": 171,
+      "percent_covered": 97.07602339181287,
+      "percent_covered_display": "97",
+      "missing_lines": 5,
+      "excluded_lines": 3,
+      "percent_statements_covered": 97.07602339181287,
+      "percent_statements_covered_display": "97"
+    },
+    "pointsnap\\detectors\\heading.py": {
+      "covered_lines": 156,
+      "num_statements": 158,
+      "percent_covered": 98.73417721518987,
+      "percent_covered_display": "99",
+      "missing_lines": 2,
+      "excluded_lines": 2,
+      "percent_statements_covered": 98.73417721518987,
+      "percent_statements_covered_display": "99"
+    },
+    "pointsnap\\detectors\\size.py": {
+      "covered_lines": 194,
+      "num_statements": 207,
+      "percent_covered": 93.71980676328502,
+      "percent_covered_display": "94",
+      "missing_lines": 13,
+      "excluded_lines": 2,
+      "percent_statements_covered": 93.71980676328502,
+      "percent_statements_covered_display": "94"
+    },
+    "pointsnap\\detectors\\track.py": {
+      "covered_lines": 266,
+      "num_statements": 272,
+      "percent_covered": 97.79411764705883,
+      "percent_covered_display": "98",
+      "missing_lines": 6,
+      "excluded_lines": 2,
+      "percent_statements_covered": 97.79411764705883,
+      "percent_statements_covered_display": "98"
+    }
+  },
+  "whole_pointsnap_coverage": {
+    "covered_lines": 6294,
+    "num_statements": 6956,
+    "percent_covered": 90.48303622771708,
+    "percent_covered_display": "90",
+    "missing_lines": 662,
+    "excluded_lines": 31,
+    "percent_statements_covered": 90.48303622771708,
+    "percent_statements_covered_display": "90"
+  },
+  "runtime_recovery": "Sandbox asyncio socketpair.accept blocked; isolated faulthandler repro; full suite succeeded unsandboxed",
+  "live_cvat": "Disabled: POINTSNAP_LIVE_CVAT=0; no task writes",
+  "warning": "Existing Starlette/httpx TestClient deprecation; no dependency change"
+}

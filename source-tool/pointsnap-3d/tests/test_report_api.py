@@ -134,3 +134,23 @@ def test_report_still_rejects_nonfinite_numpy_measurements(report_data):
     finding = replace(findings[0], details={'distance':np.float32(np.nan)})
     with pytest.raises(ValueError):
         report_bytes(job,[finding],config,'json',{'coverage_gaps':[]})
+
+
+def test_report_does_not_claim_unavailable_optional_models_were_checked(report_data):
+    job, findings, config = report_data
+    data = json.loads(report_bytes(job, findings, config, 'json', {
+        'coverage_gaps': [], 'point_cloud_available': True, 'pose_available': True,
+    }))
+    assert 'cam.mismatch' in data['enabled_checks'] and 'critic.box' in data['enabled_checks']
+    assert not any(name.startswith('cam.') for name in data['checks'])
+    assert 'critic.box' not in data['checks']
+    assert 'lidar.missing' in data['checks']
+
+
+def test_report_excludes_static_and_missing_without_pose(report_data):
+    job, findings, config = report_data
+    data = json.loads(report_bytes(job, findings, config, 'json', {
+        'coverage_gaps': ['missing pose'], 'point_cloud_available': True, 'pose_available': False,
+    }))
+    assert not {'track.static_shift', 'heading.static', 'lidar.missing'} & set(data['checks'])
+    assert data['passed'] is False

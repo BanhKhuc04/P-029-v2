@@ -3,7 +3,7 @@
 - **Nhánh:** `codex/review-10-spec-scenarios`.
 - **Thứ tự:** 10 trong chuỗi 09 → 16.
 - **Dependency:** Nhận kết quả 09, nhất là sửa track/size/ground và thay đổi reference.
-- **Trạng thái ban đầu:** 8 ca Chưa chạy. Nhánh hiện mới chứa mã nguồn main d18b1a9 và bộ tài liệu chuẩn bị.
+- **Kết quả 13/10:** đã thực hiện8ca,sửa9nhóm; code `c5ac54d`,662 Python+37 Node PASS,5 SKIP,0 XFAIL. Xem [báo cáo10](10-report.md)/[bàn giao10](10-handoff.md) và phần cần kiểm tay. Hướng dẫn bên dưới giữ quy trình đã dùng.
 - **Nguồn chung:** [kế hoạch 09–16](REVIEW-PLAN-09-16.md), [phân nhánh](README.md), [inventory 131 file](scope-inventory.tsv).
 
 ## Prompt để thực hiện phần này

@@ -1,6 +1,6 @@
 # Phân nhánh để thực hiện review 09–16
 
-**8 nhánh local**, làm theo thứ tự **09 → 16**. Cả tám bắt đầu từ cùng commit chuẩn bị tài liệu, có mã nguồn nền main `d18b1a9`. Phần09 đã thực hiện và commit trên nhánh09: xem [báo cáo](09-report.md)/[bàn giao](09-handoff.md). Phần10–16 chưa thực hiện; các nhánh đó cần nhận kết quả09 theo dependency trước khi làm tiếp.
+**8 nhánh**, làm theo thứ tự **09 → 16**. Cả tám bắt đầu từ commit chuẩn bị trên main `d18b1a9`. Phần09 đã thực hiện và push GitHub; phần10 đã nhận09 và hoàn tất review: [báo cáo10](10-report.md)/[bàn giao10](10-handoff.md). Phần11–16 chưa thực hiện; các nhánh đó cần nhận kết quả10 theo dependency trước khi làm tiếp. Các kết quả review còn giới hạn kiểm tay/quality riêng.
 
 ## Chọn phần cần làm
 

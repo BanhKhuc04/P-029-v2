@@ -23,4 +23,4 @@
 
 [Báo cáo09](09-report.md), [verification](evidence/09/verification.json), [GT comparison](evidence/09/quality-comparison.json), [injection](evidence/09/injection-summary.json).
 
-Phần09 được commit local; push/PR/merge chưa thực hiện. Các nhánh10–16 chưa được cập nhật kết quả09.
+Phần 09 đã được push lên GitHub ngày 13/10, đầu nhánh `cbeb41c`. Phần 10 đã nhập kết quả 09. Chưa có thao tác tạo PR hoặc merge trong chat này; các nhánh 11–16 cần nhận kết quả theo dependency trước khi làm tiếp.

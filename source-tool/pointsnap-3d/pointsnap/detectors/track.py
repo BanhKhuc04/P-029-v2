@@ -402,7 +402,7 @@ def _predict(track: list[tuple[int, float, np.ndarray]], k: int) -> np.ndarray |
     if k < 2:
         return None
     (_, t2, p2), (_, t1, p1), (_, t0, _) = track[k - 2], track[k - 1], track[k]
-    if t1 - t2 <= 0 or t0 - t1 > SWAP_MAX_GAP_S or t1 - t2 > SWAP_MAX_GAP_S:
+    if not (0 < t1 - t2 <= SWAP_MAX_GAP_S and 0 < t0 - t1 <= SWAP_MAX_GAP_S):
         return None
     return p1 + (p1 - p2) * (t0 - t1) / (t1 - t2)
 
@@ -412,6 +412,7 @@ def detect_id_swaps(
     config: TrackConfig,
     sensor_to_world_by_frame: Mapping[int, np.ndarray] | None = None,
     timestamps_by_frame: Mapping[int, float] | None = None,
+    *, class_key: Callable[[Cuboid], str] | None = None,
 ) -> list[Finding]:
     """`track.id_swap` (C5, spec 4.4.6): hai track cùng nhóm đổi chỗ nhau ở một frame.
 
@@ -420,40 +421,57 @@ def detect_id_swaps(
     `jump_warning_m`) → nghi người gán nối nhầm hai vật, vd hai xe máy chạy song song. Cú nhảy của từng track có thể nhỏ
     hơn ngưỡng `track.jump` vì vật bên cạnh chỉ cách vài chục cm.
     """
-    tracks: dict[int, list[tuple[int, float, np.ndarray]]] = {}
-    labels: dict[int, Cuboid] = {}
-    has_world_all = True
+    class_key = class_key or (lambda box: box.label)
+    tracks: dict[int, list[Cuboid]] = {}
     for tid, boxes in group_by_track(cuboids).items():
-        visible = sorted((b for b in boxes if b.visible), key=lambda b: b.frame)
+        visible = sorted((b for b in boxes if b.visible and b.keyframe), key=lambda b: b.frame)
         if len(visible) < 3 or config.group_for(visible[0].label) is None:
             continue
-        centers, has_world = _get_world_centers(visible, sensor_to_world_by_frame)
-        has_world_all &= has_world
-        tracks[tid] = [(b.frame, _time(b.frame, config, timestamps_by_frame), centers[i, :2])
-                       for i, b in enumerate(visible)]
-        labels[tid] = visible[0]
+        tracks[tid] = visible
+    frames_by_track = {tid: {box.frame for box in boxes} for tid, boxes in tracks.items()}
+    world_ready = {tid: sensor_to_world_by_frame is not None and frames.issubset(sensor_to_world_by_frame)
+                   for tid, frames in frames_by_track.items()}
+    time_ready = {tid: bool(timestamps_by_frame) and frames.issubset(timestamps_by_frame)
+                  for tid, frames in frames_by_track.items()}
+    paths: dict[tuple[int, bool, bool], list[tuple[int, float, np.ndarray]]] = {}
+
+    def trajectory(tid: int, world: bool, actual_time: bool):
+        key = (tid, world, actual_time)
+        if key not in paths:
+            boxes = tracks[tid]
+            centers, _ = _get_world_centers(boxes, sensor_to_world_by_frame if world else None)
+            times = timestamps_by_frame if actual_time else None
+            paths[key] = [(box.frame, _time(box.frame, config, times), centers[i, :2])
+                          for i, box in enumerate(boxes)]
+        return paths[key]
+
     findings: list[Finding] = []
     ids = sorted(tracks)
     for x, a in enumerate(ids):
-        grp = config.group_for(labels[a].label)
+        grp = config.group_for(tracks[a][0].label)
         for b in ids[x + 1:]:
-            if config.group_for(labels[b].label) is not grp:
+            if config.group_for(tracks[b][0].label) is not grp:
                 continue
-            index_b = {f: i for i, (f, _, _) in enumerate(tracks[b])}
-            for ka, (frame, _, pa) in enumerate(tracks[a]):
+            pair_world = world_ready[a] and world_ready[b]
+            pair_time = time_ready[a] and time_ready[b]
+            path_a, path_b = trajectory(a, pair_world, pair_time), trajectory(b, pair_world, pair_time)
+            index_b = {f: i for i, (f, _, _) in enumerate(path_b)}
+            for ka, (frame, _, pa) in enumerate(path_a):
                 kb = index_b.get(frame)
                 if kb is None:
                     continue
-                pred_a, pred_b = _predict(tracks[a], ka), _predict(tracks[b], kb)
+                box = tracks[a][ka]
+                if class_key(box) != class_key(tracks[b][kb]):
+                    continue
+                pred_a, pred_b = _predict(path_a, ka), _predict(path_b, kb)
                 if pred_a is None or pred_b is None:
                     continue
-                pb = tracks[b][kb][2]
+                pb = path_b[kb][2]
                 keep = float(np.linalg.norm(pa - pred_a) + np.linalg.norm(pb - pred_b))
                 swap = float(np.linalg.norm(pa - pred_b) + np.linalg.norm(pb - pred_a))
                 if keep <= grp.jump_warning_m or swap > 0.35 * keep:
                     continue
-                strong = has_world_all and keep > 2 * grp.jump_warning_m and swap <= 0.2 * keep
-                box = next(c for c in cuboids if c.track_id == a and c.frame == frame)
+                strong = pair_world and keep > 2 * grp.jump_warning_m and swap <= 0.2 * keep
                 findings.append(Finding(
                     error_type=ErrorType.TRACK, rule="track.id_swap",
                     severity=Severity.ERROR if strong else Severity.WARNING, frame=frame, label=box.label,
@@ -461,7 +479,8 @@ def detect_id_swaps(
                     message=(f"Track {a} và track {b} đổi chỗ nhau ở frame {frame}: vị trí mỗi box khớp quỹ đạo của "
                              f"track kia (lệch {swap:.2f} m, giữ nguyên ID lệch {keep:.2f} m): nghi gán nhầm ID, kiểm "
                              f"tra hai track từ frame này (spec 4.4.6)"),
-                    details={"other_track_id": b, "keep_m": keep, "swap_m": swap},
+                    details={"other_track_id": b, "keep_m": keep, "swap_m": swap,
+                             "has_world_pose": pair_world, "actual_timestamps": pair_time},
                 ))
                 break  # một mục cho mỗi cặp track
     return findings
@@ -493,7 +512,7 @@ def detect_track_errors(
         findings.extend(detect_track_spec(track_boxes, config, stop_frame=stop_frame))
 
     # Đổi nhầm ID giữa hai track (C5)
-    findings.extend(detect_id_swaps(cuboids, config, sensor_to_world_by_frame, timestamps_by_frame))
+    findings.extend(detect_id_swaps(cuboids, config, sensor_to_world_by_frame, timestamps_by_frame, class_key=class_key))
 
     # Kiểu 2: tách ID
     findings.extend(detect_track_splits(

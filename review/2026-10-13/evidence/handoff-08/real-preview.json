@@ -1,0 +1,12 @@
+{
+  "model": "gpt-6.1-sol",
+  "scene": "scene-0061",
+  "deleted_track_id": 153,
+  "finding_frame": 7,
+  "rule": "lidar.missing",
+  "preview_points": 88,
+  "synthetic_box": true,
+  "camera_channel": "CAM_FRONT",
+  "jpeg_bytes": 23848,
+  "scope": "One selected recovered deletion example; no CVAT writes or human verdicts"
+}

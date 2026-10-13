@@ -81,7 +81,7 @@ def load_dotenv(path: Path = Path(".env")) -> None:
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
 
-def main(argv: list[str] | None = None) -> int:
+def _main(argv: list[str] | None = None) -> int:
     _ensure_utf8_output()
     load_dotenv()
     args = build_parser().parse_args(argv)
@@ -112,6 +112,16 @@ def main(argv: list[str] | None = None) -> int:
     task = _NOT_IMPLEMENTED[args.command]
     print(f"Lệnh '{args.command}' chưa có (việc {task} trong quan-ly/TASKS.md).", file=sys.stderr)
     return EXIT_RUNTIME_ERROR
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        return _main(argv)
+    except Exception as exc:
+        token = os.environ.get("CVAT_TOKEN")
+        error = str(exc).replace(token, "***") if token else str(exc)
+        print(f"Lỗi khi chạy: {error}", file=sys.stderr)
+        return EXIT_RUNTIME_ERROR
 
 
 if __name__ == "__main__":

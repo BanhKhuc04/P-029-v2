@@ -39,7 +39,7 @@ def detect_floating_for_box(
     seed: int | None = 42,
 ) -> Finding | None:
     """Kiểm tra lỗi lơ lửng / lún đất cho một box 3D."""
-    if cuboid.outside or cuboid.label not in config.classes:
+    if not cuboid.visible or cuboid.label not in config.classes:
         return None
 
     est: GroundEstimate = estimate_ground_for_box(
@@ -218,7 +218,8 @@ def estimate_scene_ground(
         for index, box in enumerate(boxes):
             if box.label in classes:
                 results.append((box, ring_ground_for_box(
-                    cloud.without_others(index, reach=max(box.dims[:2]) / 2.0 + config.ring_outer_m + 0.5), box,
+                    cloud.without_others(index, reach=math.hypot(box.length / 2 + config.ring_outer_m,
+                                                               box.width / 2 + config.ring_outer_m)), box,
                     ring_inner_m=config.ring_inner_m,
                     ring_outer_m=config.ring_outer_m, min_ground_points=min_points,
                 )))
@@ -240,53 +241,66 @@ def floating_findings_by_track(
       `|d| > error_min_abs_m`.
     - Box lẻ, hoặc track có ít hơn `min_track_boxes` box khác đo được: so `|d|` với `single_warning_m` / `single_error_m`.
     - Box không đủ điểm mặt đất: không kết luận, gộp một mục Thông tin cho mỗi track.
-    - Track đi qua mặt dốc (C4): box bị báo theo trung vị nhưng khi so **điểm tiếp xúc** (`contact_distance`, box trên dốc
-      rõ) / `distance` (box trên đường bằng) với các frame khác thì không lệch → bỏ mục báo. Chỉ bỏ bớt, không thêm mục.
+    - Track đi qua mặt dốc (C4): ưu tiên các peer có độ lệch trung vị–tiếp xúc tương đương nếu đủ peer. Không trộn
+      reference đường bằng và dốc làm che box lơ lửng; vẫn so trung vị ground, không bật báo tuyệt đối theo mọi plane.
+      Bỏ báo khi so điểm tiếp xúc với reference cũng không lệch.
     """
-    by_track: dict[int, list[int]] = defaultdict(list)
+    by_track: dict[tuple[int, str], list[int]] = defaultdict(list)
     for i, (box, est) in enumerate(estimates):
         if box.track_id is not None and est.is_valid:
-            by_track[box.track_id].append(i)
+            by_track[(box.track_id, box.label)].append(i)
 
     def contact_or_distance(j: int) -> float:
         est = estimates[j][1]
         return float(est.contact_distance if est.contact_distance is not None else est.distance)
 
+    def terrain_bias(j: int) -> float:
+        return float(estimates[j][1].distance) - contact_or_distance(j)
+
     findings: list[Finding] = []
-    no_evidence: dict[int | None, list[Cuboid]] = defaultdict(list)
+    no_evidence: dict[tuple[int | None, str], list[Cuboid]] = defaultdict(list)
     for i, (box, est) in enumerate(estimates):
         if not est.is_valid:
-            no_evidence[box.track_id].append(box)
+            no_evidence[(box.track_id, box.label)].append(box)
             continue
         d = float(est.distance)
-        others = [estimates[j][1].distance for j in by_track.get(box.track_id, []) if j != i]
+        peers = [j for j in by_track.get((box.track_id, box.label), []) if j != i]
+        comparable = [j for j in peers if abs(terrain_bias(j) - terrain_bias(i)) <= config.warning_m]
+        use_profile = len(comparable) >= config.min_track_boxes and len(comparable) < len(peers)
+        if use_profile:
+            peers = comparable
+        others = [estimates[j][1].distance for j in peers]
         details = {"distance": d, "ground_z": est.ground_z, "bottom_z": box.bottom_z,
                    "num_ground_points": est.num_ground_points}
         if len(others) >= config.min_track_boxes:
             reference = float(np.median(others))
             offset = d - reference
             details["track_median_distance"] = reference
-            if abs(offset) > config.error_m and abs(d) > config.error_min_abs_m:
+            absolute_distance = contact_or_distance(i) if use_profile else d
+            details["reference_frames"] = [estimates[j][0].frame for j in peers]
+            details["terrain_reference"] = use_profile
+            details["contact_distance"] = est.contact_distance
+            if abs(offset) > config.error_m and abs(absolute_distance) > config.error_min_abs_m:
                 severity, threshold = Severity.ERROR, config.error_m
             elif abs(offset) > config.warning_m:
                 severity, threshold = Severity.WARNING, config.warning_m
             else:
                 continue
-            peers = [j for j in by_track[box.track_id] if j != i]
-            if est.contact_distance is not None or any(estimates[j][1].contact_distance is not None for j in peers):
-                on_contact = contact_or_distance(i) - float(np.median([contact_or_distance(j) for j in peers]))
+            peers_all = [j for j in by_track.get((box.track_id, box.label), []) if j != i]
+            if est.contact_distance is not None or any(estimates[j][1].contact_distance is not None for j in peers_all):
+                on_contact = contact_or_distance(i) - float(np.median([contact_or_distance(j) for j in peers_all]))
                 if abs(on_contact) <= config.warning_m:
                     continue  # lệch chỉ do track đi từ đường bằng lên dốc (hoặc ngược lại)
-            if est.is_curb_supported:
-                continue  # đỗ gác bánh vỉa hè / lề đường: đáy box tựa trên bề mặt địa hình cao hợp lệ
+            if getattr(est, "is_curb_supported", False):
+                continue  # đỗ gác bánh vỉa hè / lề đường
             direction = "cao hơn" if offset > 0 else "thấp hơn"
-            message = (f"{_describe(d)}; {direction} {abs(offset) * 100:.0f} cm so với các frame khác của track "
+            message = (f"{_describe(absolute_distance)}; {direction} {abs(offset) * 100:.0f} cm so với các frame khác của track "
                        f"(trung vị {reference * 100:+.0f} cm)")
             value = offset
         else:
             # Không có track để so: so tuyệt đối, nên dùng điểm tiếp xúc trên mặt phẳng dốc nếu có (C4) — trên dốc trung vị
             # ở tâm box lệch với đáy box đúng spec tan(dốc) × nửa chiều dài box.
-            if est.is_curb_supported:
+            if getattr(est, "is_curb_supported", False):
                 continue  # đỗ gác bánh vỉa hè / lề đường
             if est.contact_distance is not None:
                 d = float(est.contact_distance)
@@ -298,7 +312,6 @@ def floating_findings_by_track(
                 severity, threshold = Severity.WARNING, config.single_warning_m
             else:
                 continue
-
             message = _describe(d)
             value = d
         findings.append(Finding(
@@ -307,7 +320,7 @@ def floating_findings_by_track(
             threshold=float(threshold), details=details,
         ))
 
-    for track_id, boxes in no_evidence.items():
+    for (track_id, _label), boxes in no_evidence.items():
         groups = [[b] for b in boxes] if track_id is None else [boxes]
         for group in groups:
             first, frames = group[0], sorted(b.frame for b in group)
@@ -341,4 +354,4 @@ class FloatingDetector(BaseDetector):
     def detect(self, ctx: DetectionContext) -> list[Finding]:
         if ctx.frames is None:
             return []
-        return detect_floating_scene(ctx.cuboids, ctx.frames, ctx.config.floating)
+        return detect_floating_scene(ctx.cuboids, ctx.frames, ctx.config.floating)

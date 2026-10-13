@@ -1,12 +1,14 @@
 # BẢNG CHỈ SỐ ĐÁNH GIÁ (MỤC 8.2)
 
+> **Snapshot lịch sử, đối chiếu 11/10/2026:** bảng gốc không ghi ngày chạy, commit, config hash, seed hoặc bằng chứng xem tay. Giữ số liệu để truy vết; chưa dùng để chứng nhận phiên bản hiện hành. Báo cáo mới hơn: [giai đoạn 3 ngày 10/10](ket-qua-giai-doan-3.md). Xem [review phần 01](../../../review/2026-10-10/01-report.md) và bàn giao metadata cho phần 07.
+
 ## 1. Hiệu quả phát hiện (trên lỗi chèn giả)
 
 | Chỉ số | Mục tiêu | Kết quả thực tế | Đánh giá |
 |---|---|---|---|
 | Recall — floating | ≥ 90% | **92.0%** (242/263) | ĐẠT |
 | Recall — size | ≥ 90% | **56.3%** (103/183) | CHƯA ĐẠT |
-| Recall — track | ≥ 90% | **0.0%** (0/0) | CHƯA ĐẠT |
+| Recall — track | ≥ 90% | **Không xác định** (0/0, không có mẫu lỗi chèn) | CHƯA ĐỦ DỮ LIỆU |
 | Recall — error | ≥ 90% | **90.7%** (235/259) | ĐẠT |
 | Recall — warning | ≥ 80% | **58.8%** (110/187) | CHƯA ĐẠT |
 | Precision — floating | ≥ 70% | **17.6%** (TP: 242, FP: 1130) | CHƯA ĐẠT |

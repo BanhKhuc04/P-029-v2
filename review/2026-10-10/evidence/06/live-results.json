@@ -1,0 +1,11 @@
+{
+  "foreign_origin_status": 403,
+  "guideline_rule_before": false,
+  "guideline_rule_after": false,
+  "fake_host_status": 403,
+  "cache_control": "private, no-store",
+  "actual_pat_matches_in_tracked_files": [],
+  "fixture_task_id": 60,
+  "fixture_deleted": true,
+  "remaining_review05_tasks": []
+}

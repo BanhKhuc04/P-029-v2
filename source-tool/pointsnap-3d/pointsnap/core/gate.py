@@ -8,13 +8,16 @@ from pointsnap.core.config import GateConfig
 from pointsnap.core.model import Finding, Severity
 
 
-def gate_verdict(findings: Iterable[Finding], gate_config: GateConfig) -> tuple[bool, list[str]]:
+def gate_verdict(
+    findings: Iterable[Finding], gate_config: GateConfig, *, coverage_gaps: Iterable[str] = (),
+) -> tuple[bool, list[str]]:
     """Kiểm tra danh sách finding theo tiêu chí gate.
 
     Trả về `(passed, reasons)`.
-    - `passed`: `True` nếu số lỗi và số cảnh báo không vượt quá ngưỡng cho phép, ngược lại `False`.
+    - `passed`: `True` nếu không thiếu dữ liệu kiểm tra và số lỗi/cảnh báo không vượt ngưỡng.
     - `reasons`: danh sách lý do nếu không đạt (rỗng nếu đạt).
     """
+    findings = list(findings)
     errors = [f for f in findings if f.severity is Severity.ERROR]
     warnings = [f for f in findings if f.severity is Severity.WARNING]
 
@@ -24,7 +27,9 @@ def gate_verdict(findings: Iterable[Finding], gate_config: GateConfig) -> tuple[
     max_err = gate_config.max_errors
     max_warn = gate_config.max_warnings
 
-    reasons: list[str] = []
+    reasons = list(coverage_gaps)
+    if any(f.rule == "floating.no_evidence" for f in findings):
+        reasons.append("Kiểm tra một phần: có box thiếu bằng chứng mặt đất (floating.no_evidence)")
     if num_errors > max_err:
         reasons.append(f"Số lỗi ({num_errors}) vượt quá ngưỡng cho phép ({max_err})")
     if num_warnings > max_warn:

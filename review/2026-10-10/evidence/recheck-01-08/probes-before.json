@@ -1,0 +1,17 @@
+{
+  "queue_scope": {
+    "queued_from": "http://cvat-a.test",
+    "called_server": [
+      "http://cvat-b.test"
+    ],
+    "flag_called": true,
+    "status": "done"
+  },
+  "storage_nonfinite": {
+    "accepted_overflowing_exponent": true
+  },
+  "report_client_relative_url": {
+    "actual_url": "http://cvat-a.test/api/api/labels?page=2",
+    "expected_url": "http://cvat-a.test/api/labels?page=2"
+  }
+}

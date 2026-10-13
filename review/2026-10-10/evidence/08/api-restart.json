@@ -1,0 +1,32 @@
+{
+  "json": {
+    "status": 200,
+    "bytes": 2317,
+    "seconds": 0.3469,
+    "cache": "private, no-store",
+    "boxes": 4,
+    "errors": 0,
+    "warnings": 1,
+    "info": 2,
+    "point_cloud_available": true,
+    "point_cloud_note": "Point cloud: data/cvat/scene-0001/manifest.json",
+    "passed": false
+  },
+  "html": {
+    "status": 200,
+    "bytes": 12171,
+    "seconds": 0.3039,
+    "cache": "private, no-store",
+    "links_use_web_url": true
+  },
+  "csv": {
+    "status": 200,
+    "bytes": 813,
+    "seconds": 0.3372,
+    "cache": "private, no-store"
+  },
+  "no_auth": 401,
+  "bad_auth": 401,
+  "health": 200,
+  "annotations_unchanged": true
+}

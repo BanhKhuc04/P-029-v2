@@ -235,7 +235,7 @@ def test_thread_safe_data_paths(tmp_path: Path, monkeypatch):
         # 2. Tạo bản xuất giả lập trong custom_dir_1 cho Task 42
         scene_dir = custom_dir_1 / "scene-test"
         scene_dir.mkdir(parents=True)
-        (scene_dir / "cvat_task.json").write_text(json.dumps({"task_id": 42}), encoding="utf-8")
+        (scene_dir / "cvat_task.json").write_text(json.dumps({"task_id": 42, "url": "http://cvat:8080"}), encoding="utf-8")
         manifest_path = scene_dir / "manifest.json"
         manifest_path.write_text(json.dumps({"task_id": 42, "scene": "scene-test"}), encoding="utf-8")
 
@@ -304,11 +304,11 @@ def test_thread_safe_concurrent_data_paths(tmp_path: Path, monkeypatch):
     proj2_export.mkdir()
 
     (proj1_export / "scene_a").mkdir()
-    (proj1_export / "scene_a" / "cvat_task.json").write_text(json.dumps({"task_id": 101}), encoding="utf-8")
+    (proj1_export / "scene_a" / "cvat_task.json").write_text(json.dumps({"task_id": 101, "url": "http://cvat:8080"}), encoding="utf-8")
     (proj1_export / "scene_a" / "manifest.json").write_text(json.dumps({"task_id": 101}), encoding="utf-8")
 
     (proj2_export / "scene_b").mkdir()
-    (proj2_export / "scene_b" / "cvat_task.json").write_text(json.dumps({"task_id": 202}), encoding="utf-8")
+    (proj2_export / "scene_b" / "cvat_task.json").write_text(json.dumps({"task_id": 202, "url": "http://cvat:8080"}), encoding="utf-8")
     (proj2_export / "scene_b" / "manifest.json").write_text(json.dumps({"task_id": 202}), encoding="utf-8")
 
     # Xóa hoàn toàn các biến môi trường
@@ -376,6 +376,7 @@ def test_flag_scan_creates_rescan_run(mock_home: Path, client: TestClient):
         "num_warnings": 1,
         "gate_passed": False,
         "flagged": False,
+        "cvat_url": "http://localhost:8080",
     }
     (run_dir / "summary.json").write_text(json.dumps(summary_data), encoding="utf-8")
 

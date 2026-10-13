@@ -1,0 +1,42 @@
+{
+  "python": "3.11.17",
+  "package_path": "/usr/local/lib/python3.11/site-packages/pointsnap/__init__.py",
+  "cwd": "/work",
+  "fonts": 21,
+  "http": {
+    "/": {
+      "status": 200,
+      "bytes": 62967
+    },
+    "/static/app.js": {
+      "status": 200,
+      "bytes": 89599
+    },
+    "/static/styles.css": {
+      "status": 200,
+      "bytes": 28524
+    },
+    "/static/favicon.svg": {
+      "status": 200,
+      "bytes": 464
+    },
+    "/static/fonts/fonts.css": {
+      "status": 200,
+      "bytes": 8570
+    },
+    "/static/fonts/ibm-plex-mono-600-latin-ext.woff2": {
+      "status": 200,
+      "bytes": 14328
+    },
+    "/api/projects": {
+      "status": 200,
+      "bytes": 2
+    }
+  },
+  "dependencies": {
+    "numpy": "2.4.6",
+    "fastapi": "0.143.0",
+    "pydantic": "2.14.1",
+    "requests": "2.34.2"
+  }
+}

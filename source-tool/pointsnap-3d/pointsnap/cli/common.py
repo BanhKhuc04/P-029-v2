@@ -34,8 +34,14 @@ def frames_for_job(
     Trả về `(frames, thông báo)`; `frames` là `None` khi không tìm được hoặc frame không khớp, khi đó luật lơ lửng /
     lún bị bỏ qua và luật đứt track chỉ báo mức Cảnh báo.
     """
-    path = manifest or find_manifest(job.task_id, export_dirs(custom_export_dirs))
-    skipped = "bỏ qua luật lơ lửng / lún, luật đứt track chỉ báo mức Cảnh báo"
+    path = manifest or find_manifest(job.task_id, export_dirs(custom_export_dirs), url=job.url or None)
+    # Operator khai báo cặp backend/web URL cho cùng CVAT khi container dùng DNS nội bộ.
+    # Chỉ fallback cho đúng backend đó; project server khác vẫn cần manifest của chính nó.
+    if (path is None and os.environ.get('CVAT_WEB_URL')
+            and job.url.rstrip('/') == os.environ.get('CVAT_URL', '').rstrip('/')):
+        path = find_manifest(job.task_id, export_dirs(custom_export_dirs), url=os.environ['CVAT_WEB_URL'])
+    skipped = ("bỏ qua luật lơ lửng / lún và hướng/fit dùng LiDAR; "
+               "luật chuyển động dùng tọa độ từng frame khi thiếu pose; gate kiểm tra dữ liệu theo luật đang bật")
     if path is None:
         return None, (f"Không tìm thấy manifest.json của task {job.task_id} ({skipped}). "
                       "Chỉ đường dẫn bằng --manifest hoặc cấu hình thư mục bản xuất.")

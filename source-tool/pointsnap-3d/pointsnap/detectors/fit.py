@@ -98,10 +98,10 @@ def outside_findings(measures: Sequence[OutsideMeasure], cfg: FitConfig) -> list
     tra: gần như mọi báo nhầm thuộc vài track người đi bộ); keyframe bị co / dời lệch khác thường so với chính track
     mới là lỗi vẽ. Box lẻ hoặc track có ít hơn 2 box khác đo được thì so tỉ lệ tuyệt đối.
     """
-    by_track: dict[int, list[float]] = {}
+    by_track: dict[tuple[int, str], list[float]] = {}
     for m in measures:
         if m.box.track_id is not None:
-            by_track.setdefault(m.box.track_id, []).append(m.ratio)
+            by_track.setdefault((m.box.track_id, m.box.label), []).append(m.ratio)
     findings: list[Finding] = []
     for m in measures:
         if m.outside < cfg.outside_min_points:
@@ -109,7 +109,7 @@ def outside_findings(measures: Sequence[OutsideMeasure], cfg: FitConfig) -> list
         # Bỏ qua nếu độ thò ra quá nhỏ (< 20 cm): gương xe, ba-đờ-sốc cong hoặc điểm mặt đất sát mép
         if m.reach_m < 0.20 and m.outside < cfg.outside_min_points * 2:
             continue
-        others = list(by_track.get(m.box.track_id, [])) if m.box.track_id is not None else []
+        others = list(by_track.get((m.box.track_id, m.box.label), [])) if m.box.track_id is not None else []
         if others:
             others.remove(m.ratio)
         reference = float(np.median(others)) if len(others) >= 2 else 0.0
@@ -229,15 +229,15 @@ def loose_findings(measures: Sequence[LooseMeasure], cfg: FitConfig) -> list[Fin
     track thì hạ được ngưỡng tuyệt đối (0,5 → 0,4 m) mà không tăng báo nhầm. Box lẻ hoặc track có ít hơn 2 frame khác đo
     được thì so ngưỡng tuyệt đối.
     """
-    by_track: dict[int, list[LooseMeasure]] = {}
+    by_track: dict[tuple[int, str], list[LooseMeasure]] = {}
     for m in measures:
         if m.box.track_id is not None:
-            by_track.setdefault(m.box.track_id, []).append(m)
+            by_track.setdefault((m.box.track_id, m.box.label), []).append(m)
     findings: list[Finding] = []
     for m in measures:
         if m.gap_m <= cfg.loose_warning_m:
             continue
-        others = [o.gap_m for o in by_track.get(m.box.track_id, []) if o.box.frame != m.box.frame]
+        others = [o.gap_m for o in by_track.get((m.box.track_id, m.box.label), []) if o.box.frame != m.box.frame]
         reference = float(np.median(others)) if len(others) >= 2 else None
         if reference is not None and m.gap_m - reference <= cfg.loose_rise_m:
             continue
@@ -278,7 +278,10 @@ def overlap_findings(
     allowed = {frozenset(p) for p in cfg.overlap_allowed_pairs}
     typed = typed or (lambda box: box.label)
     findings: list[Finding] = []
-    active = [b for b in boxes if b.visible]
+    active = sorted((b for b in boxes if b.visible), key=lambda b: (
+        b.frame, b.track_id if b.track_id is not None else -1,
+        b.source_id if b.source_id is not None else -1, b.label, b.center, b.dims, b.yaw,
+    ))
     for a, b in combinations(active, 2):
         reach = (math.hypot(a.length, a.width) + math.hypot(b.length, b.width)) / 2.0
         if math.hypot(a.center[0] - b.center[0], a.center[1] - b.center[1]) > reach:

@@ -1,0 +1,23 @@
+{
+  "final_core_pytest": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "490",
+    "time": "65.494",
+    "timestamp": "2026-10-12T15:51:24.258235+07:00",
+    "hostname": "DESKTOP-LNE3A9V"
+  },
+  "node": {
+    "pass": 36,
+    "fail": 0,
+    "skip": 0
+  },
+  "runner": "default486 pass +1 real-ground skip; dataset4 pass; live3 pass; Node1 command pass; online not run; subsequent3 core regression added and included in final490",
+  "runner_checklist": {
+    "code_pass": 34,
+    "manual": 7,
+    "full_checklist_passed": false
+  }
+}

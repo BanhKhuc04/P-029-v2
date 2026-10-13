@@ -29,6 +29,7 @@ from pointsnap.detectors.floating import detect_floating_scene
 from pointsnap.detectors.static import detect_static_errors
 from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
 from pointsnap.detectors.size import detect_size
+from pointsnap.detectors.track import detect_track_errors
 
 DetectorFn = Callable[[JobData, Config, FrameSource | None], list[Finding]]
 
@@ -158,10 +159,17 @@ def check_size(job: JobData, config: Config, frames: FrameSource | None = None) 
     if frames is not None:
         from pointsnap.detectors.size import relax_filled_oversize
 
-        findings = relax_filled_oversize(findings, job.cuboids, frames, config.size.cargo_classes)
+        findings = relax_filled_oversize(findings, job.cuboids, frames, config.size.cargo_classes,
+                                        class_key=lambda box: _typed_label(box, config))
     return findings
 
 
+def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
+    """Đứt track (B5, `detectors.track`). Có `frames` thì dùng pose xe thu và thời điểm thật của từng frame."""
+    sensor_to_world, timestamps = _poses(job, frames)
+    return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps,
+                               stop_frame=getattr(job, "stop_frame", None),
+                               class_key=lambda box: _typed_label(box, config))
 def _poses(job: JobData, frames: FrameSource | None):
     if frames is None:
         return None, None
@@ -282,10 +290,10 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
     """Thiếu / sai thuộc tính theo spec của dự án (C2, `detectors.attributes`)."""
     from pointsnap.detectors.attributes import detect_attribute_height, detect_rider_state, detect_spec_geometry
 
-    sensor_to_world, _ = _poses(job, frames)
+    sensor_to_world, timestamps = _poses(job, frames)
     return (detect_attribute_errors(job.cuboids, config.spec) + detect_attribute_height(job.cuboids, config.spec)
             + detect_spec_geometry(job.cuboids, config.spec)
-            + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s))
+            + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s, timestamps))
 
 
 from pointsnap.core.rules import RULES_CATALOG, rule_switch_key
@@ -367,6 +375,36 @@ def scan_cuboids(
     return sorted(filtered, key=lambda f: f.sort_key())
 
 
+def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None) -> list[str]:
+    """Thiếu dữ liệu cho các luật đang bật; không coi nguồn frame có mặt là đã đủ pose.
+
+    Kiểm tra bảo thủ ở cấp job; không chứng nhận độ chính xác của detector hay mọi box.
+    Lỗi đọc frame được chuyển cho caller để lần quét thất bại, không trả ĐẠT.
+    """
+    cloud_rules = ("floating", "heading_points", "fit_empty", "fit_outside", "fit_loose")
+    pose_rules = ("track_jump", "track_split_id", "track_long_interpolation", "heading_flip", "heading_motion",
+                  "attr_rider_state")
+    gaps: list[str] = []
+    enabled_cloud = [name for name in cloud_rules if getattr(config.rules, name)]
+    if frames is None and enabled_cloud and any(c.visible for c in job.cuboids):
+        gaps.append("Kiểm tra một phần: thiếu point cloud cho luật " + ", ".join(enabled_cloud))
+    elif frames is not None and enabled_cloud:
+        visible_frames = sorted({c.frame for c in job.cuboids if c.visible})
+        empty = [frame for frame in visible_frames if len(frames.frame_data(frame, with_points=True).points) == 0]
+        if empty:
+            gaps.append(f"Kiểm tra một phần: point cloud rỗng ở {len(empty)} frame cho luật " + ", ".join(enabled_cloud))
+
+    enabled_pose = [name for name in pose_rules if getattr(config.rules, name)
+                    and (name != "track_long_interpolation" or config.track.long_interpolation.enabled)
+                    and (name != "attr_rider_state" or (config.spec.rider_state and any(
+                        c.visible and c.label == config.spec.rider_state["class"] for c in job.cuboids)))]
+    tracked_frames = sorted({c.frame for c in job.cuboids if c.visible and c.track_id is not None})
+    if enabled_pose and tracked_frames:
+        missing = [frame for frame in tracked_frames
+                   if frames is None or frames.frame_data(frame, with_points=False).sensor_to_world is None]
+        if missing:
+            gaps.append(f"Kiểm tra một phần: thiếu pose ở {len(missing)} frame cho luật " + ", ".join(enabled_pose))
+    return gaps
 
 def actionable(findings: Iterable[Finding]) -> list[Finding]:
     """Finding mức Lỗi / Cảnh báo: những mục được gắn cờ lên CVAT và tính ở `gate`."""

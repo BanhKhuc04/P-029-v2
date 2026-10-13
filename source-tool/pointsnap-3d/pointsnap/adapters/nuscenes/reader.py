@@ -12,7 +12,7 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 import numpy as np
@@ -85,27 +85,37 @@ class NuScenesReader:
                  taxonomy: str = "nuscenes") -> None:
         if taxonomy not in TAXONOMIES:
             raise ValueError(f"taxonomy phải là một trong {TAXONOMIES}, nhận {taxonomy!r}")
-        self.dataroot = Path(dataroot)
+        self.dataroot = Path(dataroot).resolve()
         self.version = version
         self.min_lidar_points = min_lidar_points
         self.taxonomy = taxonomy
-        self._table_dir = self.dataroot / version
+        self._table_dir = self._dataset_path(version)
         if not self._table_dir.is_dir():
             raise FileNotFoundError(f"Không thấy thư mục bảng nuScenes: {self._table_dir}")
         self._tables: dict[str, dict[str, dict[str, Any]]] = {}
+
+    def _dataset_path(self, filename: str) -> Path:
+        if not isinstance(filename, str) or Path(filename).is_absolute() or PureWindowsPath(filename).drive:
+            raise ValueError('Đường dẫn dataset phải tương đối trong dataroot')
+        path = (self.dataroot / filename).resolve()
+        if not path.is_relative_to(self.dataroot):
+            raise ValueError('Đường dẫn dataset nằm ngoài phạm vi dataroot')
+        return path
 
     # --- Bảng JSON -------------------------------------------------------------------------------
 
     def _table(self, name: str) -> dict[str, dict[str, Any]]:
         """Bảng `name` dạng token → bản ghi, giữ thứ tự trong file."""
         if name not in self._tables:
-            path = self._table_dir / f"{name}.json"
+            path = self._dataset_path(f'{self.version}/{name}.json')
             try:
                 with path.open(encoding="utf-8") as f:
                     records = json.load(f)
             except FileNotFoundError:
                 raise FileNotFoundError(f"Thiếu bảng nuScenes: {path}") from None
             self._tables[name] = {record["token"]: record for record in records}
+            if len(self._tables[name]) != len(records):
+                raise ValueError(f"Bảng nuScenes {path} có token trùng")
         return self._tables[name]
 
     @cached_property
@@ -177,7 +187,7 @@ class NuScenesReader:
 
     def camera_images(self, ref: SampleRef) -> dict[str, Path]:
         """Ảnh camera chụp cùng keyframe với point cloud: {kênh, ví dụ `CAM_FRONT` → đường dẫn file}."""
-        return {channel: self.dataroot / filename
+        return {channel: self._dataset_path(filename)
                 for channel, filename in self._cameras_by_sample.get(ref.sample_token, {}).items()}
 
     @cached_property
@@ -213,31 +223,50 @@ class NuScenesReader:
         """Các keyframe của cảnh theo thứ tự thời gian; `frame` đánh số từ 0."""
         samples = self._table("sample")
         refs: list[SampleRef] = []
-        token = self._scene(scene)["first_sample_token"]
+        scene_info = self._scene(scene)
+        token = scene_info["first_sample_token"]
+        visited: set[str] = set()
         while token:
+            if token in visited or samples[token]["scene_token"] != scene_info["token"]:
+                raise ValueError(f"Chuỗi sample của cảnh '{scene}' bị lặp hoặc đi sang cảnh khác: {token}")
+            visited.add(token)
             lidar = self._lidar_by_sample.get(token)
             if lidar is None:
                 raise ValueError(f"Keyframe {token} của cảnh '{scene}' không có dữ liệu {LIDAR_CHANNEL}")
+            timestamp = lidar["timestamp"] / 1e6
+            if not math.isfinite(timestamp) or (refs and timestamp <= refs[-1].timestamp):
+                raise ValueError(f"Timestamp LiDAR của cảnh '{scene}' phải hữu hạn và tăng theo frame")
             refs.append(
                 SampleRef(
                     scene=scene,
                     frame=len(refs),
                     sample_token=token,
                     lidar_token=lidar["token"],
-                    lidar_path=self.dataroot / lidar["filename"],
-                    timestamp=lidar["timestamp"] / 1e6,
+                    lidar_path=self._dataset_path(lidar["filename"]),
+                    timestamp=timestamp,
                     sensor_to_world=self._sensor_to_world(lidar),
                 )
             )
             token = samples[token]["next"]
+        if len(refs) != scene_info["nbr_samples"] or not refs or refs[-1].sample_token != scene_info["last_sample_token"]:
+            raise ValueError(f"Chuỗi sample của cảnh '{scene}' không khớp số frame hoặc sample cuối")
         return refs
 
     def load_points(self, ref: SampleRef) -> np.ndarray:
         """Point cloud của keyframe, mảng (N, 5) float32: x, y, z, intensity, ring index."""
-        raw = np.fromfile(ref.lidar_path, dtype=np.float32)
+        return self._load_points(ref.lidar_path)
+
+    @staticmethod
+    def _load_points(path: Path) -> np.ndarray:
+        if path.stat().st_size % (4 * POINT_FIELDS):
+            raise ValueError(f"{path}: số byte không chia hết cho 5 float32 mỗi điểm")
+        raw = np.fromfile(path, dtype='<f4')
         if raw.size % POINT_FIELDS:
-            raise ValueError(f"{ref.lidar_path}: số giá trị ({raw.size}) không chia hết cho {POINT_FIELDS}")
-        return raw.reshape(-1, POINT_FIELDS)
+            raise ValueError(f"{path}: số giá trị ({raw.size}) không chia hết cho {POINT_FIELDS}")
+        points = raw.reshape(-1, POINT_FIELDS)
+        if not np.isfinite(points[:, :4]).all():
+            raise ValueError(f"{path}: tọa độ/intensity có NaN hoặc Inf")
+        return points
 
     def load_sweeps(self, ref: SampleRef, count: int) -> list[tuple[float, np.ndarray]]:
         """Tối đa `count` lượt quét LiDAR trung gian (sweep) ngay trước keyframe: [(thời điểm, điểm (N, 3))], điểm đã
@@ -250,15 +279,16 @@ class NuScenesReader:
         world_to_key = invert_pose(ref.sensor_to_world)
         chunks: list[tuple[float, np.ndarray]] = []
         token = sample_data[ref.lidar_token]["prev"]
+        visited = {ref.lidar_token}
         while token and len(chunks) < count:
+            if token in visited:
+                raise ValueError(f"Chuỗi sweep bị lặp: {token}")
+            visited.add(token)
             record = sample_data[token]
-            path = self.dataroot / record["filename"]
+            path = self._dataset_path(record["filename"])
             if not path.is_file():
                 break  # bản tải về thiếu sweep: dùng những gì có
-            raw = np.fromfile(path, dtype=np.float32)
-            if raw.size % POINT_FIELDS:
-                break
-            points = raw.reshape(-1, POINT_FIELDS)[:, :3].astype(np.float64)
+            points = self._load_points(path)[:, :3].astype(np.float64)
             matrix = world_to_key @ self._sensor_to_world(record)
             chunks.append((record["timestamp"] / 1e6, points @ matrix[:3, :3].T + matrix[:3, 3]))
             token = record["prev"]

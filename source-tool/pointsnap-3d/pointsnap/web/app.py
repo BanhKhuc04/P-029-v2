@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -17,12 +17,14 @@ from pointsnap.core.config import ConfigError
 from pointsnap.web.link import ExtensionLink
 from pointsnap.web.preview import PreviewError, finding_preview, load_reviews, save_review
 from pointsnap.web.projects import ProjectError, ProjectManager
-from pointsnap.web.runner import ScanRunner
+from pointsnap.web.runner import ScanRunner, ScanBusyError, RUN_ID_RE
+from pointsnap.web.storage import StorageError
+from pointsnap.web.security import LocalRequestBoundary
 
 STATIC_DIR = Path(__file__).parent / "static"
 
 # run_id hợp lệ: YYYYMMDD-HHMMSS[-<ms>]-job<id>  (điểm nhỏ 3 — chặn path traversal)
-_RUN_ID_RE = re.compile(r"^\d{8}-\d{6}(?:-\d+)?-job\d+$")
+_RUN_ID_RE = RUN_ID_RE
 
 
 class CreateProjectRequest(BaseModel):
@@ -55,10 +57,13 @@ class ReviewRequest(BaseModel):
 
 
 class FocusRequest(BaseModel):
+    track_id: int | None = Field(default=None, ge=0)
+    source_id: int | None = Field(default=None, ge=0)
     """Lệnh từ web: tab CVAT có extension đang mở job này hãy chuyển tới frame và làm sáng box của mục này."""
 
-    job_id: int
-    frame: int
+    job_id: int = Field(gt=0)
+    frame: int = Field(ge=0)
+    cvat_url: str = ""
     label: str | None = None
     message: str | None = None
     run_id: str | None = None
@@ -67,7 +72,7 @@ class FocusRequest(BaseModel):
 
 
 class StartScanRequest(BaseModel):
-    job_id: int
+    job_id: int = Field(gt=0)
     flag: bool = False
 
 
@@ -77,7 +82,7 @@ def _same_cvat(a: str, b: str) -> bool:
     def norm(url: str) -> str:
         parts = urlsplit(url.strip())
         host = "localhost" if parts.hostname in ("127.0.0.1", "::1") else (parts.hostname or "")
-        return f"{parts.scheme}://{host}:{parts.port or ''}{parts.path.rstrip('/')}"
+        return f"{parts.scheme}://{host}:{parts.port or (443 if parts.scheme == 'https' else 80)}{parts.path.rstrip('/')}"
 
     return norm(a) == norm(b)
 
@@ -92,6 +97,13 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         description="Giao diện Web kiểm tra và giám sát chất lượng nhãn 3D trên CVAT",
         version="0.1.0",
     )
+    application.add_middleware(LocalRequestBoundary)
+
+    @application.exception_handler(RequestValidationError)
+    async def invalid_request(request, exc):
+        # Pydantic có thể echo input là token object; chỉ trả vị trí và lý do.
+        errors = [{k: e[k] for k in ('loc', 'msg', 'type') if k in e} for e in exc.errors()]
+        return JSONResponse(status_code=422, content={'detail': errors})
 
     @application.middleware("http")
     async def revalidate_ui_files(request, call_next):
@@ -105,6 +117,22 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     application.state.pm = pm
     application.state.runner = runner
     application.state.link = link
+
+    @application.exception_handler(StorageError)
+    async def invalid_storage(request, exc):
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+    @application.exception_handler(ConfigError)
+    async def invalid_config(request, exc):
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @application.exception_handler(OSError)
+    async def storage_unavailable(request, exc):
+        return JSONResponse(status_code=503, content={"detail": "Không đọc/ghi được dữ liệu; kiểm tra quyền và dung lượng ổ đĩa."})
+
+    @application.exception_handler(ScanBusyError)
+    async def scan_busy(request, exc):
+        return JSONResponse(status_code=429, content={"detail": str(exc)})
 
     # --- API Danh mục quy tắc kiểm tra (Rule Catalog - Single Source of Truth) ---
 
@@ -154,10 +182,12 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.delete("/api/projects/{slug}")
     def delete_project(slug: str) -> dict[str, Any]:
         try:
-            pm.delete_project(slug)
+            runner.delete_project(slug)
             return {"ok": True, "message": f"Đã xóa dự án '{slug}'."}
         except ProjectError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except ScanBusyError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     # --- API Guideline ---
 
@@ -206,13 +236,19 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                     "url": cfg.cvat.url,
                 }
             client = CvatClient(cfg.cvat.url, cfg.cvat.token, timeout=10.0)
-            ver = client.server_version()
+            try:
+                ver = client.server_version()
+            finally:
+                client.session.close()
             return {"connected": True, "version": ver, "url": cfg.cvat.url}
         except Exception as exc:
-            return {"connected": False, "error": str(exc), "url": proj["cvat_url"]}
+            token = pm.get_token(slug)
+            error = str(exc).replace(token, "***") if token else str(exc)
+            return {"connected": False, "error": error, "url": proj["cvat_url"]}
 
     @application.get("/api/projects/{slug}/cvat/tasks")
     def get_cvat_tasks(slug: str) -> dict[str, Any]:
+        client = None
         try:
             cfg = pm.get_effective_config(slug)
             if not cfg.cvat.token:
@@ -238,9 +274,14 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 })
             return {"tasks": tasks_result}
         except CvatError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            token = pm.get_token(slug)
+            error = str(exc).replace(token, "***") if token else str(exc)
+            raise HTTPException(status_code=400, detail=error) from exc
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        finally:
+            if client is not None:
+                client.session.close()
 
     # --- API Quét & Báo cáo ---
 
@@ -259,6 +300,8 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             return {"run_id": run_id}
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except (StorageError, OSError, ScanBusyError):
+            raise
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -285,7 +328,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         _validate_run_id(run_id)
         try:
             project = pm.get_project(slug)
-            return finding_preview(pm._project_dir(slug) / "runs" / run_id, project, index)
+            return finding_preview(runner.run_dir(slug, run_id), project, index)
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except PreviewError as exc:
@@ -301,7 +344,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         if not 0 <= index < len(run.get("findings") or []):
             raise HTTPException(status_code=404, detail=f"Không có mục số {index}")
-        reviews = save_review(pm._project_dir(slug) / "runs" / run_id, index, req.verdict)
+        reviews = save_review(runner.run_dir(slug, run_id), index, req.verdict)
         link.bump_reviews()
         return {"reviews": reviews}
 
@@ -310,7 +353,8 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         """Chỉ kết luận xem tay (nhẹ hơn tải cả lần quét), để web và extension đồng bộ với nhau."""
         _validate_run_id(run_id)
         try:
-            run_dir = pm._project_dir(slug) / "runs" / run_id
+            runner.get_run(slug, run_id)
+            run_dir = runner.run_dir(slug, run_id)
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return {"reviews": load_reviews(run_dir), "rev": link.reviews_rev}
@@ -345,6 +389,17 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         _validate_run_id(run_id)
         try:
             prev_run = runner.get_run(slug, run_id)
+            if prev_run.get("status") != "done":
+                raise HTTPException(status_code=409, detail="Chỉ gắn cờ từ lần quét đã hoàn tất")
+            source_url = (prev_run.get("summary") or {}).get("cvat_url")
+            snapshot = runner.run_dir(slug, run_id) / "snapshot.json"
+            if not source_url and snapshot.is_file():
+                from pointsnap.web.storage import read_json
+                source_url = read_json(snapshot).get("meta", {}).get("url")
+            if not source_url:
+                raise HTTPException(status_code=409, detail="Lần quét cũ thiếu nguồn CVAT; hãy quét mới trước khi gắn cờ")
+            if not _same_cvat(source_url, pm.get_project(slug)["cvat_url"]):
+                raise HTTPException(status_code=409, detail="URL CVAT đã đổi; hãy quét mới trước khi gắn cờ")
             job_id = prev_run.get("job_id")
             if not job_id:
                 raise HTTPException(status_code=400, detail="Lần quét cũ thiếu job_id")
@@ -359,12 +414,29 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.post("/api/extension/focus")
     def extension_focus(req: FocusRequest) -> dict[str, Any]:
         """Web gửi lệnh mở một mục trong tab CVAT có sẵn; `extension_online` = False thì web tự mở link."""
-        return link.focus(req.job_id, req.model_dump(exclude={"job_id"}))
+        return link.focus(req.job_id, req.model_dump(exclude={"job_id"}), scope=_extension_scope(req.cvat_url))
+
+    def _extension_scope(url: str) -> str:
+        if not url:
+            urls = {p["cvat_url"].rstrip('/') for p in pm.list_projects()}
+            if len(urls) > 1:
+                raise HTTPException(status_code=400, detail="Cần cvat_url khi có nhiều server CVAT; cập nhật Web/extension.")
+            url = next(iter(urls), "")
+        if not url:
+            return ""
+        try:
+            parts = urlsplit(url.strip())
+            host = "localhost" if parts.hostname in ("127.0.0.1", "::1") else parts.hostname
+            if parts.scheme not in ("http", "https") or not host or parts.username or parts.password:
+                raise ValueError("URL không hợp lệ")
+            return f"{parts.scheme}://{host}:{parts.port or (443 if parts.scheme == 'https' else 80)}{parts.path.rstrip('/')}"
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="cvat_url không hợp lệ") from exc
 
     @application.get("/api/extension/poll")
-    def extension_poll(job_id: int, after: int = -1) -> dict[str, Any]:
+    def extension_poll(job_id: int, after: int = -1, cvat_url: str = "") -> dict[str, Any]:
         """Extension trên tab CVAT hỏi lệnh mới (mỗi giây); cũng là tín hiệu tab đó đang mở job."""
-        res = link.poll(job_id, after)
+        res = link.poll(job_id, after, scope=_extension_scope(cvat_url))
         projects = pm.list_projects()
         latest_done = None
         active_scan = None
@@ -385,9 +457,9 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         return res
 
     @application.get("/api/extension/status")
-    def extension_status(job_id: int) -> dict[str, Any]:
+    def extension_status(job_id: int, cvat_url: str = "") -> dict[str, Any]:
         """Web hỏi: có tab CVAT nào (cài extension) đang mở job này không, và phiên bản kết luận xem tay."""
-        return link.status(job_id)
+        return link.status(job_id, scope=_extension_scope(cvat_url))
 
     @application.get("/api/extension/jobs/{job_id}")
     def extension_job(job_id: int, cvat_url: str = "") -> dict[str, Any]:
@@ -397,10 +469,14 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         """
         projects = pm.list_projects()
         if cvat_url:
-            projects = [p for p in projects if _same_cvat(p.get("cvat_url", ""), cvat_url)]
+            scope = _extension_scope(cvat_url)
+            projects = [p for p in projects if _extension_scope(p.get("cvat_url", "")) == scope]
+        else:
+            _extension_scope("")
         runs = [
             r for p in projects for r in runner.list_runs(p["slug"])
-            if r.get("job_id") == job_id
+            if r.get("job_id") == job_id and (not cvat_url or not (r.get("summary") or {}).get("cvat_url")
+                or _same_cvat(r["summary"]["cvat_url"], cvat_url))
         ]
         runs.sort(key=lambda r: r.get("started_at") or "", reverse=True)
         active = next((r for r in runs if r.get("status") in ("queued", "running")), None)
@@ -422,17 +498,29 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.get("/api/projects/{slug}/scans/{run_id}/report.html")
     def get_html_report(slug: str, run_id: str) -> FileResponse:
         _validate_run_id(run_id)
-        path = pm._project_dir(slug) / "runs" / run_id / "report.html"
+        try:
+            run_dir = runner.run_dir(slug, run_id)
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        path = run_dir / "report.html"
         if not path.is_file():
             raise HTTPException(status_code=404, detail="Không tìm thấy file report.html")
+        if runner.get_run(slug, run_id).get("status") != "done":
+            raise HTTPException(status_code=409, detail="Lần quét chưa hoàn tất; không tải báo cáo dở")
         return FileResponse(path, media_type="text/html")
 
     @application.get("/api/projects/{slug}/scans/{run_id}/report.csv")
     def get_csv_report(slug: str, run_id: str) -> FileResponse:
         _validate_run_id(run_id)
-        path = pm._project_dir(slug) / "runs" / run_id / "report.csv"
+        try:
+            run_dir = runner.run_dir(slug, run_id)
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        path = run_dir / "report.csv"
         if not path.is_file():
             raise HTTPException(status_code=404, detail="Không tìm thấy file report.csv")
+        if runner.get_run(slug, run_id).get("status") != "done":
+            raise HTTPException(status_code=409, detail="Lần quét chưa hoàn tất; không tải báo cáo dở")
         return FileResponse(path, media_type="text/csv", filename=f"report_{run_id}.csv")
 
 

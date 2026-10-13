@@ -11,7 +11,7 @@ from pointsnap.cli.common import frames_for_job
 from pointsnap.core.config import Config
 from pointsnap.core.gate import gate_verdict
 from pointsnap.core.model import Severity
-from pointsnap.core.scanner import scan_cuboids
+from pointsnap.core.scanner import scan_coverage_gaps, scan_cuboids
 
 EXIT_OK = 0
 EXIT_GATE_FAILED = 1
@@ -28,13 +28,26 @@ def run(args: argparse.Namespace, config: Config) -> int:
     try:
         job = load_job(client, args.job)
     except Exception as exc:
+        client.session.close()
         print(f"Lỗi khi đọc job #{args.job}: {exc}", file=sys.stderr)
         return EXIT_RUNTIME_ERROR
 
-    frames, note = frames_for_job(job, getattr(args, "manifest", None))
-    if frames is None:
-        print(note, file=sys.stderr)
-    findings = scan_cuboids(job, config, frames)
+    try:
+        return _gate(job, args, config)
+    finally:
+        client.session.close()
+
+
+def _gate(job, args: argparse.Namespace, config: Config) -> int:
+    try:
+        frames, note = frames_for_job(job, getattr(args, "manifest", None))
+        if frames is None:
+            print(note, file=sys.stderr)
+        findings = scan_cuboids(job, config, frames)
+        coverage_gaps = scan_coverage_gaps(job, config, frames)
+    except (OSError, KeyError, ValueError) as exc:
+        print(f"Lỗi khi quét job #{args.job}: {exc}", file=sys.stderr)
+        return EXIT_RUNTIME_ERROR
 
     errors = [f for f in findings if f.severity == Severity.ERROR]
     warnings = [f for f in findings if f.severity == Severity.WARNING]
@@ -45,7 +58,7 @@ def run(args: argparse.Namespace, config: Config) -> int:
     max_err = config.gate.max_errors
     max_warn = config.gate.max_warnings
 
-    passed, reasons = gate_verdict(findings, config.gate)
+    passed, reasons = gate_verdict(findings, config.gate, coverage_gaps=coverage_gaps)
 
     if not passed:
         print(f"❌ [KHÔNG ĐẠT] Cổng kiểm tra Job #{args.job} không đạt yêu cầu!")
@@ -59,8 +72,8 @@ def run(args: argparse.Namespace, config: Config) -> int:
                 print(f"   - ... và {len(errors) - 5} lỗi khác.")
         return EXIT_GATE_FAILED
 
-    print(f"✅ [ĐẠT] Cổng kiểm tra Job #{args.job} đạt chuẩn chất lượng!")
+    print(f"✅ [ĐẠT] Cổng kiểm tra Job #{args.job} đạt ngưỡng của các luật đang bật.")
     print(f"   • Số lỗi:     {num_errors} (ngưỡng: {max_err})")
     print(f"   • Cảnh báo:   {num_warnings} (ngưỡng: {max_warn})")
-    print(f"   • Tổng số box: {len(job.cuboids)}")
+    print(f"   • Tổng số box: {sum(not c.outside for c in job.cuboids)}")
     return EXIT_OK

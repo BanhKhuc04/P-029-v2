@@ -227,6 +227,7 @@
       el: item,
       clientId: itemClientId(item),
       label: itemLabel(item),
+      flag: itemAttribute(item, 'pointsnap_error'),
     }));
   }
 

@@ -139,6 +139,11 @@
     S.job = null;
     clearInterval(tickTimer);
     tickTimer = null;
+    pendingStep = 0;
+    pendingCommand = null;
+    navigating = false;
+    S.navTarget = null;
+    highlightTurn.clear();
     unmountPanel();
   }
 
@@ -221,12 +226,17 @@
   /** Chỉ số cờ ở `frame` khớp lệnh từ web (cùng nhãn, nội dung cờ chứa câu thông báo của mục); không khớp thì 0. */
   function pickFor(frame, match) {
     if (!match) return 0;
-    const index = flagsAt(frame).findIndex((f) => (!match.label || f.label === match.label)
-      && (!match.message || f.value.includes(match.message)));
-    return Math.max(index, 0);
+    const here = flagsAt(frame);
+    const matches = here.filter((f) => (!match.label || f.label === match.label)
+      && (!match.message || f.value.includes(match.message))
+      && (match.objectId == null || (f.kind === match.kind && f.objectId === match.objectId))
+      && (match.track_id == null || (f.kind === 'track' && f.objectId === match.track_id))
+      && (match.track_id != null || match.source_id == null || (f.kind === 'shape' && f.objectId === match.source_id)));
+    return matches.length === 1 ? here.indexOf(matches[0]) : -1;
   }
 
   async function goTo(frame, match) {
+    const sid = S.sid;
     // Một lần chuyển frame tại một thời điểm: bấm dồn khi CVAT đang tải frame sẽ bị CVAT bỏ qua.
     if (navigating) return { ok: false, busy: true };
     navigating = true;
@@ -236,9 +246,9 @@
     try {
       res = await cvat.goToFrame(frame);
     } finally {
-      navigating = false;
-      S.navTarget = null;
+      if (sid === S.sid) { navigating = false; S.navTarget = null; }
     }
+    if (sid !== S.sid) return { ok: false, stale: true };
     if (pendingStep) {
       const dir = Math.sign(pendingStep);
       pendingStep -= dir;
@@ -254,6 +264,11 @@
     } else {
       S.frame = frame;
       S.pick = pickFor(frame, match);
+      if (S.pick < 0) {
+        S.active = null;
+        setNotice('warn', 'Không xác định được duy nhất box của kết quả này. Mở link ID từ báo cáo hoặc chọn box trong CVAT.');
+        return { ok: false, ambiguous: true };
+      }
       if (match) S.active = null;
       S.notice = null;
       render();
@@ -294,26 +309,28 @@
    */
   async function highlight(flag, turn) {
     if (!flag) return;
+    const sid = S.sid;
     // Chỉ lấy danh sách khi CVAT đã ở đúng frame của cờ và danh sách đã đứng yên qua hai lần đọc liên tiếp,
     // để không rê nhầm vào box của frame cũ còn sót lại trong lúc CVAT vẽ lại.
     let previous = '';
     const items = await cvat.waitFor(() => {
       if (cvat.currentFrame() !== flag.frame) return null;
-      const list = cvat.sidebarItems().filter((it) => it.label === flag.label);
+      const list = cvat.sidebarItems().filter((it) => it.label === flag.label && it.flag === flag.value);
       const ids = list.map((it) => it.clientId).join(',');
       const stable = ids === previous;
       previous = ids;
       return stable && list.length ? list : null;
     }, 2500, 120);
-    if (cvat.currentFrame() !== flag.frame) return;
+    if (sid !== S.sid || cvat.currentFrame() !== flag.frame) return;
     if (!items) {
       if (turn !== 0) setNotice('info', `Không thấy box ${flag.label} trong danh sách đối tượng của CVAT ở frame này.`);
       return;
     }
-    const key = `${flag.frame}|${flag.label}`;
-    const n = turn === 0 ? 0 : ((highlightTurn.get(key) || 0) + 1) % items.length;
-    highlightTurn.set(key, n);
-    cvat.hoverItem(items[n].el);
+    if (items.length !== 1) {
+      setNotice('warn', 'Có nhiều box cùng nhãn và cờ. Không thể xác định server ID từ danh sách CVAT; dùng link ID trong báo cáo.');
+      return;
+    }
+    cvat.hoverItem(items[0].el);
   }
 
   function flagsAt(frame) {
@@ -330,7 +347,7 @@
    */
   async function linkLoop(sid) {
     while (sid === S.sid) {
-      const res = await pointsnap('GET', `/api/extension/poll?job_id=${S.job.jobId}&after=${S.linkSeq}`);
+      const res = await pointsnap('GET', `/api/extension/poll?job_id=${S.job.jobId}&after=${S.linkSeq}&cvat_url=${encodeURIComponent(location.origin)}`);
       if (sid !== S.sid) return;
       if (res.ok) {
         if (!S.ps.online) await loadPointSnap(sid);
@@ -418,13 +435,19 @@
   }
 
   async function startScan(flag) {
+    if (S.ps.active || S.ps.starting) return;
+    const sid = S.sid;
     S.confirmFlag = false;
     const project = S.ps.project;
     if (!project) {
       setNotice('warn', `PointSnap chưa có dự án nối với ${location.origin}. Tạo dự án ở giao diện PointSnap, tab Kết nối CVAT.`);
       return;
     }
+    S.ps.starting = true;
+    render();
     const res = await pointsnap('POST', `/api/projects/${project.slug}/scans`, { job_id: S.job.jobId, flag });
+    if (sid !== S.sid) return;
+    S.ps.starting = false;
     if (!res.ok) {
       setNotice('error', `Không bắt đầu quét được: ${res.error}`);
       return;
@@ -469,6 +492,7 @@
   }
 
   function reviewState(flag) {
+    if (!flag || flag.ambiguous) return null;
     const run = S.ps.run;
     if (!run || !run.findings) return null;
     const indices = core.matchFindings(run.findings, flag);
@@ -481,15 +505,17 @@
   async function review(flag, verdict) {
     const state = reviewState(flag);
     if (!state) return;
+    const sid = S.sid, run = S.ps.run;
     const value = state.verdict === verdict ? null : verdict;
     const { slug } = S.ps.project;
     for (const index of state.indices) {
-      const res = await pointsnap('PUT', `/api/projects/${slug}/scans/${S.ps.run.run_id}/reviews/${index}`, { verdict: value });
+      const res = await pointsnap('PUT', `/api/projects/${slug}/scans/${run.run_id}/reviews/${index}`, { verdict: value });
+      if (sid !== S.sid || S.ps.run !== run) return;
       if (!res.ok) {
         setNotice('error', `Không lưu được kết luận: ${res.error}`);
         break;
       }
-      S.ps.run.reviews = res.data.reviews;
+      run.reviews = res.data.reviews;
     }
     render();
   }
@@ -587,17 +613,18 @@
     const here = flagsAt(S.frame);
     const a = S.active;
     if (a && a.flag) {
-      const hit = here.find((f) => f.value === a.flag);
+      const hits = here.filter((f) => f.value === a.flag && f.label === a.label);
+      const hit = hits.length === 1 ? hits[0] : null;
       if (hit) return { flag: hit, index: here.indexOf(hit), here, clientId: a.clientId };
       const items = core.parseFlag(a.flag);
       return {
-        flag: { frame: S.frame, label: a.label, value: a.flag, items, severity: core.worstSeverity(items) },
+        flag: { frame: S.frame, label: a.label, value: a.flag, items, severity: core.worstSeverity(items), ambiguous: true },
         index: -1,
         here,
         clientId: a.clientId,
       };
     }
-    if (!here.length) return { flag: null, index: -1, here };
+    if (!here.length || S.pick < 0) return { flag: null, index: -1, here };
     const i = ((S.pick % here.length) + here.length) % here.length;
     const flag = here[i];
     const sameLabel = a && a.label === flag.label && here.filter((f) => f.label === a.label).length === 1;
@@ -637,7 +664,7 @@
     if (S.loading && !S.flags.length) return '<div class="empty">Đang đọc cờ lỗi của job từ CVAT…</div>';
     if (S.loadError) return note('error', esc(S.loadError), [{ action: 'refresh', text: 'Thử lại' }]);
     if (!S.hasFlagAttr && !S.flags.length) {
-      return note('warn', 'Job này chưa được gắn cờ. Quét bằng PointSnap, bấm <b>Gắn cờ lên CVAT</b>, rồi tải lại trang.');
+      return note('warn', 'Job này chưa được gắn cờ. Quét bằng PointSnap, bấm <b>Quét + gắn cờ</b>, rồi tải lại trang.') + renderScan();
     }
     let html = '';
     if (S.notice) html += note(S.notice.kind, esc(S.notice.text), S.notice.actions, true);
@@ -739,7 +766,7 @@
         const tag = rs && rs.verdict
           ? `<span class="verdict ${rs.verdict}">${rs.verdict === 'ok' ? 'Đúng' : 'Nhầm'}</span>`
           : `<span class="sev-dot ${esc(flag.severity)}" title="${esc(SEV_LABEL[flag.severity])}"></span>`;
-        html += `<button class="row-item ${flag.frame === S.frame ? 'current' : ''}" data-action="goto" data-f="${flag.frame}" title="${esc(flag.value)}">`
+        html += `<button class="row-item ${flag.frame === S.frame ? 'current' : ''}" data-action="goto" data-i="${S.flags.indexOf(flag)}" data-f="${flag.frame}" title="${esc(flag.value)}">`
           + `<span class="f">${flag.frame}</span><span class="t"><b>${esc(flag.label)}</b><span>${esc(RULE_LABEL[first.rule] || first.text)}</span></span>${tag}</button>`;
       });
       html += '</div>';
@@ -757,6 +784,7 @@
     if (!ps.online) {
       return `${html}<div class="muted small">Chạy <code>pointsnap ui</code> để quét lại, gắn cờ và ghi Đúng / Báo nhầm ngay tại đây.</div></section>`;
     }
+    if (ps.starting) return `${html}<div class="muted small">Đang bắt đầu quét…</div></section>`;
     if (ps.active) {
       const pct = Math.max(3, Math.min(100, Number(ps.active.progress) || 0));
       return `${html}<div class="small">${esc(ps.active.message || 'Đang quét…')}</div><div class="progress"><i style="width:${pct}%"></i></div></section>`;
@@ -805,7 +833,7 @@
       case 'next': step(1); break;
       case 'goto':
         S.tab = 'now';
-        goTo(Number(button.dataset.f));
+        goTo(Number(button.dataset.f), flag);
         break;
       case 'filter-on': turnFilterOn(false); break;
       case 'filter-off': turnFilterOff(); break;

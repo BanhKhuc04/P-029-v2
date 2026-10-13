@@ -212,9 +212,9 @@ def test_cli_scan_and_gate_commands(tmp_path, monkeypatch):
     code_gate1 = main(["gate", "--job", "1"])
     assert code_gate1 == EXIT_GATE_FAILED
 
-    # 3. Chạy gate --job 2 -> ĐẠT (exit code 0)
+    # 3. Nhãn không có finding nhưng thiếu LiDAR -> KHÔNG ĐẠT
     code_gate2 = main(["gate", "--job", "2"])
-    assert code_gate2 == EXIT_OK
+    assert code_gate2 == EXIT_GATE_FAILED
 
     # 4. Chạy scan --job 1 --flag -> gắn cờ lỗi qua PATCH
     code_flag = main(["scan", "--job", "1", "--flag", "--out", str(out_dir)])

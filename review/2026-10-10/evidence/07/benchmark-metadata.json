@@ -1,0 +1,7 @@
+{
+  "source_commit": "edfbed533d35ba1ccba73c0567a7cc5addfd9293",
+  "python": "3.12.14",
+  "config_sha256": "56fa54580ca73647805dd63d7fe7145bee121a368ffa64920b37b17a9ef7fd5e",
+  "condition": "Windows, same dataset/config except sweeps, sequential after eval; filesystem cache not flushed; scan includes frame I/O/sweeps, separately measured keyframe read pass is not subtracted",
+  "ram": "GetProcessMemoryInfo PeakWorkingSetSize; cumulative process peak, not per-pass allocation; CPU process_time"
+}

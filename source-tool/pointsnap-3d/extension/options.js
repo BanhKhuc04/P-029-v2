@@ -10,19 +10,24 @@ function setStatus(text, kind) {
 }
 
 function readForm() {
+  function originOf(value) {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new Error('URL không hợp lệ');
+    return url.origin;
+  }
   const urls = $('cvat-urls').value.split('\n').map((s) => s.trim()).filter(Boolean);
   const origins = [];
   for (const url of urls) {
     try {
-      const origin = new URL(url).origin;
+      const origin = originOf(url);
       if (!BUILT_IN.has(origin) && !origins.includes(origin)) origins.push(origin);
     } catch (_) {
-      return { error: `Địa chỉ CVAT không hợp lệ: ${url}` };
+      return { error: 'Địa chỉ CVAT phải là HTTP(S) origin, không chứa tài khoản, đường dẫn, query hoặc fragment.' };
     }
   }
   let pointsnap;
   try {
-    pointsnap = new URL($('pointsnap-url').value.trim() || DEFAULTS.pointsnapUrl).origin;
+    pointsnap = originOf($('pointsnap-url').value.trim() || DEFAULTS.pointsnapUrl);
   } catch (_) {
     return { error: 'Địa chỉ PointSnap không hợp lệ' };
   }

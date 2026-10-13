@@ -240,15 +240,18 @@
     };
     for (const shape of (annotations && annotations.shapes) || []) {
       const spec = specs.get(shape.label_id);
-      if (!spec || shape.type !== 'cuboid') continue;
+      if (!spec || shape.type !== 'cuboid' || shape.outside) continue;
       push(shape.frame, shape.label_id, attrValue(shape.attributes, spec.specId), 'shape', shape.id);
     }
     for (const track of (annotations && annotations.tracks) || []) {
       const spec = specs.get(track.label_id);
       if (!spec) continue;
-      for (const shape of track.shapes || []) {
+      let value = attrValue(track.attributes, spec.specId);
+      for (const shape of [...(track.shapes || [])].sort((a, b) => a.frame - b.frame)) {
+        const attribute = (shape.attributes || []).find((a) => a.spec_id === spec.specId);
+        if (attribute) value = String(attribute.value || '');
         if (shape.outside || shape.type !== 'cuboid') continue;
-        push(shape.frame, track.label_id, attrValue(shape.attributes, spec.specId), 'track', track.id);
+        push(shape.frame, track.label_id, value, 'track', track.id);
       }
     }
     return flags.sort((a, b) => a.frame - b.frame || SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
@@ -293,6 +296,10 @@
     const out = [];
     (findings || []).forEach((f, index) => {
       if (f.frame === flag.frame && f.label === flag.label && f.message && flag.value.includes(f.message)) {
+        if (flag.objectId != null) {
+          const id = flag.kind === 'track' ? f.track_id : f.source_id;
+          if (id == null || String(id) !== String(flag.objectId)) return;
+        }
         out.push(index);
       }
     });

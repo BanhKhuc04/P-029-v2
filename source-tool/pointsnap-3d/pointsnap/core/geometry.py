@@ -22,7 +22,10 @@ def normalize_angle(angle: float) -> float:
 
 def to_box_frame(points: np.ndarray, cuboid: Cuboid) -> np.ndarray:
     """Đổi điểm (N, 3) sang hệ local của box: gốc ở tâm box, trục x theo hướng đầu box."""
-    rel = np.asarray(points, dtype=np.float64)[:, :3] - np.asarray(cuboid.center)
+    pts = np.asarray(points, dtype=np.float64)
+    if pts.ndim != 2 or pts.shape[1] < 3:
+        raise ValueError(f"points phải có shape (N, >=3), nhận {pts.shape}")
+    rel = pts[:, :3] - np.asarray(cuboid.center)
     c, s = math.cos(cuboid.yaw), math.sin(cuboid.yaw)
     return np.column_stack((c * rel[:, 0] + s * rel[:, 1], -s * rel[:, 0] + c * rel[:, 1], rel[:, 2]))
 
@@ -57,10 +60,10 @@ def footprint(cuboid: Cuboid, margin: float = 0.0) -> np.ndarray:
 
 
 def points_in_cuboid(points: np.ndarray, cuboid: Cuboid, margin: float = 0.0) -> np.ndarray:
-    """Mask bool cho các điểm nằm trong box (nới thêm `margin` mét mỗi phía)."""
+    """Mask điểm trong box, kể cả biên; dung sai số học 1e-9 m, ngoài margin do caller chọn."""
     local = to_box_frame(points, cuboid)
     half = np.asarray(cuboid.dims) / 2.0 + margin
-    return np.all(np.abs(local) <= half, axis=1)
+    return np.all(np.abs(local) <= half + 1e-9, axis=1)
 
 
 def footprint_ring_mask(points: np.ndarray, cuboid: Cuboid, inner: float, outer: float) -> np.ndarray:
@@ -80,9 +83,13 @@ def footprint_ring_mask(points: np.ndarray, cuboid: Cuboid, inner: float, outer:
 def quaternion_to_matrix(quaternion: Sequence[float]) -> np.ndarray:
     """Quaternion [w, x, y, z] (thứ tự của nuScenes) → ma trận quay 3x3. Tự chuẩn hóa độ dài."""
     w, x, y, z = (float(v) for v in quaternion)
-    norm = math.sqrt(w * w + x * x + y * y + z * z)
-    if norm == 0.0:
+    if not all(math.isfinite(v) for v in (w, x, y, z)):
+        raise ValueError("Quaternion phải gồm 4 số hữu hạn")
+    scale = max(abs(v) for v in (w, x, y, z))
+    if scale == 0.0:
         raise ValueError("Quaternion có độ dài 0")
+    w, x, y, z = (v / scale for v in (w, x, y, z))
+    norm = math.hypot(w, x, y, z)
     w, x, y, z = w / norm, x / norm, y / norm, z / norm
     return np.array([
         [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
@@ -95,25 +102,40 @@ def pose_matrix(translation: Sequence[float], rotation: Sequence[float]) -> np.n
     """Ma trận đồng nhất 4x4 từ vị trí (x, y, z) và quaternion [w, x, y, z]."""
     matrix = np.eye(4)
     matrix[:3, :3] = quaternion_to_matrix(rotation)
-    matrix[:3, 3] = [float(v) for v in translation]
+    position = np.asarray(translation, dtype=np.float64)
+    if position.shape != (3,) or not np.isfinite(position).all():
+        raise ValueError("Vị trí pose phải gồm 3 số hữu hạn")
+    matrix[:3, 3] = position
     return matrix
+
+
+def validate_pose(matrix: np.ndarray) -> np.ndarray:
+    """Pose phải là phép quay tay phải + tịnh tiến hữu hạn, không chứa scale/shear."""
+    m = np.asarray(matrix, dtype=np.float64)
+    if m.shape != (4, 4) or not np.isfinite(m).all():
+        raise ValueError("Pose phải có shape (4, 4) và các số hữu hạn")
+    rotation = m[:3, :3]
+    if (not np.allclose(m[3], [0, 0, 0, 1], rtol=0, atol=1e-6)
+            or not np.allclose(rotation.T @ rotation, np.eye(3), rtol=0, atol=1e-6)
+            or not math.isclose(float(np.linalg.det(rotation)), 1.0, abs_tol=1e-6)):
+        raise ValueError("Pose phải là ma trận quay + tịnh tiến tay phải, không có scale/shear")
+    return m
 
 
 def invert_pose(matrix: np.ndarray) -> np.ndarray:
     """Nghịch đảo ma trận pose 4x4 (quay + dịch), không dùng nghịch đảo tổng quát."""
-    rot_t = np.asarray(matrix)[:3, :3].T
+    matrix = validate_pose(matrix)
+    rot_t = matrix[:3, :3].T
     inverse = np.eye(4)
     inverse[:3, :3] = rot_t
-    inverse[:3, 3] = -rot_t @ np.asarray(matrix)[:3, 3]
+    inverse[:3, 3] = -rot_t @ matrix[:3, 3]
     return inverse
 
 
 def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
     """Áp ma trận đồng nhất 4x4 lên điểm (N, 3)."""
     pts = np.asarray(points, dtype=np.float64)[:, :3]
-    m = np.asarray(matrix, dtype=np.float64)
-    if m.shape != (4, 4):
-        raise ValueError(f"Ma trận phải có shape (4, 4), nhận {m.shape}")
+    m = validate_pose(matrix)
     return pts @ m[:3, :3].T + m[:3, 3]
 
 
@@ -210,7 +232,7 @@ def rotate_pose_to_ego(sensor_to_world: np.ndarray) -> np.ndarray:
     """Đổi ma trận sensor_to_world (4x4) sang ego_to_world khi hệ local của sensor được quay sang hệ xe thu."""
     rot4 = np.eye(4, dtype=np.float64)
     rot4[:3, :3] = LIDAR_TO_EGO_ROT
-    return np.asarray(sensor_to_world, dtype=np.float64) @ rot4.T
+    return validate_pose(sensor_to_world) @ rot4.T
 
 
 def hermite_spline_interpolate(

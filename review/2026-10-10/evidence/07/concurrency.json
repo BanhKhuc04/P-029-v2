@@ -1,0 +1,19 @@
+{
+  "condition": "controlled HTTP server, upstream mock deliberately held; resource-cap/latency evidence only, not CVAT throughput",
+  "parallel_report_responses": [
+    {
+      "status": 200,
+      "seconds": 0.03451800000038929
+    },
+    {
+      "status": 200,
+      "seconds": 0.03423379999003373
+    }
+  ],
+  "third_report": {
+    "status": 429,
+    "seconds": 0.0033205999934580177
+  },
+  "health_during_busy": 200,
+  "slots": 2
+}

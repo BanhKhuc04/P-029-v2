@@ -1,0 +1,234 @@
+[
+  {
+    "branch": "review/01-overview-architecture",
+    "sha": "c27d54be1957329bfff6d81147c841e8d138815e",
+    "base": "5dcc97f",
+    "base_is_ancestor": true,
+    "stat": "34 files changed, 1992 insertions(+), 41 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 19.75,
+    "pytest": {
+      "tests": "256",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "2",
+      "time": "18.341",
+      "passed": 254
+    },
+    "node_exit": 0,
+    "node_test_files": 1,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest01.log": "9c27c4db785b456c69395070ccda690413112520e78232d4c0e1e1187c38d260",
+      "node01.log": "f14a2522c75b4a80ed5af2cf207028b043e3f9e085afd08c7cdb5c015bfe2ee2"
+    }
+  },
+  {
+    "branch": "review/02-core-detectors",
+    "sha": "7fca8270cc5127d103ac75b157bbe9d4188255d6",
+    "base": "c27d54be1957329bfff6d81147c841e8d138815e",
+    "base_is_ancestor": true,
+    "stat": "22 files changed, 813 insertions(+), 64 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 16.29,
+    "pytest": {
+      "tests": "321",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "2",
+      "time": "15.576",
+      "passed": 319
+    },
+    "node_exit": 0,
+    "node_test_files": 1,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest02.log": "5679c1f8beab3b01b4811e14e4fb25ddfad3f466588dab8c55a67515dae49676",
+      "node02.log": "a221ad0221999a3ce4d3a49230e5fd5a1e375cab01c86bd8013d3310662108f3"
+    }
+  },
+  {
+    "branch": "review/03-data-cvat-integrations",
+    "sha": "f79a85bc609ee0d06879c30bc402d28d773861cb",
+    "base": "7fca8270cc5127d103ac75b157bbe9d4188255d6",
+    "base_is_ancestor": true,
+    "stat": "20 files changed, 1294 insertions(+), 457 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 21.01,
+    "pytest": {
+      "tests": "371",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "3",
+      "time": "20.279",
+      "passed": 368
+    },
+    "node_exit": 0,
+    "node_test_files": 1,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest03.log": "610e5e58f754b3be12403f774dfa6825d5f377fe44f4620b6d783115656f26f1",
+      "node03.log": "b5c0ef5df054c994ac479df57160234b2b4386b4375f9f52f705a13390ea8b44"
+    }
+  },
+  {
+    "branch": "review/04-backend-cli-reports",
+    "sha": "59ef9c4b949b4617406b38ffda00732a8742ff27",
+    "base": "f79a85bc609ee0d06879c30bc402d28d773861cb",
+    "base_is_ancestor": true,
+    "stat": "29 files changed, 1790 insertions(+), 168 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 33.92,
+    "pytest": {
+      "tests": "436",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "3",
+      "time": "33.166",
+      "passed": 433
+    },
+    "node_exit": 0,
+    "node_test_files": 1,
+    "node": {
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest04.log": "7f67d158b5c53d4bda2b7c9a851607fe0b8f79f4c700268b47eb57fa10ea9277",
+      "node04.log": "dbac6f7822587d04f06d4c6c764ebc19cceb515dd767b4d545f444779805b26d"
+    }
+  },
+  {
+    "branch": "review/05-frontend-extension",
+    "sha": "43812b9099d9f8575605e56c0aa2dbc8a15c736d",
+    "base": "59ef9c4b949b4617406b38ffda00732a8742ff27",
+    "base_is_ancestor": true,
+    "stat": "19 files changed, 482 insertions(+), 85 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 32.38,
+    "pytest": {
+      "tests": "436",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "3",
+      "time": "31.648",
+      "passed": 433
+    },
+    "node_exit": 0,
+    "node_test_files": 2,
+    "node": {
+      "tests": 21,
+      "pass": 21,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest05.log": "652c5f4d76f3c3021a22433e99353881ca55bd10cb5bc2f84829b1adfadf002a",
+      "node05.log": "1968c6d42f75fce078ade2c4f7d65ba49aec5c25959357373a046e49da0bf8ea"
+    }
+  },
+  {
+    "branch": "review/06-security-config",
+    "sha": "6282f05531b24b8d4343e9eeff88f36cc91ce9ce",
+    "base": "43812b9099d9f8575605e56c0aa2dbc8a15c736d",
+    "base_is_ancestor": true,
+    "stat": "32 files changed, 721 insertions(+), 71 deletions(-)",
+    "pytest_exit": 1,
+    "seconds": 35.57,
+    "pytest": {
+      "tests": "469",
+      "failures": "1",
+      "errors": "0",
+      "skipped": "3",
+      "time": "34.811",
+      "passed": 465
+    },
+    "node_exit": 0,
+    "node_test_files": 3,
+    "node": {
+      "tests": 35,
+      "pass": 35,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest06.log": "436a126d1a37e3ba21e81e2503a219c874130f2faaf71c5df6001b6c867c58dc",
+      "node06.log": "14bc427538daa62a52b9cabce97819884b3e53cefac4ff57fbf64328aa297e0c"
+    }
+  },
+  {
+    "branch": "review/07-tests-evaluation-performance",
+    "sha": "5353683ed5a355772b1d2cc89c527940bb00eda0",
+    "base": "6282f05531b24b8d4343e9eeff88f36cc91ce9ce",
+    "base_is_ancestor": true,
+    "stat": "41 files changed, 4486 insertions(+), 196 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 35.78,
+    "pytest": {
+      "tests": "490",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "3",
+      "time": "34.941",
+      "passed": 487
+    },
+    "node_exit": 0,
+    "node_test_files": 3,
+    "node": {
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest07.log": "c61c28a2776024a001950ea2227c1438fe9eb680b602012acbc05072a5aed24a",
+      "node07.log": "988960b14f37cc2734685c413f3a2e462bdb6a3d737456e3a3de263be5a95c50"
+    }
+  },
+  {
+    "branch": "review/08-deployment-docs-final",
+    "sha": "092b647006d264562bd007e835e2b126627833fc",
+    "base": "5353683ed5a355772b1d2cc89c527940bb00eda0",
+    "base_is_ancestor": true,
+    "stat": "43 files changed, 1593 insertions(+), 47 deletions(-)",
+    "pytest_exit": 0,
+    "seconds": 59.49,
+    "pytest": {
+      "tests": "493",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "3",
+      "time": "58.384",
+      "passed": 490
+    },
+    "node_exit": 0,
+    "node_test_files": 3,
+    "node": {
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "skipped": 0
+    },
+    "log_sha256": {
+      "pytest08.log": "ffef8b186393fb09ea00a0f5609318a781604c24eca81cf4f8e779c7495b2337",
+      "node08.log": "2cd018b41fb314e4797051c07f94ce83a1d061c5bd739eb7660f048c77db99b4"
+    }
+  }
+]

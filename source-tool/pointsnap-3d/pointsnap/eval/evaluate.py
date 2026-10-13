@@ -13,6 +13,10 @@ cả lỗi thật của nhãn chuẩn, nên người test (T2) cần xem tay tr�
 from __future__ import annotations
 
 import json
+import hashlib
+import platform
+import subprocess
+from datetime import datetime, timezone
 import time
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -111,6 +115,7 @@ class ErrorOutcome:
     measured: float | None  # số đo tool báo (finding khớp đầu tiên)
     expected: float | None  # số đo đúng của lỗi chèn
     has_ground_evidence: bool | None  # chỉ với lơ lửng / lún: box có đủ điểm mặt đất trên nhãn sạch không
+    measured_unit: str | None = None  # bản cũ không có đơn vị; size cũ không dùng để tính accuracy
 
 
 @dataclass
@@ -142,7 +147,7 @@ def _world_speeds(track: list[Cuboid], frames) -> list[float]:
     for a, b in zip(track, track[1:]):
         da, db = (frames.frame_data(x.frame, with_points=False) for x in (a, b))
         wa, wb = (d.sensor_to_world @ np.array([*x.center, 1.0]) for d, x in ((da, a), (db, b)))
-        dt = (db.timestamp - da.timestamp) if db.timestamp and da.timestamp else 0.5 * (b.frame - a.frame)
+        dt = (db.timestamp - da.timestamp) if db.timestamp is not None and da.timestamp is not None else 0.5 * (b.frame - a.frame)
         speeds.append(float(np.linalg.norm(wb[:2] - wa[:2])) / dt if dt > 0 else 0.0)
     return speeds
 
@@ -168,6 +173,12 @@ def on_injected_box(error: InjectedError, finding: Finding) -> bool:
 
 def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], config: Config, frames) -> bool:
     kind = error.error_type
+    if not any(getattr(config.rules, rule.replace('.', '_'), False) for rule in RULES_FOR[kind]):
+        return False
+    if kind == 'track_interpolation' and not config.track.long_interpolation.enabled:
+        return False
+    if kind in ('track_jump','track_split_id','track_interpolation') and config.track.group_for(label) is None:
+        return False
     if kind.startswith(("heading", "fit")):
         track = sorted((b for b in clean_boxes if b.track_id == error.track_id and not b.outside),
                        key=lambda b: b.frame)
@@ -190,8 +201,12 @@ def is_applicable(error: InjectedError, label: str, clean_boxes: list[Cuboid], c
     if error.error_type == "floating":
         return label in config.floating.classes
     if error.error_type == "size_in_track":
-        return label not in config.size.in_track.excluded_classes
+        visible = [b for b in clean_boxes if b.track_id == error.track_id and b.visible and b.keyframe]
+        return (label not in config.size.in_track.excluded_classes
+                and len(visible) >= config.size.in_track.min_keyframes)
     if error.error_type == "track_interpolation":
+        if int(error.magnitude) < config.track.long_interpolation.min_frames:
+            return False
         track = {b.frame: b for b in clean_boxes if b.track_id == error.track_id and not b.outside}
         before, after = track.get(int(error.frame) - 1), track.get(int(error.frame) + int(error.magnitude))
         if before is None or after is None:
@@ -212,7 +227,7 @@ def no_evidence_frames(findings: Iterable[Finding]) -> dict[int | None, set[int]
 
 def evaluate_scene(
     reader: NuScenesReader, scene: str, config: Config, rounds: int = 10, seed: int = 0, error_rate: float = 0.10,
-    catalog: str = "core",
+    catalog: str = "core", injection_log: list | None = None,
 ) -> tuple[SceneStats, list[ErrorOutcome]]:
     frames = reader.frames(scene)
     clean_boxes = add_track_markers(reader.annotations(scene), frames.num_frames)
@@ -234,10 +249,12 @@ def evaluate_scene(
     for rnd in range(rounds):
         injected_boxes, errors = inject_dataset(clean_boxes, seed=seed + rnd, error_rate=error_rate, offset=rnd * 7,
                                                 catalog=catalog)
+        if injection_log is not None:
+            injection_log.extend({'scene': scene, 'round': rnd, 'seed': seed+rnd, **asdict(e)} for e in errors)
         findings = actionable(scan_cuboids(injected_boxes, config, frames))
         used: set[int] = set()
         for error in errors:
-            hits = [i for i, f in enumerate(findings) if matches(error, f)]
+            hits = [i for i, f in enumerate(findings) if i not in used and matches(error, f)]
             used.update(hits)
             best = min((findings[i] for i in hits), key=lambda f: f.severity.rank, default=None)
             primary = next((findings[i] for i in hits if findings[i].rule == RULES_FOR[error.error_type][0]), None)
@@ -251,7 +268,10 @@ def evaluate_scene(
                 applicable=is_applicable(error, labels[error.track_id], clean_boxes, config, frames),
                 detected=best is not None,
                 severity=best.severity.value if best else None,
-                measured=primary.value if primary else None, expected=_expected_value(error),
+                measured=(primary.details.get("relative_diff") if error.error_type == "size_in_track"
+                          else primary.value) if primary else None,
+                measured_unit="ratio" if error.error_type == "size_in_track" else None,
+                expected=_expected_value(error),
                 has_ground_evidence=evidence,
             ))
         for i, f in enumerate(findings):
@@ -302,12 +322,16 @@ def summarize(stats: Sequence[SceneStats], outcomes: Sequence[ErrorOutcome]) -> 
         tot = sum(s.findings_total.get(category, 0) for s in stats)
         hit = sum(s.findings_matched.get(category, 0) for s in stats)
         any_hit = sum(s.findings_on_injected.get(category, 0) for s in stats)
-        precision[category] = {"findings": tot, "matched": hit, "on_injected": any_hit}
+        errors = [o for o in outcomes if CATEGORY[o.error_type] == category]
+        precision[category] = {"findings": tot, "matched": hit, "on_injected": any_hit,
+                               "finding_fp": tot-hit, "fault_tp":sum(o.detected for o in errors),
+                               "fault_fn":sum(not o.detected for o in errors), "fault_n":len(errors)}
 
     accuracy = {}
     for kind, unit in (("floating", 100.0), ("size_in_track", 100.0), ("track_jump", 1.0), ("heading_rotate", 1.0)):
         errs = [abs(abs(o.measured) - abs(o.expected)) * unit for o in outcomes
-                if o.error_type == kind and o.detected and o.measured is not None and o.expected is not None]
+                if o.error_type == kind and o.detected and o.measured is not None and o.expected is not None
+                and (kind != "size_in_track" or o.measured_unit == "ratio")]
         accuracy[kind] = {"n": len(errs), "median_abs_error": float(np.median(errs)) if errs else None}
 
     large = [o for o in outcomes if (o.error_type, o.magnitude) in LARGE and o.applicable
@@ -315,7 +339,7 @@ def summarize(stats: Sequence[SceneStats], outcomes: Sequence[ErrorOutcome]) -> 
     return {
         "scenes": [s.scene for s in stats],
         "boxes": boxes,
-        "clean_per_100_boxes": {k: round(v / boxes * 100, 3) for k, v in sorted(clean.items())},
+        "clean_per_100_boxes": {k: round(v / boxes * 100, 3) if boxes else None for k, v in sorted(clean.items())},
         "clean_counts": dict(sorted(clean.items())),
         "recall": recall,
         "large_as_error": {"n": len(large), "as_error": sum(o.severity == "error" for o in large)},
@@ -332,11 +356,14 @@ def to_markdown(summary: dict[str, Any], title: str) -> str:
               "|---|---|---|---|"]
     for key, n in summary["clean_counts"].items():
         rule, severity = key.split("|")
-        lines.append(f"| `{rule}` | {severity} | {n} | {summary['clean_per_100_boxes'][key]:.2f} |")
+        rate=summary['clean_per_100_boxes'][key]
+        value=f'{rate:.2f}' if rate is not None else '—'
+        lines.append(f"| `{rule}` | {severity} | {n} | {value} |")
     for severity, target in (("warning", 2.0), ("error", 0.5)):
-        value = sum(v for k, v in summary["clean_per_100_boxes"].items()
+        value = sum(v or 0 for k, v in summary["clean_per_100_boxes"].items()
                     if k.endswith(f"|{severity}") and not k.startswith("floating.no_evidence"))
-        lines.append(f"| **Tổng** | {severity} | | **{value:.2f}** (mục tiêu ≤ {target}) |")
+        total=f'{value:.2f}' if summary['boxes'] else '— (chưa đo)'
+        lines.append(f"| **Tổng** | {severity} | | **{total}** (mục tiêu ≤ {target}) |")
 
     lines += ["", "## Recall trên lỗi chèn giả", "",
               "Bắt được = báo đúng box / track bằng luật cùng loại, mức Cảnh báo trở lên.", "",
@@ -385,16 +412,42 @@ def run_evaluation(
     reader: NuScenesReader, scenes: Sequence[str], config: Config, out_dir: str | Path, rounds: int = 10,
     seed: int = 0, title: str = "Kết quả đánh giá PointSnap 3D", progress=print, catalog: str = "all",
 ) -> dict[str, Any]:
+    if not scenes or len(scenes) != len(set(scenes)) or rounds < 1 or catalog not in ('core','c1','all'):
+        raise ValueError('Cần danh sách cảnh không rỗng/không trùng, rounds ≥ 1 và catalog hợp lệ')
+    out = Path(out_dir)
+    if (out/'metadata.json').exists():
+        raise ValueError('Thư mục đã có kết quả đánh giá; chọn --out mới để giữ bằng chứng trước')
+    out.mkdir(parents=True, exist_ok=True)
+    config_data=config.to_dict(redact=True)
+    metadata={'created_at':datetime.now(timezone.utc).isoformat(), 'python':platform.python_version(),
+              'dataset_version':reader.version, 'scenes':list(scenes),'rounds':rounds,'seed':seed,'catalog':catalog,
+              'error_rate':.10,'config':config_data,'config_sha256':hashlib.sha256(json.dumps(config_data,sort_keys=True).encode()).hexdigest(),
+              'matching':'same rule family and track/frame; warning+; each finding credited to one injection; precision is finding-level matching, not manual truth'}
+    source = Path(__file__).resolve()
+    metadata['evaluator_sha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
+    metadata['source_commit'] = None
+    metadata['source_dirty'] = None
+    try:
+        # Archive/site-packages trong checkout cha không phải source của Git HEAD đó.
+        subprocess.check_output(['git', 'ls-files', '--error-unmatch', 'pointsnap/eval/evaluate.py'],
+                                cwd=source.parents[2], stderr=subprocess.DEVNULL)
+        metadata['source_commit'] = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                                           cwd=source.parents[2], stderr=subprocess.DEVNULL).decode().strip()
+        metadata['source_dirty'] = bool(subprocess.check_output(['git', 'status', '--porcelain', '--', 'pointsnap'],
+                                                               cwd=source.parents[2], stderr=subprocess.DEVNULL).strip())
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    (out/'metadata.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2),encoding='utf-8')
     stats: list[SceneStats] = []
     outcomes: list[ErrorOutcome] = []
+    injections=[]
     for scene in scenes:
-        s, o = evaluate_scene(reader, scene, config, rounds=rounds, seed=seed, catalog=catalog)
+        s, o = evaluate_scene(reader, scene, config, rounds=rounds, seed=seed, catalog=catalog,injection_log=injections)
         stats.append(s)
         outcomes.extend(o)
         progress(f"{scene}: {s.boxes} box, {len(o)} lỗi chèn, bắt được {sum(x.detected for x in o)}")
+        (out/'injections.json').write_text(json.dumps(injections,ensure_ascii=False,indent=1),encoding='utf-8')
     summary = summarize(stats, outcomes)
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "outcomes.json").write_text(json.dumps([asdict(o) for o in outcomes], ensure_ascii=False, indent=1),
                                        encoding="utf-8")

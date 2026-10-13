@@ -10,7 +10,9 @@
 
   async function getJson(path) {
     // Không gửi header Accept riêng: CVAT trả 406 với `application/json` không kèm phiên bản API.
-    const res = await fetch(`${location.origin}${path}`, { credentials: 'include' });
+    const url = new URL(path, location.origin);
+    if (url.origin !== location.origin || !url.pathname.startsWith('/api/') || url.username || url.password) throw new Error('Đường dẫn CVAT không hợp lệ');
+    const res = await fetch(url.href, { credentials: 'include', redirect: 'error', signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`CVAT trả ${res.status} cho ${path.split('?')[0]}`);
     return res.json();
   }
@@ -22,8 +24,10 @@
     for (;;) {
       const sep = path.includes('?') ? '&' : '?';
       const data = await getJson(`${path}${sep}page_size=500&page=${page}`);
-      out.push(...(data.results || []));
+      if (!data || !Array.isArray(data.results)) throw new Error('Danh sách CVAT không hợp lệ');
+      out.push(...data.results);
       if (!data.next) return out;
+      if (page >= 100) throw new Error('CVAT vượt giới hạn 100 trang; cần thu hẹp dữ liệu');
       page += 1;
     }
   }

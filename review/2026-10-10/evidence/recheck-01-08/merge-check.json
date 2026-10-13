@@ -1,0 +1,183 @@
+{
+  "before": [
+    {
+      "branch": "review/01-overview-architecture",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "83d9cc4337a163f3d713beca264b9362ce367f33",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "quan-ly/TASKS.md",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/02-core-detectors",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "777d94dfb8a0e536d3a81aad8fa05bb7564925f7",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/03-data-cvat-integrations",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "818ba06d0226d1da1c482754e37ab5b314795894",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/04-backend-cli-reports",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "269b2de55fcbc3c656de91d0b27f625f4614f9a8",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/05-frontend-extension",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "7db509e7d09d53098fe682f76c2ff7414986d8ab",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/06-security-config",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "c4226fde78e99cbb3cc1a098907c31c65b06d9ab",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/07-tests-evaluation-performance",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "556522aeecf6fc36215123cd8c60e157a66cd8fb",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "scripts/run_eval_suite.py",
+        "tests/test_ground.py"
+      ]
+    },
+    {
+      "branch": "review/08-deployment-docs-final",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "branch_sha": "b526d16431e9c6ba9158d46bcc1b7dc1e9431c84",
+      "exit": 1,
+      "summary": [
+        "../README.md",
+        "CAI-DAT.md",
+        "README.md",
+        "pointsnap/core/ground.py",
+        "pointsnap/detectors/heading.py",
+        "pointsnap/detectors/size.py",
+        "quan-ly/TASKS.md",
+        "scripts/run_eval_suite.py",
+        "tests/test_ground.py"
+      ]
+    }
+  ],
+  "after": [
+    {
+      "branch": "review/01-overview-architecture",
+      "sha": "65ee0feb5d9b9b80b17a9651241840eeb02c3bc9",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/02-core-detectors",
+      "sha": "aa67798d2dd751150ec3ddadc01932b01b20d79f",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/03-data-cvat-integrations",
+      "sha": "f0bd5ec0ebb3524a3afbfcdff7c5d828788308c3",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/04-backend-cli-reports",
+      "sha": "4efee4adb78b96264d6d0ce14b9bd680df3f0dd8",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/05-frontend-extension",
+      "sha": "6bd8984ea370054f021c6ad59ac8f1351f284c16",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/06-security-config",
+      "sha": "7bd5dd2167371e846b68a890d80bb4fe073d1841",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/07-tests-evaluation-performance",
+      "sha": "0d5dcb5d2e012f18b8a0789446ead936500301d7",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    },
+    {
+      "branch": "review/08-deployment-docs-final",
+      "sha": "1a39b6f3ae221fbc75caaabd2929feab4c661f05",
+      "main_sha": "be1778c8c83c2f711016f5468245641118453b6f",
+      "merge_tree_exit": 0,
+      "main_is_ancestor": true,
+      "conflict_files": []
+    }
+  ]
+}

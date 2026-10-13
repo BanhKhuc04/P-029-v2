@@ -1,0 +1,15 @@
+{
+  "owned_task_id": 79,
+  "owned_task_name_verified_before_delete": true,
+  "task_after_delete": 404,
+  "job_after_delete": 404,
+  "owned_container_removed": "pointsnap-review08-api",
+  "launcher_own_pids_stopped": true,
+  "work_job_ids_not_mutated": [
+    1,
+    8
+  ],
+  "no_work_container_or_image_removed": true,
+  "private_review_images_retained_for_reproduction": true,
+  "helper_correction": "Task deletion succeeded; first cleanup helper incorrectly assumed CvatError.status_code exists; follow-up verified HTTP statuses directly."
+}

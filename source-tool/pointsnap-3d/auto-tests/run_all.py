@@ -21,7 +21,7 @@ import time
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO = ROOT.parents[1]
+REPO = next((p for p in (ROOT, *ROOT.parents) if (p / '.git').exists()), ROOT)
 
 
 def junit_counts(path):
@@ -97,6 +97,8 @@ def main(argv=None):
     parser.add_argument("--model-smoke", action="store_true", help="Fresh inference with the cached Mask R-CNN checkpoint")
     parser.add_argument("--review-model", default="unspecified (pass --review-model to record the reviewer model)")
     args = parser.parse_args(argv)
+    if not (REPO / '.git').exists():
+        parser.error('Run the complete workflow from a Git checkout; helper tests also support an archived /source tree')
     if args.rounds < 1:
         parser.error("--rounds must be positive")
     from pointsnap.cli.main import load_dotenv

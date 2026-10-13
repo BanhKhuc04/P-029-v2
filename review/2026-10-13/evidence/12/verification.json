@@ -1,0 +1,162 @@
+{
+  "evidence_id": "EV-12-001",
+  "date": "2026-10-13",
+  "branch": "codex/review-12-camera-models",
+  "code_commit": "b0cbba8c5cd9430c680b5c20fc42b1e6d1a8fc32",
+  "baseline_commit": "5920522b13e4eda97878736459d3f55b49d9989d",
+  "sources": {
+    "pointsnap/core/camera.py": {
+      "workspace_sha256": "d91b5c07f66cea4e76e7009e84c518022cb1c4c487716c6a636c2d64fed0c92b",
+      "canonical_lf_sha256": "1898b8f3751c06b7ed0f5e0cd8c53ec5836527b726645be50196d559beee14c8",
+      "matches_code_commit": true
+    },
+    "pointsnap/detectors/camera.py": {
+      "workspace_sha256": "c9d1833ebab4d91f7dde79ea4ec22f89ac14fb3101805723e40f679f7fbf7511",
+      "canonical_lf_sha256": "22dcfc8f71f3ae607ea3049bd3670ab5410fad5f379d14084eb17aff5b56221c",
+      "matches_code_commit": true
+    },
+    "pointsnap/vision/detector2d.py": {
+      "workspace_sha256": "4966025407243dc5398d49b2bd09f82dbae8d0ecd4b1be644cac11c417bad97c",
+      "canonical_lf_sha256": "4f97567f9cc2fb66734210b4dcfffcb491aa498cbad95a24cb42920b347a4847",
+      "matches_code_commit": true
+    },
+    "pointsnap/core/scanner.py": {
+      "workspace_sha256": "f0df28df712ef622630f745c955b6dfefa177a85620353471a530f6dad38b163",
+      "canonical_lf_sha256": "6b61016eb01f46d49a8ac982807d122292954f4a6620665046928359fe44c2ed",
+      "matches_code_commit": true
+    },
+    "pointsnap/core/gate.py": {
+      "workspace_sha256": "16378025379197dd876754114676886e3b87311122fad32bd3083040b729a95c",
+      "canonical_lf_sha256": "d6e285ed0b0fb0cb2027a82de1591b8a914be7bf121e76162f2f82f5f9c6e517",
+      "matches_code_commit": true
+    },
+    "pointsnap/web/storage.py": {
+      "workspace_sha256": "a95d699c1fc6af712a293d6982a1ffe1c0c94ea17774bc88bcf766ef38daf74a",
+      "canonical_lf_sha256": "7b1f492090d8ed0224b31a813bfdd3c38aa0957d2dc758121c3025e416ea3881",
+      "matches_code_commit": true
+    },
+    "pointsnap/adapters/nuscenes/reader.py": {
+      "workspace_sha256": "7ef09f37b1f8021be739b41359ef5d5487be6d5d1598bf5d1864195c8c012ccb",
+      "canonical_lf_sha256": "65f70df15650cdea617bddb6c211ac5215aaa0eb81c07101b77da376d9d04809",
+      "matches_code_commit": true
+    },
+    "scripts/eval_camera.py": {
+      "workspace_sha256": "55e4da4bd2cc8e129e32f07d0adb35117446b5b5e4194306655234b5d121fb6a",
+      "canonical_lf_sha256": "492bfedb122f4cbb3d2a7254f9fbaf2666f562e1bd69bae096d95d659294af9d",
+      "matches_code_commit": true
+    },
+    "tests/test_camera.py": {
+      "workspace_sha256": "21273383dc1c91a3aa12a9a38779624959bc2c53d74796a705ae0dc5939f69e5",
+      "canonical_lf_sha256": "a0df9c26fadb52c301ae12f9ccaef01f93243f8a5ea4eae2246ef0beafaf8e22",
+      "matches_code_commit": true
+    },
+    "tests/test_camera_review12.py": {
+      "workspace_sha256": "9af49080719fd1b047bacb67404c6d9158885dc5c6b07a52e388c312df1bc053",
+      "canonical_lf_sha256": "9af49080719fd1b047bacb67404c6d9158885dc5c6b07a52e388c312df1bc053",
+      "matches_code_commit": true
+    }
+  },
+  "python": {
+    "version": "3.12.14",
+    "full_suite": {
+      "artifact": "source-tool/pointsnap-3d/out/review12-final-full-v4.xml",
+      "sha256": "b0cd7036e7b3502d6315bdbccbc0f27affbab196ff06f8dfaf926f7974ba9e1f",
+      "passed": 771,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 3,
+      "failed_tests": [],
+      "skip_reasons": [
+        "đặt POINTSNAP_LIVE_CVAT=1 để chạy",
+        "đặt POINTSNAP_LIVE_CVAT=1 để chạy",
+        "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      ]
+    },
+    "new_regressions": {
+      "artifact": "source-tool/pointsnap-3d/out/review12-final-focused-v2.xml",
+      "sha256": "abd31a19124ace00d9b3f0839fbbc7b5cc66b014d49e81b9df787a899cde5f2c",
+      "passed": 58,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "failed_tests": [],
+      "skip_reasons": []
+    },
+    "xfail": 0,
+    "environment": {
+      "POINTSNAP_LIVE_CVAT": "0",
+      "HF_HUB_OFFLINE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "node": {
+    "command": "node --test tests/*.test.js",
+    "working_directory": "source-tool/pointsnap-3d/extension",
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0
+  },
+  "coverage": {
+    "kind": "statement",
+    "artifact_sha256": "e25382aa80088ad02a8f46d6c97d71df11cc8e4162c9cabab53b5163979d697e",
+    "modules": {
+      "pointsnap/core/camera.py": {
+        "covered_lines": 79,
+        "num_statements": 79,
+        "percent_covered": 100.0
+      },
+      "pointsnap/detectors/camera.py": {
+        "covered_lines": 231,
+        "num_statements": 243,
+        "percent_covered": 95.06172839506173
+      },
+      "pointsnap/vision/detector2d.py": {
+        "covered_lines": 198,
+        "num_statements": 242,
+        "percent_covered": 81.81818181818181
+      },
+      "pointsnap/core/scanner.py": {
+        "covered_lines": 243,
+        "num_statements": 267,
+        "percent_covered": 91.01123595505618
+      },
+      "pointsnap/core/gate.py": {
+        "covered_lines": 22,
+        "num_statements": 22,
+        "percent_covered": 100.0
+      },
+      "pointsnap/web/storage.py": {
+        "covered_lines": 46,
+        "num_statements": 46,
+        "percent_covered": 100.0
+      },
+      "pointsnap/adapters/nuscenes/reader.py": {
+        "covered_lines": 202,
+        "num_statements": 232,
+        "percent_covered": 87.06896551724138
+      },
+      "scripts/eval_camera.py": {
+        "covered_lines": 30,
+        "num_statements": 119,
+        "percent_covered": 25.210084033613445
+      }
+    },
+    "modified_modules": {
+      "covered_lines": 1051,
+      "num_statements": 1250,
+      "percent": 84.08
+    },
+    "pointsnap_package": {
+      "covered_lines": 6717,
+      "num_statements": 7250,
+      "percent": 92.64827586206897
+    }
+  },
+  "limits": {
+    "pretrained_quality_accepted": false,
+    "gpu_tested": false,
+    "human_verdicts_generated": 0,
+    "blocked_case": "TC-12-008"
+  }
+}

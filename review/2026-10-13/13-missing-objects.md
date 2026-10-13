@@ -3,7 +3,7 @@
 - **Nhánh:** `codex/review-13-missing-objects`.
 - **Thứ tự:** 13 trong chuỗi 09 → 16.
 - **Dependency:** Cần bàn giao 12 về camera/model/coverage; nhận sửa 09–11 có ảnh hưởng scanner.
-- **Trạng thái ban đầu:** 8 ca Chưa chạy. Nhánh hiện mới chứa mã nguồn main d18b1a9 và bộ tài liệu chuẩn bị.
+- **Trạng thái hiện hành:** Đã review 8 ca theo [báo cáo 13](13-report.md) / [bàn giao](13-handoff.md), code `ae1d579`; 792 Python + 37 Node PASS, 3 live-CVAT SKIP. Các ca static/pretrained và human precision còn bị chặn hoặc một phần; xem giới hạn từng ca. Checklist dưới đây là yêu cầu gốc.
 - **Nguồn chung:** [kế hoạch 09–16](REVIEW-PLAN-09-16.md), [phân nhánh](README.md), [inventory 131 file](scope-inventory.tsv).
 
 ## Prompt để thực hiện phần này

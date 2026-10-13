@@ -16,6 +16,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from pathlib import Path
+import hashlib
 from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
@@ -86,13 +87,19 @@ def export_dataset(reader, scenes: Sequence[str], out_dir: str | Path, samples_p
     """Ghi `<out>/<cảnh>.npz`: points (N, 256, 4), meta (N, M), is_error (N,), target (N, 7), track_id, frame."""
     from pointsnap.core.model import add_track_markers
 
-    rng = np.random.default_rng(seed)
+    if samples_per_box < 1 or min_points < 1:
+        raise ValueError("samples_per_box and min_points must be positive")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    for scene in scenes:
+        if (out / f"{scene}.npz").exists():
+            raise FileExistsError(f"Critic dataset already exists: {scene}.npz; choose a new output directory")
     totals = {"samples": 0, "errors": 0}
     for scene in scenes:
+        scene_seed = int.from_bytes(hashlib.sha256(scene.encode()).digest()[:8], "little")
+        rng = np.random.default_rng([seed, scene_seed])
         frames = reader.frames(scene)
-        boxes = [b for b in add_track_markers(reader.annotations(scene), frames.num_frames) if b.visible]
+        boxes = [b for b in add_track_markers(reader.annotations(scene), frames.num_frames) if b.visible and b.keyframe]
         rows = {"points": [], "meta": [], "is_error": [], "target": [], "track_id": [], "frame": []}
         for frame, frame_boxes in group_by_frame(boxes).items():
             points = np.asarray(frames.frame_data(frame).points)
@@ -115,7 +122,10 @@ def export_dataset(reader, scenes: Sequence[str], out_dir: str | Path, samples_p
                                        ("track_id", box.track_id if box.track_id is not None else -1),
                                        ("frame", frame)):
                         rows[key].append(value)
-        np.savez_compressed(out / f"{scene}.npz", **{k: np.asarray(v) for k, v in rows.items()})
+        shapes = {"points": (NUM_POINTS, 4), "meta": (5 + len(CLASSES),), "target": (7,)}
+        arrays = {k: np.asarray(v, dtype=np.float32 if k in shapes else np.int64)
+                  .reshape((-1, *shapes.get(k, ()))) for k, v in rows.items()}
+        np.savez_compressed(out / f"{scene}.npz", **arrays)
         totals["samples"] += len(rows["is_error"])
         totals["errors"] += int(np.sum(rows["is_error"]))
         progress(f"{scene}: {len(rows['is_error'])} mẫu, {int(np.sum(rows['is_error']))} mẫu sai")
@@ -127,15 +137,27 @@ class _Model:
     module: object
 
 
-_LOADED: dict[str, _Model] = {}
+_LOADED: dict[str, tuple[tuple[int, int], _Model]] = {}
+
+
+def available() -> bool:
+    try:
+        import torch  # noqa: F401
+    except (ImportError, OSError):
+        return False
+    return True
 
 
 def _load(path: str) -> _Model:
-    if path not in _LOADED:
+    path = str(Path(path).resolve())
+    stat = Path(path).stat()
+    signature = (stat.st_mtime_ns, stat.st_size)
+    if path not in _LOADED or _LOADED[path][0] != signature:
         import torch
 
-        _LOADED[path] = _Model(torch.jit.load(path, map_location="cpu").eval())
-    return _LOADED[path]
+        # TorchScript is executable: only load checkpoints from a trusted author.
+        _LOADED[path] = (signature, _Model(torch.jit.load(path, map_location="cpu").eval()))
+    return _LOADED[path][1]
 
 
 def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> list[Finding]:
@@ -150,7 +172,7 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
     model = _load(cfg.model).module
     rng = np.random.default_rng(0)
     scored: list[tuple[Cuboid, float, np.ndarray]] = []
-    for frame, boxes in group_by_frame(c for c in cuboids if c.visible).items():
+    for frame, boxes in sorted(group_by_frame(c for c in cuboids if c.visible and c.keyframe).items()):
         items = [i for i in box_point_sets(frames.frame_data(frame).points, boxes, margin=0.5, clearance=0.25,
                                            margin_rel=0.25) if i.num_object_points >= cfg.min_points]
         if not items:
@@ -159,15 +181,21 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
         with torch.inference_mode():
             logit, delta = model(torch.from_numpy(np.stack([b[0] for b in batch])),
                                  torch.from_numpy(np.stack([b[1] for b in batch])))
-        scored.extend(zip((i.box for i in items), logit.numpy().astype(float), delta.numpy()))
+        if (not isinstance(logit, torch.Tensor) or not isinstance(delta, torch.Tensor)
+                or tuple(logit.shape) != (len(items),) or tuple(delta.shape) != (len(items), 7)
+                or not logit.is_floating_point() or not delta.is_floating_point()
+                or not torch.isfinite(logit).all() or not torch.isfinite(delta).all()):
+            raise ValueError("Critic checkpoint must return finite floating tensors (B,) and (B, 7)")
+        scored.extend(zip((i.box for i in items), logit.cpu().numpy().astype(float), delta.cpu().numpy()))
 
-    by_track: dict[int, list[tuple[Cuboid, float, np.ndarray]]] = {}
+    by_track: dict[tuple[int, str], list[tuple[Cuboid, float, np.ndarray]]] = {}
     for row in scored:
         if row[0].track_id is not None:
-            by_track.setdefault(row[0].track_id, []).append(row)
+            by_track.setdefault((row[0].track_id, row[0].label), []).append(row)
     findings: list[Finding] = []
     for box, lg, d in scored:
-        others = [r for r in by_track.get(box.track_id, []) if r[0].frame != box.frame] if box.track_id is not None else []
+        others = [r for r in by_track.get((box.track_id, box.label), [])
+                  if r[0].frame != box.frame] if box.track_id is not None else []
         if len(others) >= 2:
             ref_logit = float(np.median([r[1] for r in others]))
             rise = lg - ref_logit
@@ -175,17 +203,17 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
                 continue
             fix = d - np.median(np.stack([r[2] for r in others]), axis=0)
             severity = Severity.ERROR if rise > cfg.error_logit_rise else Severity.WARNING
-            value, threshold = rise, cfg.min_logit_rise
+            value, threshold = rise, cfg.error_logit_rise if severity is Severity.ERROR else cfg.min_logit_rise
             why = (f"điểm sai cao hơn các frame khác của track {rise:.1f} (ngưỡng {cfg.min_logit_rise:g}; "
-                   f"xác suất {_sigmoid(lg):.0%})")
+                   f"điểm sigmoid {_sigmoid(lg):.0%}, chưa hiệu chuẩn)")
         else:
             p = _sigmoid(lg)
             if p < cfg.min_probability:
                 continue
             fix = d
             severity = Severity.ERROR if p >= cfg.error_probability else Severity.WARNING
-            value, threshold = p, cfg.min_probability
-            why = f"xác suất {p:.0%}"
+            value, threshold = p, cfg.error_probability if severity is Severity.ERROR else cfg.min_probability
+            why = f"điểm sigmoid {p:.0%}, chưa hiệu chuẩn"
         text = (f"dời ({fix[0]:+.2f}, {fix[1]:+.2f}, {fix[2]:+.2f}) m, kích thước ({fix[3]:+.2f}, {fix[4]:+.2f}, "
                 f"{fix[5]:+.2f}) m, xoay {math.degrees(fix[6]):+.1f}°")
         findings.append(Finding(
@@ -198,4 +226,7 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
 
 
 def _sigmoid(x: float) -> float:
-    return 1.0 / (1.0 + math.exp(-x))
+    if x >= 0:
+        return 1.0 / (1.0 + math.exp(-x))
+    exp = math.exp(x)
+    return exp / (1.0 + exp)

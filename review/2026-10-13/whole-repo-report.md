@@ -127,3 +127,19 @@ cd D:\Vin_uni\P-029\P-029\source-tool\pointsnap-3d
 ## Kết luận
 
 **Đã hoàn tất lượt kiểm thử/review trong phạm vi báo cáo, chưa toàn bộ đạt.** Main có 3 regression mới thất bại, 1 XFAIL đã biết, lỗi UI xác minh bằng trình duyệt và quality proxy held-out vượt mục tiêu. Model review **`gpt-6.1-sol`**; cả ba chế độ model ảnh đã qua smoke inference, chưa được nghiệm thu precision thủ công. Nhánh review chứa tập lệnh/CI/báo cáo; mã production vẫn ở mốc main đã kiểm.
+
+## Trạng thái sửa sau review (13/10/2026)
+
+Số liệu phía trên giữ nguyên mốc `d18b1a9`. Các finding đã được xử lý như sau:
+
+| Mã | Sửa | Kiểm lại |
+|---|---|---|
+| RV-13-001 | `stable_sigmoid` trong `core/geometry.py`, dùng cho `critic.py` và `learn.py` (cùng mẫu tràn số); Critic bỏ box có logit/gợi ý sửa không hữu hạn | Contract test Critic PASS; thêm `test_model_confidence_saturates_without_overflow` |
+| RV-13-002 | Nhập review 10 (`c5ac54d`) qua PR #55 | Contract test track 0 PASS |
+| RV-13-003 | Nhập review 10 (`c5ac54d`) qua PR #55 | Contract test rider pose PASS |
+| RV-13-004 | `results-content-box` khởi tạo ẩn; `loadLatestRun` gọi `showEmptyResults()` khi chưa có dự án | Node regression mới PASS; trình duyệt với HOME rỗng: chỉ hiện trạng thái trống, không có dải gate, không lỗi console |
+| XFAIL C4 | Nhập review 09 (`f22f2b6`) qua PR #55 | `test_track_from_flat_onto_slope_floating_frame_flagged` PASS |
+
+Windows Python 3.11.9: `pytest tests auto-tests` **678 PASS, 3 SKIP, 0 FAIL, 0 XFAIL**; Node **38 PASS**.
+
+Còn mở: quality proxy held-out (2,960 / 0,588 trên 100 box) không đổi sau review 09/10, cần đo lại và chấm tay precision trước khi chỉnh ngưỡng; chưa kiểm lại luồng màn Kết quả có dữ liệu thật trên trình duyệt trong lượt sửa này.

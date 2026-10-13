@@ -162,3 +162,12 @@ test('floating sunk-box advice matches the extension and moves the box upwards',
   const w=web();assert.match(w.findingFixTip({rule:'floating',message:'Đáy box nằm dưới mặt đất 31 cm (lún)'}),/^Nâng/);
   assert.match(w.findingFixTip({rule:'floating',message:'Đáy box cách mặt đất 18 cm (lơ lửng)'}),/^Hạ/);
 });
+test('results view without a project shows only the empty state, not a gate verdict',async()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../../pointsnap/web/static/index.html'),'utf8');
+  assert.match(html,/id="results-content-box" style="display: none;/);
+  const w=web(async()=>{throw new Error('no fetch without a project');});
+  w.state.currentSlug=null;
+  await w.loadLatestRun();
+  assert.equal(w.document.getElementById('results-content-box').style.display,'none');
+  assert.equal(w.document.getElementById('results-empty-state').style.display,'block');
+});

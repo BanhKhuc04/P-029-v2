@@ -686,7 +686,10 @@
 
   // --- 2. Tab Kết quả (Results View - Main.dc.html) ---
   async function loadLatestRun() {
-    if (!state.currentSlug) return;
+    if (!state.currentSlug) {
+      showEmptyResults();
+      return;
+    }
     const scope = projectScope();
     try {
       const res = await fetch(`/api/projects/${scope.slug}/scans`);

@@ -15,6 +15,14 @@ if TYPE_CHECKING:
     from pointsnap.core.model import Cuboid
 
 
+def stable_sigmoid(x: float) -> float:
+    """Sigmoid không tràn số với |x| lớn: tách nhánh theo dấu để `exp` luôn nhận số không dương."""
+    if x >= 0:
+        return 1.0 / (1.0 + math.exp(-x))
+    e = math.exp(x)
+    return e / (1.0 + e)
+
+
 def normalize_angle(angle: float) -> float:
     """Đưa góc về khoảng [-π, π)."""
     return (angle + math.pi) % (2.0 * math.pi) - math.pi

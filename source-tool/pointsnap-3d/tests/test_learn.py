@@ -5,10 +5,12 @@ from __future__ import annotations
 import json
 
 import numpy as np
+import pytest
 
 from pointsnap.core.model import ErrorType, Finding, Severity
 from pointsnap.learn import (
     MIN_SAMPLES_MODEL,
+    LearnedModel,
     Sample,
     apply,
     collect_reviews,
@@ -71,3 +73,12 @@ def test_learn_project_reads_reviews_and_keeps_history(tmp_path):
     assert (first.version, second.version) == (1, 2)
     assert load_model(tmp_path).version == 2
     assert (tmp_path / "learned-history" / "learned-v1.json").is_file()
+
+
+def test_model_confidence_saturates_without_overflow():
+    """Logit cực âm/dương (z = ±1000) phải cho xác suất ≈ 0/1, không OverflowError (RV-13-001)."""
+    vocab = {"rules": ["floating"], "labels": ["car"]}
+    for bias, expected in ((-1000.0, 0.0), (1000.0, 1.0)):
+        m = LearnedModel(version=1, trained_at="", n_samples=0, rule_stats={}, use_model=True,
+                         weights=[bias, 0.0, 0.0, 0.0, 0.0], vocabulary=vocab)
+        assert m.confidence("floating", "warning", "car", None, None) == pytest.approx(expected)

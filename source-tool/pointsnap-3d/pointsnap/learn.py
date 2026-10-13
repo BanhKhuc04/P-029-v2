@@ -24,6 +24,8 @@ from typing import Any, Iterable, Mapping, Sequence
 
 import numpy as np
 
+from pointsnap.core.geometry import stable_sigmoid
+
 MIN_SAMPLES_MODEL = 40
 """Cần ít nhất chừng này kết luận (có cả Đúng và Báo nhầm) mới thử mô hình logistic."""
 
@@ -136,8 +138,7 @@ def _cross_validate(samples: Sequence[Sample], seed: int = 0) -> tuple[float, fl
                  np.array([s.target for s in train], dtype=float))
         for s in test:
             p_rule.append(stats.get(s.rule, {}).get("precision", 0.5))
-            p_model.append(1.0 / (1.0 + math.exp(-float(vocab.features(s.rule, s.severity, s.label, s.value,
-                                                                        s.threshold) @ w))))
+            p_model.append(stable_sigmoid(float(vocab.features(s.rule, s.severity, s.label, s.value, s.threshold) @ w)))
             ys.append(s.target)
     y = np.array(ys, dtype=float)
     return _logloss(np.array(p_rule), y), _logloss(np.array(p_model), y)
@@ -162,7 +163,7 @@ class LearnedModel:
         if self.use_model and self.weights:
             vocab = Vocabulary(self.vocabulary["rules"], self.vocabulary["labels"])
             z = float(vocab.features(rule, severity, label, value, threshold) @ np.array(self.weights))
-            return 1.0 / (1.0 + math.exp(-z))
+            return stable_sigmoid(z)
         return float(self.rule_stats.get(rule, {}).get("precision", 0.5))
 
     def to_dict(self) -> dict[str, Any]:

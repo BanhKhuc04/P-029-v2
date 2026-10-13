@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Sequence
 import numpy as np
 
 from pointsnap.core.box_points import box_point_sets
+from pointsnap.core.geometry import stable_sigmoid
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_frame
 
 if TYPE_CHECKING:
@@ -159,7 +160,9 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
         with torch.inference_mode():
             logit, delta = model(torch.from_numpy(np.stack([b[0] for b in batch])),
                                  torch.from_numpy(np.stack([b[1] for b in batch])))
-        scored.extend(zip((i.box for i in items), logit.numpy().astype(float), delta.numpy()))
+        # Logit / gợi ý sửa không hữu hạn là đầu ra hỏng của model: bỏ box đó, không để nó lệch trung vị của track.
+        scored.extend((i.box, lg, d) for i, lg, d in zip(items, logit.numpy().astype(float), delta.numpy())
+                      if math.isfinite(lg) and np.isfinite(d).all())
 
     by_track: dict[int, list[tuple[Cuboid, float, np.ndarray]]] = {}
     for row in scored:
@@ -177,9 +180,9 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
             severity = Severity.ERROR if rise > cfg.error_logit_rise else Severity.WARNING
             value, threshold = rise, cfg.min_logit_rise
             why = (f"điểm sai cao hơn các frame khác của track {rise:.1f} (ngưỡng {cfg.min_logit_rise:g}; "
-                   f"xác suất {_sigmoid(lg):.0%})")
+                   f"xác suất {stable_sigmoid(lg):.0%})")
         else:
-            p = _sigmoid(lg)
+            p = stable_sigmoid(lg)
             if p < cfg.min_probability:
                 continue
             fix = d
@@ -195,7 +198,3 @@ def critic_findings(cuboids: Sequence[Cuboid], frames, cfg: CriticConfig) -> lis
             details={"suggested_fix": dict(zip(TARGETS, map(float, fix))), "logit": lg},
         ))
     return findings
-
-
-def _sigmoid(x: float) -> float:
-    return 1.0 / (1.0 + math.exp(-x))

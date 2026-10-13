@@ -96,7 +96,7 @@ def test_group_name_normalizes_case_and_spacing():
 
 
 def image(path):
-    from PIL import Image
+    Image = pytest.importorskip('PIL.Image')
     Image.new("RGB",(8,8),(120,120,120)).save(path)
     return path
 

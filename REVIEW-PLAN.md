@@ -12,6 +12,10 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 - Nhánh kết quả dùng tên không có ngày: `review/01-overview-architecture`, `review/02-core-detectors`, `review/03-data-cvat-integrations`, `review/04-backend-cli-reports`, `review/05-frontend-extension`, `review/06-security-config`, `review/07-tests-evaluation-performance`, `review/08-deployment-docs-final`.
 - Theo yêu cầu bàn giao, đẩy từng nhánh; đồng đội mở PR và merge sau review độc lập.
 
+## Review tiếp tính năng mới trên main — 13/10/2026
+
+Đợt 01–08 đã merge qua PR #54, nhưng tính năng mới của main nằm ngoài phạm vi nghiệm thu của đợt đó. [Kế hoạch09–16](review/2026-10-13/REVIEW-PLAN-09-16.md) có64ca/inventory131file. **09–10 đã review/sửa**,10 nhận ancestry09,code10`c5ac54d`:662 Python+37 Node PASS,5 SKIP,0 XFAIL. [Báo cáo09](review/2026-10-13/09-report.md),[báo cáo10](review/2026-10-13/10-report.md)/[bàn giao10](review/2026-10-13/10-handoff.md). Tiếp theo11; quality và kiểm tay còn theo giới hạn từng báo cáo.
+
 ## Bộ hướng dẫn chi tiết
 
 Đọc [quy trình chung](review/2026-10-10/README.md) và [mẫu báo cáo](review/2026-10-10/report-template.md). Mỗi hướng dẫn có phạm vi, điểm đọc, ca kiểm tra, bằng chứng, lệnh phù hợp và điều kiện hoàn tất:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import numpy as np
 
 from pointsnap.core.config import load_config
 from pointsnap.core.model import Cuboid, Severity
@@ -108,10 +109,11 @@ def _moto_track(rider, speed=6.0, n=6, track_id=2, x0=0.0):
 
 
 def test_rider_state_mount_forgotten(spec):
-    found = detect_rider_state(_moto_track("without_rider"), spec)
+    poses = {f: np.eye(4) for f in range(6)}
+    found = detect_rider_state(_moto_track("without_rider"), spec, poses)
     assert [f.details["kind"] for f in found] == ["mount"]
-    assert detect_rider_state(_moto_track("with_rider"), spec) == []
-    assert detect_rider_state(_moto_track("without_rider", speed=1.3), spec) == []  # dắt xe
+    assert detect_rider_state(_moto_track("with_rider"), spec, poses) == []
+    assert detect_rider_state(_moto_track("without_rider", speed=1.3), spec, poses) == []  # dắt xe
 
 
 def test_rider_state_dismount_forgotten(spec):
@@ -120,10 +122,11 @@ def test_rider_state_dismount_forgotten(spec):
                    track_id=2, attrs={"rider_state": "with_rider"}) for f in range(8)]
     person = [ped(f, track_id=9, x=9.0) for f in range(4, 8)]
     person = [p.replace(center=(9.0, 0.8, p.center[2])) for p in person]
-    found = detect_rider_state(moto + person, spec)
+    poses = {f: np.eye(4) for f in range(8)}
+    found = detect_rider_state(moto + person, spec, poses)
     assert [f.details["kind"] for f in found] == ["dismount"] and found[0].details["person_track_id"] == 9
     fixed = [b.replace(attrs={"rider_state": "without_rider"}) if b.frame >= 4 else b for b in moto]
-    assert detect_rider_state(fixed + person, spec) == []
+    assert detect_rider_state(fixed + person, spec, poses) == []
 
 
 def test_rider_state_inactive_without_config():

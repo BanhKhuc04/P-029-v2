@@ -1,0 +1,121 @@
+{
+  "baseline_commit": "cbeb41c",
+  "measurement": "Selected eligible targets on two tuning scenes; clean hits excluded; not full-mini recall",
+  "rows": [
+    {
+      "scene": "scene-0061",
+      "kind": "standing_to_sitting",
+      "profile": "before",
+      "eligible_targets": 12,
+      "new_hits": 12
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "standing_to_sitting",
+      "profile": "after",
+      "eligible_targets": 12,
+      "new_hits": 12
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "with_to_without_rider",
+      "profile": "before",
+      "eligible_targets": 2,
+      "new_hits": 0
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "with_to_without_rider",
+      "profile": "after",
+      "eligible_targets": 2,
+      "new_hits": 0
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "same_type_id_swap",
+      "profile": "before",
+      "eligible_targets": 12,
+      "new_hits": 11
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "same_type_id_swap",
+      "profile": "after",
+      "eligible_targets": 12,
+      "new_hits": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "standing_to_sitting",
+      "profile": "before",
+      "eligible_targets": 9,
+      "new_hits": 9
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "standing_to_sitting",
+      "profile": "after",
+      "eligible_targets": 9,
+      "new_hits": 9
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "with_to_without_rider",
+      "profile": "before",
+      "eligible_targets": 1,
+      "new_hits": 1
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "with_to_without_rider",
+      "profile": "after",
+      "eligible_targets": 1,
+      "new_hits": 1
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "same_type_id_swap",
+      "profile": "before",
+      "eligible_targets": 9,
+      "new_hits": 9
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "same_type_id_swap",
+      "profile": "after",
+      "eligible_targets": 9,
+      "new_hits": 9
+    }
+  ],
+  "totals": {
+    "standing_to_sitting:before": {
+      "eligible_targets": 21,
+      "new_hits": 21
+    },
+    "standing_to_sitting:after": {
+      "eligible_targets": 21,
+      "new_hits": 21
+    },
+    "with_to_without_rider:before": {
+      "eligible_targets": 3,
+      "new_hits": 1
+    },
+    "with_to_without_rider:after": {
+      "eligible_targets": 3,
+      "new_hits": 1
+    },
+    "same_type_id_swap:before": {
+      "eligible_targets": 21,
+      "new_hits": 20
+    },
+    "same_type_id_swap:after": {
+      "eligible_targets": 21,
+      "new_hits": 20
+    }
+  },
+  "source_hashes": {
+    "detectors/attributes.py": "745c2d8c9640e79399ed219ba89c6907bef4398b405588e665841ef9bc1af19e",
+    "detectors/track.py": "a24f18b4c17f41604204a202571be076ad6c4162855a1e064ea1560effc57bf9"
+  },
+  "tested_code_commit": "c5ac54d26542513ac7c292b89b6d0018f5ff521a"
+}

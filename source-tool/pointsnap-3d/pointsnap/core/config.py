@@ -691,6 +691,22 @@ def _parse_learning(r: _Reader) -> LearningConfig:
 
 
 def _parse_spec(r: _Reader) -> SpecConfig:
+    def rider_state() -> dict[str, str]:
+        if "rider_state" not in r.keys():
+            return {}
+        section = r.section("rider_state")
+        keys = set(section.keys())
+        if not keys:
+            return {}
+        expected = {"class", "attribute", "with", "without", "person"}
+        if keys != expected:
+            raise ConfigError("'spec.rider_state' phải có đúng class, attribute, with, without, person")
+        result = {key: section.string(key) for key in expected}
+        section.finish()
+        if any(not value.strip() for value in result.values()) or result["with"] == result["without"]:
+            raise ConfigError("'spec.rider_state' phải có giá trị không rỗng và with khác without")
+        return result
+
     def mapping_of_lists(key: str) -> dict[str, tuple[str, ...]]:
         if key not in r.keys():
             return {}
@@ -718,8 +734,7 @@ def _parse_spec(r: _Reader) -> SpecConfig:
                      inside_forbidden=pairs("inside_forbidden"),
                      inside_min_lift_m=r.number("inside_min_lift_m", 0.0) if "inside_min_lift_m" in r.keys() else 0.6,
                      rider_double=pairs("rider_double"),
-                     rider_state=(lambda sec: ({k: sec.string(k) for k in sec.keys()}, sec.finish())[0])(
-                         r.section("rider_state")) if "rider_state" in r.keys() else {},
+                     rider_state=rider_state(),
                      rider_max_speed_mps=(r.number("rider_max_speed_mps", 0.0) if "rider_max_speed_mps" in r.keys()
                                           else 2.5))
     r.finish()

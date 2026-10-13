@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import math
 import os
 import threading
@@ -70,7 +71,8 @@ def _find_box(cuboids: list[Cuboid], finding: dict[str, Any]) -> Cuboid | None:
     return min(same_track, key=lambda c: abs(c.frame - frame))
 
 
-def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[str, Any]:
+def _finding_box(run_dir: Path, project: dict[str, Any], index: int) -> tuple[dict[str, Any], Cuboid, ManifestFrames]:
+    """Finding số `index` của lần quét, box của nó trong bản chụp nhãn và nguồn frame (manifest của bản xuất)."""
     findings_path, snapshot_path = run_dir / "findings.json", run_dir / "snapshot.json"
     if not findings_path.is_file() or not snapshot_path.is_file():
         raise PreviewError("Lần quét này thiếu findings.json hoặc snapshot.json")
@@ -92,7 +94,86 @@ def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[
         raise PreviewError("Không tìm thấy manifest.json của task: kiểm tra thư mục bản xuất ở tab Kết nối CVAT")
     dataroot = project.get("nuscenes_root") or os.environ.get("NUSCENES_ROOT") or None
     try:
-        points = ManifestFrames(manifest, dataroot=dataroot).frame_data(box.frame).points
+        frames = ManifestFrames(manifest, dataroot=dataroot)
+    except (OSError, KeyError, ValueError) as exc:
+        raise PreviewError(f"Không đọc được manifest.json của task: {exc}") from exc
+    return finding, box, frames
+
+
+# Cạnh của box theo thứ tự góc của `geometry.corners` (0–3 đáy, 4–7 nóc; góc 0, 3, 4, 7 ở mặt đầu box).
+_BOX_EDGES = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
+_FRONT_EDGES = {(0, 3), (3, 0), (4, 7), (7, 4), (0, 4), (3, 7)}
+
+
+def finding_camera(run_dir: Path, project: dict[str, Any], index: int, full: bool = False) -> tuple[bytes, str]:
+    """Ảnh camera thấy box của finding rõ nhất, vẽ khung 3D (mặt đầu box màu đỏ); trả (JPEG, kênh camera).
+
+    Mặc định cắt quanh box (nới 60%, tối thiểu 360 px) và thu về rộng tối đa 720 px; `full` trả cả ảnh, rộng tối đa
+    1600 px. Cần Pillow (`pip install pointsnap[vision]`) và ảnh camera của bản xuất trong thư mục nuScenes.
+    """
+    from pointsnap.core.camera import project_box
+    from pointsnap.core.geometry import corners
+
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError as exc:
+        raise PreviewError("Xem ảnh camera cần Pillow: pip install \"pointsnap[vision]\"") from exc
+
+    _, box, frames = _finding_box(run_dir, project, index)
+    try:
+        pose = frames.frame_data(box.frame, with_points=False).sensor_to_world
+        views = frames.camera_views(box.frame)
+    except (OSError, KeyError, ValueError, AttributeError) as exc:
+        raise PreviewError(f"Không đọc được ảnh camera frame {box.frame}: {exc}") from exc
+    if pose is None or not views:
+        raise PreviewError("Bản xuất này không có ảnh camera hoặc vị trí xe thu cho frame này")
+
+    best = None
+    for view in views:
+        proj = project_box(box, pose, view)
+        if proj is None:
+            continue
+        x1, y1, x2, y2 = proj.box
+        score = (x2 - x1) * (y2 - y1) * proj.inside_ratio
+        if best is None or score > best[0]:
+            best = (score, view, proj)
+    if best is None:
+        raise PreviewError("Không camera nào thấy box này (box ở sau hoặc ngoài khung hình mọi camera)")
+    _, view, proj = best
+
+    try:
+        image = Image.open(view.path).convert("RGB")
+    except OSError as exc:
+        raise PreviewError(f"Không mở được ảnh {view.path.name}: {exc}") from exc
+    draw = ImageDraw.Draw(image)
+    pixels = [tuple(map(float, p)) for p in proj.polygon]
+    width = max(2, round(image.width / 640))
+    for a, b in _BOX_EDGES:
+        if (a, b) not in _FRONT_EDGES:
+            draw.line([pixels[a], pixels[b]], fill=(255, 196, 0), width=width)
+    for a, b in _BOX_EDGES:
+        if (a, b) in _FRONT_EDGES:
+            draw.line([pixels[a], pixels[b]], fill=(235, 40, 40), width=width + 1)
+    del draw
+
+    if not full:
+        x1, y1, x2, y2 = proj.box
+        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+        half = max((x2 - x1) * 0.8, (y2 - y1) * 0.8, 180.0)
+        image = image.crop((max(0, int(cx - half)), max(0, int(cy - half)),
+                            min(image.width, int(cx + half)), min(image.height, int(cy + half))))
+    limit = 1600 if full else 720
+    if image.width > limit:
+        image = image.resize((limit, round(image.height * limit / image.width)))
+    out = io.BytesIO()
+    image.save(out, format="JPEG", quality=85)
+    return out.getvalue(), view.channel
+
+
+def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[str, Any]:
+    finding, box, frames = _finding_box(run_dir, project, index)
+    try:
+        points = frames.frame_data(box.frame).points
     except (OSError, KeyError, ValueError) as exc:
         raise PreviewError(f"Không đọc được point cloud frame {box.frame}: {exc}") from exc
 

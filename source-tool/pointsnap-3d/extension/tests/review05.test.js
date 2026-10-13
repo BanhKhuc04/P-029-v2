@@ -11,7 +11,7 @@ function web(fetch, confirm = () => false) {
   function el(id='') {
     return {id, value:'', textContent:'', innerHTML:'', style:{}, children:[], attrs:{}, disabled:false,
       classList:{add(){},remove(){},toggle(){}}, setAttribute(k,v){this.attrs[k]=v;},
-      getAttribute(k){return this.attrs[k] ?? 'true';}, addEventListener(){}, focus(){},
+      getAttribute(k){return this.attrs[k] ?? 'true';}, removeAttribute(k){delete this.attrs[k];}, addEventListener(){}, focus(){},
       appendChild(child){this.children.push(child);}, remove(){}, querySelector(){return el();},
       querySelectorAll(){return [];}, getContext(){return {clearRect(){}};}};
   }

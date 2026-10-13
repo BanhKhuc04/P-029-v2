@@ -118,3 +118,31 @@ def test_preview_ground_is_in_box_frame_and_only_for_measured_findings():
     assert preview_ground({"details": {"ground_z": -1.9}}, box) == {"z": -1.0, "pitch_deg": 0.0}
     assert preview_ground({"details": {}}, box) is None
     assert preview_ground({"details": {"ground_z": float("nan")}}, box) is None
+
+
+def test_finding_camera_draws_box_on_best_camera(tmp_path, monkeypatch):
+    """Ảnh camera của finding: chọn camera thấy box, trả JPEG kèm tên kênh; box sau mọi camera thì báo rõ."""
+    pytest.importorskip("PIL")
+    from types import SimpleNamespace
+
+    from PIL import Image
+
+    from pointsnap.core.camera import CameraView
+    from pointsnap.web import preview
+
+    img = tmp_path / "front.jpg"
+    Image.new("RGB", (1600, 900), (90, 90, 90)).save(img)
+    # Camera nhìn theo +x của xe: trục z camera = x thế giới, x camera = -y, y camera = -z.
+    cam_to_world = np.eye(4)
+    cam_to_world[:3, :3] = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]], dtype=float)
+    view = CameraView("CAM_FRONT", img, np.array([[1000, 0, 800], [0, 1000, 450], [0, 0, 1]], float), cam_to_world, 1600, 900)
+    frames = SimpleNamespace(frame_data=lambda frame, with_points=True: SimpleNamespace(sensor_to_world=np.eye(4)),
+                             camera_views=lambda frame: [view])
+    box = Cuboid(center=(10.0, 0.0, 0.0), dims=(4.0, 2.0, 1.6), yaw=0.0, label="car", frame=0, track_id=1)
+    monkeypatch.setattr(preview, "_finding_box", lambda run_dir, project, index: ({}, box, frames))
+    jpeg, channel = preview.finding_camera(tmp_path, {}, 0)
+    assert channel == "CAM_FRONT" and jpeg[:2] == b"\xff\xd8"
+    behind = Cuboid(center=(-10.0, 0.0, 0.0), dims=(4.0, 2.0, 1.6), yaw=0.0, label="car", frame=0, track_id=1)
+    monkeypatch.setattr(preview, "_finding_box", lambda run_dir, project, index: ({}, behind, frames))
+    with pytest.raises(preview.PreviewError, match="Không camera nào"):
+        preview.finding_camera(tmp_path, {}, 0)

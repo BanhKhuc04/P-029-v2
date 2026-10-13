@@ -1140,6 +1140,7 @@
     clearPreviewCanvases();
     if (index < 0 || !state.currentSlug) return;
     status.innerHTML = `<span class="inline-loading">${loaderSvg(20)}<span>Đang tải point cloud…</span></span>`;
+    loadCamera(f, index);
     try {
       const data = await fetchPreview(index);
       if (state.currentDetail !== f) return;
@@ -1161,6 +1162,45 @@
       const c = document.getElementById(id);
       c.getContext('2d').clearRect(0, 0, c.width, c.height);
     });
+    const img = document.getElementById('preview-camera');
+    img.hidden = true;
+    img.removeAttribute('src');
+    document.getElementById('preview-camera-link').removeAttribute('href');
+    document.getElementById('preview-camera-caption').textContent = 'Ảnh camera';
+  }
+
+  // Ảnh camera thấy box rõ nhất (máy chủ chọn camera, vẽ khung 3D, mặt đầu box màu đỏ); bấm để mở cả ảnh.
+  const cameraCache = new Map();
+  function fetchCamera(index) {
+    const base = `/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/findings/${index}/camera`;
+    if (!cameraCache.has(base)) {
+      const p = fetch(base).then(async (res) => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || 'Không có ảnh camera cho box này');
+        }
+        return { url: URL.createObjectURL(await res.blob()), channel: res.headers.get('X-Camera-Channel') || '', full: `${base}?full=true` };
+      });
+      p.catch(() => cameraCache.delete(base));
+      cameraCache.set(base, p);
+    }
+    return cameraCache.get(base);
+  }
+
+  async function loadCamera(f, index) {
+    const img = document.getElementById('preview-camera');
+    const caption = document.getElementById('preview-camera-caption');
+    caption.textContent = 'Ảnh camera · đang tải…';
+    try {
+      const cam = await fetchCamera(index);
+      if (state.currentDetail !== f) return;
+      img.src = cam.url;
+      img.hidden = false;
+      document.getElementById('preview-camera-link').href = cam.full;
+      caption.textContent = `Ảnh camera ${cam.channel} · khung đỏ là mặt đầu box · bấm để xem cả ảnh`;
+    } catch (err) {
+      if (state.currentDetail === f) caption.textContent = `Ảnh camera · ${err.message}`;
+    }
   }
 
   function drawPreviewViews(data) {

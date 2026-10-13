@@ -1,0 +1,2022 @@
+{
+  "evidence_id": "EV-13-003",
+  "dataset": "nuScenes v1.0-mini",
+  "config": {
+    "min_range_m": 3.0,
+    "max_range_m": 40.0,
+    "box_margin_m": 0.3,
+    "cell_m": 0.25,
+    "min_points": 15,
+    "min_points_per_cell": 1.2,
+    "max_bottom_m": 0.6,
+    "max_elevation_m": 1.5,
+    "max_persistence": 0.4,
+    "first_gate_m": 7.0,
+    "link_gate_m": 2.0,
+    "min_frames": 3,
+    "min_motion_m": 3.0,
+    "min_motion_person_m": 1.5,
+    "static_min_persistence": 0.2,
+    "static_gate_m": 1.0,
+    "static_min_views": 2,
+    "static_min_iou": 0.5,
+    "static_min_score": 0.7,
+    "static_labelled_iou": 0.5,
+    "keyframe_interval_s": 0.5
+  },
+  "target_selection": "First 12 eligible instance tokens per scene, sorted; >=3 frames with raw num_lidar_pts>=15 and raw GT displacement>=3m; no tuning from results",
+  "matching": "At least two reported local centers inside corresponding GT yaw footprint expanded .75m; no finding track ID used",
+  "limits": [
+    "Deleted-label recovery only for this selected subset; not overall recall",
+    "Clean-label candidates are a proxy, not human-confirmed false alarms",
+    "No pretrained/static-camera quality or human verdicts"
+  ],
+  "source_sha256": "dc479e197606874383da14349cf4a3ffcb1ed00b9148b22cccef2cde4b37b15f",
+  "baseline_sha256": "f0e937faed00a562f26323a2f068c8a1f1e1d8999a66bd471948d16ec8cf5ccf",
+  "scenes": [
+    {
+      "scene": "scene-0061",
+      "split": "tuning",
+      "frames": 39,
+      "boxes": 3333,
+      "eligible_tracks": 6,
+      "targets": [
+        {
+          "instance": "73ee514c205c483da3d1d04282337457",
+          "label": "pedestrian",
+          "removed_boxes": 26,
+          "raw_displacement_m": 3.1246755031523907,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.433904400000756
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.704935400004615
+            }
+          }
+        },
+        {
+          "instance": "a60047adc78a4b6895702e86b6d2fe88",
+          "label": "truck",
+          "removed_boxes": 22,
+          "raw_displacement_m": 27.941699465136274,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.622632200000226
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.489590600001975
+            }
+          }
+        },
+        {
+          "instance": "bc38961ca0ac4b14ab90e547ba79fbb6",
+          "label": "car",
+          "removed_boxes": 22,
+          "raw_displacement_m": 32.463027970292636,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.526017400006822
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.939486199997191
+            }
+          }
+        },
+        {
+          "instance": "c1958768d48640948f6053d04cffd35b",
+          "label": "car",
+          "removed_boxes": 39,
+          "raw_displacement_m": 46.54135044237547,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.001173699994979
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 2,
+              "seconds": 6.3416743999987375
+            }
+          }
+        },
+        {
+          "instance": "e59d97d4403a48b88fbb6a58fc9959e6",
+          "label": "pedestrian",
+          "removed_boxes": 33,
+          "raw_displacement_m": 4.239971344242908,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.513954100002593
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.995541399999638
+            }
+          }
+        },
+        {
+          "instance": "f81722a685cc49eba454efbb3aec0331",
+          "label": "pedestrian",
+          "removed_boxes": 30,
+          "raw_displacement_m": 6.9844961163995105,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.579824799999187
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.852742000002763
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 4.352035000003525
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 6.19209409999894
+        }
+      }
+    },
+    {
+      "scene": "scene-0553",
+      "split": "tuning",
+      "frames": 41,
+      "boxes": 1288,
+      "eligible_tracks": 16,
+      "targets": [
+        {
+          "instance": "18cdcf0d2340409b95140ea38a70fd2e",
+          "label": "pedestrian",
+          "removed_boxes": 39,
+          "raw_displacement_m": 15.298695499943932,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.006480099997134
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 4.631976999997278
+            }
+          }
+        },
+        {
+          "instance": "19804c352c0a4767b61b8d0709d1db99",
+          "label": "pedestrian",
+          "removed_boxes": 37,
+          "raw_displacement_m": 17.541195683304853,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 2,
+              "seconds": 4.909180399998149
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 2,
+              "seconds": 5.022169299998495
+            }
+          }
+        },
+        {
+          "instance": "21d4060224a946e5b66fd00749282e82",
+          "label": "pedestrian",
+          "removed_boxes": 39,
+          "raw_displacement_m": 17.116430293726367,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 4,
+              "seconds": 4.909335199998168
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 4,
+              "seconds": 4.896074500000395
+            }
+          }
+        },
+        {
+          "instance": "2397a588f42e4195bf7fb0148aa7a3d6",
+          "label": "pedestrian",
+          "removed_boxes": 38,
+          "raw_displacement_m": 16.838359094638765,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 3,
+              "seconds": 4.841842900001211
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 3,
+              "seconds": 6.3195759000009275
+            }
+          }
+        },
+        {
+          "instance": "2e19253f3bac458191cf64ff2b22ba2b",
+          "label": "bus",
+          "removed_boxes": 32,
+          "raw_displacement_m": 20.69672254247024,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 12.565270500002953
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 12.95594610000262
+            }
+          }
+        },
+        {
+          "instance": "340ccb3c0dcb492eaa032f0e4e3017bb",
+          "label": "pedestrian",
+          "removed_boxes": 41,
+          "raw_displacement_m": 26.208464281601934,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 3,
+              "seconds": 14.75290369999857
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 3,
+              "seconds": 14.451168899999175
+            }
+          }
+        },
+        {
+          "instance": "6a0d7a293cc34a84b9857a4fa38cd4a3",
+          "label": "car",
+          "removed_boxes": 16,
+          "raw_displacement_m": 37.00541842757606,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 15.753164699999616
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 13.937213299999712
+            }
+          }
+        },
+        {
+          "instance": "7e799fdef2e94598b5e29af80a587359",
+          "label": "bus",
+          "removed_boxes": 26,
+          "raw_displacement_m": 62.07862695807623,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 15.334788300002401
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 13.82922270000563
+            }
+          }
+        },
+        {
+          "instance": "813f2ab6ce964dce81bf47aadc0c854f",
+          "label": "car",
+          "removed_boxes": 13,
+          "raw_displacement_m": 25.66430953678679,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 14.73768939999718
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.8407843000022694
+            }
+          }
+        },
+        {
+          "instance": "9cbb3b5b8bf849599abcb0228eea3edd",
+          "label": "car",
+          "removed_boxes": 18,
+          "raw_displacement_m": 13.736199365181008,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 4.826145499995619
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 4.5731203999966965
+            }
+          }
+        },
+        {
+          "instance": "afd097377c71479ea8349eeae83b8143",
+          "label": "pedestrian",
+          "removed_boxes": 40,
+          "raw_displacement_m": 13.21757742553455,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.00526340000215
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 4.676538300001994
+            }
+          }
+        },
+        {
+          "instance": "b61b72a5b5ad482e9bc94c203f75b8d4",
+          "label": "pedestrian",
+          "removed_boxes": 40,
+          "raw_displacement_m": 18.715401171227843,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.143636799999513
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.6706895000024815
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 4.919236499998078
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 5.0854649000029895
+        }
+      }
+    },
+    {
+      "scene": "scene-0757",
+      "split": "tuning",
+      "frames": 41,
+      "boxes": 531,
+      "eligible_tracks": 15,
+      "targets": [
+        {
+          "instance": "0c3833f73f0e43288758cb87c9d2a4fe",
+          "label": "car",
+          "removed_boxes": 41,
+          "raw_displacement_m": 34.07713629400221,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 16.104226200004632
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 15.019246500000008
+            }
+          }
+        },
+        {
+          "instance": "11ae216987c84c0abefef802331df41c",
+          "label": "car",
+          "removed_boxes": 9,
+          "raw_displacement_m": 28.76682577205909,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 15.259249100003217
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 15.929738100006944
+            }
+          }
+        },
+        {
+          "instance": "2c74f27891164c9182d5a0d0102dca8c",
+          "label": "truck",
+          "removed_boxes": 7,
+          "raw_displacement_m": 17.504868608475746,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 15.958467299999029
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 17.54488510000374
+            }
+          }
+        },
+        {
+          "instance": "38798e421c51439f883ead7073ce7b79",
+          "label": "car",
+          "removed_boxes": 13,
+          "raw_displacement_m": 30.452196538180917,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.6484385000003385
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.18965400000161
+            }
+          }
+        },
+        {
+          "instance": "3ca372ae40fc4727a1e0e245122ccf94",
+          "label": "car",
+          "removed_boxes": 10,
+          "raw_displacement_m": 26.43348607353934,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.600217400002293
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 4.516091899997264
+            }
+          }
+        },
+        {
+          "instance": "58350757f1d04f628aab9b22cf33549b",
+          "label": "car",
+          "removed_boxes": 14,
+          "raw_displacement_m": 38.396178664028476,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.469594499998493
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.492005700005393
+            }
+          }
+        },
+        {
+          "instance": "59064285ad664ee28b4bcb3d322334f9",
+          "label": "car",
+          "removed_boxes": 10,
+          "raw_displacement_m": 7.282632628383768,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.493893999999273
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.2490298000047915
+            }
+          }
+        },
+        {
+          "instance": "82d680066ddd465dbd3b22fd6a66ed70",
+          "label": "car",
+          "removed_boxes": 10,
+          "raw_displacement_m": 16.134487596449993,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.66399910000473
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.3736014000023715
+            }
+          }
+        },
+        {
+          "instance": "89f39b68d255409a8b3f172ccbd9d42b",
+          "label": "bus",
+          "removed_boxes": 35,
+          "raw_displacement_m": 28.118098975570884,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.57556669999758
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.382948300000862
+            }
+          }
+        },
+        {
+          "instance": "9931995543b74a82ae95928ef340fef6",
+          "label": "car",
+          "removed_boxes": 12,
+          "raw_displacement_m": 21.845111054879162,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.673756399999547
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.4268244999984745
+            }
+          }
+        },
+        {
+          "instance": "b327acc1048e44889108740b2304dabc",
+          "label": "truck",
+          "removed_boxes": 16,
+          "raw_displacement_m": 33.733689540280054,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.7425001000010525
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.419346400005452
+            }
+          }
+        },
+        {
+          "instance": "c27a467cdb1c4643801745a2574d6a46",
+          "label": "car",
+          "removed_boxes": 9,
+          "raw_displacement_m": 20.005434311706473,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.889310700003989
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.4040715000010096
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 19.951327399998263
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 14.890052700000524
+        }
+      }
+    },
+    {
+      "scene": "scene-0916",
+      "split": "tuning",
+      "frames": 41,
+      "boxes": 1964,
+      "eligible_tracks": 5,
+      "targets": [
+        {
+          "instance": "68d411d0e8664a09b4c59787793b0b87",
+          "label": "pedestrian",
+          "removed_boxes": 19,
+          "raw_displacement_m": 3.0647734010852576,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.843392400005541
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.468209599996044
+            }
+          }
+        },
+        {
+          "instance": "89eaf741be444d7e8fcc4748482d338d",
+          "label": "pedestrian",
+          "removed_boxes": 19,
+          "raw_displacement_m": 6.226828727370005,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.837754200001655
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.6279592999999295
+            }
+          }
+        },
+        {
+          "instance": "8a26f7d33ff04b1a8c8679f8c4a7da91",
+          "label": "bus",
+          "removed_boxes": 41,
+          "raw_displacement_m": 38.267782010458866,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.721573200004059
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.071735400000762
+            }
+          }
+        },
+        {
+          "instance": "af7483c35ffa4ad193d14bbac3b0ab4e",
+          "label": "pedestrian",
+          "removed_boxes": 24,
+          "raw_displacement_m": 3.4219623025392303,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.661202900002536
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.006940900006157
+            }
+          }
+        },
+        {
+          "instance": "b5b922e29df847c197a8107251e3ca7d",
+          "label": "truck",
+          "removed_boxes": 8,
+          "raw_displacement_m": 6.492959648727192,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.790153800000553
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.238300600001821
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 6.993858100002399
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 6.504306700000598
+        }
+      }
+    },
+    {
+      "scene": "scene-1094",
+      "split": "tuning",
+      "frames": 40,
+      "boxes": 1548,
+      "eligible_tracks": 13,
+      "targets": [
+        {
+          "instance": "155047a77309452a908e6c96ddd60b55",
+          "label": "pedestrian",
+          "removed_boxes": 19,
+          "raw_displacement_m": 10.039388676607725,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.382472899997083
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.454562700004317
+            }
+          }
+        },
+        {
+          "instance": "17758f0189b946e59e54a03167fe24f2",
+          "label": "car",
+          "removed_boxes": 13,
+          "raw_displacement_m": 10.342317051802093,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.493962699998519
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.15665280000394
+            }
+          }
+        },
+        {
+          "instance": "2c44e4c8d57345dfb834a2c524eee269",
+          "label": "bus",
+          "removed_boxes": 30,
+          "raw_displacement_m": 3.6742946261833436,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.306649700003618
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.557244000003266
+            }
+          }
+        },
+        {
+          "instance": "3f81e988f45c44119cca8011a3274603",
+          "label": "car",
+          "removed_boxes": 40,
+          "raw_displacement_m": 139.96517658689254,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.3026866000000155
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.668768600000476
+            }
+          }
+        },
+        {
+          "instance": "6a4b9f7abafd44f38ff670c3064b13dc",
+          "label": "car",
+          "removed_boxes": 21,
+          "raw_displacement_m": 22.387920537647027,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.592057600006228
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.733480399998371
+            }
+          }
+        },
+        {
+          "instance": "870c468534f7401cba587f6af0dc2eec",
+          "label": "car",
+          "removed_boxes": 39,
+          "raw_displacement_m": 29.108488538569016,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.052481300001091
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.647266400002991
+            }
+          }
+        },
+        {
+          "instance": "9441225cd01f4730a02b5d8927063f53",
+          "label": "pedestrian",
+          "removed_boxes": 32,
+          "raw_displacement_m": 11.701160027962947,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.0912954000014
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.04842230000213
+            }
+          }
+        },
+        {
+          "instance": "98e2b15c113a477a9f291b25194cab62",
+          "label": "pedestrian",
+          "removed_boxes": 18,
+          "raw_displacement_m": 3.392115121867263,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.032114599998749
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 3.686393900003168
+            }
+          }
+        },
+        {
+          "instance": "9d0289ea501143419c271f8778c8e68c",
+          "label": "motorcycle",
+          "removed_boxes": 6,
+          "raw_displacement_m": 10.960365048665194,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 4.496699499999522
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.178428799998073
+            }
+          }
+        },
+        {
+          "instance": "b0e4c63cabd14ec48c7bdd6b6fbf9f4e",
+          "label": "car",
+          "removed_boxes": 14,
+          "raw_displacement_m": 10.884380965401855,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.322818799999368
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.293589499997324
+            }
+          }
+        },
+        {
+          "instance": "c9944f24807c478d85e2daa4bf02ea3c",
+          "label": "motorcycle",
+          "removed_boxes": 14,
+          "raw_displacement_m": 10.075433539059173,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 8.049486299998534
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.834352600002603
+            }
+          }
+        },
+        {
+          "instance": "dc534f142fbf42afbdd38a1afae9df7f",
+          "label": "pedestrian",
+          "removed_boxes": 18,
+          "raw_displacement_m": 10.269219639290979,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.8116769999978715
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.047352699999465
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 7.271635199998855
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 7.135981300001731
+        }
+      }
+    },
+    {
+      "scene": "scene-0103",
+      "split": "test",
+      "frames": 40,
+      "boxes": 1754,
+      "eligible_tracks": 15,
+      "targets": [
+        {
+          "instance": "045cd82a77a1472499e8c15100cb5ff3",
+          "label": "car",
+          "removed_boxes": 29,
+          "raw_displacement_m": 7.491427767789126,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.231939400000556
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.962985499994829
+            }
+          }
+        },
+        {
+          "instance": "09810748e6c04aacb393ebf14fafa5e8",
+          "label": "pedestrian",
+          "removed_boxes": 33,
+          "raw_displacement_m": 3.754581334849446,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.465719700005138
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.0656270000035875
+            }
+          }
+        },
+        {
+          "instance": "200c440c0e9b4627ad4f3047227016a2",
+          "label": "car",
+          "removed_boxes": 35,
+          "raw_displacement_m": 40.20813008584206,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.431442099994456
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.822302000000491
+            }
+          }
+        },
+        {
+          "instance": "2cc84e32d40647b185276f8d7baf5322",
+          "label": "car",
+          "removed_boxes": 5,
+          "raw_displacement_m": 9.611610999203041,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.508248700003605
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.00851810000313
+            }
+          }
+        },
+        {
+          "instance": "3b19bb63d0924f4da3034819357d6c8b",
+          "label": "pedestrian",
+          "removed_boxes": 22,
+          "raw_displacement_m": 4.048313228988143,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.301146800004062
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.871597099998326
+            }
+          }
+        },
+        {
+          "instance": "4ce8f37952ad4203b1f5b23c728fb2e6",
+          "label": "pedestrian",
+          "removed_boxes": 18,
+          "raw_displacement_m": 5.408908947283226,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.386460299996543
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.7695773000014015
+            }
+          }
+        },
+        {
+          "instance": "99fbf1b9bf474215a4e8ad562bb7e9b2",
+          "label": "pedestrian",
+          "removed_boxes": 36,
+          "raw_displacement_m": 4.761191867589344,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.470385000000533
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.3146880000058445
+            }
+          }
+        },
+        {
+          "instance": "9c5151b34911482f8155ab55c3f5d32f",
+          "label": "car",
+          "removed_boxes": 10,
+          "raw_displacement_m": 19.156079818167413,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.40931680000358
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.002474499997334
+            }
+          }
+        },
+        {
+          "instance": "b3412553d70f40b3a1d19a0eb8529a08",
+          "label": "pedestrian",
+          "removed_boxes": 35,
+          "raw_displacement_m": 9.30858404914513,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.29232420000335
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 5.877501900002244
+            }
+          }
+        },
+        {
+          "instance": "c34cb46c7be6486a85ee49653850b174",
+          "label": "pedestrian",
+          "removed_boxes": 39,
+          "raw_displacement_m": 10.370132930681118,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.480784200000926
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.103534800000489
+            }
+          }
+        },
+        {
+          "instance": "dc762bf1bc694d3e8141bf592f9b1456",
+          "label": "car",
+          "removed_boxes": 22,
+          "raw_displacement_m": 16.63516350986676,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.304083400005766
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.197727300001134
+            }
+          }
+        },
+        {
+          "instance": "e147a4c07e06487592fb5d6135c27a78",
+          "label": "pedestrian",
+          "removed_boxes": 40,
+          "raw_displacement_m": 13.516774171376923,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.446141799999168
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.754831500002183
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 6.417241200004355
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 5.931716799997957
+        }
+      }
+    },
+    {
+      "scene": "scene-0655",
+      "split": "test",
+      "frames": 41,
+      "boxes": 1720,
+      "eligible_tracks": 3,
+      "targets": [
+        {
+          "instance": "212c5180f7f7436a9a3bbc3983195034",
+          "label": "car",
+          "removed_boxes": 9,
+          "raw_displacement_m": 23.940690236499048,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.900792599997658
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.482280500000343
+            }
+          }
+        },
+        {
+          "instance": "99d539b687cb4a46b8f1efc7204aa160",
+          "label": "pedestrian",
+          "removed_boxes": 23,
+          "raw_displacement_m": 3.7702181634489804,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.794382200001564
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.512112799995521
+            }
+          }
+        },
+        {
+          "instance": "fa115db15dad4442888c958983899bcf",
+          "label": "car",
+          "removed_boxes": 13,
+          "raw_displacement_m": 10.567561544651593,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.799740299997211
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.503490499999316
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 6.315737799995986
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 5.7415406000000075
+        }
+      }
+    },
+    {
+      "scene": "scene-0796",
+      "split": "test",
+      "frames": 40,
+      "boxes": 513,
+      "eligible_tracks": 17,
+      "targets": [
+        {
+          "instance": "056d745eca7b42f493d84cc2b7d3b5dc",
+          "label": "car",
+          "removed_boxes": 8,
+          "raw_displacement_m": 10.297829382933353,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.828699699995923
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.161788700002944
+            }
+          }
+        },
+        {
+          "instance": "1e425c3c4d3c42848f29a7b5c46565e2",
+          "label": "car",
+          "removed_boxes": 11,
+          "raw_displacement_m": 30.34909850390954,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.712559200001124
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.277336600003764
+            }
+          }
+        },
+        {
+          "instance": "3c988d7c752a49b385f2eea8322652d1",
+          "label": "car",
+          "removed_boxes": 5,
+          "raw_displacement_m": 14.701736292016696,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.7454993999999715
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.580238100003044
+            }
+          }
+        },
+        {
+          "instance": "4045908096574b24a57f32261d6a76a2",
+          "label": "car",
+          "removed_boxes": 8,
+          "raw_displacement_m": 22.23669134561184,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.319016299996292
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.669825600001786
+            }
+          }
+        },
+        {
+          "instance": "4bb69c834e4f47e2a915cb1abaac7ac1",
+          "label": "truck",
+          "removed_boxes": 11,
+          "raw_displacement_m": 13.310028174275393,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.973385299999791
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.534648000000743
+            }
+          }
+        },
+        {
+          "instance": "4f204cd1e74a4e9c9e90ca91389dbeb8",
+          "label": "car",
+          "removed_boxes": 11,
+          "raw_displacement_m": 11.133216291800217,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.541304799997306
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.903235199999472
+            }
+          }
+        },
+        {
+          "instance": "5693745996aa45ceb9bcd5a238aea978",
+          "label": "pedestrian",
+          "removed_boxes": 9,
+          "raw_displacement_m": 3.8630227801555224,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.679468700000143
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.557965100000729
+            }
+          }
+        },
+        {
+          "instance": "69385845cb9747b7afe095177cc405b5",
+          "label": "car",
+          "removed_boxes": 38,
+          "raw_displacement_m": 211.88399261152324,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.851509699998132
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.244947200000752
+            }
+          }
+        },
+        {
+          "instance": "88e4abb15ade4097a1689225c13399ec",
+          "label": "car",
+          "removed_boxes": 24,
+          "raw_displacement_m": 93.56044925073832,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.681183100001363
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.080853200001002
+            }
+          }
+        },
+        {
+          "instance": "9cba9cd8af85487fb010652c90d845b5",
+          "label": "bus",
+          "removed_boxes": 15,
+          "raw_displacement_m": 14.079147204287535,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.935196599995834
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.816591599999811
+            }
+          }
+        },
+        {
+          "instance": "a9ba2ffc5a95458c9bd1052be9bc24ad",
+          "label": "pedestrian",
+          "removed_boxes": 13,
+          "raw_displacement_m": 3.1510940957071063,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.759507900002063
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.298785499995574
+            }
+          }
+        },
+        {
+          "instance": "b224990245da4159b42a55dc0537ddf4",
+          "label": "car",
+          "removed_boxes": 10,
+          "raw_displacement_m": 18.905189340495898,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.728640599998471
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.264203500002623
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 6.7490017999953125
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 6.224908600001072
+        }
+      }
+    },
+    {
+      "scene": "scene-1077",
+      "split": "test",
+      "frames": 41,
+      "boxes": 609,
+      "eligible_tracks": 37,
+      "targets": [
+        {
+          "instance": "041b9e3abcab4e5c8c3eded8054415cb",
+          "label": "car",
+          "removed_boxes": 6,
+          "raw_displacement_m": 21.001219131278912,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.24337789999845
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.545181800000137
+            }
+          }
+        },
+        {
+          "instance": "0915c23aa6d345e08735185a61ddbdc9",
+          "label": "car",
+          "removed_boxes": 11,
+          "raw_displacement_m": 17.122549459703727,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.710380699994857
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.333977100002812
+            }
+          }
+        },
+        {
+          "instance": "0fb3d6d2627b43e198b743e8a9f24499",
+          "label": "car",
+          "removed_boxes": 8,
+          "raw_displacement_m": 22.36543498347399,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.917012500001874
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.171199900003558
+            }
+          }
+        },
+        {
+          "instance": "124d05dc4d28496eac0f8f955c247ace",
+          "label": "car",
+          "removed_boxes": 14,
+          "raw_displacement_m": 8.6069309861296,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.00501880000229
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.0643647000033525
+            }
+          }
+        },
+        {
+          "instance": "1ab61111f3da4b92bb304cda7823b5ad",
+          "label": "car",
+          "removed_boxes": 9,
+          "raw_displacement_m": 14.740153764462585,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.840120499997283
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.134271899994928
+            }
+          }
+        },
+        {
+          "instance": "22d4f74b6ed640778cca25be508ffeb7",
+          "label": "car",
+          "removed_boxes": 11,
+          "raw_displacement_m": 17.758831324160962,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.777711499998986
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.101107199996477
+            }
+          }
+        },
+        {
+          "instance": "26a45222f5314dffa21fd17663e5ebb5",
+          "label": "car",
+          "removed_boxes": 11,
+          "raw_displacement_m": 16.228802697673014,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.816014699994412
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.23216720000346
+            }
+          }
+        },
+        {
+          "instance": "29aa228a5e9a4af0a81d317a1830ad07",
+          "label": "car",
+          "removed_boxes": 4,
+          "raw_displacement_m": 12.87169689667988,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.7392660999976215
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.1187850999995135
+            }
+          }
+        },
+        {
+          "instance": "2d98a4954887471f8ddc9c16acd54086",
+          "label": "car",
+          "removed_boxes": 9,
+          "raw_displacement_m": 17.154845962584435,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.12692600000446
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.411132599998382
+            }
+          }
+        },
+        {
+          "instance": "303f4eb80cd2453d8199453162567af8",
+          "label": "car",
+          "removed_boxes": 7,
+          "raw_displacement_m": 22.378293455936202,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.856604599997809
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.20426050000242
+            }
+          }
+        },
+        {
+          "instance": "38fdf31a4697470e86d0fda3719e426a",
+          "label": "car",
+          "removed_boxes": 12,
+          "raw_displacement_m": 11.92421892620213,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.801056999996945
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 5.988709899997048
+            }
+          }
+        },
+        {
+          "instance": "46b5bbeeb0b5461ea77c6a4a1e0ac6cb",
+          "label": "car",
+          "removed_boxes": 7,
+          "raw_displacement_m": 18.476835497454584,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.803558400002657
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.018407399998978
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 7.055708300002152
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 6.078435600000375
+        }
+      }
+    },
+    {
+      "scene": "scene-1100",
+      "split": "test",
+      "frames": 40,
+      "boxes": 844,
+      "eligible_tracks": 13,
+      "targets": [
+        {
+          "instance": "0ba56cee062b419a80a6a90302944c19",
+          "label": "car",
+          "removed_boxes": 20,
+          "raw_displacement_m": 14.799722328476228,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.9275534999978845
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.357128800002101
+            }
+          }
+        },
+        {
+          "instance": "0debc457dad44487be97463324be8536",
+          "label": "car",
+          "removed_boxes": 29,
+          "raw_displacement_m": 16.687514194750644,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.970067399997788
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.15909929999907
+            }
+          }
+        },
+        {
+          "instance": "21cdc9f24c614a6197fd044379697197",
+          "label": "motorcycle",
+          "removed_boxes": 19,
+          "raw_displacement_m": 28.083232007730015,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.989868099997693
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.35454480000044
+            }
+          }
+        },
+        {
+          "instance": "246622de508246f8b2da378fb858beb4",
+          "label": "car",
+          "removed_boxes": 19,
+          "raw_displacement_m": 41.27237425930336,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.017951900001208
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.24355989999458
+            }
+          }
+        },
+        {
+          "instance": "6b04180e41cf473c92c1bc1059c3bca8",
+          "label": "car",
+          "removed_boxes": 14,
+          "raw_displacement_m": 32.39998168209349,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.176923600003647
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.253679000001284
+            }
+          }
+        },
+        {
+          "instance": "767bc477faf048d89af472aab0ce7edd",
+          "label": "car",
+          "removed_boxes": 14,
+          "raw_displacement_m": 37.92767697869192,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.986202699998103
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.245354600003338
+            }
+          }
+        },
+        {
+          "instance": "7c7ea45167174debb191420c7fb99649",
+          "label": "pedestrian",
+          "removed_boxes": 35,
+          "raw_displacement_m": 6.383053814593774,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.901754000005894
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.275195800000802
+            }
+          }
+        },
+        {
+          "instance": "88b7a3d6e9394198a1511642a5aa5499",
+          "label": "car",
+          "removed_boxes": 9,
+          "raw_displacement_m": 20.255162922079865,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.040608900002553
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.328766700004053
+            }
+          }
+        },
+        {
+          "instance": "bb0f40c613904cdcb3299a73e105c3c4",
+          "label": "car",
+          "removed_boxes": 25,
+          "raw_displacement_m": 36.90979481113386,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 2,
+              "seconds": 7.045531600000686
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 2,
+              "seconds": 6.231949400003941
+            }
+          }
+        },
+        {
+          "instance": "be4d0d7c1a7f425196af0f454baee445",
+          "label": "car",
+          "removed_boxes": 10,
+          "raw_displacement_m": 10.904567575103629,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 7.08423380000022
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.220005499999388
+            }
+          }
+        },
+        {
+          "instance": "e15f0fb13c744ef1a716884b54b757ac",
+          "label": "motorcycle",
+          "removed_boxes": 25,
+          "raw_displacement_m": 15.760647861049275,
+          "results": {
+            "current": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.916098400004557
+            },
+            "baseline": {
+              "recovered": false,
+              "candidates": 0,
+              "seconds": 6.26276979999966
+            }
+          }
+        },
+        {
+          "instance": "e3c44d83d35543d1b638c93943d3a180",
+          "label": "car",
+          "removed_boxes": 17,
+          "raw_displacement_m": 50.577366341081856,
+          "results": {
+            "current": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 7.0518871000022045
+            },
+            "baseline": {
+              "recovered": true,
+              "candidates": 1,
+              "seconds": 6.220166499995685
+            }
+          }
+        }
+      ],
+      "clean": {
+        "current": {
+          "candidates": 0,
+          "seconds": 7.22568190000311
+        },
+        "baseline": {
+          "candidates": 0,
+          "seconds": 6.389995099998487
+        }
+      }
+    }
+  ],
+  "summary": {
+    "tuning": {
+      "scenes": 5,
+      "deleted_objects": 47,
+      "versions": {
+        "current": {
+          "recovered": 32,
+          "clean_candidates": 0
+        },
+        "baseline": {
+          "recovered": 32,
+          "clean_candidates": 0
+        }
+      }
+    },
+    "test": {
+      "scenes": 5,
+      "deleted_objects": 51,
+      "versions": {
+        "current": {
+          "recovered": 33,
+          "clean_candidates": 0
+        },
+        "baseline": {
+          "recovered": 33,
+          "clean_candidates": 0
+        }
+      }
+    }
+  }
+}

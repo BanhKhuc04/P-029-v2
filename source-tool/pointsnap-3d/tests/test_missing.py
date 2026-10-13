@@ -160,5 +160,5 @@ def test_person_sized_cluster_on_high_roof_is_not_an_object():
     from pointsnap.detectors.missing import frame_clusters
 
     cfg = load_config(None).missing
-    assert [c for c in frame_clusters(_person_cloud(0.0, roof=False), [], None, cfg, 0) if abs(c.center[0] - 10) < 1]
-    assert not [c for c in frame_clusters(_person_cloud(3.0, roof=True), [], None, cfg, 0) if abs(c.center[0] - 10) < 1]
+    assert [c for c in frame_clusters(_person_cloud(0.0, roof=False), [], np.eye(4), cfg, 0) if abs(c.center[0] - 10) < 1]
+    assert not [c for c in frame_clusters(_person_cloud(3.0, roof=True), [], np.eye(4), cfg, 0) if abs(c.center[0] - 10) < 1]

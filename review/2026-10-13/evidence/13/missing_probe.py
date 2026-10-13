@@ -38,7 +38,9 @@ def main():
     parser.add_argument("--dataroot",required=True)
     parser.add_argument("--out",type=Path,required=True)
     parser.add_argument("--baseline",type=Path)
+    parser.add_argument("--targets-per-scene",type=int,default=2)
     args=parser.parse_args()
+    if args.targets_per_scene < 1: parser.error("targets-per-scene must be positive")
     if args.out.exists(): parser.error("Choose a fresh output")
     functions={"current":detect_missing_objects}
     if args.baseline:
@@ -48,7 +50,7 @@ def main():
     reader=NuScenesReader(args.dataroot)
     cfg=MissingConfig()
     output={"evidence_id":"EV-13-003","dataset":"nuScenes v1.0-mini","config":vars(cfg),
-            "target_selection":"First two eligible instance tokens per scene, sorted; >=3 frames with raw num_lidar_pts>=15 and raw GT displacement>=3m; no tuning from results",
+            "target_selection":f"First {args.targets_per_scene} eligible instance tokens per scene, sorted; >=3 frames with raw num_lidar_pts>=15 and raw GT displacement>=3m; no tuning from results",
             "matching":"At least two reported local centers inside corresponding GT yaw footprint expanded .75m; no finding track ID used",
             "limits":["Deleted-label recovery only for this selected subset; not overall recall", "Clean-label candidates are a proxy, not human-confirmed false alarms", "No pretrained/static-camera quality or human verdicts"],
             "source_sha256":hashlib.sha256((TOOL/"pointsnap/detectors/missing.py").read_bytes()).hexdigest(),
@@ -73,7 +75,7 @@ def main():
         for version,function in functions.items():
             start=time.perf_counter();found,_=function(boxes,frames,cfg)
             result["clean"][version]={"candidates":len(found),"seconds":time.perf_counter()-start}
-        for token,truth,disp in eligible[:2]:
+        for token,truth,disp in eligible[:args.targets_per_scene]:
             kept=[b for b in boxes if b.attrs["nuscenes_instance"]!=token]
             target={"instance":token,"label":truth[0].label,"removed_boxes":len(truth),"raw_displacement_m":disp,"results":{}}
             assert len(boxes)-len(kept)==len(truth)
@@ -91,7 +93,7 @@ def main():
             v:{"recovered":sum(t["results"][v]["recovered"] for t in targets),
                "clean_candidates":sum(s["clean"][v]["candidates"] for s in scenes)} for v in functions}}
     args.out.parent.mkdir(parents=True,exist_ok=True)
-    args.out.write_text(json.dumps(output,indent=2)+"\n",encoding="utf-8")
+    args.out.write_bytes((json.dumps(output,indent=2)+"\n").encode("utf-8"))
     print(json.dumps(output["summary"]),flush=True)
 
 

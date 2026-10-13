@@ -24,6 +24,7 @@ import dataclasses
 
 import hashlib
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -66,13 +67,15 @@ SUPPORTED_GROUPS = {
 def group_of_name(name: str) -> str | None:
     """Nhóm của tên vật model trả về. Grounding DINO đôi khi ghép hai từ khóa liền nhau ("car truck"): lấy từ khóa
     đứng đầu."""
+    name = " ".join(name.lower().split())
     if name in GROUP_OF_COCO:
         return GROUP_OF_COCO[name]
     if name in PROMPTS:
         return PROMPTS[name]
     if name in FRAGMENTS:
         return FRAGMENTS[name]
-    hits = [(name.find(p), -len(p), g) for p, g in PROMPTS.items() if p in name]
+    hits = [(m.start(), -len(p), g) for p, g in PROMPTS.items()
+            if (m := re.search(r"(?<!\w)"+re.escape(p)+r"(?!\w)",name))]
     return min(hits)[2] if hits else None
 
 

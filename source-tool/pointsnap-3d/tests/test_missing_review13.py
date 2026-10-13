@@ -164,6 +164,15 @@ def test_static_confirmation_requires_camera_config_only_when_needed():
     assert len(found) == 1
 
 
+@pytest.mark.parametrize('label_x,expected', [(6., 0), (30., 1)])
+def test_foreground_label_cannot_confirm_farther_cluster_from_the_same_image_region(label_x, expected):
+    labels = [Cuboid((label_x, .5, .8), (4., 3., 1.6), 0., 'car', f, track_id=9) for f in range(3)]
+    found = _static_confirmed([[cluster(i) for i in range(3)]], labels, Frames(), Detector(),
+                             MissingConfig(), CameraConfig())
+    # The far target has enough matching 2D detections, but they do not establish its depth when hidden.
+    assert len(found) == expected
+
+
 def test_static_dark_images_and_empty_detections_never_confirm():
     assert confirmed(detector=Detector(dark=True)) == []
     class Empty(Detector):

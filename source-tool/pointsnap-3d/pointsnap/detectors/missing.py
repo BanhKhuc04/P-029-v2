@@ -387,8 +387,15 @@ def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], fr
                 proj = project_box(pseudo, data.sensor_to_world, view)
                 if proj is None or proj.inside_ratio < 0.5 or proj.depth > cfg.max_range_m:
                     continue
-                labelled = [p.box for b in boxes_by_frame.get(c.frame, [])
+                labelled = [(b, p) for b in boxes_by_frame.get(c.frame, [])
                             if (p := project_box(b, data.sensor_to_world, view)) is not None]
+                # Detection 2D không có độ sâu: vật đã gán ở phía trước có thể che cụm xa cùng tia nhìn.
+                # Chỉ dùng mặt ảnh này khi không có box gần hơn che phần lớn khung cụm; biên độ sâu dùng
+                # nửa đường chéo 3D để không coi hai thể tích còn chồng độ sâu là trước/sau chắc chắn.
+                front_depth = proj.depth - float(np.linalg.norm(pseudo.dims)) / 2
+                if any(p.depth + float(np.linalg.norm(b.dims)) / 2 < front_depth
+                       and _inside_fraction(proj.box, p.box) >= cfg.static_min_iou for b, p in labelled):
+                    continue
                 for box2d, name, score in zip(det.boxes, det.names, det.scores):
                     group = group_of_name(name)
                     supported = getattr(detector, "supported_groups", None)
@@ -399,7 +406,7 @@ def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], fr
                     # nằm trong khung vật (không dùng IoU)
                     if _inside_fraction(proj.box, b2) < cfg.static_min_iou:
                         continue
-                    if any(iou_2d(b2, lb) >= cfg.static_labelled_iou for lb in labelled):
+                    if any(iou_2d(b2, p.box) >= cfg.static_labelled_iou for _, p in labelled):
                         continue  # vật trên ảnh là vật đã có box 3D (xe đỗ sát nhau thì khung ảnh chồng một phần)
                     seen.append((view.channel, name, float(score), group))
                     break

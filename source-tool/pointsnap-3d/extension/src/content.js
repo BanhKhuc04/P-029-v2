@@ -36,6 +36,7 @@
     ps: { checked: false, online: false, error: null, project: null, run: null, active: null, flagRun: false },
     confirmFlag: false,
     notice: null,
+    camera: null,
     listFilter: 'all',
     tab: 'now',
     pick: 0,
@@ -109,7 +110,7 @@
     expanded.clear();
     Object.assign(S, {
       job, flags: [], frames: [], hasFlagAttr: true, loading: true, loadError: null, frame: null, active: null,
-      filterOn: false, filterBusy: false, filterProblem: null, confirmFlag: false, notice: null,
+      filterOn: false, filterBusy: false, filterProblem: null, confirmFlag: false, notice: null, camera: null,
       ps: { checked: false, online: false, error: null, project: null, run: null, active: null, flagRun: false },
       timing: { start: performance.now() },
       missing: [],
@@ -331,6 +332,10 @@
       return;
     }
     cvat.hoverItem(items[0].el);
+    if (S.notice && S.notice.text.startsWith('Không thấy box ')) {
+      S.notice = null;
+      render();
+    }
   }
 
   function flagsAt(frame) {
@@ -517,6 +522,24 @@
       }
       run.reviews = res.data.reviews;
     }
+    render();
+  }
+
+  async function showCamera(flag) {
+    const matched = reviewState(flag);
+    if (!matched || !S.ps.project) return;
+    const sid = S.sid, run = S.ps.run, slug = S.ps.project.slug;
+    const request = { flag, run, pending: true, data: null, error: null };
+    S.camera = request;
+    render();
+    const res = await pointsnap('GET', `/api/projects/${slug}/scans/${run.run_id}/findings/${matched.indices[0]}/camera`);
+    if (sid !== S.sid || S.ps.run !== run || currentFlag().flag !== flag || S.camera !== request) {
+      if (S.camera === request) S.camera = null;
+      return;
+    }
+    request.pending = false;
+    if (res.ok && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(res.data?.image_url || '')) request.data = res.data;
+    else request.error = res.error || 'Không tải được ảnh camera';
     render();
   }
 
@@ -723,22 +746,28 @@
     if (rs) {
       actions += `<button class="btn ${rs.verdict === 'ok' ? 'chosen ok' : ''}" data-action="review-ok" data-i="${i}" aria-pressed="${rs.verdict === 'ok'}">${ICON.check}Đúng là lỗi</button>`;
       actions += `<button class="btn ${rs.verdict === 'fp' ? 'chosen fp' : ''}" data-action="review-fp" data-i="${i}" aria-pressed="${rs.verdict === 'fp'}">${ICON.cross}Báo nhầm</button>`;
+      actions += `<button class="btn" data-action="camera" data-i="${i}">Ảnh camera</button>`;
     }
     if (i >= 0) {
       actions += `<span class="grow"></span><button class="icon-btn ghost" data-action="highlight" data-i="${i}" title="Làm sáng box này trên khung 3D" aria-label="Làm sáng box">${ICON.target}</button>`;
     }
+    const camera = S.camera && S.camera.flag === flag && S.camera.run === S.ps.run ? S.camera : null;
+    const photo = !camera ? '' : camera.pending ? '<p class="muted">Đang tải ảnh camera…</p>'
+      : camera.error ? `<p class="muted">${esc(camera.error)}</p>`
+      : `<figure class="camera"><img src="${esc(camera.data.image_url)}" alt="Ảnh camera quanh ${esc(flag.label)}"><figcaption>${esc(camera.data.channel)}</figcaption></figure>`;
     return `<article class="card sev-${esc(flag.severity)}">`
       + `<div class="card-top">${sevBadge(flag.severity)}${first.rule ? `<code>${esc(first.rule)}</code>` : ''}<span class="grow"></span>${pager}</div>`
       + `<h3 class="card-title">${esc(title)}</h3><div class="card-meta">${meta}</div>${messages}`
       + `<div class="fix"><div class="fix-label">Cách sửa</div>${tips}</div>`
       + (actions ? `<div class="card-actions">${actions}</div>` : '')
+      + photo
       + '</article>';
   }
 
   function renderStatus() {
     let filter;
     if (S.filterBusy) filter = '<span class="muted">Đang bật bộ lọc…</span>';
-    else if (S.filterOn) filter = '<span class="state on"></span>Chỉ hiện box lỗi<button class="link" data-action="filter-off">Hiện tất cả</button>';
+    else if (S.filterOn) filter = '<span class="state on"></span>Bộ lọc CVAT đang bật<button class="link" data-action="filter-on">Chỉ box lỗi</button><button class="link" data-action="filter-off">Hiện tất cả</button>';
     else filter = '<span class="state"></span>Đang hiện mọi box<button class="link" data-action="filter-on">Chỉ box lỗi</button>';
     let html = `<div class="status-row"><span class="grow filter">${filter}</span><span class="keys"><span class="kbd">,</span><span class="kbd">.</span>chuyển lỗi</span></div>`;
     const p = S.filterProblem;
@@ -838,6 +867,7 @@
       case 'filter-on': turnFilterOn(false); break;
       case 'filter-off': turnFilterOff(); break;
       case 'highlight': highlight(flag, 1); break;
+      case 'camera': showCamera(flag); break;
       case 'review-ok': review(flag, 'ok'); break;
       case 'review-fp': review(flag, 'fp'); break;
       case 'tab':

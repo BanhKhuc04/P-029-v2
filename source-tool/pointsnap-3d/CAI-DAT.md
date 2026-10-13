@@ -1,6 +1,6 @@
 # Cài đặt toàn bộ PointSnap 3D
 
-> Cập nhật 12/10/2026: các nhánh review01→08 tiếp nối nhau; dùng nhánh cuối đã review khi cài bản này, không giả định đã merge main. [Bàn giao tổng](../review/2026-10-10/08-handoff.md) ghi runtime đã kiểm và giới hạn. Windows Python3.12.14/CVAT2.78.1, Docker Python3.12.15 và Linux3.11.17 đã được kiểm theo [ma trận](../review/2026-10-10/08-compatibility.md); CI3.10/3.11/3.12 còn cần kết quả remote. Extension MV3 trên Chrome/Edge chưa được nghiệm thu lại trong đợt review này.
+> Cập nhật 13/10/2026: review 01–11 đã vào main. Các sửa tiếp theo nằm trong PR riêng; xem [bàn giao hiện hành](../../review/2026-10-13/handoff-final-report.md) trước khi chọn bản để cài. Môi trường vừa kiểm: Windows Python 3.11.9/CVAT 2.77.0 và Linux base Python 3.11; không đồng nhất với [ma trận lịch sử ngày 12/10](../../review/2026-10-10/08-compatibility.md). Extension sau sửa vẫn cần reload và kiểm lại MV3 thật. [Bàn giao 01–08](../../review/2026-10-10/08-handoff.md) giữ các giới hạn lịch sử.
 
 Hướng dẫn cài và các bước tự kiểm tới luồng sửa nhãn bằng extension. Ca MV3 cuối luồng cần người vận hành kiểm trên trình duyệt của mình. Viết cho **Windows 10 / 11**; Linux / macOS xem ghi chú ở từng bước.
 
@@ -79,7 +79,8 @@ HTTP 403 *You do not have permission to perform this action*.
 ```powershell
 git clone https://github.com/AI20K-Build-Phase-Cohort-4A/P-029 D:\Work\P-029
 cd D:\Work\P-029
-git checkout review/08-deployment-docs-final
+git checkout main
+git pull --ff-only
 cd source-tool\pointsnap-3d
 py -3.11 -m venv .venv
 .venv\Scripts\activate
@@ -101,7 +102,7 @@ Lần quét đầu tải model Mask R-CNN (~180 MB) và chạy khoảng 1 phút 
 
 Máy có GPU nên đặt `camera.model: hybrid` trong guideline: thêm Grounding DINO + SAM 2.1 để đối chiếu cả cọc tiêu (Mask
 R-CNN không có). Lần đầu tải ~1 GB từ Hugging Face, chạy thêm ~0,8 s / ảnh. Số liệu:
-`pointsnap-3d/docs/ket-qua-box-verifier.md` mục 3.1.
+`docs/ket-qua/ket-qua-box-verifier.md` mục 3.1.
 
 > Linux / macOS: `python3.11 -m venv .venv` và `source .venv/bin/activate`.
 
@@ -163,7 +164,7 @@ Trình duyệt tự mở `http://127.0.0.1:8765` → bấm **Bắt đầu**.
 
 1. **Tạo dự án** (lần đầu): tên dự án, URL CVAT `http://localhost:8080`, token CVAT.
 2. Tab **Kết nối CVAT**: điền **Thư mục nuScenes** (`D:/data/nuscenes`) và **Thư mục bản xuất to-cvat** (`D:/data/cvat`), bấm **Kiểm tra kết nối**.
-3. Tab **Quét job**: chọn task / job của bước 5 → **Bắt đầu quét**. Benchmark12/10 trên hai cảnh nuScenes,39–40frame: khoảng3–10giây không sweeps và8–25giây với4sweeps; thời gian khác theo scene/máy. Xem [review07](../review/2026-10-10/07-report.md).
+3. Tab **Quét job**: chọn task / job của bước 5 → **Bắt đầu quét**. Benchmark12/10 trên hai cảnh nuScenes,39–40frame: khoảng3–10giây không sweeps và8–25giây với4sweeps; thời gian khác theo scene/máy. Xem [review07](../../review/2026-10-10/07-report.md).
 4. Màn **Kết quả**: bảng lỗi, khung chi tiết, **Duyệt nhanh** (point cloud quanh box; `J` / `K` chuyển mục, `1` đúng, `2` báo nhầm).
 5. Bấm **Gắn cờ lên CVAT**: PointSnap ghi nội dung lỗi vào thuộc tính `pointsnap_error` của từng box lỗi (không sửa box).
 
@@ -243,8 +244,8 @@ Rồi tắt và chạy lại `pointsnap ui`; ở `chrome://extensions` bấm **�
 
 ## Tài liệu liên quan
 
-- [Docker CLI và ReportAPI](pointsnap-3d/README-Docker.md): build CLI trước API, map URL backend/web vàmount dataset/export.
-- [Vận hành, backup vàrollback](pointsnap-3d/docs/operations.md), [bảo mật local](pointsnap-3d/docs/local-security.md).
+- [Docker CLI và ReportAPI](README-Docker.md): build CLI trước API, map URL backend/web vàmount dataset/export.
+- [Vận hành, backup vàrollback](docs/operations.md), [bảo mật local](docs/local-security.md).
 - `pointsnap-3d/Start-PointSnap.ps1` chỉ bật Web, nhận port/PythonPath/ProjectHome; CVAT là dependency cài riêng. Launcher trong thư mục cha máy tác giả không nằm trong checkout GitHub.
 
 - [README công cụ](README.md) — tính năng, dòng lệnh, giới hạn.

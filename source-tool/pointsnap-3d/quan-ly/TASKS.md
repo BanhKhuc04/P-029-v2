@@ -1,5 +1,7 @@
 # PointSnap 3D — Bảng phân việc (4 ngày: 06/10 – 09/10/2026)
 
+> Cập nhật 13/10: [bàn giao hiện hành](../../../review/2026-10-13/handoff-final-report.md) phân biệt sửa code, test và nghiệm thu. C4 không còn XFAIL trong bộ hồi quy hợp nhất; số 14/15, 1 XFAIL bên dưới là lịch sử. G7, precision các luật mới và MV3 sau reload vẫn có giới hạn riêng.
+
 > Đối chiếu 11/10/2026: các trạng thái bên dưới là ghi nhận của người phụ trách ở từng thời điểm. Mã nguồn có A14/A15 và C1/C2; trạng thái chờ review không tự chứng minh chưa có code, trạng thái xong không thay thế nghiệm thu. Kết quả kiểm tra hiện hành và phần chưa xác minh: [review phần 01](../../../review/2026-10-10/01-report.md).
 
 Chia nhỏ [kế hoạch 4 ngày](../docs/thiet-ke/de-xuat-de-tai.md#7-kế-hoạch-triển-khai) thành từng việc có người phụ trách, hạn, việc phụ thuộc và tiêu chí xong.

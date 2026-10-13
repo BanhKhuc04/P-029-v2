@@ -1,0 +1,49 @@
+{
+  "model": "gdino-sam2",
+  "torch": "2.6.0+cu124",
+  "offline_weights": true,
+  "device": "cuda",
+  "checkpoint_sha256": {
+    "Grounding DINO": "5548f844c928c4b6f411fa8cbcc2bfa8dbbba437cb1d513975519f93c2a9ed21",
+    "SAM 2.1": "0a4067b11ce1e23d5229203f11c718a823060d15a4b23fa2372a7d4b77cbbc60"
+  },
+  "images": [
+    {
+      "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151603512404.jpg",
+      "sha256": "0e2067a1618c4424050c45c393ada8c9dbf130fff8d6015004fce901dc07984d",
+      "detections": 35,
+      "groups": [
+        "person",
+        "vehicle"
+      ],
+      "seconds": 10.266,
+      "cache_roundtrip": "PASS"
+    },
+    {
+      "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604012404.jpg",
+      "sha256": "d5624fcecf12310c3d0760362e097c38cdcdce987e032aaf2883071cd14e2732",
+      "detections": 35,
+      "groups": [
+        "person",
+        "vehicle"
+      ],
+      "seconds": 2.078,
+      "cache_roundtrip": "PASS"
+    },
+    {
+      "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604512404.jpg",
+      "sha256": "0bb82b89f9e6ce47d9e1bcd747b01fe3fd342ccc67eb7a9c693a3fc3fc73a6bc",
+      "detections": 38,
+      "groups": [
+        "person",
+        "vehicle"
+      ],
+      "seconds": 2.062,
+      "cache_roundtrip": "PASS"
+    }
+  ],
+  "manual_precision": null,
+  "review_model": "gpt-6.1-sol",
+  "source_commit": "0198d0aba9989f533c2b116a18c761890dde0fb3",
+  "scope": "Pretrained offline GPU execution and cache roundtrip; not detector human precision, full CPU/GPU long-scan or OOM acceptance"
+}

@@ -25,14 +25,14 @@ for prefix,root in (('initial',a.initial),('final',a.final)):
     for path in root.glob('*.log'):
         data['log_hashes'][prefix+'/'+path.name]=hashlib.sha256(path.read_bytes()).hexdigest()
 a.evidence.mkdir(parents=True,exist_ok=True)
-(a.evidence/'final-checks.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+(a.evidence/'final-checks.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
 services=json.loads((a.initial/'services/services.json').read_text(encoding='utf-8'))
-(a.evidence/'services.json').write_text(json.dumps(services,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+(a.evidence/'services.json').write_text(json.dumps(services,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
 vision=a.evidence.parent/'15'; vision.mkdir(parents=True,exist_ok=True)
 for model in ('maskrcnn','gdino-sam2','hybrid'):
     result=json.loads((a.initial/('model-'+model)/'model.json').read_text(encoding='utf-8'))
     result.update(review_model='gpt-6.1-sol',source_commit=initial['metadata']['source_commit'],
                   scope='Pretrained offline GPU execution and cache roundtrip; not detector human precision, full CPU/GPU long-scan or OOM acceptance')
-    (vision/('model-'+model+'.json')).write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    (vision/('model-'+model+'.json')).write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
 print(json.dumps({'final_source':data['final_source'],'initial_failed_phases':len(data['initial_failures']),
                   'final_failed_phases':sum(r['status']=='FAIL' for r in data['final_phases'])}))

@@ -45,6 +45,6 @@ for r in rows:
 data={'model':'gpt-6.1-sol','source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo).decode().strip(),
       'files':results,'scope':'Per-file structural audit and owner evidence references; not 131 fresh independent deep reviews or visual reproduction of historical figures.'}
 a.out.parent.mkdir(parents=True,exist_ok=True)
-a.out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+a.out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
 print(json.dumps({'files':len(results),'missing_files':[r['path'] for r in results if not r['exists']],
                  'broken_links':[{k:r[k] for k in ('path','links_missing')} for r in results if r['links_missing']]},ensure_ascii=False,indent=2))

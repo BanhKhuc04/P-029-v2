@@ -12,6 +12,10 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 - Nhánh kết quả dùng tên không có ngày: `review/01-overview-architecture`, `review/02-core-detectors`, `review/03-data-cvat-integrations`, `review/04-backend-cli-reports`, `review/05-frontend-extension`, `review/06-security-config`, `review/07-tests-evaluation-performance`, `review/08-deployment-docs-final`.
 - Theo yêu cầu bàn giao, đẩy từng nhánh; đồng đội mở PR và merge sau review độc lập.
 
+## Review tiếp tính năng mới trên main — 13/10/2026
+
+Đợt 01–08 đã merge qua PR #54, nhưng tính năng mới của main nằm ngoài phạm vi nghiệm thu của đợt đó. Xem [kế hoạch phần 09–16](review/2026-10-13/REVIEW-PLAN-09-16.md): đối chiếu 14 PR sau nền `5dcc97f`, kiểm trên main `d18b1a9`, có 64 ca và inventory 131 file. Trạng thái hiện tại: đã lập kế hoạch, chưa thực hiện các ca mới. Bắt đầu từ phần 09 (hình học/C4/heading/fit/track).
+
 ## Bộ hướng dẫn chi tiết
 
 Đọc [quy trình chung](review/2026-10-10/README.md) và [mẫu báo cáo](review/2026-10-10/report-template.md). Mỗi hướng dẫn có phạm vi, điểm đọc, ca kiểm tra, bằng chứng, lệnh phù hợp và điều kiện hoàn tất:

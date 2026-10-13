@@ -1,7 +1,8 @@
 """Check clean-label proxies on held-out scenes, separately from tuning.
 
 GT findings are proxies, not human-confirmed false alarms. No threshold tuning
-or CVAT writes occur. Returns 1 if the observed proxy exceeds a stated target.
+or CVAT writes occur. Proxy counts are reference data; G7 uses human precision
+per rule. --enforce-proxy retains the old explicit reference-budget check.
 """
 import argparse
 from collections import Counter
@@ -15,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--enforce-proxy", action="store_true")
     args = parser.parse_args()
     from pointsnap.adapters.nuscenes import NuScenesReader
     from pointsnap.core.config import load_config
@@ -46,7 +48,8 @@ def main():
     thresholds = dict(warning=2.0, error=0.5)
     passed = bool(boxes) and all(rates[k]["per_100_boxes"] <= v for k, v in thresholds.items())
     config = cfg.to_dict(redact=True)
-    result = dict(status="PASS" if passed else "FAIL", split="held-out test", scenes=rows, boxes=boxes,
+    result = dict(status=("PASS" if passed else "FAIL") if args.enforce_proxy else "REPORT_ONLY",
+                  proxy_reference_met=passed, g7_status="UNASSESSED", split="reviewed-heldout", scenes=rows, boxes=boxes,
                   clean_counts=dict(totals), rates=rates, thresholds=thresholds,
                   config_sha256=hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest(),
                   camera_active=cfg.camera.active(), camera_model=cfg.camera.effective_model(),
@@ -55,7 +58,7 @@ def main():
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(dict(status=result["status"], boxes=boxes, rates=rates), indent=2), flush=True)
-    return 0 if passed else 1
+    return 0 if passed or not args.enforce_proxy else 1
 
 
 if __name__ == "__main__":

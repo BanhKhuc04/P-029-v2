@@ -29,7 +29,7 @@ jobs:
           cache: pip
           cache-dependency-path: source-tool/pointsnap-3d/pyproject.toml
       - run: pip install -e ".[dev]"
-      - run: python -m pytest -q --junitxml=pytest-results.xml
+      - run: python -m pytest -q tests auto-tests --junitxml=pytest-results.xml
 
   artifact:
     runs-on: ubuntu-latest

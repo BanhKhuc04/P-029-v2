@@ -1,0 +1,451 @@
+{
+  "source_commit": "d18b1a9e915d358ab14d281ce256a87bbaab8855",
+  "review_model": "gpt-6.1-sol",
+  "review_model_source": "current chat runtime turn_context.model",
+  "windows_unique": {
+    "PASS": 617,
+    "XFAIL": 1,
+    "FAIL": 3
+  },
+  "node": {
+    "PASS": 37
+  },
+  "linux": {
+    "PASS": 604,
+    "SKIP": 9,
+    "XFAIL": 1
+  },
+  "main_contract_failures": [
+    "auto-tests.test_review_contracts::test_negative_extreme_model_logit_is_healthy_instead_of_crashing",
+    "auto-tests.test_review_contracts::test_track_zero_inside_vehicle_is_one_track_finding",
+    "auto-tests.test_review_contracts::test_rider_motion_without_world_pose_has_insufficient_evidence"
+  ],
+  "review10_contracts": {
+    "PASS": 2,
+    "FAIL": 1,
+    "source_commit": "8fce666"
+  },
+  "services": {
+    "status": "PASS",
+    "checks": [
+      {
+        "name": "health",
+        "status": "PASS",
+        "http_status": 200
+      },
+      {
+        "name": "anonymous rejected",
+        "status": "PASS",
+        "http_status": 401
+      },
+      {
+        "name": "invalid token rejected",
+        "status": "PASS",
+        "http_status": 401
+      },
+      {
+        "name": "authenticated json",
+        "status": "PASS",
+        "http_status": 200,
+        "bytes": 2852,
+        "content_type": "application/json"
+      },
+      {
+        "name": "authenticated html",
+        "status": "PASS",
+        "http_status": 200,
+        "bytes": 12506,
+        "content_type": "text/html"
+      },
+      {
+        "name": "authenticated csv",
+        "status": "PASS",
+        "http_status": 200,
+        "bytes": 807,
+        "content_type": "text/csv"
+      },
+      {
+        "name": "complete annotations unchanged after GET reports",
+        "status": "PASS"
+      }
+    ],
+    "existing_jobs_edited": false,
+    "cleanup": "PASS",
+    "owned_task_id": 9,
+    "owned_job_ids": [
+      9
+    ],
+    "cleanup_http_status": 404
+  },
+  "models": {
+    "maskrcnn": {
+      "model": "Mask R-CNN ResNet-50 FPN v2 / COCO_V1",
+      "torch": "2.6.0+cu124",
+      "device": "cuda",
+      "checkpoint_sha256": "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e",
+      "images": [
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151603512404.jpg",
+          "sha256": "0e2067a1618c4424050c45c393ada8c9dbf130fff8d6015004fce901dc07984d",
+          "detections": 41,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 4.282,
+          "cache_roundtrip": "PASS"
+        },
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604012404.jpg",
+          "sha256": "d5624fcecf12310c3d0760362e097c38cdcdce987e032aaf2883071cd14e2732",
+          "detections": 43,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 0.297,
+          "cache_roundtrip": "PASS"
+        },
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604512404.jpg",
+          "sha256": "0bb82b89f9e6ce47d9e1bcd747b01fe3fd342ccc67eb7a9c693a3fc3fc73a6bc",
+          "detections": 38,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 0.266,
+          "cache_roundtrip": "PASS"
+        }
+      ],
+      "manual_precision": null
+    },
+    "gdino-sam2": {
+      "model": "gdino-sam2",
+      "torch": "2.6.0+cu124",
+      "offline_weights": true,
+      "device": "cuda",
+      "checkpoint_sha256": {
+        "Grounding DINO": "5548f844c928c4b6f411fa8cbcc2bfa8dbbba437cb1d513975519f93c2a9ed21",
+        "SAM 2.1": "0a4067b11ce1e23d5229203f11c718a823060d15a4b23fa2372a7d4b77cbbc60"
+      },
+      "images": [
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151603512404.jpg",
+          "sha256": "0e2067a1618c4424050c45c393ada8c9dbf130fff8d6015004fce901dc07984d",
+          "detections": 37,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 28.344,
+          "cache_roundtrip": "PASS"
+        },
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604012404.jpg",
+          "sha256": "d5624fcecf12310c3d0760362e097c38cdcdce987e032aaf2883071cd14e2732",
+          "detections": 35,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 1.297,
+          "cache_roundtrip": "PASS"
+        },
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604512404.jpg",
+          "sha256": "0bb82b89f9e6ce47d9e1bcd747b01fe3fd342ccc67eb7a9c693a3fc3fc73a6bc",
+          "detections": 38,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 1.297,
+          "cache_roundtrip": "PASS"
+        }
+      ],
+      "manual_precision": null
+    },
+    "hybrid": {
+      "model": "hybrid",
+      "torch": "2.6.0+cu124",
+      "offline_weights": true,
+      "device": "hybrid parts select CUDA when available",
+      "checkpoint_sha256": {
+        "maskrcnn": "73cbd0190fcbe3ba339921fbce2c3a0b6bb9126c9a133c85e43a2a8e060a109e",
+        "Grounding DINO": "5548f844c928c4b6f411fa8cbcc2bfa8dbbba437cb1d513975519f93c2a9ed21",
+        "SAM 2.1": "0a4067b11ce1e23d5229203f11c718a823060d15a4b23fa2372a7d4b77cbbc60"
+      },
+      "images": [
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151603512404.jpg",
+          "sha256": "0e2067a1618c4424050c45c393ada8c9dbf130fff8d6015004fce901dc07984d",
+          "detections": 41,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 9.594,
+          "cache_roundtrip": "PASS"
+        },
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604012404.jpg",
+          "sha256": "d5624fcecf12310c3d0760362e097c38cdcdce987e032aaf2883071cd14e2732",
+          "detections": 43,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 1.562,
+          "cache_roundtrip": "PASS"
+        },
+        {
+          "image": "n008-2018-08-01-15-16-36-0400__CAM_FRONT__1533151604512404.jpg",
+          "sha256": "0bb82b89f9e6ce47d9e1bcd747b01fe3fd342ccc67eb7a9c693a3fc3fc73a6bc",
+          "detections": 38,
+          "groups": [
+            "person",
+            "vehicle"
+          ],
+          "seconds": 1.75,
+          "cache_roundtrip": "PASS"
+        }
+      ],
+      "manual_precision": null
+    }
+  },
+  "browser": {
+    "owned_server_stopped": true,
+    "horizontal_overflow": false,
+    "validation": "empty scan requires project",
+    "pages": [
+      "splash",
+      "results",
+      "scan",
+      "guideline",
+      "connection",
+      "history"
+    ],
+    "empty_results_gate": "FAIL: no scan but fail verdict visible",
+    "console_errors": 0,
+    "screenshot": "browser-empty-results.png",
+    "status": "FAIL",
+    "viewport": {
+      "width": 522,
+      "height": 672
+    },
+    "navigation_status": "PASS"
+  },
+  "dataset_table_hashes": {
+    "attribute.json": "dc01438363e29188f25785884bb2431a7aa27ba0debbc359cb21cf1f00652210",
+    "calibrated_sensor.json": "13d35eeb08bfbc4d0c9eaede7824ff65efe16f8bf345aa7ba9fd75f9866a8d0f",
+    "category.json": "30f64fb175e5bd7db99892d90f9034481bca491f26600c5c0d1a56106b198dfe",
+    "ego_pose.json": "62817fd8b1633ed7925db46a29ec4c70f77116b866f248f0dc1bac4774459d70",
+    "instance.json": "38bbfcf53fb78469ec2c5b07fdafc9a44e9fbf9ab858d35a007dd8347428a14a",
+    "log.json": "d543b6fd127a6496ab9fa8de5c96a0887e0996e56f7a6c606de6d8b34827df58",
+    "map.json": "6b1d504987d0630e7e32affb7ae0d99fe9b427c757a315ec2f56fb09ebd1bfce",
+    "sample.json": "3c47794e2e6c09af4be7907b83f50750351180008d059899f42a9d405ed68586",
+    "sample_annotation.json": "49703705e98ddea281ca321aae3b7352a8b6495840fe654cf0717c5b7b721080",
+    "sample_data.json": "db18a189bd73648013d3e77ce6f5236d7c5997c0bdbf71166ddd8a6cb5c2c288",
+    "scene.json": "cc4dfeac83ac4f5d3e7fc899f90156891a21fa08bc0f8a1ac0e0a27cc1a0bfa6",
+    "sensor.json": "4d5c96570e2d8b09b88ce4c605e40ee43c4909f97bea5741185f18f92eb491ae",
+    "visibility.json": "87088bf2c78d070e1e215ff108f9c5c0958d124a14cce8f72bfb5d9651295749"
+  },
+  "evaluation_status": "PASS: command completed, quality conclusion recorded separately",
+  "ci_collection": "python -m pytest -q tests auto-tests --junitxml=pytest-results.xml",
+  "evaluation": {
+    "scenes": [
+      "scene-0061",
+      "scene-0553",
+      "scene-0757",
+      "scene-0916",
+      "scene-1094",
+      "scene-0103",
+      "scene-0655",
+      "scene-0796",
+      "scene-1077",
+      "scene-1100"
+    ],
+    "rounds": 10,
+    "seed": 0,
+    "visible_boxes": 14104,
+    "injected": 776,
+    "detected": 347,
+    "clean_warnings": 274,
+    "clean_errors": 57,
+    "warnings_per100": 1.9427112875779922,
+    "errors_per100": 0.40414066931366993,
+    "large_as_error": {
+      "n": 59,
+      "as_error": 56
+    },
+    "clean_scan_seconds": {
+      "scene-0061": 42.13,
+      "scene-0553": 25.87,
+      "scene-0757": 16.79,
+      "scene-0916": 31.94,
+      "scene-1094": 19.68,
+      "scene-0103": 27.47,
+      "scene-0655": 27.05,
+      "scene-0796": 14.39,
+      "scene-1077": 12.29,
+      "scene-1100": 18.57
+    },
+    "seconds": 2462.3,
+    "manual_precision": null
+  },
+  "heldout_quality": {
+    "status": "FAIL",
+    "split": "held-out test",
+    "scenes": [
+      {
+        "scene": "scene-0103",
+        "visible_boxes": 1754,
+        "clean_counts": {
+          "fit.outside|error": 1,
+          "floating|error": 3,
+          "heading.points|error": 1,
+          "size.class_range|error": 3,
+          "lidar.missing|warning": 3,
+          "fit.loose|warning": 1,
+          "floating|warning": 17,
+          "heading.static|warning": 6,
+          "heading.points|warning": 2,
+          "size.class_range|warning": 12,
+          "track.static_shift|warning": 5,
+          "track.jump|warning": 1,
+          "cam.mismatch|info": 31,
+          "cam.sparse|info": 7,
+          "cam.missing|info": 85,
+          "floating.no_evidence|info": 120
+        },
+        "scan_seconds": 30.875
+      },
+      {
+        "scene": "scene-0655",
+        "visible_boxes": 1720,
+        "clean_counts": {
+          "floating|error": 14,
+          "heading.points|error": 4,
+          "fit.outside|warning": 1,
+          "fit.empty|warning": 1,
+          "fit.loose|warning": 1,
+          "floating|warning": 58,
+          "heading.points|warning": 13,
+          "size.class_range|warning": 1,
+          "track.jump|warning": 1,
+          "track.static_shift|warning": 3,
+          "cam.missing|info": 34,
+          "cam.sparse|info": 8,
+          "cam.mismatch|info": 6,
+          "floating.no_evidence|info": 131
+        },
+        "scan_seconds": 26.563
+      },
+      {
+        "scene": "scene-0796",
+        "visible_boxes": 513,
+        "clean_counts": {
+          "floating|error": 1,
+          "heading.static|error": 1,
+          "size.class_range|error": 1,
+          "track.jump|error": 1,
+          "fit.loose|warning": 2,
+          "floating|warning": 1,
+          "size.class_range|warning": 3,
+          "track.jump|warning": 4,
+          "cam.sparse|info": 7,
+          "cam.mismatch|info": 4,
+          "cam.missing|info": 14,
+          "floating.no_evidence|info": 51
+        },
+        "scan_seconds": 13.11
+      },
+      {
+        "scene": "scene-1077",
+        "visible_boxes": 609,
+        "clean_counts": {
+          "track.jump|error": 2,
+          "fit.loose|warning": 11,
+          "floating|warning": 1,
+          "size.class_range|warning": 1,
+          "track.split_id|warning": 1,
+          "track.jump|warning": 2,
+          "floating.no_evidence|info": 54
+        },
+        "scan_seconds": 10.516
+      },
+      {
+        "scene": "scene-1100",
+        "visible_boxes": 844,
+        "clean_counts": {
+          "floating|warning": 4,
+          "size.class_range|warning": 4,
+          "track.jump|warning": 1,
+          "floating.no_evidence|info": 31
+        },
+        "scan_seconds": 18.687
+      }
+    ],
+    "boxes": 5440,
+    "clean_counts": {
+      "fit.outside|error": 1,
+      "floating|error": 18,
+      "heading.points|error": 5,
+      "size.class_range|error": 4,
+      "lidar.missing|warning": 3,
+      "fit.loose|warning": 15,
+      "floating|warning": 81,
+      "heading.static|warning": 6,
+      "heading.points|warning": 15,
+      "size.class_range|warning": 21,
+      "track.static_shift|warning": 8,
+      "track.jump|warning": 9,
+      "cam.mismatch|info": 41,
+      "cam.sparse|info": 22,
+      "cam.missing|info": 133,
+      "floating.no_evidence|info": 387,
+      "fit.outside|warning": 1,
+      "fit.empty|warning": 1,
+      "heading.static|error": 1,
+      "track.jump|error": 3,
+      "track.split_id|warning": 1
+    },
+    "rates": {
+      "warning": {
+        "count": 161,
+        "per_100_boxes": 2.9595588235294117
+      },
+      "error": {
+        "count": 32,
+        "per_100_boxes": 0.5882352941176471
+      }
+    },
+    "thresholds": {
+      "warning": 2.0,
+      "error": 0.5
+    },
+    "config_sha256": "7ffd61db061ea448cfc71731610bbf8b56055387b4380ad12646dd95f3fd01cd",
+    "camera_active": true,
+    "camera_model": "maskrcnn",
+    "manual_precision": null,
+    "false_alarm_proxy": true,
+    "timing_context": "Serial clean scans after full evaluation; OS/model caches warm; not a hardware minimum benchmark"
+  },
+  "heldout_config_matches_evaluation": true,
+  "final_result": "FAIL: 3 regression failures, browser empty-state defect, known XFAIL and heldout proxy above targets",
+  "final_script_sha256": {
+    "Check-PowerShell.ps1": "f3e9d4cc8d3a462a139c404130fc84769e3c22b19b8f76be1eca2c371c0dac68",
+    "check_quality.py": "758961bda987dc861bb8d430e3068f7d80bc42d9519e4c00500e0f72b38966d8",
+    "docker_pytest.py": "89cd4592eca389fe53816700f266deab33acc99f67e9ccf39fcd20e8c40f6d2e",
+    "Run-AllTests.ps1": "9ff7e937f422baf0a84cd5112b01fac4a388eb4f6a08bbcea5d54eafadf4972d",
+    "Run-Tests.ps1": "25ec7ed7f523f2b576c20273d2c11bc199678438d11cb56c22c3a2c0795a4f2b",
+    "run.py": "602b55d333957bc8a1007053a28f84200f57a79962ee2f60fc31976925e67709",
+    "run_all.py": "44a8b52802e1a8ebb974ce0de20ca53b2003e6c4d8cfaea76d7b0db227469ee8",
+    "smoke_model.py": "f516d559ceefc0551364493ec6e694af74691c78779728bffdaca2e8be99cc32",
+    "smoke_services.py": "3f6cb4f17cfa3636ab70609ba7741d18d7c61edc873a47ae564a38780312f591",
+    "test_all_runner.py": "dc6b4eb1eb015afb3e7619011bb250d1a20535e1899c141e425c67d4de4a92b3",
+    "test_review_contracts.py": "5bb5576dff437925c53c9bf902f0fe7865fee79468b73d461ef9f17db1b1d260",
+    "test_runner.py": "69ea90ec9b37b9dba5943b863fb260a91e7344f4a0567832363654e85f34df25"
+  }
+}

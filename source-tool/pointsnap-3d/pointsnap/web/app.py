@@ -268,6 +268,9 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                             "id": j.get("id"),
                             "status": j.get("status"),
                             "stage": j.get("stage"),
+                            "start_frame": j.get("start_frame"),
+                            "stop_frame": j.get("stop_frame"),
+                            "frame_count": j.get("frame_count"),
                         }
                         for j in jobs
                     ],

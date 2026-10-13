@@ -21,7 +21,7 @@ rules:                                # bật / tắt từng luật theo guideli
   heading_points: true                # C1: trục box lệch trục của cụm điểm LiDAR
   fit_empty: true                     # C1: box không có điểm LiDAR nào
   fit_outside: true                   # C1: nhiều điểm của vật nằm ngoài box (box nhỏ / lệch)
-  fit_loose: true                     # C1: mặt box nhìn thấy được cách xa các điểm của vật (box dư)
+  fit_loose: false                    # chờ chấm tay; có thể bật riêng theo guideline dự án (13/10)
   fit_overlap: true                   # C1: hai box chồng lên nhau (vẽ trùng)
   track_reuse_id: true                # C2: track xuất hiện lại sau khi đã kết thúc (outside), spec 4.4.3
   track_occluded_long: true           # C2: occluded liên tục quá max_occluded_frames, spec 4.4.5

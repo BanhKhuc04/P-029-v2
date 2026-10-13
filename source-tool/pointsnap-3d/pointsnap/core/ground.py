@@ -54,7 +54,8 @@ class GroundEstimate:
     curb_step_m: float | None = None
     """Chênh lệch độ cao mặt đất hai bên sườn (bậc vỉa hè); None nếu hai bên bằng phẳng."""
     is_curb_supported: bool = False
-    """True nếu box đỗ trên bậc vỉa hè và đáy box tựa hợp lý trên bề mặt vỉa hè cao."""
+    """Đáy box gần một mặt đo được ở hai bên; chỉ dùng cho phép đo tuyệt đối của box lẻ.
+    Hai bên vành đai không chứng minh tiếp xúc dưới footprint, nên không phủ quyết lỗi so theo track."""
 
     @property
     def is_valid(self) -> bool:
@@ -377,8 +378,8 @@ def ring_ground_for_box(
             curb_step = step
             z_high = max(z_left, z_right)
             z_low = min(z_left, z_right)
-            # Xe đỗ gác bánh vỉa hè: đáy box tựa trên mặt cao (lệch <= 8 cm) hoặc nằm giữa 2 tầng địa hình
-            if abs(cuboid.bottom_z - z_high) <= 0.08 or (z_low - 0.05 <= cuboid.bottom_z <= z_high + 0.08):
+            # Phải gần một mặt đo được; khoảng trống giữa hai mặt không phải bằng chứng tiếp xúc.
+            if min(abs(cuboid.bottom_z - z_high), abs(cuboid.bottom_z - z_low)) <= 0.08:
                 curb_supported = True
 
     return GroundEstimate(

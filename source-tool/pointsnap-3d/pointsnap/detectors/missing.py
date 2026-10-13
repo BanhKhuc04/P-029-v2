@@ -290,6 +290,8 @@ def detect_missing_objects(cuboids: Sequence[Cuboid], frames, cfg: MissingConfig
                      f"keyframe ({first.frame}–{last.frame}) mà không có box: nghi sót đối tượng (spec 4.2)"),
             details={"frames": [c.frame for c in chain],
                      "centers": [[round(float(v), 2) for v in c.center] for c in chain],
+                     "centers_3d": [[float(c.center[0]), float(c.center[1]), c.bottom_z + size[2] / 2] for c in chain],
+                     "yaw_rad": [float(c.yaw) for c in chain],
                      "size_m": [round(v, 2) for v in size], "moving": True},
         ))
     if detector is not None and hasattr(frames, "camera_views"):
@@ -400,6 +402,8 @@ def _static_confirmed(chains: list[list[Cluster]], cuboids: Sequence[Cuboid], fr
                      f"({names[0][0]}) mà không có box: nghi sót đối tượng (spec 4.2)"),
             details={"frames": [c.frame for c in chain], "camera_frames": views_ok,
                      "centers": [[round(float(v), 2) for v in c.center] for c in chain],
+                     "centers_3d": [[float(c.center[0]), float(c.center[1]), c.bottom_z + size[2] / 2] for c in chain],
+                     "yaw_rad": [float(c.yaw) for c in chain],
                      "size_m": [round(v, 2) for v in size], "moving": False, "camera_class": name},
         ))
     return findings

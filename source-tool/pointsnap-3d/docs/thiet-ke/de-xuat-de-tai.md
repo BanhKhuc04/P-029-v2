@@ -510,7 +510,7 @@ v2) và C2 (bám spec) đã xong trong PR giai đoạn 3; tuần này review, te
 | Cổng | Khi | Điều kiện |
 |---|---|---|
 | **G6** | 12/10 | PR giai đoạn 3 merge; task CVAT tạo lại theo spec 4.4 chạy được |
-| **G7** | 15/10 | Số liệu cuối trên 5 cảnh kiểm tra, precision xem tay luật mới; báo nhầm tổng ≤ 2 / ≤ 0,5 trên 100 box |
+| **G7** | 15/10 | Precision chấm tay theo từng luật (mục tiêu ≥70%), báo số Đúng / Báo nhầm / Không rõ và độ phủ mẫu; số finding trên 100 box báo riêng làm proxy tham khảo. Thiếu mẫu hoặc split đã dùng chỉnh luật: chưa nghiệm thu |
 | **G8** | 17/10 | Test xong, video, báo cáo, slide |
 
 ### 7.3. Phân công
@@ -640,7 +640,7 @@ Kết quả sau A10 trên 5 cảnh kiểm tra (5 440 box): `docs/ket-qua/ket-qua
 
 Theo góp ý mentor: hoàn thiện phát hiện trước, rồi mở rộng sang sửa theo 4 bước.
 
-1. **Hoàn thiện phát hiện:** đạt mọi chỉ tiêu mục 8 (báo nhầm ≤ 2 / ≤ 0,5 / 100 box, nhảy 4 m ≥ 90%, precision xem tay ≥ 70%).
+1. **Hoàn thiện phát hiện:** G7 theo quyết định ngày 13/10 dùng precision xem tay ≥70% cho từng luật, có mẫu và độ phủ; recall nhảy 4 m ≥90%. Proxy finding trên nhãn chuẩn ≤2 / ≤0,5 /100 box vẫn báo riêng để so các phiên bản, không gọi mọi finding là báo nhầm.
 2. **Gợi ý sửa (chỉ đọc):** mỗi lỗi kèm giá trị đề xuất "trước → sau": kích thước về trung vị track; vị trí về điểm nội suy; đáy box về mặt đất (chỉ khi đủ điểm mặt đất); gợi ý nối hai ID. Đo tỷ lệ sửa đúng và **tỷ lệ sửa hỏng** trên lỗi chèn giả.
 3. **Sửa một chạm có người duyệt:** duyệt trong PointSnap (xem 3D trước / sau) rồi áp dụng hàng loạt lên CVAT qua API; bản chụp để hoàn tác; quét lại tự động sau khi ghi. Extension hiện thêm nút "Áp dụng gợi ý" ngay trong CVAT.
 4. **Tự sửa khi độ tin cậy cao:** chỉ cho loại lỗi có tỷ lệ sửa hỏng ≈ 0; bật / tắt theo guideline dự án; đo thời gian review có / không có tool.

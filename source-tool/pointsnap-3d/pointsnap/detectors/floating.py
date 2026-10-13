@@ -284,7 +284,8 @@ def floating_findings_by_track(
             peers = comparable
         others = [estimates[j][1].distance for j in peers]
         details = {"distance": d, "ground_z": est.ground_z, "bottom_z": box.bottom_z,
-                   "num_ground_points": est.num_ground_points, "pitch_deg": est.pitch_deg}
+                   "num_ground_points": est.num_ground_points, "pitch_deg": est.pitch_deg,
+                   "curb_step_m": est.curb_step_m, "curb_surface_near_bottom": est.is_curb_supported}
         if len(others) >= config.min_track_boxes:
             reference = float(np.median(others))
             offset = d - reference
@@ -304,8 +305,8 @@ def floating_findings_by_track(
                 on_contact = contact_or_distance(i) - float(np.median([contact_or_distance(j) for j in peers_all]))
                 if abs(on_contact) <= config.warning_m:
                     continue  # lệch chỉ do track đi từ đường bằng lên dốc (hoặc ngược lại)
-            if getattr(est, "is_curb_supported", False):
-                continue  # đỗ gác bánh vỉa hè / lề đường
+            # Một mặt cao ở cạnh box không chứng minh đáy box chạm vật. Giữ bằng chứng lệch theo track;
+            # dùng thông tin bậc vỉa hè để người duyệt đối chiếu, không bỏ lỗi đã đo được.
             direction = "cao hơn" if offset > 0 else "thấp hơn"
             message = (f"{_describe(absolute_distance)}; {direction} {abs(offset) * 100:.0f} cm so với các frame khác của track "
                        f"(trung vị {reference * 100:+.0f} cm){_slope_note(box, est)}")

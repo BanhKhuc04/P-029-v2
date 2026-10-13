@@ -138,6 +138,7 @@ pointsnap-3d/
 | | |
 |---|---|
 | 📘 [Báo cáo dự án](docs/bao-cao-du-an.md) | Vấn đề, giải pháp, **thuật toán có hình minh họa**, kết quả, giới hạn |
+| 🧩 [Kiến trúc hệ thống](docs/architecture-system.md) | Web, extension, CVAT, dữ liệu, luồng quét và model; kèm review UX 14/10 |
 | 🛠️ [CAI-DAT.md](CAI-DAT.md) | Cài toàn bộ từ máy trắng |
 | 🧠 [Hướng dẫn huấn luyện](docs/huong-dan/huan-luyen-box-critic.md) | Box Critic, học từ người duyệt, quy trình cải tiến model |
 | 🔁 [Quy trình phát triển](docs/huong-dan/quy-trinh-phat-trien.md) | Chia dữ liệu, đo, **checklist thêm luật mới**, trước khi mở PR |

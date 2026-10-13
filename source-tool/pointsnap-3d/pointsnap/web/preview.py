@@ -71,6 +71,29 @@ def _find_box(cuboids: list[Cuboid], finding: dict[str, Any]) -> Cuboid | None:
     return min(same_track, key=lambda c: abs(c.frame - frame))
 
 
+def _missing_box(finding: dict[str, Any]) -> Cuboid | None:
+    """Box tham khảo của cụm không có nhãn: đúng frame, tọa độ sensor; không chọn box khác trong snapshot."""
+    if finding.get('rule') != 'lidar.missing' or finding.get('track_id') is not None or finding.get('source_id') is not None:
+        return None
+    details = finding.get('details') or {}
+    try:
+        frames = details['frames']
+        centers = details['centers_3d']
+        dims = details['size_m']
+        yaw = details['yaw_rad']
+        if (not all(type(f) is int and f >= 0 for f in frames) or len(set(frames)) != len(frames)
+                or len(centers) != len(frames) or len(yaw) != len(frames)):
+            raise ValueError('invalid cluster frame evidence')
+        i = frames.index(finding['frame'])
+        values = [*centers[i], *dims, yaw[i]]
+        if len(centers[i]) != 3 or len(dims) != 3 or not all(
+                isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in values):
+            raise ValueError('invalid cluster geometry')
+        return Cuboid(center=tuple(centers[i]), dims=tuple(dims), yaw=yaw[i], label=finding['label'], frame=frames[i])
+    except (KeyError, TypeError, ValueError, IndexError) as exc:
+        raise PreviewError('Cụm thiếu bằng chứng 3D hợp lệ ở frame này; hãy quét lại') from exc
+
+
 def _finding_box(run_dir: Path, project: dict[str, Any], index: int) -> tuple[dict[str, Any], Cuboid, ManifestFrames]:
     """Finding số `index` của lần quét, box của nó trong bản chụp nhãn và nguồn frame (manifest của bản xuất)."""
     findings_path, snapshot_path = run_dir / "findings.json", run_dir / "snapshot.json"
@@ -86,6 +109,8 @@ def _finding_box(run_dir: Path, project: dict[str, Any], index: int) -> tuple[di
     except (KeyError, TypeError, ValueError) as exc:
         raise PreviewError("snapshot.json không hợp lệ; hãy quét lại") from exc
     box = _find_box(cuboids, finding)
+    if box is None:
+        box = _missing_box(finding)
     if box is None:
         raise PreviewError("Không tìm thấy box của mục này trong bản chụp nhãn")
 
@@ -185,6 +210,7 @@ def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[
         "label": box.label,
         "distance_m": round(math.hypot(box.center[0], box.center[1]), 1),
         "track_id": box.track_id,
+        "synthetic_box": finding.get('rule') == 'lidar.missing' and box.track_id is None and box.source_id is None,
         "box": {"length": box.dims[0], "width": box.dims[1], "height": box.dims[2]},
         "points": np.round(local, 2).tolist(),
     }

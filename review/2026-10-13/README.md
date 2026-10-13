@@ -1,6 +1,6 @@
 # Phân nhánh để thực hiện review 09–16
 
-**8 nhánh**, làm theo thứ tự **09 → 16**. Cả tám bắt đầu từ commit chuẩn bị trên main `d18b1a9`. Phần **09–11 đã review/sửa và push GitHub**, với ancestry tiếp nối. [Báo cáo 11](11-report.md) / [bàn giao 11](11-handoff.md). Phần 12–16 cần nhận kết quả 11 theo dependency trước khi thực hiện. Các giới hạn quality và kiểm tay được ghi riêng trong báo cáo.
+**8 nhánh**, làm theo thứ tự **09 → 16**. Cả tám bắt đầu từ commit chuẩn bị trên main `d18b1a9`. Phần **09–12 đã review/sửa và push GitHub**, với ancestry tiếp nối. [Báo cáo 12](12-report.md) / [bàn giao 12](12-handoff.md): 771 Python + 37 Node PASS, 3 live-CVAT SKIP. TC-12-008 thiếu pretrained weights; GPU và human precision chưa nghiệm thu. Phần 13–16 cần nhận kết quả 12 theo dependency trước khi thực hiện.
 
 ## Chọn phần cần làm
 

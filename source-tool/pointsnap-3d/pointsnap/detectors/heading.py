@@ -31,7 +31,8 @@ from pointsnap.core.geometry import normalize_angle, transform_points
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_track
 
 if TYPE_CHECKING:
-    from pointsnap.core.config import HeadingConfig, HeadingGroupConfig, HeadingPointsConfig
+    from pointsnap.core.config import Config, HeadingConfig, HeadingGroupConfig, HeadingPointsConfig
+    from pointsnap.core.context import DetectionContext
 
 
 def angle_diff_deg(a: float, b: float) -> float:
@@ -271,3 +272,30 @@ def heading_points_findings(measures: Sequence[tuple[Cuboid, float]], cfg: Headi
             deviation, threshold, {"deviation_deg": deviation, "raw_deg": dev, "track_median_deg": reference},
         ))
     return findings
+
+
+from pointsnap.detectors.base import BaseDetector
+
+
+class HeadingDetector(BaseDetector):
+    """Bộ phát hiện sai hướng box (heading.flip, heading.motion)."""
+
+    rule_id = "heading.flip"
+    name = "HeadingDetector"
+
+    def is_enabled(self, config: Config) -> bool:
+        r = config.rules
+        return bool(r.heading_flip or r.heading_motion)
+
+    def detect(self, ctx: DetectionContext) -> list[Finding]:
+        s2w, ts = ctx.poses
+        return detect_heading_track(
+            ctx.cuboids,
+            ctx.config.heading,
+            keyframe_interval_s=ctx.config.track.keyframe_interval_s,
+            sensor_to_world=s2w,
+            timestamps=ts,
+            flip=ctx.config.rules.heading_flip,
+            motion=ctx.config.rules.heading_motion,
+        )
+

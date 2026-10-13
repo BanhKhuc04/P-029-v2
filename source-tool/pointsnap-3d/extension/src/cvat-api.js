@@ -41,7 +41,7 @@
   }
 
   function annotations(jobId) {
-    return getJson(`/api/jobs/${jobId}/annotations`);
+    return getJson(`/api/jobs/${jobId}/annotations?_=${Date.now()}`);
   }
 
   /**

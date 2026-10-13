@@ -212,3 +212,48 @@ def rotate_pose_to_ego(sensor_to_world: np.ndarray) -> np.ndarray:
     rot4[:3, :3] = LIDAR_TO_EGO_ROT
     return np.asarray(sensor_to_world, dtype=np.float64) @ rot4.T
 
+
+def hermite_spline_interpolate(
+    p0: np.ndarray,
+    p1: np.ndarray,
+    yaw0: float,
+    yaw1: float,
+    s: float,
+) -> np.ndarray:
+    """Nội suy vị trí giữa p0 và p1 tại tham số s ∈ [0, 1] dùng Cubic Hermite Spline theo góc yaw.
+
+    Phục vụ khử False Alarm khi xe rẽ cua/ngã tư trong bài toán phát hiện đứt track.
+    """
+    p0 = np.asarray(p0, dtype=np.float64)
+    p1 = np.asarray(p1, dtype=np.float64)
+    chord = p1 - p0
+    dist = float(np.linalg.norm(chord[:2]))
+    if dist < 1e-4:
+        return p0.copy()
+
+    u0 = np.array([math.cos(yaw0), math.sin(yaw0)], dtype=np.float64)
+    u1 = np.array([math.cos(yaw1), math.sin(yaw1)], dtype=np.float64)
+
+    # Đảm bảo tiếp tuyến hướng về phía điểm kết thúc p1 theo chiều chuyển động
+    if float(np.dot(u0, chord[:2])) < 0.0:
+        u0 = -u0
+    if float(np.dot(u1, chord[:2])) < 0.0:
+        u1 = -u1
+
+    m0 = u0 * dist
+    m1 = u1 * dist
+
+    s2 = s * s
+    s3 = s2 * s
+    h00 = 2.0 * s3 - 3.0 * s2 + 1.0
+    h10 = s3 - 2.0 * s2 + s
+    h01 = -2.0 * s3 + 3.0 * s2
+    h11 = s3 - s2
+
+    interp_xy = h00 * p0[:2] + h10 * m0 + h01 * p1[:2] + h11 * m1
+    if len(p0) > 2:
+        interp_z = (1.0 - s) * p0[2] + s * p1[2]
+        return np.append(interp_xy, interp_z)
+    return interp_xy
+
+

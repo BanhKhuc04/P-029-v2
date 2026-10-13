@@ -30,7 +30,8 @@ from pointsnap.core.geometry import _clip_convex, footprint, polygon_area
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity
 
 if TYPE_CHECKING:
-    from pointsnap.core.config import FitConfig
+    from pointsnap.core.config import Config, FitConfig
+    from pointsnap.core.context import DetectionContext
 
 FACE_NAMES = {(0, 1): "đầu", (0, -1): "đuôi", (1, 1): "bên trái", (1, -1): "bên phải"}
 
@@ -105,12 +106,17 @@ def outside_findings(measures: Sequence[OutsideMeasure], cfg: FitConfig) -> list
     for m in measures:
         if m.outside < cfg.outside_min_points:
             continue
+        # Bỏ qua nếu độ thò ra quá nhỏ (< 20 cm): gương xe, ba-đờ-sốc cong hoặc điểm mặt đất sát mép
+        if m.reach_m < 0.20 and m.outside < cfg.outside_min_points * 2:
+            continue
         others = list(by_track.get(m.box.track_id, [])) if m.box.track_id is not None else []
         if others:
             others.remove(m.ratio)
         reference = float(np.median(others)) if len(others) >= 2 else 0.0
         excess = m.ratio - reference
         if excess <= cfg.outside_warning_ratio:
+            continue
+        if m.reach_m < 0.20 and excess <= cfg.outside_warning_ratio * 1.5:
             continue
         severity = Severity.ERROR if excess > cfg.outside_error_ratio else Severity.WARNING
         threshold = cfg.outside_error_ratio if excess > cfg.outside_error_ratio else cfg.outside_warning_ratio
@@ -176,6 +182,11 @@ def loose_measure(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | 
             if side * item.sensor_local[axis] <= half[axis]:
                 continue  # mặt này quay lưng về cảm biến
             extent = float(np.percentile(side * inside[:, axis], 98))
+            max_reach = float(np.max(side * inside[:, axis]))
+            # Nếu điểm xa nhất của vật đã vươn tới sát thành box (<= 35 cm),
+            # chứng minh vật thể thực sự vươn tới đó (cản xe/đuôi xe có điểm), không coi mặt này bị dư
+            if half[axis] - max_reach <= 0.35:
+                continue
             gap = half[axis] - extent
             if gap <= worst[0]:
                 continue
@@ -188,16 +199,35 @@ def loose_measure(item: BoxPointSet, cfg: FitConfig, frame_points: np.ndarray | 
                 if _occluded(frame_points, face, np.empty(0, dtype=np.int64)):
                     continue
             worst = (gap, FACE_NAMES[(axis, side)])
+
+    # Đo độ dư cả hai đầu đối diện: CHỈ BÁO KHI BOX BỊ PHÓNG TO QUÁ CỠ (x1.3) CẢ HAI ĐẦU
+    # - Cụm điểm chiếm <= 80% chiều dài box (thừa >= 20% chiều dài)
+    # - Tổng độ hở cả hai đầu >= 0.8m và mỗi đầu hở >= 0.35m
+    # Với xe dài thực tế (xe buýt 18m, xe tải dài), cụm điểm chiếm > 85% chiều dài box nên không bao giờ báo nhầm
+    if box.length >= 1.2 * box.width:
+        extent_pos = float(np.percentile(inside[:, 0], 98))
+        extent_neg = float(np.percentile(-inside[:, 0], 98))
+        gap_pos = max(0.0, half[0] - extent_pos)
+        gap_neg = max(0.0, half[0] - extent_neg)
+        total_gap = gap_pos + gap_neg
+        cluster_span = box.length - total_gap
+        if (gap_pos >= 0.35 and gap_neg >= 0.35
+                and total_gap >= max(cfg.loose_warning_m * 1.5, 0.8)
+                and cluster_span <= 0.80 * box.length):
+            half_gap = total_gap / 2.0
+            if half_gap > worst[0]:
+                worst = (half_gap, "đầu và đuôi")
+
     return LooseMeasure(box, worst[0], worst[1], int(len(inside)))
+
 
 
 def loose_findings(measures: Sequence[LooseMeasure], cfg: FitConfig) -> list[Finding]:
     """Luật `fit.loose`: mặt dư > `loose_warning_m` **và** dư hơn trung vị các frame khác của track quá `loose_rise_m`.
 
     Vật có hình dạng đặc thù (thùng xe hở, cần cẩu) hoặc box vẽ rộng có chủ ý thì dư đều trong cả track; so với chính
-    track thì hạ được ngưỡng tuyệt đối (0,5 → 0,4 m) mà không tăng báo nhầm: trên 5 cảnh tinh chỉnh, cùng ~0,15 báo nhầm /
-    100 box, bắt box phóng x1,15 tăng 18% → 30%, x1,3 tăng 42% → 47%. Box lẻ hoặc track có ít hơn 2 frame khác đo được thì
-    chỉ so ngưỡng tuyệt đối.
+    track thì hạ được ngưỡng tuyệt đối (0,5 → 0,4 m) mà không tăng báo nhầm. Box lẻ hoặc track có ít hơn 2 frame khác đo
+    được thì so ngưỡng tuyệt đối.
     """
     by_track: dict[int, list[LooseMeasure]] = {}
     for m in measures:
@@ -290,3 +320,68 @@ def fit_findings_for_frame(
         if loose and (m := loose_measure(item, cfg, frame_points)) is not None:
             loose_measures.append(m)
     return findings, measures, loose_measures
+
+
+from pointsnap.detectors.base import BaseDetector
+
+
+class FitDetector(BaseDetector):
+    """Bộ phát hiện lỗi khớp box với cụm điểm LiDAR (fit.empty, fit.outside, fit.loose, fit.overlap)."""
+
+    rule_id = "fit.outside"
+    name = "FitDetector"
+
+    def is_enabled(self, config: Config) -> bool:
+        r = config.rules
+        return bool(r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap)
+
+    def detect(self, ctx: DetectionContext) -> list[Finding]:
+        from pointsnap.core.box_points import box_point_sets
+
+        r = ctx.config.rules
+        cfg = ctx.config.fit
+        findings: list[Finding] = []
+        outside: list[OutsideMeasure] = []
+        loose: list[LooseMeasure] = []
+
+        visible_boxes = [c for c in ctx.cuboids if c.visible]
+        from pointsnap.core.model import group_by_frame
+        by_frame = group_by_frame(visible_boxes)
+
+        for frame, boxes in by_frame.items():
+            if r.fit_overlap:
+                findings.extend(overlap_findings(boxes, cfg))
+
+            if ctx.frames is None or not (r.fit_empty or r.fit_outside or r.fit_loose):
+                continue
+
+            points = ctx.get_points(frame)
+            if points is None:
+                continue
+
+            items = box_point_sets(
+                points,
+                boxes,
+                margin=cfg.outside_margin_m,
+                clearance=cfg.ground_clearance_m,
+                margin_rel=cfg.outside_margin_rel,
+            )
+            frame_findings, frame_outside, frame_loose = fit_findings_for_frame(
+                items,
+                cfg,
+                points[:, :3],
+                empty=r.fit_empty,
+                outside=r.fit_outside,
+                loose=r.fit_loose,
+            )
+            findings.extend(frame_findings)
+            outside.extend(frame_outside)
+            loose.extend(frame_loose)
+
+        if r.fit_outside:
+            findings.extend(outside_findings(outside, cfg))
+        if r.fit_loose:
+            findings.extend(loose_findings(loose, cfg))
+
+        return findings
+

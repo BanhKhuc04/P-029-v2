@@ -14,39 +14,8 @@
   const hasChrome = typeof chrome !== 'undefined' && !!(chrome.runtime && chrome.runtime.id);
 
   const SEV_LABEL = { error: 'Lỗi', warning: 'Cảnh báo', info: 'Thông tin' };
-  const RULE_LABEL = {
-    'floating': 'Lơ lửng / lún',
-    'floating.no_evidence': 'Thiếu bằng chứng mặt đất',
-    'size.class_range': 'Kích thước lạ so với class',
-    'size.in_track': 'Kích thước lệch trong track',
-    'track.jump': 'Nhảy vị trí',
-    'track.split_id': 'Nghi tách ID',
-    'track.long_interpolation': 'Nội suy dài',
-    'heading.flip': 'Hướng đổi đột ngột',
-    'heading.motion': 'Ngược hướng chuyển động',
-    'heading.points': 'Lệch trục cụm điểm',
-    'fit.empty': 'Box rỗng',
-    'fit.outside': 'Điểm của vật ngoài box',
-    'fit.loose': 'Box dư',
-    'fit.overlap': 'Hai box chồng nhau',
-    'track.reuse_id': 'Dùng lại track sau outside',
-    'track.occluded_long': 'Che khuất quá lâu',
-    'track.id_swap': 'Nghi đổi nhầm ID',
-    'attr.rider_state': 'Quên đổi trạng thái người lái',
-    'cam.sparse': 'Box quá ít điểm, ảnh không thấy',
-    'lidar.missing': 'Nghi sót đối tượng (LiDAR)',
-    'attr.height': 'Thuộc tính lệch chiều cao',
-    'spec.inside': 'Người bên trong xe',
-    'spec.rider_double': 'Người lái bị gán 2 lần',
-    'attr.missing': 'Thiếu thuộc tính',
-    'attr.invalid': 'Thuộc tính sai giá trị',
-    'track.static_shift': 'Vật đứng yên: box dịch',
-    'heading.static': 'Vật đứng yên: box xoay',
-    'cam.mismatch': 'Box lệch vật trên ảnh',
-    'cam.class': 'Ảnh camera thấy class khác',
-    'cam.missing': 'Ảnh thấy vật chưa có box',
-    'critic.box': 'Box Critic nghi box sai',
-  };
+  const RULE_LABEL = core.RULE_LABEL;
+
 
   // ---------------------------------------------------------------- trạng thái
 
@@ -181,12 +150,25 @@
       if (sid !== S.sid) return;
       const specs = core.flagSpecs(labels, ATTR);
       S.hasFlagAttr = specs.size > 0;
-      S.flags = core.collectFlags(annotations, specs);
+      const cvatFlags = core.collectFlags(annotations, specs);
+      if (cvatFlags.length > 0) {
+        S.flags = cvatFlags;
+      } else if (S.ps.run && S.ps.run.findings && S.ps.run.findings.length > 0) {
+        S.flags = core.flagsFromFindings(S.ps.run.findings);
+      } else {
+        S.flags = [];
+      }
       S.frames = core.flaggedFrames(S.flags);
       S.loadError = null;
     } catch (err) {
       if (sid !== S.sid) return;
-      S.loadError = `Không đọc được nhãn của job từ CVAT (${err.message}).`;
+      if (S.ps.run && S.ps.run.findings && S.ps.run.findings.length > 0) {
+        S.flags = core.flagsFromFindings(S.ps.run.findings);
+        S.frames = core.flaggedFrames(S.flags);
+        S.loadError = null;
+      } else {
+        S.loadError = `Không đọc được nhãn của job từ CVAT (${err.message}).`;
+      }
     }
     S.loading = false;
     render();
@@ -351,11 +333,30 @@
       const res = await pointsnap('GET', `/api/extension/poll?job_id=${S.job.jobId}&after=${S.linkSeq}`);
       if (sid !== S.sid) return;
       if (res.ok) {
-        if (!S.ps.online) loadPointSnap(sid);
+        if (!S.ps.online) await loadPointSnap(sid);
         S.linkSeq = res.data.seq;
         if (res.data.command) runCommand(res.data.command);
         if (S.reviewsRev !== null && res.data.reviews_rev !== S.reviewsRev) refreshReviews();
         S.reviewsRev = res.data.reviews_rev;
+
+        // Cập nhật trạng thái quét nếu bên Web UI đang quét:
+        if (res.data.active) {
+          if (!S.ps.active || S.ps.active.run_id !== res.data.active.run_id || S.ps.active.progress !== res.data.active.progress) {
+            S.ps.active = res.data.active;
+            render();
+          }
+        } else if (S.ps.active && !S.ps.flagRun) {
+          S.ps.active = null;
+          render();
+        }
+
+        // TỰ ĐỘNG ĐỒNG BỘ KHI CÓ LẦN QUÉT MỚI HOÀN TẤT:
+        const latestRunId = res.data.latest_run_id;
+        const currentRunId = S.ps.run ? S.ps.run.run_id : null;
+        if (latestRunId && latestRunId !== currentRunId) {
+          await loadPointSnap(sid);
+          await loadFlags(sid);
+        }
       } else if (S.ps.online) {
         S.ps.online = false;
         render();
@@ -389,8 +390,14 @@
   // ---------------------------------------------------------------- PointSnap: quét, gắn cờ, kết luận
 
   async function loadPointSnap(sid) {
-    const res = await pointsnap('GET', `/api/extension/jobs/${S.job.jobId}?cvat_url=${encodeURIComponent(location.origin)}`);
+    const [res, rulesRes] = await Promise.all([
+      pointsnap('GET', `/api/extension/jobs/${S.job.jobId}?cvat_url=${encodeURIComponent(location.origin)}`),
+      pointsnap('GET', '/api/rules'),
+    ]);
     if (sid !== S.sid) return;
+    if (rulesRes && rulesRes.ok && rulesRes.data) {
+      core.setRulesCatalog(rulesRes.data);
+    }
     S.ps.checked = true;
     S.ps.online = !!res.ok;
     S.ps.error = res.ok ? null : res.error;
@@ -400,6 +407,11 @@
       if (res.data.active && !S.ps.active) {
         S.ps.active = res.data.active;
         pollRun(sid);
+      }
+      // Nếu CVAT chưa mang cờ hoặc cờ từ lần quét cũ, nạp findings từ lần quét PointSnap:
+      if ((!S.flags.length || S.flags.some((f) => f.fromScan)) && S.ps.run && S.ps.run.findings && S.ps.run.findings.length) {
+        S.flags = core.flagsFromFindings(S.ps.run.findings);
+        S.frames = core.flaggedFrames(S.flags);
       }
     }
     render();
@@ -439,13 +451,14 @@
         S.ps.flagRun = false;
         if (run.status === 'failed') setNotice('error', `Quét thất bại: ${run.error || run.message}`);
         else if (flagged) {
-          setNotice('warn', 'Đã gắn cờ mới lên CVAT. Tải lại trang CVAT để thấy cờ mới (Save trước nếu còn thay đổi).', [
-            { action: 'reload', text: 'Tải lại trang' },
+          setNotice('warn', 'Đã gắn cờ mới lên CVAT. Danh sách lỗi đã cập nhật theo lần quét mới.', [
+            { action: 'reload', text: 'Tải lại trang CVAT' },
           ]);
         } else {
-          setNotice('info', 'Đã quét xong. Danh sách bên dưới vẫn theo cờ trên CVAT; bấm "Quét + gắn cờ" để cập nhật cờ.');
+          setNotice('info', 'Đã quét xong. Danh sách lỗi đã cập nhật theo lần quét mới.');
         }
         await loadPointSnap(sid);
+        await loadFlags(sid);
         break;
       }
       S.ps.active = { ...S.ps.active, ...run };
@@ -623,7 +636,7 @@
   function renderBody() {
     if (S.loading && !S.flags.length) return '<div class="empty">Đang đọc cờ lỗi của job từ CVAT…</div>';
     if (S.loadError) return note('error', esc(S.loadError), [{ action: 'refresh', text: 'Thử lại' }]);
-    if (!S.hasFlagAttr) {
+    if (!S.hasFlagAttr && !S.flags.length) {
       return note('warn', 'Job này chưa được gắn cờ. Quét bằng PointSnap, bấm <b>Gắn cờ lên CVAT</b>, rồi tải lại trang.');
     }
     let html = '';
@@ -759,7 +772,7 @@
       html += `<div class="small">Lần quét gần nhất <span class="mono">${esc(when)}</span></div>`
         + `<div class="small muted">${s.num_errors ?? 0} Lỗi · ${s.num_warnings ?? 0} Cảnh báo${reviewed ? ` · đã xem ${reviewed}` : ''}</div>`;
       const stale = S.flags.filter((f) => !reviewState(f)).length;
-      if (stale) html += `<div class="small warn-text">${stale} cờ trên CVAT không có trong lần quét này. Quét + gắn cờ để đồng bộ.</div>`;
+      if (stale && !S.flags.some((f) => f.fromScan)) html += `<div class="small warn-text">${stale} cờ trên CVAT không có trong lần quét này. Quét + gắn cờ để đồng bộ.</div>`;
     } else if (ps.project) {
       html += `<div class="small muted">Job này chưa được quét trong dự án ${esc(ps.project.name)}.</div>`;
     } else {

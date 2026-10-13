@@ -29,7 +29,6 @@ from pointsnap.detectors.floating import detect_floating_scene
 from pointsnap.detectors.static import detect_static_errors
 from pointsnap.detectors.heading import detect_heading_track, heading_points_findings, heading_points_measure
 from pointsnap.detectors.size import detect_size
-from pointsnap.detectors.track import detect_track_errors
 
 DetectorFn = Callable[[JobData, Config, FrameSource | None], list[Finding]]
 
@@ -163,12 +162,6 @@ def check_size(job: JobData, config: Config, frames: FrameSource | None = None) 
     return findings
 
 
-def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
-    """Đứt track (B5, `detectors.track`). Có `frames` thì dùng pose xe thu và thời điểm thật của từng frame."""
-    sensor_to_world, timestamps = _poses(job, frames)
-    return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps)
-
-
 def _poses(job: JobData, frames: FrameSource | None):
     if frames is None:
         return None, None
@@ -219,15 +212,17 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
             measures.extend((item.box, dev) for item in items
                             if (dev := heading_points_measure(item, config.heading.points)) is not None)
     findings.extend(heading_points_findings(measures, config.heading.points))
-    findings.extend(outside_findings(outside, config.fit))
-    findings.extend(loose_findings(loose, config.fit))
+    if r.fit_outside:
+        findings.extend(outside_findings(outside, config.fit))
+    if r.fit_loose:
+        findings.extend(loose_findings(loose, config.fit))
     return findings
 
 
 def check_static(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
-    """Box dịch / xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
+    """Box xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
     sensor_to_world, _ = _poses(job, frames)
-    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=config.rules.track_static_shift,
+    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=False,
                                 rotate=config.rules.heading_static)
 
 
@@ -293,43 +288,21 @@ def check_attributes(job: JobData, config: Config, frames: FrameSource | None = 
             + detect_rider_state(job.cuboids, config.spec, sensor_to_world, config.track.keyframe_interval_s))
 
 
-_RULE_SWITCH = {
-    "track.reuse_id": "track_reuse_id", "track.occluded_long": "track_occluded_long", "track.id_swap": "track_id_swap",
-    "attr.missing": "attr_missing", "attr.invalid": "attr_invalid", "attr.height": "attr_height",
-    "spec.inside": "spec_inside", "spec.rider_double": "spec_rider_double", "lidar.missing": "lidar_missing",
-    "attr.rider_state": "attr_rider_state", "cam.sparse": "cam_sparse",
-    "track.static_shift": "track_static_shift", "heading.static": "heading_static",
-    "cam.mismatch": "cam_mismatch", "cam.class": "cam_class", "cam.missing": "cam_missing",
-    "critic.box": "critic_box",
-    "heading.flip": "heading_flip", "heading.motion": "heading_motion", "heading.points": "heading_points",
-    "fit.empty": "fit_empty", "fit.outside": "fit_outside", "fit.loose": "fit_loose", "fit.overlap": "fit_overlap",
-}
+from pointsnap.core.rules import RULES_CATALOG, rule_switch_key
+
+_RULE_SWITCH = {r.id: r.switch_key for r in RULES_CATALOG}
 
 
 def is_rule_enabled(rule: str, config: Config) -> bool:
     """Kiểm tra một rule có được bật trong config.rules không."""
-    r = config.rules
-    if rule in ("floating", "floating.no_evidence"):
-        return r.floating
-    if rule == "size.class_range":
-        return r.size_class_range
-    if rule == "size.in_track":
-        return r.size_in_track
-    if rule == "track.jump":
-        return r.track_jump
-    if rule == "track.split_id":
-        return r.track_split_id
-    if rule == "track.long_interpolation":
-        return r.track_long_interpolation
-    if rule in _RULE_SWITCH:
-        return getattr(r, _RULE_SWITCH[rule])
-    return True
+    switch_key = rule_switch_key(rule)
+    return bool(getattr(config.rules, switch_key, True))
+
 
 
 DEFAULT_DETECTORS: Sequence[DetectorFn] = (
     check_floating,
     check_size,
-    check_track,
     check_heading,
     check_box_points,
     check_attributes,
@@ -349,7 +322,7 @@ def scan_cuboids(
     """Chạy toàn bộ các bộ phát hiện trên các box của job (hoặc danh sách box) và trả về danh sách finding.
 
     `frames` cung cấp point cloud và pose theo frame (`ManifestFrames` khi quét job CVAT, `NuScenesFrames` khi quét
-    thẳng nuScenes). Không có thì bỏ luật lơ lửng / lún và luật đứt track dùng tọa độ của từng frame.
+    thẳng nuScenes).
     """
     if not hasattr(job, "cuboids"):
         job = SimpleNamespace(cuboids=list(job))
@@ -363,9 +336,6 @@ def scan_cuboids(
             active_detectors.append(check_floating)
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
-        if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
-                or r.track_occluded_long or r.track_id_swap):
-            active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)
         if r.heading_points or r.fit_empty or r.fit_outside or r.fit_loose or r.fit_overlap:
@@ -373,7 +343,7 @@ def scan_cuboids(
         if (r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double
                 or r.attr_rider_state):
             active_detectors.append(check_attributes)
-        if r.track_static_shift or r.heading_static:
+        if r.heading_static:
             active_detectors.append(check_static)
         if r.cam_mismatch or r.cam_class or r.cam_missing or r.cam_sparse:
             active_detectors.append(check_camera)
@@ -382,12 +352,20 @@ def scan_cuboids(
         if r.lidar_missing:
             active_detectors.append(check_missing)
 
+    from pointsnap.core.context import DetectionContext
+    from pointsnap.detectors.base import BaseDetector
+
+    ctx = DetectionContext.from_job(job, config, frames)
     findings: list[Finding] = []
     for detector in active_detectors:
-        findings.extend(detector(job, config, frames))
+        if isinstance(detector, BaseDetector):
+            findings.extend(detector(ctx))
+        else:
+            findings.extend(detector(job, config, frames))
 
     filtered = [f for f in findings if is_rule_enabled(f.rule, config)]
     return sorted(filtered, key=lambda f: f.sort_key())
+
 
 
 def actionable(findings: Iterable[Finding]) -> list[Finding]:

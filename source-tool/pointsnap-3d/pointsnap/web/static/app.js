@@ -47,7 +47,8 @@
     'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'track_id_swap', 'attr_height', 'spec_inside', 'spec_rider_double', 'attr_rider_state', 'lidar_missing', 'cam_sparse', 'attr_missing', 'attr_invalid',
     'track_static_shift', 'heading_static', 'cam_mismatch', 'cam_class', 'cam_missing', 'critic_box'];
 
-  const DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
+  let DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
+  let SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
 
   // --- Logo động khi tải (Loading.dc.html): khối hộp rơi xuống mặt đất, chấm "snap" bật ra ---
   function loaderSvg(size, opts = {}) {
@@ -222,6 +223,22 @@
     if (m) m.classList.remove('open');
   }
 
+  // --- Tải Rule Catalog đồng bộ từ backend PointSnap API ---
+  async function loadRulesCatalog() {
+    try {
+      const res = await fetch('/api/rules');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tips) Object.assign(RULE_FIX_TIPS, data.tips);
+        if (data.default_fix_tip) DEFAULT_FIX_TIP = data.default_fix_tip;
+        if (data.sink_fix_tip) SINK_FIX_TIP = data.sink_fix_tip;
+        if (data.labels) state.ruleLabels = data.labels;
+      }
+    } catch (_) {
+      // Offline fallback: tiếp tục chạy bình thường với các giá trị mặc định
+    }
+  }
+
   // --- Khởi động ứng dụng khi DOM sẵn sàng ---
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme(state.theme);
@@ -229,6 +246,7 @@
     setupQuickReview();
     setupCvatLink();
     handleHashNavigation();
+    loadRulesCatalog();
     setupSplash(loadProjects());
   });
 
@@ -1149,8 +1167,9 @@
       f.confidence === null || f.confidence === undefined ? 'chưa học' : `${Math.round(f.confidence * 100)}%`;
     document.getElementById('detail-message-desc').textContent = f.message || '—';
 
-    // Gợi ý cách sửa từ từ điển A13
-    const fixTip = RULE_FIX_TIPS[f.rule] || DEFAULT_FIX_TIP;
+    // Gợi ý cách sửa từ từ điển A13 (đồng bộ với Backend & Extension)
+    const isSink = f.rule === 'floating' && /\(lún\)|nằm dưới mặt đất/i.test(f.message || '');
+    const fixTip = isSink ? SINK_FIX_TIP : (RULE_FIX_TIPS[f.rule] || DEFAULT_FIX_TIP);
     document.getElementById('detail-fix-hint').textContent = fixTip;
 
     // Nút mở CVAT
@@ -1186,7 +1205,11 @@
       if ((f.message || '').includes('lún')) return 'Box lún so với mặt đất';
       return 'Box lơ lửng so với mặt đất';
     }
+    if (state.ruleLabels && state.ruleLabels[f.rule]) {
+      return state.ruleLabels[f.rule];
+    }
     if (f.rule === 'floating.no_evidence') return 'Không đủ điểm mặt đất';
+
     if (f.rule === 'size.class_range') return 'Kích thước ngoài khoảng của class';
     if (f.rule === 'size.in_track') return 'Kích thước bất thường trong track';
     if (f.rule === 'track.jump') return 'Track nhảy vị trí';

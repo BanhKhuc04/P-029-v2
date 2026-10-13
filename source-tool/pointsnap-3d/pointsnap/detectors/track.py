@@ -20,15 +20,17 @@ Ba kiểu phát hiện:
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Mapping, Sequence
 
 import numpy as np
 
-from pointsnap.core.geometry import transform_points
+from pointsnap.core.geometry import hermite_spline_interpolate, transform_points
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_track
 
 if TYPE_CHECKING:
-    from pointsnap.core.config import TrackConfig, TrackGroupConfig
+    from pointsnap.core.config import Config, TrackConfig, TrackGroupConfig
+    from pointsnap.core.context import DetectionContext
 
 END_FACTOR = 1.5
 """Ở hai đầu đoạn vị trí được ngoại suy (kém chắc hơn nội suy): ngưỡng nhảy nhân thêm hệ số này."""
@@ -75,6 +77,22 @@ def _get_world_centers(
     return centers, has_world
 
 
+def _get_world_yaws(
+    cuboids: Sequence[Cuboid],
+    sensor_to_world_by_frame: Mapping[int, np.ndarray] | None,
+) -> np.ndarray:
+    """Lấy góc quay yaw trong hệ toàn cục (hoặc hệ sensor nếu thiếu pose)."""
+    yaws = []
+    for c in cuboids:
+        yaw = c.yaw
+        if sensor_to_world_by_frame and c.frame in sensor_to_world_by_frame:
+            mat = np.asarray(sensor_to_world_by_frame[c.frame], dtype=np.float64)
+            dir_vec = mat[:3, :3] @ np.array([math.cos(yaw), math.sin(yaw), 0.0])
+            yaw = math.atan2(dir_vec[1], dir_vec[0])
+        yaws.append(yaw)
+    return np.array(yaws, dtype=np.float64)
+
+
 def _time(frame: int, config: TrackConfig, timestamps_by_frame: Mapping[int, float] | None) -> float:
     if timestamps_by_frame and frame in timestamps_by_frame:
         return float(timestamps_by_frame[frame])
@@ -93,12 +111,19 @@ def _segments(track_boxes: Sequence[Cuboid]) -> list[list[Cuboid]]:
     return [s for s in segments if s]
 
 
-def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int,
-                  moving: bool = True) -> tuple[float, float] | None:
+def _loo_residual(
+    xy: np.ndarray,
+    times: np.ndarray,
+    order: list[int],
+    i: int,
+    moving: bool = True,
+    yaws: np.ndarray | None = None,
+) -> tuple[float, float] | None:
     """Độ lệch (x, y) của box `order[i]` so với vị trí dự đoán từ các box lân cận trong `order`, không dùng chính nó.
 
-    Box ở giữa: nội suy tuyến tính theo thời gian. Box ở đầu / cuối: ngoại suy từ hai box kế tiếp.
-    Trả về `(độ lệch, là_đầu_mút)`, hoặc `None` nếu không đủ box để dự đoán.
+    Box ở giữa: nội suy tuyến tính và nội suy Hermite Spline theo góc yaw; lấy sai số nhỏ nhất giữa hai đường.
+    Box ở đầu / cuối: ngoại suy từ hai box kế tiếp.
+    Trả về `(độ lệch, hệ_số_ngưỡng)`, hoặc `None` nếu không đủ box để dự đoán.
     """
     n = len(order)
     k = order[i]
@@ -106,13 +131,24 @@ def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int,
         a, b = order[i - 1], order[i + 1]
         span = times[b] - times[a]
         ratio = (times[k] - times[a]) / span if span > 0 else 0.5
-        return float(np.linalg.norm(xy[k] - (xy[a] + (xy[b] - xy[a]) * ratio))), 1.0
+        linear_pred = xy[a] + (xy[b] - xy[a]) * ratio
+        linear_res = float(np.linalg.norm(xy[k] - linear_pred))
+
+        # Khử False Alarm khi xe rẽ ngã tư / đường cong: Hermite spline uốn cong theo cung rẽ của yaw
+        if yaws is not None and moving:
+            spline_pred = hermite_spline_interpolate(xy[a], xy[b], yaws[a], yaws[b], ratio)
+            spline_res = float(np.linalg.norm(xy[k] - spline_pred))
+            return min(linear_res, spline_res), 1.0
+
+        return linear_res, 1.0
+
     if n < 3:
         return None
     a, b = (order[1], order[2]) if i == 0 else (order[n - 2], order[n - 3])
     dt = times[a] - times[b]
     ratio = (times[k] - times[a]) / dt if dt != 0 else 1.0
     return float(np.linalg.norm(xy[k] - (xy[a] + (xy[a] - xy[b]) * ratio))), _end_factor(abs(ratio), moving)
+
 
 
 def _speed(xy: np.ndarray, times: np.ndarray, pair: list[int]) -> float:
@@ -129,12 +165,17 @@ def _normalized(result: tuple[float, float] | None) -> float:
 
 
 def _segment_jumps(
-    segment: list[Cuboid], grp: TrackGroupConfig, xy: np.ndarray, times: np.ndarray, has_world: bool,
+    segment: list[Cuboid],
+    grp: TrackGroupConfig,
+    xy: np.ndarray,
+    times: np.ndarray,
+    has_world: bool,
+    yaws: np.ndarray | None = None,
 ) -> list[Finding]:
     n = len(segment)
     order = list(range(n))
     moving = bool(np.max(np.linalg.norm(xy - np.median(xy, axis=0), axis=1)) > STATIC_RADIUS_M) if n else True
-    raw = [_loo_residual(xy, times, order, i, moving) for i in order]
+    raw = [_loo_residual(xy, times, order, i, moving, yaws=yaws) for i in order]
     score = [_normalized(r) for r in raw]
     findings: list[Finding] = []
 
@@ -153,7 +194,7 @@ def _segment_jumps(
         for c in range(max(0, k - 1), min(n, end + 2)):
             rest = [i for i in order if i != c]
             window = [j for j, i in enumerate(rest) if k - 2 <= i <= end + 2]
-            remaining = max((_normalized(_loo_residual(xy, times, rest, j, moving)) for j in window), default=0.0)
+            remaining = max((_normalized(_loo_residual(xy, times, rest, j, moving, yaws=yaws)) for j in window), default=0.0)
             speed = _speed(xy, times, rest) if len(rest) == 2 else 0.0
             candidate = (remaining, speed, -score[c], c)
             if best is None or candidate < best:
@@ -214,9 +255,11 @@ def detect_track_jumps_for_track(
     findings: list[Finding] = []
     for segment in [sorted(active, key=lambda b: b.frame)]:
         centers, has_world = _get_world_centers(segment, sensor_to_world_by_frame)
+        yaws = _get_world_yaws(segment, sensor_to_world_by_frame)
         times = np.array([_time(b.frame, config, timestamps_by_frame) for b in segment])
-        findings.extend(_segment_jumps(segment, grp, centers[:, :2], times, has_world))
+        findings.extend(_segment_jumps(segment, grp, centers[:, :2], times, has_world, yaws=yaws))
     return findings
+
 
 
 def detect_long_interpolation(
@@ -482,3 +525,21 @@ def detect_track_errors(
     ))
 
     return findings
+
+
+from pointsnap.detectors.base import BaseDetector
+
+
+class TrackDetector(BaseDetector):
+    """Bộ phát hiện lỗi track (nhảy vị trí, tách ID, khoảng nội suy dài, reuse ID, đổi nhầm ID)."""
+
+    rule_id = "track.jump"
+    name = "TrackDetector"
+
+    def is_enabled(self, config: Config) -> bool:
+        # Đã loại bỏ hoàn toàn bộ phát hiện lỗi đứt track theo yêu cầu dự án
+        return False
+
+    def detect(self, ctx: DetectionContext) -> list[Finding]:
+        return []
+

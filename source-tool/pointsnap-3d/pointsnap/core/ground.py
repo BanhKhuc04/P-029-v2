@@ -47,10 +47,15 @@ class GroundEstimate:
     contact_distance: float | None = None
     """Đáy box − điểm tiếp xúc thấp nhất trên mặt phẳng dốc dưới 4 góc đáy (C4); `None` nếu không khớp được mặt phẳng dốc
     rõ. Luật lơ lửng dùng cho box không có track để so (so tuyệt đối)."""
+    curb_step_m: float | None = None
+    """Chênh lệch độ cao mặt đất hai bên sườn (bậc vỉa hè); None nếu hai bên bằng phẳng."""
+    is_curb_supported: bool = False
+    """True nếu box đỗ trên bậc vỉa hè và đáy box tựa hợp lý trên bề mặt vỉa hè cao."""
 
     @property
     def is_valid(self) -> bool:
         return self.status == "ok" and self.ground_z is not None and self.distance is not None
+
 
 
 def filter_min_z_grid(
@@ -339,6 +344,27 @@ def ring_ground_for_box(
                                   num_ground_points=len(wide), num_inliers=len(wide), contact_distance=contact)
         return GroundEstimate(status="no_evidence", num_ground_points=len(ring))
     ground_z = float(np.median(ground[:, 2]))
+
+    # Phân tích địa hình hai bên sườn (bậc vỉa hè / lề đường)
+    from pointsnap.core.geometry import to_box_frame
+
+    curb_step = None
+    curb_supported = False
+    local_ground = to_box_frame(ground, cuboid)
+    left_mask = local_ground[:, 1] > 0.1
+    right_mask = local_ground[:, 1] < -0.1
+    if int(np.sum(left_mask)) >= 4 and int(np.sum(right_mask)) >= 4:
+        z_left = float(np.median(ground[left_mask, 2]))
+        z_right = float(np.median(ground[right_mask, 2]))
+        step = abs(z_left - z_right)
+        if step >= 0.08:
+            curb_step = step
+            z_high = max(z_left, z_right)
+            z_low = min(z_left, z_right)
+            # Xe đỗ gác bánh vỉa hè: đáy box tựa trên mặt cao (lệch <= 8 cm) hoặc nằm giữa 2 tầng địa hình
+            if abs(cuboid.bottom_z - z_high) <= 0.08 or (z_low - 0.05 <= cuboid.bottom_z <= z_high + 0.08):
+                curb_supported = True
+
     return GroundEstimate(
         ground_z=ground_z,
         distance=cuboid.bottom_z - ground_z,
@@ -347,7 +373,10 @@ def ring_ground_for_box(
         num_inliers=len(ground),
         status="ok",
         contact_distance=contact,
+        curb_step_m=curb_step,
+        is_curb_supported=curb_supported,
     )
+
 
 
 class OtherBoxPoints:

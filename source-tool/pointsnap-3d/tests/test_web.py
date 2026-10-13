@@ -492,7 +492,10 @@ def test_gate_verdict_logic():
 
 def test_end_to_end_mock_scan(mock_home: Path, client: TestClient, monkeypatch):
     import time
-    from tests.test_scan_gate import MockCvatServer, pts
+    try:
+        from tests.test_scan_gate import MockCvatServer, pts
+    except ModuleNotFoundError:
+        from test_scan_gate import MockCvatServer, pts
 
     job1_annos = {
         "shapes": [

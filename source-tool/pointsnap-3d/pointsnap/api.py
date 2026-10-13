@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit
 
 import requests
+import numpy as np
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.reader import load_job
@@ -72,6 +73,15 @@ def create_report(client: CvatClient, job_id: int):
     return job, findings, config, metadata
 
 
+def _json_numeric(value):
+    """Report details can contain NumPy measurements; keep strict JSON and reject arbitrary objects."""
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    raise TypeError(f'Unsupported report value: {type(value).__name__}')
+
+
 def report_bytes(job, findings, config, report_format: str, metadata: dict | None = None) -> bytes:
     if report_format not in ("json", "html", "csv"):
         raise ValueError("format phải là json, html hoặc csv")
@@ -112,7 +122,7 @@ def report_bytes(job, findings, config, report_format: str, metadata: dict | Non
                 for f in findings
             ],
         }
-        return json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8")
+        return json.dumps(payload, ensure_ascii=False, allow_nan=False, default=_json_numeric).encode("utf-8")
     with tempfile.TemporaryDirectory(prefix="pointsnap-report-") as directory:
         path = Path(directory) / f"report.{report_format}"
         generator = generate_html_report if report_format == "html" else generate_csv_report

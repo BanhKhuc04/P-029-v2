@@ -173,7 +173,7 @@ class NuScenesReader:
         calibrations = self._table("calibrated_sensor")
         views = []
         for record in self._camera_records_by_sample.get(ref.sample_token, []):
-            path = self.dataroot / record["filename"]
+            path = self._dataset_path(record["filename"])
             if not path.is_file():
                 continue
             calibration = calibrations[record["calibrated_sensor_token"]]

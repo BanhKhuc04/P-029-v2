@@ -4,11 +4,25 @@ import math
 import os
 from pathlib import Path
 import tempfile
+import time
 from typing import Any
 
 
 class StorageError(ValueError):
     """File trạng thái không đọc được; không trả một kết quả rỗng thay dữ liệu hỏng."""
+
+
+def replace_file(source: Path, destination: Path) -> None:
+    """Atomic replace with bounded retries for Windows sharing/access denials."""
+    delays = (0.02,0.05,0.1)
+    for attempt in range(len(delays)+1):
+        try:
+            os.replace(source,destination)
+            return
+        except PermissionError as exc:
+            if getattr(exc,"winerror",None) not in (5,32,33) or attempt == len(delays):
+                raise
+            time.sleep(delays[attempt])
 
 
 def read_json(path: Path, expected: type = dict) -> Any:
@@ -37,7 +51,7 @@ def write_text(path: Path, text: str) -> None:
                                          prefix=".ps-", suffix=".tmp", delete=False) as handle:
             temporary = Path(handle.name)
             handle.write(text)
-        os.replace(temporary, path)
+        replace_file(temporary,path)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)

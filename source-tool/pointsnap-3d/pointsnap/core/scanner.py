@@ -277,7 +277,7 @@ def check_critic(job: JobData, config: Config, frames: FrameSource | None = None
     """Box Critic (C3, lớp 3): chỉ chạy khi guideline khai `critic.model` và có PyTorch."""
     if frames is None or not config.critic.model:
         return []
-    from pointsnap.vision.detector2d import available
+    from pointsnap.critic import available
 
     if not available():
         return []
@@ -381,11 +381,16 @@ def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None)
     Kiểm tra bảo thủ ở cấp job; không chứng nhận độ chính xác của detector hay mọi box.
     Lỗi đọc frame được chuyển cho caller để lần quét thất bại, không trả ĐẠT.
     """
-    cloud_rules = ("floating", "heading_points", "fit_empty", "fit_outside", "fit_loose")
+    cloud_rules = ("floating", "heading_points", "fit_empty", "fit_outside", "fit_loose", "critic_box")
     pose_rules = ("track_jump", "track_split_id", "track_long_interpolation", "heading_flip", "heading_motion",
-                  "attr_rider_state")
+                  "attr_rider_state", "track_static_shift", "heading_static")
     gaps: list[str] = []
-    enabled_cloud = [name for name in cloud_rules if getattr(config.rules, name)]
+    enabled_cloud = [name for name in cloud_rules if getattr(config.rules, name)
+                     and (name != "critic_box" or config.critic.model)]
+    if config.rules.critic_box and config.critic.model and any(c.visible and c.keyframe for c in job.cuboids):
+        from pointsnap.critic import available
+        if not available():
+            gaps.append("Kiểm tra một phần: thiếu PyTorch cho luật critic_box")
     if frames is None and enabled_cloud and any(c.visible for c in job.cuboids):
         gaps.append("Kiểm tra một phần: thiếu point cloud cho luật " + ", ".join(enabled_cloud))
     elif frames is not None and enabled_cloud:

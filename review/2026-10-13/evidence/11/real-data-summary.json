@@ -1,0 +1,195 @@
+{
+  "baseline_commit": "8fce666",
+  "dataset": "nuScenes v1.0-mini, default taxonomy",
+  "static_scope": "10 full scenes; counts are clean-GT findings, not human precision",
+  "static": [
+    {
+      "scene": "scene-0061",
+      "split": "tuning",
+      "boxes": 3333,
+      "before": {
+        "track.static_shift:warning": 5,
+        "heading.static:error": 1
+      },
+      "after": {
+        "track.static_shift:warning": 5,
+        "heading.static:error": 1
+      },
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-0553",
+      "split": "tuning",
+      "boxes": 1288,
+      "before": {},
+      "after": {},
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-0757",
+      "split": "tuning",
+      "boxes": 531,
+      "before": {},
+      "after": {},
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-0916",
+      "split": "tuning",
+      "boxes": 1964,
+      "before": {
+        "track.static_shift:warning": 3
+      },
+      "after": {
+        "track.static_shift:warning": 3
+      },
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-1094",
+      "split": "tuning",
+      "boxes": 1548,
+      "before": {},
+      "after": {},
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-0103",
+      "split": "held-out",
+      "boxes": 1754,
+      "before": {
+        "track.static_shift:warning": 6,
+        "heading.static:warning": 7
+      },
+      "after": {
+        "track.static_shift:warning": 6,
+        "heading.static:warning": 7
+      },
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-0655",
+      "split": "held-out",
+      "boxes": 1720,
+      "before": {
+        "track.static_shift:warning": 2
+      },
+      "after": {
+        "track.static_shift:warning": 2
+      },
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-0796",
+      "split": "held-out",
+      "boxes": 513,
+      "before": {
+        "heading.static:error": 1
+      },
+      "after": {
+        "heading.static:error": 1
+      },
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-1077",
+      "split": "held-out",
+      "boxes": 609,
+      "before": {},
+      "after": {},
+      "identities_changed": false
+    },
+    {
+      "scene": "scene-1100",
+      "split": "held-out",
+      "boxes": 844,
+      "before": {},
+      "after": {},
+      "identities_changed": false
+    }
+  ],
+  "export_scope": "two tuning scenes, first three frames only, two samples per eligible box",
+  "exports": [
+    {
+      "scene": "scene-0061",
+      "shapes": {
+        "points": [
+          96,
+          256,
+          4
+        ],
+        "meta": [
+          96,
+          20
+        ],
+        "is_error": [
+          96
+        ],
+        "target": [
+          96,
+          7
+        ],
+        "track_id": [
+          96
+        ],
+        "frame": [
+          96
+        ]
+      },
+      "all_finite": true,
+      "unchanged": 40,
+      "errors": 55,
+      "frames": [
+        0,
+        1,
+        2
+      ],
+      "sha256": "b002fe87da66d65ee34cb18d4c63dbc0d7a5e7a45d5d1e6bde8b35d76bdf5086"
+    },
+    {
+      "scene": "scene-0553",
+      "shapes": {
+        "points": [
+          98,
+          256,
+          4
+        ],
+        "meta": [
+          98,
+          20
+        ],
+        "is_error": [
+          98
+        ],
+        "target": [
+          98,
+          7
+        ],
+        "track_id": [
+          98
+        ],
+        "frame": [
+          98
+        ]
+      },
+      "all_finite": true,
+      "unchanged": 32,
+      "errors": 65,
+      "frames": [
+        0,
+        1,
+        2
+      ],
+      "sha256": "68ad349b2790e41a64d0af881173f74e8a4a820fab5ea887642bf9e823975e7d"
+    }
+  ],
+  "totals": {
+    "samples": 194,
+    "errors": 120
+  },
+  "source_hashes": {
+    "pointsnap/detectors/static.py": "71a0231cc86f08f329a1b2ca1df37420e2ee37335b54b6f2012b4a24000c51c1",
+    "pointsnap/critic.py": "3a08f5deff3aaccdc0a46cfdf3d1c0f4d53146b9059a9c648361b6679a29e3a8",
+    "scripts/train_critic_example.py": "895e7dd90d191ef01b4760311ab85c6c513f2f18d76255ae6d9ea46bf2030ee6"
+  }
+}

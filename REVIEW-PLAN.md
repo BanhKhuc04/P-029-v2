@@ -14,7 +14,7 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 
 ## Review tiếp tính năng mới trên main — 13/10/2026
 
-Đợt 01–08 đã merge qua PR #54, nhưng tính năng mới của main nằm ngoài phạm vi nghiệm thu của đợt đó. [Kế hoạch09–16](review/2026-10-13/REVIEW-PLAN-09-16.md) có64ca/inventory131file. **09–10 đã review/sửa**,10 nhận ancestry09,code10`c5ac54d`:662 Python+37 Node PASS,5 SKIP,0 XFAIL. [Báo cáo09](review/2026-10-13/09-report.md),[báo cáo10](review/2026-10-13/10-report.md)/[bàn giao10](review/2026-10-13/10-handoff.md). Tiếp theo11; quality và kiểm tay còn theo giới hạn từng báo cáo.
+Đợt 01–08 đã merge qua PR #54; các tính năng mới ngoài phạm vi đó được chia trong [kế hoạch 09–16](review/2026-10-13/REVIEW-PLAN-09-16.md): 64 ca, inventory 131 file. **09–11 đã review/sửa và đẩy nhánh GitHub**. Phần 11 nhận ancestry 09–10, code `9d11071`: 713 Python + 37 Node PASS, 3 live-CVAT SKIP, 0 XFAIL. Xem [báo cáo 11](review/2026-10-13/11-report.md) / [bàn giao 11](review/2026-10-13/11-handoff.md). Tiếp theo phần 12; model quality, GPU/Colab và kiểm tay còn theo giới hạn từng báo cáo.
 
 ## Bộ hướng dẫn chi tiết
 

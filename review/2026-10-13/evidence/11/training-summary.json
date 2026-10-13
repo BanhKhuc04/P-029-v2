@@ -1,0 +1,55 @@
+{
+  "torch": "2.8.0+cpu",
+  "device": "cpu",
+  "cuda_available": false,
+  "train_scene": "scene-0061",
+  "validation_scene": "scene-0553",
+  "test_scenes_used": [],
+  "epochs": 2,
+  "ensemble_seeds": [
+    11,
+    12
+  ],
+  "batch": 32,
+  "width": 16,
+  "validation_samples": 98,
+  "checkpoint_shapes": [
+    [
+      98
+    ],
+    [
+      98,
+      7
+    ]
+  ],
+  "finite_outputs": true,
+  "repeat_logit_max_abs": 0.0,
+  "repeat_delta_max_abs": 0.0,
+  "ensemble_logit_max_abs": 0.0,
+  "ensemble_delta_max_abs": 0.0,
+  "suggested_raw_score_threshold": 0.5461199283599854,
+  "logs": [
+    [
+      "huấn luyện: ['scene-0061'] | kiểm tra: ['scene-0553']",
+      "[seed 11] loss kiểm tra tốt nhất 0.702",
+      "[seed 12] loss kiểm tra tốt nhất 0.708",
+      "Ngưỡng gợi ý critic.min_probability = 0.54612 (mục tiêu 1.0%; box chuẩn validation bị báo thực tế 3.1%; mẫu sai bắt được 0.0%)",
+      "Ngưỡng gợi ý so theo track (box thuộc track): critic.min_logit_rise = 0.000317801 (box chuẩn validation bị báo 20.0%; mẫu sai bắt được 52.6%), critic.error_logit_rise = 0.00031961",
+      "-> out\\review11-training-final-v2\\ensemble-0.pt"
+    ],
+    [
+      "huấn luyện: ['scene-0061'] | kiểm tra: ['scene-0553']",
+      "[seed 11] loss kiểm tra tốt nhất 0.702",
+      "[seed 12] loss kiểm tra tốt nhất 0.708",
+      "Ngưỡng gợi ý critic.min_probability = 0.54612 (mục tiêu 1.0%; box chuẩn validation bị báo thực tế 3.1%; mẫu sai bắt được 0.0%)",
+      "Ngưỡng gợi ý so theo track (box thuộc track): critic.min_logit_rise = 0.000317801 (box chuẩn validation bị báo 20.0%; mẫu sai bắt được 52.6%), critic.error_logit_rise = 0.00031961",
+      "-> out\\review11-training-final-v2\\ensemble-1.pt"
+    ]
+  ],
+  "checkpoint_sha256": [
+    "eac77356333ea9df41aa7ba1f1d7fdefd174cef0972176c7a97c2991f5cf4e2c",
+    "06a82e8c748dcaf577aff22f88fdc122f207a00bd679f188c3143463176e19e4"
+  ],
+  "training_source_sha256": "919bb60359ba5cffe22245242ff6d78e5878b6d692371cb1c5262f4f91a2e59e",
+  "interpretation": "execution and reproducibility smoke only; no quality or calibration acceptance"
+}

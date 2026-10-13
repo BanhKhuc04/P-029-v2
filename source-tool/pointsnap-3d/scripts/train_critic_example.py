@@ -54,8 +54,21 @@ KEYS = ("points", "meta", "is_error", "target", "track_id", "frame")
 
 
 def load(files: list[Path]) -> dict[str, np.ndarray]:
-    parts = [np.load(p) for p in files]
-    return {k: np.concatenate([p[k] for p in parts]) for k in KEYS}
+    parts = []
+    for path in files:
+        with np.load(path, allow_pickle=False) as data:
+            row = {k: data[k] for k in KEYS}
+        n = len(row["is_error"])
+        if (row["points"].shape != (n, 256, 4) or row["meta"].shape != (n, 20)
+                or row["target"].shape != (n, 7)
+                or any(len(row[k]) != n or not np.isfinite(row[k]).all() for k in KEYS)
+                or not np.isin(row["is_error"], [0, 1]).all()):
+            raise ValueError(f"Invalid Critic arrays: {path.name}")
+        row["scene"] = np.full(n, path.stem)
+        parts.append(row)
+    if not parts:
+        raise ValueError("No Critic scene files")
+    return {k: np.concatenate([p[k] for p in parts]) for k in (*KEYS, "scene")}
 
 
 def augment(pts: torch.Tensor, tgt: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -110,7 +123,12 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=Path("models/critic.pt"))
     args = parser.parse_args()
 
+    if min(args.epochs, args.batch, args.width, args.ensemble) < 1 or not 0 < args.target_fa < 1:
+        parser.error("epochs, batch, width, ensemble must be positive; target-fa must be between 0 and 1")
+
     files = sorted(args.data.glob("*.npz"))
+    if not files:
+        parser.error("No Critic scene files in --data")
     val_names = set(args.val_scenes) if args.val_scenes else {files[-1].stem}
     train_files = [p for p in files if p.stem not in val_names]
     val_files = [p for p in files if p.stem in val_names]
@@ -119,9 +137,11 @@ def main() -> None:
     print("huấn luyện:", [p.stem for p in train_files], "| kiểm tra:", [p.stem for p in val_files])
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    train = {k: torch.from_numpy(v.astype(np.float32)) for k, v in load(train_files).items()}
+    train = {k: torch.from_numpy(v.astype(np.float32)) for k, v in load(train_files).items() if k != "scene"}
     val_raw = load(val_files)
-    val = {k: torch.from_numpy(v.astype(np.float32)) for k, v in val_raw.items()}
+    val = {k: torch.from_numpy(v.astype(np.float32)) for k, v in val_raw.items() if k != "scene"}
+    if not len(train["is_error"]) or not len(val["is_error"]):
+        parser.error("Training and validation scenes must contain samples")
     bce, smooth = nn.BCEWithLogitsLoss(), nn.SmoothL1Loss(reduction="none")
 
     def batches(data, idx):
@@ -144,6 +164,8 @@ def main() -> None:
         return torch.cat(logits), torch.cat(deltas)
 
     clean_val = (val["target"] == 0).all(dim=1).numpy()
+    if not clean_val.any():
+        parser.error("Validation needs unchanged boxes to estimate the suggested threshold")
     y_val = val["is_error"].numpy()
 
     def train_one(seed: int) -> BoxCritic:
@@ -186,7 +208,9 @@ def main() -> None:
     best_logit = logit.numpy()
     best_p = torch.sigmoid(logit).numpy()
     threshold = float(np.quantile(best_p[clean_val], 1 - args.target_fa))
-    print(f"Ngưỡng gợi ý critic.min_probability = {threshold:.2f} (box chuẩn cảnh kiểm tra bị báo {args.target_fa:.0%}; "
+    observed_fa = float((best_p[clean_val] >= threshold).mean())
+    print(f"Ngưỡng gợi ý critic.min_probability = {threshold:.6g} (mục tiêu {args.target_fa:.1%}; "
+          f"box chuẩn validation bị báo thực tế {observed_fa:.1%}; "
           f"mẫu sai bắt được {(best_p[y_val == 1] > threshold).mean():.1%})")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     model.cpu().eval()
@@ -195,23 +219,28 @@ def main() -> None:
     if rise is not None:
         rises, clean, wrong = rise
         warn, err = np.quantile(rises[clean], 0.995), np.quantile(rises[clean], 0.997)
-        print(f"Ngưỡng gợi ý so theo track (box thuộc track): critic.min_logit_rise = {warn:.1f} (box chuẩn bị báo 0,5%, "
-              f"mẫu sai bắt được {(rises[wrong] > warn).mean():.1%}), critic.error_logit_rise = {err:.1f} (0,3%)")
+        print(f"Ngưỡng gợi ý so theo track (box thuộc track): critic.min_logit_rise = {warn:.6g} "
+              f"(box chuẩn validation bị báo {(rises[clean] > warn).mean():.1%}; "
+              f"mẫu sai bắt được {(rises[wrong] > warn).mean():.1%}), critic.error_logit_rise = {err:.6g}")
     print(f"-> {args.out}")
 
 
 def track_rise(logit: np.ndarray, data: dict[str, np.ndarray]):
     """Logit của mỗi mẫu trừ trung vị logit các box chuẩn ở frame khác của cùng track (như luật `critic.box`)."""
     clean = np.all(data["target"] == 0, axis=1)
-    per_box: dict[tuple[int, int], list[float]] = {}
+    scenes = data.get("scene", np.full(len(logit), "single-scene"))
+    labels = np.argmax(data["meta"][:, 5:], axis=1) if "meta" in data else np.zeros(len(logit), dtype=int)
+    per_box: dict[tuple[str, int, int, int], list[float]] = {}
     for i in np.flatnonzero(clean):
-        per_box.setdefault((int(data["track_id"][i]), int(data["frame"][i])), []).append(float(logit[i]))
-    by_track: dict[int, dict[int, float]] = {}
-    for (t, f), v in per_box.items():
-        by_track.setdefault(t, {})[f] = float(np.mean(v))
+        if data["track_id"][i] >= 0:
+            per_box.setdefault((str(scenes[i]), int(data["track_id"][i]), int(labels[i]), int(data["frame"][i])), []).append(float(logit[i]))
+    by_track = {}
+    for (scene, t, label, f), v in per_box.items():
+        by_track.setdefault((scene, t, label), {})[f] = float(np.mean(v))
     rises, keep = [], []
     for i in range(len(logit)):
-        others = [v for f, v in by_track.get(int(data["track_id"][i]), {}).items() if f != int(data["frame"][i])]
+        key = (str(scenes[i]), int(data["track_id"][i]), int(labels[i]))
+        others = [v for f, v in by_track.get(key, {}).items() if f != int(data["frame"][i])]
         if len(others) >= 2:
             rises.append(logit[i] - np.median(others))
             keep.append(i)

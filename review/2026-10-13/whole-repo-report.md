@@ -134,12 +134,12 @@ Số liệu phía trên giữ nguyên mốc `d18b1a9`. Các finding đã đượ
 
 | Mã | Sửa | Kiểm lại |
 |---|---|---|
-| RV-13-001 | `stable_sigmoid` trong `core/geometry.py`, dùng cho `critic.py` và `learn.py` (cùng mẫu tràn số); Critic bỏ box có logit/gợi ý sửa không hữu hạn | Contract test Critic PASS; thêm `test_model_confidence_saturates_without_overflow` |
+| RV-13-001 | Review 11 (`9d11071`, PR #57): `_sigmoid` ổn định số và kiểm logit/delta hữu hạn trong `critic.py`/`learn.py`; PR #56 đổi thêm phép tính cross-validation của `learn.py` sang `_sigmoid` | Contract test Critic PASS; thêm `test_model_confidence_saturates_without_overflow` |
 | RV-13-002 | Nhập review 10 (`c5ac54d`) qua PR #55 | Contract test track 0 PASS |
 | RV-13-003 | Nhập review 10 (`c5ac54d`) qua PR #55 | Contract test rider pose PASS |
 | RV-13-004 | `results-content-box` khởi tạo ẩn; `loadLatestRun` gọi `showEmptyResults()` khi chưa có dự án | Node regression mới PASS; trình duyệt với HOME rỗng: chỉ hiện trạng thái trống, không có dải gate, không lỗi console |
 | XFAIL C4 | Nhập review 09 (`f22f2b6`) qua PR #55 | `test_track_from_flat_onto_slope_floating_frame_flagged` PASS |
 
-Windows Python 3.11.9: `pytest tests auto-tests` **678 PASS, 3 SKIP, 0 FAIL, 0 XFAIL**; Node **38 PASS**.
+Windows Python 3.11.9, sau khi nhập review 09–11: `pytest tests auto-tests` **727 PASS, 3 SKIP, 0 FAIL, 0 XFAIL**; Node **38 PASS**.
 
 Còn mở: quality proxy held-out (2,960 / 0,588 trên 100 box) không đổi sau review 09/10, cần đo lại và chấm tay precision trước khi chỉnh ngưỡng; chưa kiểm lại luồng màn Kết quả có dữ liệu thật trên trình duyệt trong lượt sửa này.

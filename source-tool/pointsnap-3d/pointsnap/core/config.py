@@ -353,6 +353,9 @@ class MissingConfig:
     """Mật độ điểm / ô của cụm: nhiễu mưa, bụi ~1; mặt vật thật bị nhiều tia LiDAR quét chồng nên dày hơn."""
     max_bottom_m: float = 0.6
     """Chân cụm (p2 độ cao trên mặt đất) không cao hơn mức này: vật đứng trên đường, không phải tán cây / biển báo."""
+    max_elevation_m: float = 1.5
+    """Chân cụm cao hơn mặt đất chung của frame (mặt phẳng khớp trên điểm thấp) quá mức này thì bỏ: mái che, tầng nhà,
+    thùng xe trên cao. Mặt đất cục bộ (`max_bottom_m`) lấy điểm thấp nhất quanh cụm nên bị lừa khi đất bên dưới bị che."""
     max_persistence: float = 0.4
     """Tỉ lệ ô của cụm vẫn có điểm sau / trước 1 giây quá mức này thì coi là vật đứng yên (tường, cây, cột): bỏ."""
     first_gate_m: float = 7.0

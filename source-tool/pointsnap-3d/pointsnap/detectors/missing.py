@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING, Sequence
 import numpy as np
 
 from pointsnap.core.geometry import points_in_cuboid
+from pointsnap.core.ground import fit_plane_ransac
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_frame
 
 if TYPE_CHECKING:
@@ -74,6 +75,21 @@ def _ground(points: np.ndarray, cell: float = 1.0) -> np.ndarray:
     return local[inverse]
 
 
+def _frame_ground_plane(points: np.ndarray) -> tuple[float, float, float, float] | None:
+    """Mặt đất chung của frame: mặt phẳng khớp (RANSAC) trên điểm thấp nhất mỗi ô 2 m; `None` nếu không khớp được."""
+    keys = np.floor(points[:, :2] / 2.0).astype(np.int64)
+    _, inverse = np.unique(keys, axis=0, return_inverse=True)
+    inverse = inverse.reshape(-1)
+    lowest = np.full(inverse.max() + 1, np.inf)
+    np.minimum.at(lowest, inverse, points[:, 2])
+    low = points[points[:, 2] <= lowest[inverse] + 0.2]
+    if len(low) > 1500:  # đủ để khớp một mặt phẳng; giữ RANSAC nhanh trên frame dày điểm
+        low = low[np.linspace(0, len(low) - 1, 1500).astype(int)]
+    plane, _ = fit_plane_ransac(low, distance_threshold=0.2, max_iterations=50, min_inliers=max(50, len(low) // 5),
+                                max_tilt_rad=math.radians(10.0))
+    return plane
+
+
 def _components(cells: np.ndarray, far: np.ndarray) -> list[np.ndarray]:
     """Nhóm chỉ số các ô kề nhau (8 hướng). Gần cảm biến không cho hở ô (người đứng sát tường không bị dính thành một
     cụm); ô ở xa (`far`, điểm thưa) cho hở 1 ô để xe xa không bị vỡ đôi."""
@@ -114,6 +130,7 @@ def frame_clusters(points: np.ndarray, boxes: Sequence[Cuboid], sensor_to_world:
     if len(pts) == 0:
         return []
     above = pts[:, 2] - _ground(pts)
+    plane = _frame_ground_plane(pts)
     keep = (above > 0.3) & (above < 4.0)
     for box in boxes:
         if box.outside:
@@ -149,6 +166,10 @@ def frame_clusters(points: np.ndarray, boxes: Sequence[Cuboid], sensor_to_world:
         if (bottom > cfg.max_bottom_m or _kind(length, width, height) is None
                 or len(idx) / cells_used < cfg.min_points_per_cell):
             continue  # nhiễu mưa / bụi rải rác: ~1 điểm mỗi ô; mặt vật thật bị nhiều tia quét chồng theo chiều đứng
+        if plane is not None:
+            a, b, c, d = plane
+            if float(np.percentile(pts[idx, 2], 2)) + (a * center[0] + b * center[1] + d) / c > cfg.max_elevation_m:
+                continue  # cụm treo trên cao (mái che, tầng nhà): đất ngay dưới bị che nên mặt đất cục bộ là chính nó
         world = world_xy[idx].mean(axis=0)
         clusters.append(Cluster(frame, center, world, length, width, height, len(idx),
                                 frozenset(map(tuple, world_cells[idx])),

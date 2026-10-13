@@ -236,6 +236,7 @@ missing:                              # sót đối tượng bằng LiDAR (C7); 
   max_range_m: 40
   min_points: 15                      # cụm ít điểm hơn bỏ qua
   min_points_per_cell: 1.2            # mật độ điểm / ô: nhiễu mưa, bụi ~1 (mô phỏng mưa 10 000 điểm / frame không báo)
+  max_elevation_m: 1.5                # chân cụm cao hơn mặt đất chung của frame quá mức này (mái che, tầng nhà): bỏ (13/10)
   max_persistence: 0.4                # chỗ cụm đứng sau / trước 1 s còn > 40% ô có điểm: vật đứng yên (tường, cây), bỏ
   min_frames: 3                       # cụm nối được qua ≥ 3 keyframe
   min_motion_m: 3.0                   # dời ≥ 3 m theo một hướng đều

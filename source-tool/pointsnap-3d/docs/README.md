@@ -1,5 +1,7 @@
 # Tài liệu PointSnap 3D
 
+[Review sau bàn giao tối 13/10](../../../review/2026-10-13/handoff-final-report.md) là đầu mối cho kết quả hiện hành. Các bảng eval bên dưới là snapshot theo ngày, không tự chứng nhận nhánh mới. G7 dùng precision tay từng luật; proxy trên nhãn chuẩn được báo riêng.
+
 Đọc trước: **[Báo cáo dự án](bao-cao-du-an.md)** — vấn đề, giải pháp, thuật toán có hình minh họa, kết quả, giới hạn.
 
 | Thư mục | Có gì | Đọc khi |
@@ -14,7 +16,7 @@
 
 | File | Nội dung |
 |---|---|
-| [eval/sau-merge-12-10/](ket-qua/eval/sau-merge-12-10/) | **Mới nhất**: eval 10 vòng trên `main` sau khi merge PR #40 – #50 ([kiểm tra](ket-qua/eval/sau-merge-12-10/kiem-tra.md), [tinh chỉnh](ket-qua/eval/sau-merge-12-10/tinh-chinh.md)) |
+| [eval/sau-merge-12-10/](ket-qua/eval/sau-merge-12-10/) | Snapshot 12/10: eval 10 vòng trên `main` sau khi merge PR #40 – #50 ([kiểm tra](ket-qua/eval/sau-merge-12-10/kiem-tra.md), [tinh chỉnh](ket-qua/eval/sau-merge-12-10/tinh-chinh.md)) |
 | [ket-qua-giai-doan-3.md](ket-qua/ket-qua-giai-doan-3.md) | Sai hướng, box lệch, mặt đất v2, luật spec (C1, C2) |
 | [ket-qua-box-verifier.md](ket-qua/ket-qua-box-verifier.md) | Box Verifier 4 lớp, ảnh camera, Box Critic, ngưỡng lơ lửng 15 cm (C3) |
 | [ket-qua-sot-doi-tuong.md](ket-qua/ket-qua-sot-doi-tuong.md) | Sót đối tượng bằng LiDAR, vật quá ít điểm (C7, C8) |

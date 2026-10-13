@@ -1,5 +1,7 @@
 # source-tool
 
+[Bàn giao và kiểm thử mới ngày 13/10](../review/2026-10-13/handoff-final-report.md): ghi riêng phiên bản đã kiểm, PR chờ merge, runtime và giới hạn precision/MV3.
+
 Công cụ đội tự viết để gỡ pain point khi gán nhãn. Mỗi tool một thư mục con, có README riêng.
 
 | Tool | Giải quyết | Người viết | Trạng thái |

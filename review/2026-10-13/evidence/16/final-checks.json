@@ -1,0 +1,269 @@
+{
+  "model": "gpt-6.1-sol",
+  "final_source": "3a8bde275a0ecd574eda2dc0275e07c768c34829",
+  "initial_source": "0198d0aba9989f533c2b116a18c761890dde0fb3",
+  "dependencies_initial": {
+    "pytest": "9.1.1",
+    "numpy": "2.4.6",
+    "fastapi": "0.142.2",
+    "httpx": "0.28.1",
+    "torch": "2.6.0+cu124",
+    "torchvision": "0.21.0+cu124",
+    "transformers": "5.19.0",
+    "build": "1.6.1"
+  },
+  "initial_failures": [
+    {
+      "name": "python",
+      "status": "FAIL",
+      "exit_code": 1,
+      "seconds": 114.33,
+      "log": "python.log",
+      "cases": {
+        "PASS": 832,
+        "FAIL": 17,
+        "SKIP": 1
+      }
+    },
+    {
+      "name": "docker-pytest",
+      "status": "FAIL",
+      "exit_code": 1,
+      "seconds": 106.52,
+      "log": "docker-pytest.log",
+      "cases": {
+        "PASS": 802,
+        "FAIL": 27,
+        "SKIP": 27
+      }
+    }
+  ],
+  "resolution": "Initial Python/Linux failures are retained; corrected explicit rule fixture, preview geometry fixture, optional Pillow skip and archive-root runner; later full results supersede them.",
+  "final_phases": [
+    {
+      "name": "python",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 107.19,
+      "log": "python.log",
+      "cases": {
+        "PASS": 853,
+        "SKIP": 1
+      }
+    },
+    {
+      "name": "archive",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 0.11,
+      "log": "archive.log"
+    },
+    {
+      "name": "package-build",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 2.55,
+      "log": "package-build.log"
+    },
+    {
+      "name": "package-venv",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 3.83,
+      "log": "package-venv.log"
+    },
+    {
+      "name": "package-install",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 10.38,
+      "log": "package-install.log"
+    },
+    {
+      "name": "installed-pip-check",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 0.5,
+      "log": "installed-pip-check.log"
+    },
+    {
+      "name": "installed-http",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 1.94,
+      "log": "installed-http.log"
+    },
+    {
+      "name": "docker-build",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 25.61,
+      "log": "docker-build.log"
+    },
+    {
+      "name": "docker-cli",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 1.45,
+      "log": "docker-cli.log"
+    },
+    {
+      "name": "docker-pip-check",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 1.8,
+      "log": "docker-pip-check.log"
+    },
+    {
+      "name": "docker-pytest",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 111.55,
+      "log": "docker-pytest.log",
+      "cases": {
+        "PASS": 827,
+        "SKIP": 33
+      }
+    }
+  ],
+  "retained_phases": [
+    {
+      "name": "dataset",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 16.88,
+      "log": "dataset.log",
+      "cases": {
+        "PASS": 4
+      }
+    },
+    {
+      "name": "live-cvat",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 10.75,
+      "log": "live-cvat.log",
+      "cases": {
+        "PASS": 3
+      }
+    },
+    {
+      "name": "service-smoke",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 10.75,
+      "log": "service-smoke.log"
+    },
+    {
+      "name": "extension",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 0.19,
+      "log": "extension.log",
+      "cases": {
+        "PASS": 47
+      }
+    },
+    {
+      "name": "python-syntax",
+      "status": "PASS",
+      "files": 149,
+      "detail": ""
+    },
+    {
+      "name": "js-syntax",
+      "status": "PASS",
+      "files": 13
+    },
+    {
+      "name": "extension-manifest",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 0.05,
+      "log": "extension-manifest.log"
+    },
+    {
+      "name": "powershell-syntax",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 0.38,
+      "log": "powershell-syntax.log"
+    },
+    {
+      "name": "model-maskrcnn",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 8.5,
+      "log": "model-maskrcnn.log"
+    },
+    {
+      "name": "model-gdino-sam2",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 19.11,
+      "log": "model-gdino-sam2.log"
+    },
+    {
+      "name": "model-hybrid",
+      "status": "PASS",
+      "exit_code": 0,
+      "seconds": 21.2,
+      "log": "model-hybrid.log"
+    }
+  ],
+  "initial_evaluation": "Interrupted externally after six scene progress lines; no complete summary, not PASS.",
+  "evaluation": "See evidence/15/evaluation.json for completed checkpointed evaluation, when available.",
+  "limits": [
+    "No installed new MV3 runtime acceptance",
+    "Human precision per new rule and independent 40-verdict learning sample absent",
+    "No fresh CPU vision install or long GPU/OOM acceptance"
+  ],
+  "log_hashes": {
+    "initial/dataset.log": "afd8a0ba10056878d9010b24f5c051c65797bf79fcc590dd3971b465c4da4302",
+    "initial/docker-build.log": "f821f5125aea1ddffd4fbb87dee0e4a78213fede29c5cbcb7f9d23211824d7cc",
+    "initial/docker-cli.log": "75ff013954c91a8a5228c7c907835e6d2f097daa8fdbcec477c949866f8e27a5",
+    "initial/docker-pip-check.log": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+    "initial/docker-pytest.log": "7e199a8610e5544daf84e770b1cb7af7aeafd6c43601183d232958acb7a88826",
+    "initial/evaluation.log": "443233ba1e3a41ca74dc74ec294922a45440f500457e9a11efcb107c221e94b8",
+    "initial/extension-manifest.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/extension.log": "8446b2cd3c6d38bcddbb968d9f41c8cfccd5954a6a9f76eca59322892ad883e5",
+    "initial/installed-http-smoke.log": "dc93fe59665b9a4a7132cd85a3de73b0072eaee83001218694b36a9e979d8fdd",
+    "initial/installed-pip-check.log": "672aec65a45bed50e70229c70934a7eebf0462595c459b83023027645d57cccf",
+    "initial/js-syntax-0.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-10.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-11.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-12.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-5.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-6.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-7.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-8.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/js-syntax-9.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/live-cvat.log": "cefa59ee1cb3f0d3d008aefc790297a89895236ebb96f568844284f6332829eb",
+    "initial/model-gdino-sam2.log": "3f691c3b5160856515c6f84d342c55053bdcc3f063de88c658c832474a663f8c",
+    "initial/model-hybrid.log": "379d20e901840d08c4fcfaeee5a5b88fde389009b5f5b30b727ddb1e057cf598",
+    "initial/model-maskrcnn.log": "527d5ac3e56524c480f4d115e21252f13004e93b34a5c6fc9ed13045231674d5",
+    "initial/package-build.log": "fd4a38a47f23586661012527967bca3f49e3ee19957b225209454103f73a4114",
+    "initial/package-install.log": "0af27871bb344140fe606196d39f2036009e04274ce9972155b21c6d3bda5da7",
+    "initial/package-venv.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial/pip-check.log": "672aec65a45bed50e70229c70934a7eebf0462595c459b83023027645d57cccf",
+    "initial/powershell-syntax.log": "5a9134d5f69c175f5f9b9e6636bd59c0f82c0f94440968f8b391b004df140325",
+    "initial/python.log": "3c63bb0b2df295fe30f2e4f928e693e7b1104ad195c245c57551afa5b176118b",
+    "initial/service-smoke.log": "2d26099ddc5fd61255a05c458b7d3f802b865969b79649eb3b55450c81f15249",
+    "initial/source-archive.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final/archive.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final/docker-build.log": "46c03faf8f21a1cb5696cef87dc2f16e86f9048f03055c60e586238954e816e9",
+    "final/docker-cli.log": "75ff013954c91a8a5228c7c907835e6d2f097daa8fdbcec477c949866f8e27a5",
+    "final/docker-pip-check.log": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+    "final/docker-pytest.log": "bb72f0df8b163fc22c0597c8b65fc00ce2870e56bc35e1e40a6d82089ad39f19",
+    "final/installed-http.log": "e916a3b69d0cd75e65858e3e3db06c9bbead06b042c6b1b8aece6864d3bb4cd8",
+    "final/installed-pip-check.log": "672aec65a45bed50e70229c70934a7eebf0462595c459b83023027645d57cccf",
+    "final/package-build.log": "c59ee981e5af2d60b00a7f73e00ad15188754e86bd1d231a83a651b3a2f1dcc3",
+    "final/package-install.log": "df749c637625d1b954bc514f8a9a43e4ff6eb3517117866b3d5e3f1db8c8d7c5",
+    "final/package-venv.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final/python.log": "e7a40a640984a824589cbb104f81892c6176a38b310ceab004deb33226784f6c"
+  }
+}

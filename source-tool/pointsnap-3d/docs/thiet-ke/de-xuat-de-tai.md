@@ -293,7 +293,7 @@ Lỗi tăng từ 0,32 lên 2,30 / 100 box). Yêu cầu bằng chứng nhân theo
 
 - **Báo cáo HTML / CSV** cho mỗi lần quét: ba mức Lỗi / Cảnh báo / Thông tin; mỗi dòng ghi số đo cụ thể (ví dụ *"Đáy box cách mặt đất 15 cm; cao hơn 26 cm so với các frame khác của track"*) kèm link **mở đúng box** trên CVAT.
 - **Gắn cờ** `pointsnap_error` lên box có Lỗi / Cảnh báo (ví dụ *"[Lỗi] Đáy box cách mặt đất 15 cm…"*); tự gỡ cờ khi box hết lỗi ở lần quét sau.
-- **Cổng kiểm soát:** ĐẠT / KHÔNG ĐẠT kèm lý do. Mặc định: 0 mục Lỗi, ≤ 10 Cảnh báo; chỉnh được theo dự án. CLI trả exit code 0 / 1. Từ review 01 ngày 11/10/2026, thiếu point cloud/pose cho luật đang bật hoặc có `floating.no_evidence` cũng KHÔNG ĐẠT; lỗi đọc frame trả mã 3. ĐẠT chỉ áp dụng cho các luật trong cấu hình, xem [CONVENTIONS mục 6](CONVENTIONS.md#6-gate-và-dữ-liệu-kiểm-tra-review-01-11102026).
+- **Cổng kiểm soát:** ĐẠT / KHÔNG ĐẠT kèm lý do. Mặc định: 0 mục Lỗi, ≤ 10 Cảnh báo; chỉnh được theo dự án. CLI trả exit code 0 / 1. Từ review 01 ngày 11/10/2026, thiếu point cloud/pose cho luật đang bật hoặc có `floating.no_evidence` cũng KHÔNG ĐẠT; lỗi đọc frame trả mã 3. ĐẠT chỉ áp dụng cho các luật trong cấu hình, xem [CONVENTIONS mục 6](../../CONVENTIONS.md#6-gate-và-dữ-liệu-kiểm-tra-review-01-11102026).
 - **Hiệu năng đo được:** quét job scene-0061 (39 frame, 3 333 box, có point cloud) ~3–4 giây trên laptop CPU.
 
 ### 4.3. 📏 Công cụ đánh giá

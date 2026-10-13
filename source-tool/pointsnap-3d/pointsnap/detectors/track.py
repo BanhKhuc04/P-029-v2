@@ -93,8 +93,7 @@ def _segments(track_boxes: Sequence[Cuboid]) -> list[list[Cuboid]]:
     return [s for s in segments if s]
 
 
-def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int,
-                  moving: bool = True) -> tuple[float, float] | None:
+def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int) -> tuple[float, float] | None:
     """Độ lệch (x, y) của box `order[i]` so với vị trí dự đoán từ các box lân cận trong `order`, không dùng chính nó.
 
     Box ở giữa: nội suy tuyến tính theo thời gian. Box ở đầu / cuối: ngoại suy từ hai box kế tiếp.
@@ -109,6 +108,9 @@ def _loo_residual(xy: np.ndarray, times: np.ndarray, order: list[int], i: int,
         return float(np.linalg.norm(xy[k] - (xy[a] + (xy[b] - xy[a]) * ratio))), 1.0
     if n < 3:
         return None
+    # The candidate may itself be a misplaced box: classify motion from its peers only.
+    peers = xy[[j for j in order if j != k]]
+    moving = bool(np.max(np.linalg.norm(peers - np.median(peers, axis=0), axis=1)) > STATIC_RADIUS_M)
     a, b = (order[1], order[2]) if i == 0 else (order[n - 2], order[n - 3])
     dt = times[a] - times[b]
     ratio = (times[k] - times[a]) / dt if dt != 0 else 1.0
@@ -133,8 +135,7 @@ def _segment_jumps(
 ) -> list[Finding]:
     n = len(segment)
     order = list(range(n))
-    moving = bool(np.max(np.linalg.norm(xy - np.median(xy, axis=0), axis=1)) > STATIC_RADIUS_M) if n else True
-    raw = [_loo_residual(xy, times, order, i, moving) for i in order]
+    raw = [_loo_residual(xy, times, order, i) for i in order]
     score = [_normalized(r) for r in raw]
     findings: list[Finding] = []
 
@@ -153,7 +154,7 @@ def _segment_jumps(
         for c in range(max(0, k - 1), min(n, end + 2)):
             rest = [i for i in order if i != c]
             window = [j for j, i in enumerate(rest) if k - 2 <= i <= end + 2]
-            remaining = max((_normalized(_loo_residual(xy, times, rest, j, moving)) for j in window), default=0.0)
+            remaining = max((_normalized(_loo_residual(xy, times, rest, j)) for j in window), default=0.0)
             speed = _speed(xy, times, rest) if len(rest) == 2 else 0.0
             candidate = (remaining, speed, -score[c], c)
             if best is None or candidate < best:

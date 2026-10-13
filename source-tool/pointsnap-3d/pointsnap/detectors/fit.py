@@ -97,15 +97,15 @@ def outside_findings(measures: Sequence[OutsideMeasure], cfg: FitConfig) -> list
     tra: gần như mọi báo nhầm thuộc vài track người đi bộ); keyframe bị co / dời lệch khác thường so với chính track
     mới là lỗi vẽ. Box lẻ hoặc track có ít hơn 2 box khác đo được thì so tỉ lệ tuyệt đối.
     """
-    by_track: dict[int, list[float]] = {}
+    by_track: dict[tuple[int, str], list[float]] = {}
     for m in measures:
         if m.box.track_id is not None:
-            by_track.setdefault(m.box.track_id, []).append(m.ratio)
+            by_track.setdefault((m.box.track_id, m.box.label), []).append(m.ratio)
     findings: list[Finding] = []
     for m in measures:
         if m.outside < cfg.outside_min_points:
             continue
-        others = list(by_track.get(m.box.track_id, [])) if m.box.track_id is not None else []
+        others = list(by_track.get((m.box.track_id, m.box.label), [])) if m.box.track_id is not None else []
         if others:
             others.remove(m.ratio)
         reference = float(np.median(others)) if len(others) >= 2 else 0.0
@@ -199,15 +199,15 @@ def loose_findings(measures: Sequence[LooseMeasure], cfg: FitConfig) -> list[Fin
     100 box, bắt box phóng x1,15 tăng 18% → 30%, x1,3 tăng 42% → 47%. Box lẻ hoặc track có ít hơn 2 frame khác đo được thì
     chỉ so ngưỡng tuyệt đối.
     """
-    by_track: dict[int, list[LooseMeasure]] = {}
+    by_track: dict[tuple[int, str], list[LooseMeasure]] = {}
     for m in measures:
         if m.box.track_id is not None:
-            by_track.setdefault(m.box.track_id, []).append(m)
+            by_track.setdefault((m.box.track_id, m.box.label), []).append(m)
     findings: list[Finding] = []
     for m in measures:
         if m.gap_m <= cfg.loose_warning_m:
             continue
-        others = [o.gap_m for o in by_track.get(m.box.track_id, []) if o.box.frame != m.box.frame]
+        others = [o.gap_m for o in by_track.get((m.box.track_id, m.box.label), []) if o.box.frame != m.box.frame]
         reference = float(np.median(others)) if len(others) >= 2 else None
         if reference is not None and m.gap_m - reference <= cfg.loose_rise_m:
             continue

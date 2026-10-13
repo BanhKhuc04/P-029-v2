@@ -8,14 +8,14 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.core.config import ConfigError
 from pointsnap.web.link import ExtensionLink
-from pointsnap.web.preview import PreviewError, finding_preview, load_reviews, save_review
+from pointsnap.web.preview import PreviewError, finding_camera, finding_preview, load_reviews, save_review
 from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner, ScanBusyError, RUN_ID_RE
 from pointsnap.web.storage import StorageError
@@ -333,6 +333,20 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except PreviewError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @application.get("/api/projects/{slug}/scans/{run_id}/findings/{index}/camera")
+    def get_finding_camera(slug: str, run_id: str, index: int, full: bool = False) -> Response:
+        """Ảnh camera (JPEG) thấy box của một mục rõ nhất, có vẽ khung 3D; `full=true` cho cả ảnh thay vì phần cắt."""
+        _validate_run_id(run_id)
+        try:
+            project = pm.get_project(slug)
+            jpeg, channel = finding_camera(runner.run_dir(slug, run_id), project, index, full=full)
+        except ProjectError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except PreviewError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return Response(content=jpeg, media_type="image/jpeg",
+                        headers={"X-Camera-Channel": channel, "Cache-Control": "private, max-age=300"})
 
     @application.put("/api/projects/{slug}/scans/{run_id}/reviews/{index}")
     def put_review(slug: str, run_id: str, index: int, req: ReviewRequest) -> dict[str, Any]:

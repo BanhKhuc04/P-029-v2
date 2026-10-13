@@ -731,3 +731,15 @@ def test_ids_with_trailing_newline_rejected():
     assert validate_slug("du-an") == "du-an"
     assert _RUN_ID_RE.fullmatch("20261011-101010-job2")
     assert not _RUN_ID_RE.fullmatch("20261011-101010-job2\n")
+
+
+def test_finding_to_dict_keeps_scalar_details_for_preview():
+    import numpy as np
+
+    from pointsnap.core.model import ErrorType, Finding, Severity
+    from pointsnap.web.runner import finding_to_dict
+
+    f = Finding(error_type=ErrorType.FLOATING, rule="floating", severity=Severity.WARNING, frame=1, label="car",
+                message="m", track_id=3, details={"ground_z": np.float64(-1.9), "pitch_deg": 2.5, "frames": [1, 2],
+                                                   "bad": float("nan"), "terrain_reference": False})
+    assert finding_to_dict(f)["details"] == {"ground_z": -1.9, "pitch_deg": 2.5, "terrain_reference": False}

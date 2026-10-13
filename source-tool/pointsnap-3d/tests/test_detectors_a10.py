@@ -1,5 +1,7 @@
 """A10: test có đáp án cho phần giảm báo nhầm trong `pointsnap.detectors`."""
 
+import dataclasses
+
 import numpy as np
 import pytest
 
@@ -52,8 +54,14 @@ def test_floating_scene_ignores_offset_shared_by_whole_track(config):
 
 def test_floating_scene_single_box_uses_absolute_distance(config):
     box = car(0, bottom=0.35, track_id=None)
-    findings = detect_floating_scene([box], FlatGround(), config.floating)
+    findings = detect_floating_scene([box], FlatGround(), dataclasses.replace(config.floating, single_box=True))
     assert [(f.rule, f.severity) for f in findings] == [("floating", Severity.ERROR)]
+
+
+def test_floating_single_box_check_is_off_by_default(config):
+    """Mặc định (13/10) không so độ cao tuyệt đối cho box lẻ / track ít box: người duyệt tự xem khi label."""
+    assert config.floating.single_box is False
+    assert detect_floating_scene([car(0, bottom=0.35, track_id=None)], FlatGround(), config.floating) == []
 
 
 def test_floating_scene_ignores_points_of_neighbouring_box(config):

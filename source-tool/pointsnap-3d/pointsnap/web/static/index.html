@@ -265,12 +265,22 @@
 
                 <div class="quick-preview">
                   <figure class="quick-preview-fig">
+                    <a id="preview-camera-link" class="preview-camera-link" target="_blank" rel="noopener">
+                      <img id="preview-camera" class="preview-camera" alt="Ảnh camera chụp box của mục đang chọn" hidden>
+                    </a>
+                    <figcaption id="preview-camera-caption">Ảnh camera</figcaption>
+                  </figure>
+                  <figure class="quick-preview-fig">
                     <canvas id="preview-canvas-top" class="preview-canvas" role="img" aria-label="Point cloud nhìn từ trên quanh box"></canvas>
-                    <figcaption>Nhìn từ trên</figcaption>
+                    <figcaption>Nhìn từ trên · mũi tên đỏ chỉ đầu box</figcaption>
                   </figure>
                   <figure class="quick-preview-fig">
                     <canvas id="preview-canvas-side" class="preview-canvas" role="img" aria-label="Point cloud nhìn ngang, mặt đất ở dưới"></canvas>
-                    <figcaption>Nhìn ngang</figcaption>
+                    <figcaption>Nhìn ngang · mũi tên đỏ chỉ đầu box, đường đứt là mặt đất đo được</figcaption>
+                  </figure>
+                  <figure class="quick-preview-fig">
+                    <canvas id="preview-canvas-front" class="preview-canvas" role="img" aria-label="Point cloud nhìn từ đầu box"></canvas>
+                    <figcaption>Nhìn từ đầu box</figcaption>
                   </figure>
                   <div id="preview-status" class="preview-status" aria-live="polite"></div>
                 </div>

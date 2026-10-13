@@ -134,3 +134,31 @@ def test_static_cluster_without_camera_confirmation_is_quiet():
 def test_static_labelled_car_is_quiet():
     scene = _parked_scene()
     assert _static_missing(scene, labels(scene), _FakeDetector(scene, 1, "car")) == []
+
+
+def _person_cloud(base_z: float, roof: bool):
+    """Mặt đất phẳng z = 0 có khoảng trống 6x6 m quanh (10, 0) (đất bị che); `roof`: tấm mái z = base_z trong khoảng
+    trống. Cụm cỡ người dày điểm đứng ở (10, 0), chân tại base_z."""
+    import numpy as np
+
+    rng = np.random.default_rng(3)
+    gx, gy = np.meshgrid(np.arange(-40, 40, 0.5), np.arange(-40, 40, 0.5))
+    ground = np.column_stack([gx.ravel(), gy.ravel(), rng.normal(0, 0.02, gx.size)])
+    hole = (np.abs(ground[:, 0] - 10) < 3) & (np.abs(ground[:, 1]) < 3)
+    parts = [ground[~hole]] if roof else [ground]
+    if roof:
+        rx, ry = np.meshgrid(np.arange(7.2, 12.8, 0.3), np.arange(-2.8, 2.8, 0.3))
+        parts.append(np.column_stack([rx.ravel(), ry.ravel(), np.full(rx.size, base_z)]))
+    parts.append(np.column_stack([rng.uniform(9.7, 10.3, 400), rng.uniform(-0.2, 0.2, 400),
+                                  rng.uniform(base_z + 0.05, base_z + 1.75, 400)]))
+    return np.vstack(parts)
+
+
+def test_person_sized_cluster_on_high_roof_is_not_an_object():
+    """Đất dưới mái bị che: mặt đất cục bộ là chính tấm mái nên cụm trên mái trông như đứng sát đất. So với mặt đất
+    chung của frame thì chân cụm cao 3 m: không phải vật cần gán (báo nhầm job 4 scene-0061, 13/10)."""
+    from pointsnap.detectors.missing import frame_clusters
+
+    cfg = load_config(None).missing
+    assert [c for c in frame_clusters(_person_cloud(0.0, roof=False), [], None, cfg, 0) if abs(c.center[0] - 10) < 1]
+    assert not [c for c in frame_clusters(_person_cloud(3.0, roof=True), [], None, cfg, 0) if abs(c.center[0] - 10) < 1]

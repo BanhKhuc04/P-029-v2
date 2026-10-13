@@ -79,6 +79,8 @@ class FloatingConfig:
     min_track_boxes: int = 2
     sweeps: int = 0
     """Số lượt quét LiDAR trung gian gộp thêm trước keyframe để đo mặt đất (C1, mặt đất v2); 0 = chỉ keyframe."""
+    single_box: bool = True
+    """So |d| tuyệt đối cho box lẻ / track có ít hơn `min_track_boxes` box khác đo được. Tắt thì chỉ so theo track."""
 
 
 @dataclass(frozen=True)
@@ -329,6 +331,15 @@ class CameraConfig:
 
 
 @dataclass(frozen=True)
+class EvidenceConfig:
+    """Box có quá ít điểm LiDAR thì người duyệt không kiểm được trên point cloud: hạ finding xuống mức Thông tin."""
+
+    min_points: int = 0
+    """Ít hơn chừng này điểm của vật trong box (frame của finding) thì không kết luận; 0 = tắt."""
+    rules: tuple[str, ...] = ("floating", "size.class_range")
+
+
+@dataclass(frozen=True)
 class MissingConfig:
     """Sót đối tượng bằng LiDAR (C7, `detectors.missing`; spec 4.2 NÊN gán vật rõ trong point cloud)."""
 
@@ -342,6 +353,9 @@ class MissingConfig:
     """Mật độ điểm / ô của cụm: nhiễu mưa, bụi ~1; mặt vật thật bị nhiều tia LiDAR quét chồng nên dày hơn."""
     max_bottom_m: float = 0.6
     """Chân cụm (p2 độ cao trên mặt đất) không cao hơn mức này: vật đứng trên đường, không phải tán cây / biển báo."""
+    max_elevation_m: float = 1.5
+    """Chân cụm cao hơn mặt đất chung của frame (mặt phẳng khớp trên điểm thấp) quá mức này thì bỏ: mái che, tầng nhà,
+    thùng xe trên cao. Mặt đất cục bộ (`max_bottom_m`) lấy điểm thấp nhất quanh cụm nên bị lừa khi đất bên dưới bị che."""
     max_persistence: float = 0.4
     """Tỉ lệ ô của cụm vẫn có điểm sau / trước 1 giây quá mức này thì coi là vật đứng yên (tường, cây, cột): bỏ."""
     first_gate_m: float = 7.0
@@ -436,6 +450,7 @@ class Config:
     learning: LearningConfig = dataclasses.field(default_factory=LearningConfig)
     critic: CriticConfig = dataclasses.field(default_factory=CriticConfig)
     missing: MissingConfig = dataclasses.field(default_factory=MissingConfig)
+    evidence: EvidenceConfig = dataclasses.field(default_factory=EvidenceConfig)
 
     def to_dict(self, redact: bool = True) -> dict[str, Any]:
         """Dạng dict thuần (list thay cho tuple) để in hoặc lưu kèm báo cáo. Mặc định ẩn token."""
@@ -666,6 +681,15 @@ def _parse_missing(r: _Reader) -> MissingConfig:
     return MissingConfig(**values)
 
 
+def _parse_evidence(r: _Reader) -> EvidenceConfig:
+    cfg = EvidenceConfig(
+        min_points=r.integer("min_points", 0) if "min_points" in r.keys() else EvidenceConfig.min_points,
+        rules=r.strings("rules") if "rules" in r.keys() else EvidenceConfig.rules,
+    )
+    r.finish()
+    return cfg
+
+
 def _parse_critic(r: _Reader) -> CriticConfig:
     model = r._take("model")
     if not isinstance(model, str):
@@ -788,6 +812,7 @@ def _parse_floating(r: _Reader) -> FloatingConfig:
         ring_outer_m=r.number("ring_outer_m", 0.0),
         min_ground_points=r.integer("min_ground_points", 1),
         **({"sweeps": r.integer("sweeps", 0)} if "sweeps" in r.keys() else {}),
+        **({"single_box": r.boolean("single_box")} if "single_box" in r.keys() else {}),
     )
     r.finish()
     _require_order("floating", cfg.warning_m, cfg.error_m, "warning_m", "error_m")
@@ -953,6 +978,7 @@ def parse_config(data: Mapping[str, Any], env: Mapping[str, str] | None = None) 
         learning=_parse_learning(r.section("learning")) if "learning" in r.keys() else LearningConfig(),
         critic=_parse_critic(r.section("critic")) if "critic" in r.keys() else CriticConfig(),
         missing=_parse_missing(r.section("missing")) if "missing" in r.keys() else MissingConfig(),
+        evidence=_parse_evidence(r.section("evidence")) if "evidence" in r.keys() else EvidenceConfig(),
     )
     r.finish()
     return cfg

@@ -6,6 +6,7 @@ lệch khỏi vật) và điều phối việc quét một job (việc A6). `che
 
 from __future__ import annotations
 
+import dataclasses
 from types import SimpleNamespace
 from typing import Callable, Iterable, Sequence
 
@@ -395,7 +396,45 @@ def scan_cuboids(
             findings.extend(detector(job, config, frames))
 
     filtered = [f for f in findings if is_rule_enabled(f.rule, config)]
+    filtered = apply_evidence_gate(filtered, job.cuboids, config, frames)
     return sorted(filtered, key=lambda f: f.sort_key())
+
+
+def apply_evidence_gate(
+    findings: list[Finding], cuboids: Iterable[Cuboid], config: Config, frames: FrameSource | None,
+) -> list[Finding]:
+    """Hạ Cảnh báo / Lỗi của các luật trong `config.evidence.rules` xuống Thông tin khi box (ở frame của finding) có ít hơn
+    `evidence.min_points` điểm của vật: người duyệt không kiểm được trên point cloud (chấm tay held-out 13/10)."""
+    gate = config.evidence
+    if gate.min_points <= 0 or frames is None:
+        return findings
+    targets = [i for i, f in enumerate(findings)
+               if f.rule in gate.rules and f.severity in (Severity.WARNING, Severity.ERROR)]
+    if not targets:
+        return findings
+    by_frame = group_by_frame(c for c in cuboids if c.visible)
+    counts: dict[tuple[int, int | None, str], int] = {}
+    for frame in sorted({findings[i].frame for i in targets}):
+        boxes = by_frame.get(frame, [])
+        if not boxes:
+            continue
+        items = box_point_sets(frames.frame_data(frame).points, boxes, margin=config.fit.outside_margin_m,
+                               clearance=config.fit.ground_clearance_m, margin_rel=config.fit.outside_margin_rel)
+        for item in items:
+            counts[(frame, item.box.track_id if item.box.track_id is not None else item.box.source_id,
+                    item.box.label)] = item.num_object_points
+    result = list(findings)
+    for i in targets:
+        f = findings[i]
+        n = counts.get((f.frame, f.track_id if f.track_id is not None else f.source_id, f.label))
+        if n is None or n >= gate.min_points:
+            continue
+        result[i] = dataclasses.replace(
+            f, severity=Severity.INFO,
+            message=f"Ít điểm LiDAR ({n} điểm, cần ≥ {gate.min_points}): chưa đủ bằng chứng để kết luận. {f.message}",
+            details={**(f.details or {}), "evidence_points": n, "evidence_severity": f.severity.value},
+        )
+    return result
 
 
 def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None) -> list[str]:

@@ -53,6 +53,7 @@ floating:                             # lơ lửng / lún đất (B3); kiểm ch
   ring_outer_m: 0.8                   # ... tới mép footprint + 0.8 m
   min_ground_points: 15               # ít hơn: ghi "thiếu bằng chứng" ở mức Thông tin
   sweeps: 4                           # mặt đất v2 (C1): gộp thêm N lượt quét LiDAR trước keyframe để đo mặt đất
+  single_box: false                   # không báo box lẻ / track ít box (so tuyệt đối): người duyệt tự xem khi label (13/10)
 
 size:
   class_range:                        # kiểu 1: bất thường so với class
@@ -227,10 +228,15 @@ camera:                               # đối chiếu ảnh camera (C3); cần 
     traffic_cone: [traffic_cone]      # chỉ gdino-sam2 nhận được cọc tiêu / rào chắn
     barrier: [barrier]
 
+evidence:                             # box quá ít điểm LiDAR: không kiểm được trên point cloud, hạ xuống Thông tin (13/10)
+  min_points: 20                      # chấm tay held-out 13/10: < 20 điểm thì 26/26 mục là "Không rõ", 0 mục "Đúng lỗi"
+  rules: [floating, size.class_range]
+
 missing:                              # sót đối tượng bằng LiDAR (C7); đo trên nuScenes: docs/ket-qua/ket-qua-sot-doi-tuong.md
   max_range_m: 40
   min_points: 15                      # cụm ít điểm hơn bỏ qua
   min_points_per_cell: 1.2            # mật độ điểm / ô: nhiễu mưa, bụi ~1 (mô phỏng mưa 10 000 điểm / frame không báo)
+  max_elevation_m: 1.5                # chân cụm cao hơn mặt đất chung của frame quá mức này (mái che, tầng nhà): bỏ (13/10)
   max_persistence: 0.4                # chỗ cụm đứng sau / trước 1 s còn > 40% ô có điểm: vật đứng yên (tường, cây), bỏ
   min_frames: 3                       # cụm nối được qua ≥ 3 keyframe
   min_motion_m: 3.0                   # dời ≥ 3 m theo một hướng đều

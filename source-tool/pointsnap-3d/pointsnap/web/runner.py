@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import math
 import re
 import threading
 import uuid
@@ -64,7 +65,23 @@ def finding_to_dict(
         "threshold": f.threshold,
         "confidence": f.details.get("confidence"),
         "cvat_link": link,
+        "details": _scalar_details(f.details),
     }
+
+
+def _scalar_details(details: Any) -> dict[str, Any]:
+    """Phần `details` ghi được vào JSON: chỉ số hữu hạn, chuỗi và bool (preview dùng độ cao / độ dốc mặt đất)."""
+    out: dict[str, Any] = {}
+    for key, value in (details or {}).items():
+        if isinstance(value, (bool, str)):
+            out[key] = value
+        elif isinstance(value, (int, float)) and math.isfinite(float(value)):
+            out[key] = float(value) if not isinstance(value, int) else int(value)
+        elif hasattr(value, "item") and getattr(value, "ndim", 1) == 0:  # số numpy
+            scalar = value.item()
+            if isinstance(scalar, (int, float)) and math.isfinite(float(scalar)):
+                out[key] = scalar
+    return out
 
 
 class ScanRunner:

@@ -1,0 +1,200 @@
+{
+  "model": "gpt-6.1-sol",
+  "source_base": "7ec580a",
+  "rows": [
+    {
+      "scene": "scene-0061",
+      "split": "tuning",
+      "before_counts": {},
+      "counts": {
+        "warning": 5
+      },
+      "findings": [
+        [
+          7,
+          42,
+          "traffic_cone",
+          "track.static_shift",
+          0.31487140232181415
+        ],
+        [
+          15,
+          17,
+          "traffic_cone",
+          "track.static_shift",
+          0.23558013498559788
+        ],
+        [
+          15,
+          107,
+          "traffic_cone",
+          "track.static_shift",
+          0.38078471607962755
+        ],
+        [
+          19,
+          116,
+          "traffic_cone",
+          "track.static_shift",
+          0.23584740829623307
+        ],
+        [
+          24,
+          183,
+          "traffic_cone",
+          "track.static_shift",
+          0.3223740063963851
+        ]
+      ]
+    },
+    {
+      "scene": "scene-0553",
+      "split": "tuning",
+      "before_counts": {},
+      "counts": {},
+      "findings": []
+    },
+    {
+      "scene": "scene-0757",
+      "split": "tuning",
+      "before_counts": {},
+      "counts": {},
+      "findings": []
+    },
+    {
+      "scene": "scene-0916",
+      "split": "tuning",
+      "before_counts": {},
+      "counts": {
+        "warning": 3
+      },
+      "findings": [
+        [
+          7,
+          720,
+          "car",
+          "track.static_shift",
+          0.35284699233514116
+        ],
+        [
+          24,
+          657,
+          "car",
+          "track.static_shift",
+          0.309187645289888
+        ],
+        [
+          25,
+          657,
+          "car",
+          "track.static_shift",
+          0.30918764528973286
+        ]
+      ]
+    },
+    {
+      "scene": "scene-1094",
+      "split": "tuning",
+      "before_counts": {},
+      "counts": {},
+      "findings": []
+    },
+    {
+      "scene": "scene-0103",
+      "split": "reviewed-heldout",
+      "before_counts": {},
+      "counts": {
+        "warning": 6
+      },
+      "findings": [
+        [
+          9,
+          332,
+          "pedestrian",
+          "track.static_shift",
+          0.30706513966946575
+        ],
+        [
+          10,
+          288,
+          "pedestrian",
+          "track.static_shift",
+          0.21949487465531506
+        ],
+        [
+          13,
+          231,
+          "car",
+          "track.static_shift",
+          0.33284380721292933
+        ],
+        [
+          38,
+          279,
+          "car",
+          "track.static_shift",
+          0.2603113520383107
+        ],
+        [
+          39,
+          279,
+          "car",
+          "track.static_shift",
+          0.2603113520381543
+        ],
+        [
+          39,
+          302,
+          "car",
+          "track.static_shift",
+          0.2311406498220351
+        ]
+      ]
+    },
+    {
+      "scene": "scene-0655",
+      "split": "reviewed-heldout",
+      "before_counts": {},
+      "counts": {
+        "warning": 2
+      },
+      "findings": [
+        [
+          28,
+          545,
+          "car",
+          "track.static_shift",
+          0.21959280498239137
+        ],
+        [
+          40,
+          520,
+          "construction_vehicle",
+          "track.static_shift",
+          0.24116799124283655
+        ]
+      ]
+    },
+    {
+      "scene": "scene-0796",
+      "split": "reviewed-heldout",
+      "before_counts": {},
+      "counts": {},
+      "findings": []
+    },
+    {
+      "scene": "scene-1077",
+      "split": "reviewed-heldout",
+      "before_counts": {},
+      "counts": {},
+      "findings": []
+    },
+    {
+      "scene": "scene-1100",
+      "split": "reviewed-heldout",
+      "before_counts": {},
+      "counts": {},
+      "findings": []
+    }
+  ]
+}

@@ -229,9 +229,9 @@ def check_box_points(job: JobData, config: Config, frames: FrameSource | None = 
 
 
 def check_static(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
-    """Box xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
+    """Box dịch / xoay của vật đứng yên trong hệ toàn cục (C3, `detectors.static`). Cần pose xe thu."""
     sensor_to_world, _ = _poses(job, frames)
-    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=False,
+    return detect_static_errors(job.cuboids, config.static, sensor_to_world, shift=config.rules.track_static_shift,
                                 rotate=config.rules.heading_static)
 
 
@@ -366,7 +366,7 @@ def scan_cuboids(
         if r.size_class_range or r.size_in_track:
             active_detectors.append(check_size)
         if (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
-                or r.track_occluded_long or r.track_id_swap or r.track_static_shift):
+                or r.track_occluded_long or r.track_id_swap):
             active_detectors.append(check_track)
         if r.heading_flip or r.heading_motion:
             active_detectors.append(check_heading)
@@ -375,7 +375,7 @@ def scan_cuboids(
         if (r.attr_missing or r.attr_invalid or r.attr_height or r.spec_inside or r.spec_rider_double
                 or r.attr_rider_state):
             active_detectors.append(check_attributes)
-        if r.heading_static:
+        if r.track_static_shift or r.heading_static:
             active_detectors.append(check_static)
         if r.cam_mismatch or r.cam_class or r.cam_missing or r.cam_sparse:
             active_detectors.append(check_camera)

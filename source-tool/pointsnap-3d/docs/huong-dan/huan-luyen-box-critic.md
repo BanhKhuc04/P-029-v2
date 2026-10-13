@@ -211,6 +211,22 @@ Hạ mức có thể làm gate đạt, nên kiểm verdict người duyệt trư
 - Script huấn luyện giữ tên scene khi tính reference track, bỏ shape ID `-1`. Ngưỡng được in với 6 chữ số có nghĩa
   cùng tỷ lệ báo trên validation đã đo; tỷ lệ mục tiêu không bảo đảm đạt trên validation nhỏ hoặc trên cảnh mới.
 
+### Camera sau review phần 12
+
+- Reference `cam.mismatch` chỉ dùng cùng kênh camera và các manual keyframe khác, một số đo mỗi frame. `cam.class`
+  cần số frame độc lập tối thiểu và một nhóm thay thế đủ phiếu; nhiều camera của cùng frame không được tính thành
+  nhiều frame. Camera tối, box nội suy và nhóm model không hỗ trợ không tạo bằng chứng sai class/mismatch.
+- Cache ảnh có schema mới; ảnh thay đổi, prompt, revision model, backend processor, phiên bản thư viện hoặc thuật toán
+  mask thay đổi sẽ đổi khóa. Cache cũ không được tái sử dụng. Cache hỏng được tính lại; ghi mới qua file tạm rồi thay
+  nguyên vẹn. Windows sharing/access denial có tối đa 4 lần thử trong khoảng 170 ms, sau đó báo lỗi và giữ file cũ.
+- DINO/SAM dùng revision đã pin và safetensors. Grounding DINO dùng processor slow được chọn rõ; SAM2 của Transformers
+  5.0 dùng processor fast. Không xem việc import thư viện thành công là trọng số đã sẵn sàng.
+- Hybrid mất phần DINO/SAM có thể tiếp tục COCO, đồng thời giảm nhóm hỗ trợ và ghi `camera.no_evidence` mức INFO.
+  Gate coi đây là kiểm tra một phần. Model/ảnh/cache không dùng được cũng ghi trạng thái này; kết quả LiDAR vẫn được
+  giữ. Khi bổ sung weights sau một fallback, khởi động lại tiến trình để tạo detector mới.
+- `camera.enabled: true` yêu cầu runtime và ảnh/pose; thiếu dữ liệu chặn gate. `auto` vẫn tắt camera trên CPU theo
+  cấu hình hiện có. Đánh giá model pretrained trên ảnh cố định và precision người duyệt vẫn là bước riêng.
+
 ## 8. Bài học đã rút ra
 
 **Học thuộc (10/10).** Model đầu tiên báo sai 0,8% box chuẩn trên cảnh đã học nhưng **30%** trên cảnh mới (AUC 0,97 → 0,88):

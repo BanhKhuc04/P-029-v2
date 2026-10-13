@@ -14,7 +14,7 @@ Ngày lập: 10/10/2026 (Asia/Saigon).
 
 ## Review tiếp tính năng mới trên main — 13/10/2026
 
-Đợt 01–08 đã merge qua PR #54; các tính năng mới ngoài phạm vi đó được chia trong [kế hoạch 09–16](review/2026-10-13/REVIEW-PLAN-09-16.md): 64 ca, inventory 131 file. **09–11 đã review/sửa và đẩy nhánh GitHub**. Phần 11 nhận ancestry 09–10, code `9d11071`: 713 Python + 37 Node PASS, 3 live-CVAT SKIP, 0 XFAIL. Xem [báo cáo 11](review/2026-10-13/11-report.md) / [bàn giao 11](review/2026-10-13/11-handoff.md). Tiếp theo phần 12; model quality, GPU/Colab và kiểm tay còn theo giới hạn từng báo cáo.
+Đợt 01–08 đã merge qua PR #54; các tính năng mới ngoài phạm vi đó được chia trong [kế hoạch 09–16](review/2026-10-13/REVIEW-PLAN-09-16.md): 64 ca, inventory 131 file. **09–12 đã review/sửa và đẩy nhánh GitHub**. Phần 12 nhận ancestry 09–11, code `b0cbba8`: 771 Python + 37 Node PASS, 3 live-CVAT SKIP, 0 XFAIL; thêm 58 ca hồi quy. Xem [báo cáo 12](review/2026-10-13/12-report.md) / [bàn giao 12](review/2026-10-13/12-handoff.md). TC-12-008 bị chặn vì thiếu pretrained weights; GPU và human precision chưa nghiệm thu. Tiếp theo phần 13.
 
 ## Bộ hướng dẫn chi tiết
 

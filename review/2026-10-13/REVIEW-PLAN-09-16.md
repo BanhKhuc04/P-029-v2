@@ -1,6 +1,6 @@
 # Kế hoạch review tiếp phần 09–16 — tính năng mới trên main
 
-Ngày đối chiếu: **13/10/2026, Asia/Saigon**. Cập nhật: **phần 09–11 đã review/sửa, kiểm và push GitHub**; xem [báo cáo 11](11-report.md) / [bàn giao 11](11-handoff.md). Phần 12–16 chưa thực hiện. Các ca và giới hạn bên dưới là kế hoạch gốc; kết quả hiện hành nằm trong báo cáo riêng.
+Ngày đối chiếu: **13/10/2026, Asia/Saigon**. Cập nhật: **phần 09–12 đã review/sửa, kiểm và push GitHub**; xem [báo cáo 12](12-report.md) / [bàn giao 12](12-handoff.md). TC-12-008 còn bị chặn do thiếu pretrained weights; GPU/human precision chưa nghiệm thu. Phần 13–16 chưa thực hiện. Các ca và giới hạn bên dưới là kế hoạch gốc; kết quả hiện hành nằm trong báo cáo riêng.
 
 ## 1. Chốt lại phạm vi
 

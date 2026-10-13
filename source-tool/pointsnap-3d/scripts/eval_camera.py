@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from pointsnap.adapters.nuscenes import NuScenesReader  # noqa: E402
 from pointsnap.core.config import load_config  # noqa: E402
 from pointsnap.core.model import add_track_markers, group_by_frame  # noqa: E402
-from pointsnap.detectors.camera import camera_findings, collect_observations  # noqa: E402
+from pointsnap.detectors.camera import camera_findings, collect_observations, mask_reference  # noqa: E402
 from pointsnap.eval.split import TEST_SCENES, TUNING_SCENES  # noqa: E402
 from pointsnap.vision.detector2d import Detector2D  # noqa: E402
 
@@ -46,7 +46,10 @@ class _Memo:
 
     def __init__(self, detector: Detector2D):
         self.detector, self.cache = detector, {}
-        self.supported_groups = detector.supported_groups
+
+    @property
+    def supported_groups(self):
+        return self.detector.supported_groups
 
     def detect(self, path):
         if path not in self.cache:
@@ -69,11 +72,8 @@ def _perturb(box, kind: str, rng: np.random.Generator):
 
 def _rises(obs_of_box, clean_by_track, frame, min_obs):
     """Độ tăng phần mặt nạ ngoài khung của các lần đo `obs_of_box` so với trung vị các frame khác của track."""
-    others = [o.mask_outside for o in clean_by_track if o.box.frame != frame]
-    if len(others) < min_obs:
-        return []
-    ref = float(np.median(others))
-    return [o.mask_outside - ref for o in obs_of_box if o.mask_outside is not None]
+    return [o.mask_outside-ref for o in obs_of_box if o.mask_outside is not None
+            and (ref := mask_reference(clean_by_track,o,min_obs)) is not None]
 
 
 def evaluate(reader, scenes, cfg, detector, seed=0):
@@ -89,19 +89,19 @@ def evaluate(reader, scenes, cfg, detector, seed=0):
         by_track = defaultdict(list)
         for o in obs:
             if o.mask_outside is not None and o.box.track_id is not None:
-                by_track[o.box.track_id].append(o)
-        targets = {(o.box.track_id, o.box.frame) for os_ in by_track.values() for o in os_
+                by_track[(o.box.track_id,o.box.label)].append(o)
+        targets = {(o.box.track_id, o.box.label, o.box.frame) for os_ in by_track.values() for o in os_
                    if len(_rises([o], os_, o.box.frame, cfg.min_track_observations))}
         in_scope += len(targets)
         frame_boxes = group_by_frame(boxes)
-        for track_id, frame in sorted(targets):
-            others_in_frame = [b for b in frame_boxes[frame] if b.track_id != track_id]
-            original = next(b for b in frame_boxes[frame] if b.track_id == track_id)
+        for track_id, label, frame in sorted(targets):
+            others_in_frame = [b for b in frame_boxes[frame] if (b.track_id,b.label) != (track_id,label)]
+            original = next(b for b in frame_boxes[frame] if (b.track_id,b.label) == (track_id,label))
             for kind in PERTURB:
                 moved = _perturb(original, kind, rng)
                 new_obs, _ = collect_observations([moved, *others_in_frame], frames, detector, cfg)
                 mine = [o for o in new_obs if o.box is moved]
-                rises = _rises(mine, by_track[track_id], frame, cfg.min_track_observations)
+                rises = _rises(mine, by_track[(track_id,label)], frame, cfg.min_track_observations)
                 samples[kind].append(max(rises) if rises else -1.0)
         print(f"{scene}: {len(boxes)} box nhìn thấy, {len(targets)} box trong phạm vi", flush=True)
     return visible_total, dict(samples), in_scope
@@ -113,7 +113,7 @@ def main() -> int:
             stream.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--model", choices=("maskrcnn", "gdino-sam2", "hybrid"), default="maskrcnn")
-    p.add_argument("--scenes", default="tuning", help="tuning | test")
+    p.add_argument("--scenes", choices=("tuning","test"), default="tuning", help="tuning | test")
     p.add_argument("--dataroot", default=os.environ.get("NUSCENES_ROOT"))
     p.add_argument("--config", type=Path, help="guideline YAML (mặc định: cấu hình mặc định)")
     p.add_argument("--min-scores", type=float, nargs="+", help="các giá trị camera.min_score cần thử")

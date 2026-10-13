@@ -30,6 +30,8 @@ def gate_verdict(
     reasons = list(coverage_gaps)
     if any(f.rule == "floating.no_evidence" for f in findings):
         reasons.append("Kiểm tra một phần: có box thiếu bằng chứng mặt đất (floating.no_evidence)")
+    if any(f.rule == "camera.no_evidence" for f in findings):
+        reasons.append("Kiểm tra một phần: thiếu bằng chứng camera (camera.no_evidence)")
     if num_errors > max_err:
         reasons.append(f"Số lỗi ({num_errors}) vượt quá ngưỡng cho phép ({max_err})")
     if num_warnings > max_warn:

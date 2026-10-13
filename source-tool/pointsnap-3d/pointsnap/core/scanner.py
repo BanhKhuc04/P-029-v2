@@ -253,14 +253,29 @@ def check_camera(job: JobData, config: Config, frames: FrameSource | None = None
     from pointsnap.detectors.camera import camera_findings, collect_observations
 
     r = config.rules
-    observations, missing = collect_observations(job.cuboids, frames, _detector(config.camera.effective_model()),
-                                                  config.camera)
-    findings = camera_findings(observations, config.camera, mismatch=r.cam_mismatch, wrong_class=r.cam_class)
-    if r.cam_sparse:
-        from pointsnap.detectors.camera import sparse_unconfirmed
+    effective = config.camera.effective_model()
+    try:
+        detector = _detector(effective)
+        observations, missing = collect_observations(job.cuboids, frames, detector, config.camera)
+        findings = camera_findings(observations,config.camera,mismatch=r.cam_mismatch,wrong_class=r.cam_class)
+        if r.cam_sparse:
+            from pointsnap.detectors.camera import sparse_unconfirmed
+            findings += sparse_unconfirmed(job.cuboids,frames,detector,config.camera)
+        findings += missing if r.cam_missing else []
+        reason = getattr(detector,"fallback_reason",None)
+        if config.camera.model == "hybrid" and effective != "hybrid":
+            reason = "hybrid chỉ chạy COCO vì thiếu dependency DINO/SAM"
+        if reason:
+            findings.append(_camera_no_evidence(job,reason))
+        return findings
+    except (OSError, ImportError, RuntimeError) as exc:
+        return [_camera_no_evidence(job,f"Model/ảnh camera chưa dùng được: {exc}")]
 
-        findings += sparse_unconfirmed(job.cuboids, frames, _detector(config.camera.effective_model()), config.camera)
-    return findings + (missing if r.cam_missing else [])
+
+def _camera_no_evidence(job, message: str) -> Finding:
+    return Finding(error_type=ErrorType.FIT,rule="camera.no_evidence",severity=Severity.INFO,
+                   frame=min((b.frame for b in job.cuboids),default=0),label="Camera",
+                   message="Kiểm tra camera một phần: "+message)
 
 
 def check_missing(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -269,9 +284,20 @@ def check_missing(job: JobData, config: Config, frames: FrameSource | None = Non
         return []
     from pointsnap.detectors.missing import detect_missing_objects
 
-    detector = (_detector(config.camera.effective_model())
-                if hasattr(frames, "camera_views") and config.camera.active() else None)
-    return detect_missing_objects(job.cuboids, frames, config.missing, detector, config.camera)[0]
+    use_camera = hasattr(frames,"camera_views") and config.camera.active()
+    try:
+        detector = _detector(config.camera.effective_model()) if use_camera else None
+        findings = detect_missing_objects(job.cuboids,frames,config.missing,detector,config.camera)[0]
+        reason = getattr(detector,"fallback_reason",None) if detector is not None else None
+        if reason:
+            findings.append(_camera_no_evidence(job,reason))
+        return findings
+    except (OSError,ImportError,RuntimeError) as exc:
+        if not use_camera:
+            raise
+        # ponytail: recompute LiDAR on camera failure; split detector stages if this recovery becomes costly.
+        findings = detect_missing_objects(job.cuboids,frames,config.missing,None,config.camera)[0]
+        return findings+[_camera_no_evidence(job,f"Camera chưa xác nhận vật đứng yên: {exc}")]
 
 
 def check_critic(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
@@ -449,6 +475,18 @@ def scan_coverage_gaps(job: JobData, config: Config, frames: FrameSource | None)
     gaps: list[str] = []
     enabled_cloud = [name for name in cloud_rules if getattr(config.rules, name)
                      and (name != "critic_box" or config.critic.model)]
+    camera_rules = any(getattr(config.rules,name) for name in ("cam_mismatch","cam_class","cam_missing","cam_sparse"))
+    if config.camera.enabled == "true" and camera_rules:
+        if not config.camera.active():
+            gaps.append("Kiểm tra một phần: thiếu runtime model camera đã bật")
+        if frames is None or not hasattr(frames,"camera_views"):
+            gaps.append("Kiểm tra một phần: thiếu ảnh/calibration camera đã bật")
+        else:
+            visible_frames = sorted({c.frame for c in job.cuboids if c.visible and c.keyframe})
+            missing_views = [f for f in visible_frames if not frames.camera_views(f)]
+            missing_pose = [f for f in visible_frames if frames.frame_data(f,with_points=False).sensor_to_world is None]
+            if missing_views or missing_pose:
+                gaps.append(f"Kiểm tra một phần: thiếu ảnh/pose camera ở {len(set(missing_views+missing_pose))} frame")
     if config.rules.critic_box and config.critic.model and any(c.visible and c.keyframe for c in job.cuboids):
         from pointsnap.critic import available
         if not available():

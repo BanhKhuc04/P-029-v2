@@ -1165,7 +1165,9 @@
       data.color = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warn' : 'primary';
       state.previewData = data;
       drawPreviewViews(data);
-      status.textContent = data.exact_frame
+      status.textContent = data.synthetic_box
+        ? `Khung tham khảo của cụm chưa có nhãn · ${data.points.length} điểm · cách LiDAR ${data.distance_m} m · frame ${data.frame}`
+        : data.exact_frame
         ? `${data.points.length} điểm quanh box · cách LiDAR ${data.distance_m} m · frame ${data.frame}`
         : `Box gần nhất của track ở frame ${data.frame} · ${data.points.length} điểm · cách LiDAR ${data.distance_m} m`;
       const nextF = getFilteredFindings()[state.selectedFindingIndex + 1];

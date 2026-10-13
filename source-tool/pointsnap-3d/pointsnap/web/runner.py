@@ -70,7 +70,23 @@ def finding_to_dict(
 
 
 def _scalar_details(details: Any) -> dict[str, Any]:
-    """Phần `details` ghi được vào JSON: chỉ số hữu hạn, chuỗi và bool (preview dùng độ cao / độ dốc mặt đất)."""
+    """Giá trị scalar hữu hạn và các list hình học phục vụ preview; không serialize đối tượng tùy ý."""
+    geometry_keys = {"frames", "centers", "centers_3d", "size_m", "yaw_rad", "reference_frames"}
+    def numeric_list(value, depth=0):
+        if depth > 2 or not isinstance(value, (list, tuple)) or len(value) > 10000:
+            return None
+        result = []
+        for item in value:
+            if isinstance(item, (list, tuple)):
+                item = numeric_list(item, depth + 1)
+                if item is None:
+                    return None
+            elif isinstance(item, (int, float)) and not isinstance(item, bool) and math.isfinite(float(item)):
+                item = float(item) if not isinstance(item, int) else int(item)
+            else:
+                return None
+            result.append(item)
+        return result
     out: dict[str, Any] = {}
     for key, value in (details or {}).items():
         if isinstance(value, (bool, str)):
@@ -81,6 +97,8 @@ def _scalar_details(details: Any) -> dict[str, Any]:
             scalar = value.item()
             if isinstance(scalar, (int, float)) and math.isfinite(float(scalar)):
                 out[key] = scalar
+        elif key in geometry_keys and (clean := numeric_list(value)) is not None:
+            out[key] = clean
     return out
 
 

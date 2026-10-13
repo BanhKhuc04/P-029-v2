@@ -11,3 +11,5 @@ Giữ `centers` XY để không đổi hợp đồng matcher/evaluation cũ. Ch�
 Lệnh từ tool root với `PYTHONPATH` là tool root: `python -m pytest -q tests/test_missing_preview_handoff.py tests/test_web_a14.py tests/test_missing.py tests/test_queue_cvat_scope.py`; từ extension: `node --test tests/core.test.js tests/review05.test.js tests/security06.test.js`.
 
 PR độc lập vào main. Khi tích hợp cùng review13, giữ cả chuyển động/đơn vị/occlusion và các trường preview này trong details.
+
+Kiểm thêm dữ liệu thật: xóa một track trong bộ nhớ của scene-0061, chạy missing trên đúng hệ tọa độ của bản xuất CVAT (manifest quay vào ego), serialize rồi dựng preview/camera: **88 điểm quanh cụm**, CAM_FRONT JPEG 23.848 byte, frame 7, không có ID box. [Summary/script](evidence/handoff-08/real-preview.json), ảnh ở out ignored. Đây là một ví dụ được tìm lại để kiểm renderer, không đo precision và không ghi CVAT.

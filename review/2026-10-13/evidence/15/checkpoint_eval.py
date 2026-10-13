@@ -40,7 +40,9 @@ for scene in selected:
         # Preserve an interrupted attempt and choose a fresh canonical output directory.
         n=1
         while (out/(scene+'-interrupted-'+str(n))).exists():n+=1
-        sd.rename(out/(scene+'-interrupted-'+str(n)))
+        archived=out/(scene+'-interrupted-'+str(n))
+        assert sd.resolve().parent==out and archived.resolve().parent==out
+        sd.rename(archived)
     run_evaluation(reader,[scene],cfg,sd,rounds=a.rounds,seed=0,catalog='all')
     marker.write_text(json.dumps({'package_tree':tree,'rounds':a.rounds,'dataset':str(a.dataset.resolve())}),encoding='utf-8')
     print(scene+': checkpoint complete',flush=True)

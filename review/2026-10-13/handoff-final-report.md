@@ -14,7 +14,7 @@ Model thực hiện review/sửa: **gpt-6.1-sol**. Base main `7ec580a`; code can
 | [#66](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/66) | No-ID missing preview/camera | Geometry list/centers3D theo frame; khung tham khảo thật 88 điểm + JPEG |
 | [#67](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/67) | Gộp missing review13, giữ elevation filter, thêm occlusion | 33 tests; 98 deletion targets, current/main cùng 32/47 và 33/51; clean0. Protocol khác mốc handoff nên không gán tăng chất lượng |
 | [#68](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/68) | Ảnh camera extension + sửa generic filter/scope/race | 47 Node PASS; bản mới cần reload/kiểm MV3 thật |
-| `codex/handoff-final-review` | Phần14–16, JSON NumPy 500, checks model, runner archive-root, link docs | [14](14-report.md), [15](15-report.md), [16](16-report.md); PR cuối đang hoàn thiện evidence eval |
+| [#69](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/69) | Phần14–16, JSON NumPy 500, checks model, runner archive-root, link docs | [14](14-report.md), [15](15-report.md), [16](16-report.md); draft đang hoàn thiện evidence eval |
 
 PR #61–68 hiện có đủ 5 checks SUCCESS mỗi PR (Ubuntu Python3.10/3.11, Windows3.12, artifact, extension). Đây là CI từng PR, không thay test hợp nhất hay dữ liệu/model acceptance. Main tại lần fetch cuối vẫn `7ec580a`.
 

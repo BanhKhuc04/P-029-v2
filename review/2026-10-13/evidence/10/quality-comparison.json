@@ -1,0 +1,1046 @@
+{
+  "baseline_commit": "cbeb41c",
+  "tested_code_commit": "c5ac54d26542513ac7c292b89b6d0018f5ff521a",
+  "before_source_hashes": {
+    "detectors/attributes.py": "f2b8cbc236525420d3b6af506928503233a2621cf23721d0c33b27fa5eff953a",
+    "detectors/track.py": "4cbe30eafe3d04447b4476509b696bf261d0e88a0694906b7ed5bd64913f188d",
+    "detectors/size.py": "9375b6c993c3f1b07530ad3e517bc065dab907bdb1fbb3a5fd756a93475d8d6c",
+    "core/scanner.py": "745b2e74cbb1e05dceeb71b53836a5fbbea5d810b5884b89434b2e2929ad3740",
+    "core/config.py": "a06e0edea17a0e6ee3078e18c8dda6d513d51f382685c4565400482e4e9f26ce"
+  },
+  "after_source_hashes": {
+    "detectors/attributes.py": "745c2d8c9640e79399ed219ba89c6907bef4398b405588e665841ef9bc1af19e",
+    "detectors/track.py": "a24f18b4c17f41604204a202571be076ad6c4162855a1e064ea1560effc57bf9",
+    "detectors/size.py": "f234542e19dcbefd0625425a0abc0ca1334513d169c03ed2f785cb2f0b931358",
+    "core/scanner.py": "ea4d39a82f2ba8aa6e7e2514201cd85bf000e9d640dba1ae1e65852a7dfa599f",
+    "core/config.py": "51cf75bd9cf7d1e69253873bcd60ea95ab4063ccefa1f4e3c83dc65501a49427"
+  },
+  "config_sha256": "e611a7b2c8b0cf15fa92c96089f61a76d3d59b681f5057c0c5cf59084c30c014",
+  "config": {
+    "camera": {
+      "class_min_observations": 3,
+      "class_min_score": 0.7,
+      "class_vote": 0.6,
+      "enabled": "auto",
+      "groups": {
+        "animal": [
+          "Animal"
+        ],
+        "barrier": [
+          "barrier"
+        ],
+        "person": [
+          "pedestrian",
+          "Pedestrian"
+        ],
+        "traffic_cone": [
+          "traffic_cone"
+        ],
+        "two_wheeler": [
+          "motorcycle",
+          "bicycle",
+          "Two-wheels"
+        ],
+        "vehicle": [
+          "car",
+          "truck",
+          "bus",
+          "trailer",
+          "construction_vehicle",
+          "Vehicle"
+        ]
+      },
+      "mask_rise_warning": 0.2,
+      "max_depth_m": 50.0,
+      "max_occlusion": 0.3,
+      "min_box_px": 25.0,
+      "min_brightness": 90.0,
+      "min_inside": 0.85,
+      "min_mask_iou": 0.05,
+      "min_score": 0.5,
+      "min_track_observations": 2,
+      "mismatch_severity": "info",
+      "missing_min_points": 15,
+      "missing_min_px": 40.0,
+      "missing_min_score": 0.85,
+      "model": "maskrcnn",
+      "sparse_max_points": 5
+    },
+    "critic": {
+      "error_logit_rise": 6.0,
+      "error_probability": 0.9,
+      "min_logit_rise": 4.4,
+      "min_points": 20,
+      "min_probability": 0.7,
+      "model": ""
+    },
+    "cvat": {
+      "flag_attribute": "pointsnap_error",
+      "token": null,
+      "url": "http://localhost:8080"
+    },
+    "fit": {
+      "empty_max_points": 0,
+      "ground_clearance_m": 0.25,
+      "loose_error_m": 1.0,
+      "loose_max_range_m": 30.0,
+      "loose_min_points": 40,
+      "loose_rise_m": 0.3,
+      "loose_warning_m": 0.4,
+      "outside_error_ratio": 0.7,
+      "outside_margin_m": 0.5,
+      "outside_margin_rel": 0.25,
+      "outside_min_points": 30,
+      "outside_warning_ratio": 0.5,
+      "overlap_allowed_pairs": [
+        [
+          "Pedestrian",
+          "Pedestrian"
+        ],
+        [
+          "Pedestrian",
+          "Two-wheels"
+        ],
+        [
+          "Pedestrian",
+          "Vehicle"
+        ],
+        [
+          "Two-wheels",
+          "Two-wheels"
+        ],
+        [
+          "Animal",
+          "Animal"
+        ],
+        [
+          "Vehicle/truck",
+          "Vehicle/Trailer"
+        ],
+        [
+          "Two-wheels",
+          "Vehicle/Tricycle"
+        ]
+      ],
+      "overlap_classes": [
+        "Vehicle",
+        "Two-wheels",
+        "Pedestrian",
+        "Animal"
+      ],
+      "overlap_error": 0.5,
+      "overlap_warning": 0.2,
+      "sparse_warning_points": 0
+    },
+    "floating": {
+      "classes": [
+        "Vehicle",
+        "Two-wheels",
+        "Pedestrian",
+        "Animal"
+      ],
+      "error_m": 0.22,
+      "error_min_abs_m": 0.15,
+      "min_ground_points": 15,
+      "min_track_boxes": 2,
+      "ring_inner_m": 0.1,
+      "ring_outer_m": 0.8,
+      "single_error_m": 0.3,
+      "single_warning_m": 0.15,
+      "sweeps": 4,
+      "warning_m": 0.15
+    },
+    "gate": {
+      "max_errors": 0,
+      "max_warnings": 10
+    },
+    "heading": {
+      "groups": {
+        "pedestrian": {
+          "classes": [
+            "Pedestrian",
+            "Animal"
+          ],
+          "flip_error_deg": 170.0,
+          "flip_warning_deg": 120.0,
+          "min_speed_mps": 1.0,
+          "motion_error_deg": 150.0,
+          "motion_warning_deg": 90.0,
+          "reverse_max_mps": 0.0,
+          "yaw_rate_max_dps": 180.0
+        },
+        "two_wheeler": {
+          "classes": [
+            "Two-wheels"
+          ],
+          "flip_error_deg": 75.0,
+          "flip_warning_deg": 45.0,
+          "min_speed_mps": 1.5,
+          "motion_error_deg": 135.0,
+          "motion_warning_deg": 60.0,
+          "reverse_max_mps": 0.0,
+          "yaw_rate_max_dps": 90.0
+        },
+        "vehicle": {
+          "classes": [
+            "Vehicle"
+          ],
+          "flip_error_deg": 75.0,
+          "flip_warning_deg": 45.0,
+          "min_speed_mps": 2.0,
+          "motion_error_deg": 135.0,
+          "motion_warning_deg": 60.0,
+          "reverse_max_mps": 3.0,
+          "yaw_rate_max_dps": 60.0
+        }
+      },
+      "min_motion_m": 1.0,
+      "points": {
+        "classes": [
+          "Vehicle"
+        ],
+        "error_deg": 30.0,
+        "max_range_m": 40.0,
+        "min_aspect": 1.6,
+        "min_points": 60,
+        "warning_deg": 12.0
+      }
+    },
+    "learning": {
+      "adjust_severity": false,
+      "downgrade_below": 0.15,
+      "min_rule_reviews": 20
+    },
+    "missing": {
+      "box_margin_m": 0.3,
+      "cell_m": 0.25,
+      "first_gate_m": 7.0,
+      "keyframe_interval_s": 0.5,
+      "link_gate_m": 2.0,
+      "max_bottom_m": 0.6,
+      "max_persistence": 0.4,
+      "max_range_m": 40.0,
+      "min_frames": 3,
+      "min_motion_m": 3.0,
+      "min_motion_person_m": 1.5,
+      "min_points": 15,
+      "min_points_per_cell": 1.2,
+      "min_range_m": 3.0,
+      "static_gate_m": 1.0,
+      "static_labelled_iou": 0.5,
+      "static_min_iou": 0.5,
+      "static_min_persistence": 0.2,
+      "static_min_score": 0.7,
+      "static_min_views": 2
+    },
+    "rules": {
+      "attr_height": true,
+      "attr_invalid": true,
+      "attr_missing": true,
+      "attr_rider_state": true,
+      "cam_class": false,
+      "cam_mismatch": false,
+      "cam_missing": false,
+      "cam_sparse": false,
+      "critic_box": false,
+      "fit_empty": false,
+      "fit_loose": false,
+      "fit_outside": false,
+      "fit_overlap": false,
+      "floating": false,
+      "heading_flip": false,
+      "heading_motion": false,
+      "heading_points": false,
+      "heading_static": false,
+      "lidar_missing": false,
+      "size_class_range": true,
+      "size_in_track": true,
+      "spec_inside": true,
+      "spec_rider_double": true,
+      "track_id_swap": true,
+      "track_jump": false,
+      "track_long_interpolation": false,
+      "track_occluded_long": false,
+      "track_reuse_id": false,
+      "track_split_id": false,
+      "track_static_shift": false
+    },
+    "size": {
+      "cargo_classes": [
+        "Two-wheels",
+        "Vehicle/Tricycle"
+      ],
+      "class_range": {
+        "error_margin": 0.25,
+        "min_instances": 20,
+        "percentile_high": 99.0,
+        "percentile_low": 1.0,
+        "stats": {
+          "barrier": {
+            "height": [
+              0.9,
+              1.35
+            ],
+            "length": [
+              0.4,
+              0.76
+            ],
+            "width": [
+              1.73,
+              3.36
+            ]
+          },
+          "car": {
+            "height": [
+              1.39,
+              2.41
+            ],
+            "length": [
+              3.9,
+              5.79
+            ],
+            "width": [
+              1.58,
+              2.41
+            ]
+          },
+          "pedestrian": {
+            "height": [
+              1.28,
+              2.0
+            ],
+            "length": [
+              0.48,
+              1.1
+            ],
+            "width": [
+              0.5,
+              0.98
+            ]
+          },
+          "traffic_cone": {
+            "height": [
+              0.55,
+              1.33
+            ],
+            "length": [
+              0.35,
+              0.69
+            ],
+            "width": [
+              0.36,
+              0.96
+            ]
+          }
+        },
+        "warning_margin": 0.1
+      },
+      "in_track": {
+        "error_abs_m": 0.3,
+        "error_rel": 0.15,
+        "excluded_classes": [
+          "Pedestrian",
+          "Animal"
+        ],
+        "min_keyframes": 3,
+        "suspect_id_rel": 0.3,
+        "warning_abs_m": 0.1,
+        "warning_rel": 0.05
+      },
+      "key_attributes": {
+        "Animal": "species",
+        "Obstacle": "type",
+        "Pedestrian": "age_group",
+        "Two-wheels": "rider_state",
+        "Vehicle": "subtype"
+      },
+      "manual_ranges": {
+        "Animal/buffalo": {
+          "height": [
+            1.1,
+            1.8
+          ],
+          "length": [
+            1.8,
+            3.2
+          ],
+          "width": [
+            0.6,
+            1.2
+          ]
+        },
+        "Animal/cat": {
+          "height": [
+            0.2,
+            0.5
+          ],
+          "length": [
+            0.3,
+            0.7
+          ],
+          "width": [
+            0.1,
+            0.3
+          ]
+        },
+        "Animal/cow": {
+          "height": [
+            1.1,
+            1.8
+          ],
+          "length": [
+            1.6,
+            3.0
+          ],
+          "width": [
+            0.5,
+            1.0
+          ]
+        },
+        "Animal/dog": {
+          "height": [
+            0.3,
+            0.9
+          ],
+          "length": [
+            0.4,
+            1.2
+          ],
+          "width": [
+            0.15,
+            0.5
+          ]
+        },
+        "Animal/other": {
+          "height": [
+            0.2,
+            2.0
+          ],
+          "length": [
+            0.2,
+            3.2
+          ],
+          "width": [
+            0.1,
+            1.2
+          ]
+        },
+        "Obstacle/traffic barrier": {
+          "height": [
+            0.9,
+            1.35
+          ],
+          "length": [
+            0.4,
+            0.76
+          ],
+          "width": [
+            1.73,
+            3.36
+          ]
+        },
+        "Obstacle/traffic cone": {
+          "height": [
+            0.55,
+            1.33
+          ],
+          "length": [
+            0.35,
+            0.69
+          ],
+          "width": [
+            0.36,
+            0.96
+          ]
+        },
+        "Pedestrian/adult": {
+          "height": [
+            1.0,
+            2.0
+          ],
+          "length": [
+            0.48,
+            1.16
+          ],
+          "width": [
+            0.5,
+            0.98
+          ]
+        },
+        "Pedestrian/child": {
+          "height": [
+            0.7,
+            1.5
+          ],
+          "length": [
+            0.3,
+            0.9
+          ],
+          "width": [
+            0.3,
+            0.8
+          ]
+        },
+        "Two-wheels/with_rider": {
+          "height": [
+            1.3,
+            2.0
+          ],
+          "length": [
+            1.5,
+            2.6
+          ],
+          "width": [
+            0.5,
+            1.2
+          ]
+        },
+        "Two-wheels/without_rider": {
+          "height": [
+            0.8,
+            1.8
+          ],
+          "length": [
+            1.2,
+            2.6
+          ],
+          "width": [
+            0.4,
+            1.2
+          ]
+        },
+        "Vehicle/Stroller": {
+          "height": [
+            0.8,
+            1.3
+          ],
+          "length": [
+            0.6,
+            1.2
+          ],
+          "width": [
+            0.4,
+            0.8
+          ]
+        },
+        "Vehicle/Trailer": {
+          "height": [
+            1.0,
+            4.5
+          ],
+          "length": [
+            2.0,
+            18.0
+          ],
+          "width": [
+            1.5,
+            3.2
+          ]
+        },
+        "Vehicle/Tricycle": {
+          "height": [
+            1.0,
+            2.2
+          ],
+          "length": [
+            2.0,
+            3.5
+          ],
+          "width": [
+            0.9,
+            1.6
+          ]
+        },
+        "Vehicle/Wheelchair": {
+          "height": [
+            0.8,
+            1.4
+          ],
+          "length": [
+            0.8,
+            1.3
+          ],
+          "width": [
+            0.55,
+            0.8
+          ]
+        },
+        "Vehicle/bus": {
+          "height": [
+            2.4,
+            4.5
+          ],
+          "length": [
+            6.0,
+            18.5
+          ],
+          "width": [
+            2.2,
+            3.2
+          ]
+        },
+        "Vehicle/car": {
+          "height": [
+            1.39,
+            2.41
+          ],
+          "length": [
+            3.9,
+            5.79
+          ],
+          "width": [
+            1.58,
+            2.41
+          ]
+        },
+        "Vehicle/contruction": {
+          "height": [
+            1.8,
+            5.0
+          ],
+          "length": [
+            2.5,
+            12.0
+          ],
+          "width": [
+            1.5,
+            3.5
+          ]
+        },
+        "Vehicle/other": {
+          "height": [
+            0.8,
+            5.0
+          ],
+          "length": [
+            1.0,
+            20.0
+          ],
+          "width": [
+            0.5,
+            3.5
+          ]
+        },
+        "Vehicle/pickup": {
+          "height": [
+            1.7,
+            2.0
+          ],
+          "length": [
+            4.8,
+            5.6
+          ],
+          "width": [
+            1.75,
+            2.0
+          ]
+        },
+        "Vehicle/truck": {
+          "height": [
+            1.9,
+            4.3
+          ],
+          "length": [
+            4.5,
+            12.5
+          ],
+          "width": [
+            1.8,
+            3.2
+          ]
+        },
+        "Vehicle/van": {
+          "height": [
+            1.8,
+            2.6
+          ],
+          "length": [
+            4.0,
+            5.6
+          ],
+          "width": [
+            1.7,
+            2.1
+          ]
+        },
+        "bicycle": {
+          "height": [
+            0.8,
+            2.0
+          ],
+          "length": [
+            1.2,
+            2.1
+          ],
+          "width": [
+            0.4,
+            0.95
+          ]
+        },
+        "bus": {
+          "height": [
+            2.4,
+            4.5
+          ],
+          "length": [
+            6.0,
+            18.5
+          ],
+          "width": [
+            2.2,
+            3.2
+          ]
+        },
+        "construction_vehicle": {
+          "height": [
+            1.8,
+            5.0
+          ],
+          "length": [
+            2.5,
+            12.0
+          ],
+          "width": [
+            1.5,
+            3.5
+          ]
+        },
+        "motorcycle": {
+          "height": [
+            1.0,
+            2.0
+          ],
+          "length": [
+            1.5,
+            2.6
+          ],
+          "width": [
+            0.55,
+            1.2
+          ]
+        },
+        "trailer": {
+          "height": [
+            1.0,
+            4.5
+          ],
+          "length": [
+            2.0,
+            18.0
+          ],
+          "width": [
+            1.5,
+            3.2
+          ]
+        },
+        "truck": {
+          "height": [
+            1.9,
+            4.3
+          ],
+          "length": [
+            4.5,
+            12.5
+          ],
+          "width": [
+            1.8,
+            3.2
+          ]
+        }
+      }
+    },
+    "spec": {
+      "allowed_values": {
+        "age_group": [
+          "adult",
+          "child"
+        ],
+        "pose": [
+          "standing",
+          "sitting",
+          "bending"
+        ],
+        "rider_state": [
+          "with_rider",
+          "without_rider"
+        ],
+        "species": [
+          "dog",
+          "cat",
+          "cow",
+          "buffalo",
+          "other"
+        ],
+        "subtype": [
+          "car",
+          "van",
+          "truck",
+          "contruction",
+          "bus",
+          "pickup",
+          "Trailer",
+          "Tricycle",
+          "Stroller",
+          "Wheelchair",
+          "other"
+        ],
+        "type": [
+          "brick",
+          "traffic barrier",
+          "traffic cone",
+          "sack",
+          "trash_bag",
+          "container",
+          "metal_sheet",
+          "wood",
+          "charging point",
+          "other"
+        ]
+      },
+      "attribute_height": {
+        "Pedestrian/bending": [
+          0.8,
+          1.6
+        ],
+        "Pedestrian/child": [
+          0.6,
+          1.6
+        ],
+        "Pedestrian/sitting": [
+          0.8,
+          1.6
+        ],
+        "Pedestrian/standing/adult": [
+          1.45,
+          2.2
+        ],
+        "Two-wheels/with_rider": [
+          1.45,
+          2.2
+        ],
+        "Two-wheels/without_rider": [
+          0.6,
+          1.6
+        ]
+      },
+      "inside_forbidden": [
+        [
+          "Pedestrian",
+          "Vehicle"
+        ]
+      ],
+      "inside_min_lift_m": 0.6,
+      "required_attributes": {
+        "Animal": [
+          "species"
+        ],
+        "Obstacle": [
+          "type"
+        ],
+        "Pedestrian": [
+          "age_group",
+          "pose"
+        ],
+        "Two-wheels": [
+          "rider_state"
+        ],
+        "Vehicle": [
+          "subtype"
+        ]
+      },
+      "rider_double": [
+        [
+          "Two-wheels/with_rider",
+          "Pedestrian"
+        ]
+      ],
+      "rider_max_speed_mps": 2.5,
+      "rider_state": {
+        "attribute": "rider_state",
+        "class": "Two-wheels",
+        "person": "Pedestrian",
+        "with": "with_rider",
+        "without": "without_rider"
+      }
+    },
+    "static": {
+      "max_spread_m": 0.1,
+      "min_keyframes": 4,
+      "shift_error_m": 0.5,
+      "shift_warning_m": 0.2,
+      "yaw_error_deg": 10.0,
+      "yaw_excluded_classes": [
+        "Pedestrian",
+        "Animal",
+        "Obstacle/traffic cone",
+        "Obstacle/sack",
+        "Obstacle/trash_bag",
+        "Obstacle/brick"
+      ],
+      "yaw_warning_deg": 4.0
+    },
+    "track": {
+      "groups": {
+        "pedestrian": {
+          "classes": [
+            "Pedestrian",
+            "Animal"
+          ],
+          "jump_error_m": 1.0,
+          "jump_warning_m": 0.5,
+          "split_max_dist_m": 1.0,
+          "v_max_mps": 3.0
+        },
+        "static": {
+          "classes": [
+            "Obstacle"
+          ],
+          "jump_error_m": 0.6,
+          "jump_warning_m": 0.3,
+          "split_max_dist_m": 0.5,
+          "v_max_mps": 0.5
+        },
+        "two_wheeler": {
+          "classes": [
+            "Two-wheels"
+          ],
+          "jump_error_m": 1.5,
+          "jump_warning_m": 0.75,
+          "split_max_dist_m": 1.5,
+          "v_max_mps": 15.0
+        },
+        "vehicle": {
+          "classes": [
+            "Vehicle"
+          ],
+          "jump_error_m": 2.0,
+          "jump_warning_m": 1.0,
+          "split_max_dist_m": 2.0,
+          "v_max_mps": 30.0
+        }
+      },
+      "keyframe_interval_s": 0.5,
+      "long_interpolation": {
+        "enabled": true,
+        "min_frames": 2,
+        "min_motion_m": 1.0
+      },
+      "max_occluded_frames": 6,
+      "split_max_gap_frames": 3
+    }
+  },
+  "measurement": "GT finding counts for spec/ID-swap/size subset; not manual precision",
+  "dataset": "nuScenes v1.0-mini, taxonomy spec-vn",
+  "before": {
+    "tuning": {
+      "boxes": 8759,
+      "counts": {
+        "attr.height:warning": 2,
+        "size.class_range:warning": 2,
+        "spec.rider_double:warning": 1,
+        "size.class_range:error": 2
+      },
+      "warnings": 5,
+      "errors": 2
+    },
+    "test": {
+      "boxes": 5458,
+      "counts": {
+        "attr.height:warning": 1,
+        "size.class_range:error": 2,
+        "size.class_range:warning": 19
+      },
+      "warnings": 20,
+      "errors": 2
+    }
+  },
+  "after": {
+    "tuning": {
+      "boxes": 8759,
+      "counts": {
+        "attr.height:warning": 2,
+        "size.class_range:warning": 2,
+        "spec.rider_double:warning": 1,
+        "size.class_range:error": 2
+      },
+      "warnings": 5,
+      "errors": 2
+    },
+    "test": {
+      "boxes": 5458,
+      "counts": {
+        "attr.height:warning": 1,
+        "size.class_range:error": 2,
+        "size.class_range:warning": 19
+      },
+      "warnings": 20,
+      "errors": 2
+    }
+  },
+  "identity_delta": {
+    "scene-0061": {
+      "removed": [
+        [
+          "spec.rider_double",
+          "warning",
+          9,
+          38,
+          "Pedestrian"
+        ]
+      ],
+      "added": [
+        [
+          "spec.rider_double",
+          "warning",
+          6,
+          38,
+          "Pedestrian"
+        ]
+      ]
+    }
+  },
+  "manual_review_candidates": [
+    {
+      "scene": "scene-0061",
+      "finding": [
+        "attr.height",
+        "warning",
+        1,
+        159,
+        "Two-wheels"
+      ]
+    },
+    {
+      "scene": "scene-0061",
+      "finding": [
+        "spec.rider_double",
+        "warning",
+        6,
+        38,
+        "Pedestrian"
+      ]
+    },
+    {
+      "scene": "scene-0916",
+      "finding": [
+        "attr.height",
+        "warning",
+        6,
+        708,
+        "Pedestrian"
+      ]
+    },
+    {
+      "scene": "scene-0103",
+      "finding": [
+        "attr.height",
+        "warning",
+        0,
+        301,
+        "Pedestrian"
+      ]
+    }
+  ],
+  "manual_precision_verdicts": 0,
+  "timing_note": "No serial repeated benchmark; no speedup claim"
+}

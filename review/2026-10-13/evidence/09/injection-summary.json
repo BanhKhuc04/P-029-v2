@@ -1,0 +1,231 @@
+{
+  "baseline_commit": "3584000",
+  "tested_code_commit": "f22f2b6f6b0d60ba78953bc6d7937a1ec0d5281d",
+  "measurement": "Target hit rate, two tuning scenes, max 20 per scene; not full recall/precision",
+  "scope": "Baseline comparison uses archived floating module; core/ground.py unchanged",
+  "heading_note": "Long-class track midpoints; not filtered by point evidence/range. Target hits are not full detector recall.",
+  "rows": [
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": 0.14,
+      "profile": "baseline_current_thresholds",
+      "injected": 16,
+      "detected": 3
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": 0.14,
+      "profile": "fixed_current_thresholds",
+      "injected": 16,
+      "detected": 3
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": 0.14,
+      "profile": "fixed_previous_thresholds",
+      "injected": 16,
+      "detected": 8
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": 0.25,
+      "profile": "baseline_current_thresholds",
+      "injected": 16,
+      "detected": 15
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": 0.25,
+      "profile": "fixed_current_thresholds",
+      "injected": 16,
+      "detected": 15
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": 0.25,
+      "profile": "fixed_previous_thresholds",
+      "injected": 16,
+      "detected": 15
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": -0.25,
+      "profile": "baseline_current_thresholds",
+      "injected": 16,
+      "detected": 16
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": -0.25,
+      "profile": "fixed_current_thresholds",
+      "injected": 16,
+      "detected": 16
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "floating",
+      "offset_m": -0.25,
+      "profile": "fixed_previous_thresholds",
+      "injected": 16,
+      "detected": 16
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "heading.points",
+      "offset_deg": 13,
+      "profile": "fixed_current_thresholds",
+      "injected": 18,
+      "detected": 2
+    },
+    {
+      "scene": "scene-0061",
+      "kind": "heading.points",
+      "offset_deg": 13,
+      "profile": "fixed_previous_thresholds",
+      "injected": 18,
+      "detected": 0
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": 0.14,
+      "profile": "baseline_current_thresholds",
+      "injected": 11,
+      "detected": 2
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": 0.14,
+      "profile": "fixed_current_thresholds",
+      "injected": 11,
+      "detected": 2
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": 0.14,
+      "profile": "fixed_previous_thresholds",
+      "injected": 11,
+      "detected": 10
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": 0.25,
+      "profile": "baseline_current_thresholds",
+      "injected": 11,
+      "detected": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": 0.25,
+      "profile": "fixed_current_thresholds",
+      "injected": 11,
+      "detected": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": 0.25,
+      "profile": "fixed_previous_thresholds",
+      "injected": 11,
+      "detected": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": -0.25,
+      "profile": "baseline_current_thresholds",
+      "injected": 11,
+      "detected": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": -0.25,
+      "profile": "fixed_current_thresholds",
+      "injected": 11,
+      "detected": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "floating",
+      "offset_m": -0.25,
+      "profile": "fixed_previous_thresholds",
+      "injected": 11,
+      "detected": 11
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "heading.points",
+      "offset_deg": 13,
+      "profile": "fixed_current_thresholds",
+      "injected": 19,
+      "detected": 8
+    },
+    {
+      "scene": "scene-0553",
+      "kind": "heading.points",
+      "offset_deg": 13,
+      "profile": "fixed_previous_thresholds",
+      "injected": 19,
+      "detected": 2
+    }
+  ],
+  "totals": {
+    "0.14:floating:baseline_current_thresholds": {
+      "injected": 27,
+      "detected": 5
+    },
+    "0.14:floating:fixed_current_thresholds": {
+      "injected": 27,
+      "detected": 5
+    },
+    "0.14:floating:fixed_previous_thresholds": {
+      "injected": 27,
+      "detected": 18
+    },
+    "0.25:floating:baseline_current_thresholds": {
+      "injected": 27,
+      "detected": 26
+    },
+    "0.25:floating:fixed_current_thresholds": {
+      "injected": 27,
+      "detected": 26
+    },
+    "0.25:floating:fixed_previous_thresholds": {
+      "injected": 27,
+      "detected": 26
+    },
+    "-0.25:floating:baseline_current_thresholds": {
+      "injected": 27,
+      "detected": 27
+    },
+    "-0.25:floating:fixed_current_thresholds": {
+      "injected": 27,
+      "detected": 27
+    },
+    "-0.25:floating:fixed_previous_thresholds": {
+      "injected": 27,
+      "detected": 27
+    },
+    "13:heading.points:fixed_current_thresholds": {
+      "injected": 37,
+      "detected": 10
+    },
+    "13:heading.points:fixed_previous_thresholds": {
+      "injected": 37,
+      "detected": 2
+    }
+  }
+}

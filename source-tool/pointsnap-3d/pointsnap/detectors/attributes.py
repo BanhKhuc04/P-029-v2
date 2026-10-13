@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING, Iterable, Sequence
 
 import numpy as np
 
+from pointsnap.core.geometry import _clip_convex, footprint, polygon_area
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_frame, group_by_track
 
 if TYPE_CHECKING:
@@ -64,12 +65,12 @@ def allowed_values_for(label: str, name: str, cfg: SpecConfig) -> tuple[str, ...
 
 def detect_attribute_errors(cuboids: Iterable[Cuboid], cfg: SpecConfig) -> list[Finding]:
     groups: dict[tuple, list[Cuboid]] = defaultdict(list)
-    for box in sorted((c for c in cuboids if not c.outside), key=lambda c: c.frame):
+    for box in sorted((c for c in cuboids if not c.outside and c.keyframe), key=lambda c: c.frame):
         for rule, name, value in _problems(box, cfg):
             owner = box.track_id if box.track_id is not None else ("shape", box.frame, box.source_id, id(box))
-            groups[(owner, rule, name, value)].append(box)
+            groups[(owner, box.label, rule, name, value)].append(box)
     findings: list[Finding] = []
-    for (_, rule, name, value), boxes in groups.items():
+    for (_, _label, rule, name, value), boxes in groups.items():
         first = boxes[0]
         where = f"{len(boxes)} keyframe, từ frame {first.frame}" if len(boxes) > 1 else f"frame {first.frame}"
         if rule == "attr.missing":
@@ -88,15 +89,27 @@ def detect_attribute_errors(cuboids: Iterable[Cuboid], cfg: SpecConfig) -> list[
 # --- C6: luật bám spec theo hình học ---------------------------------------------------------------------------
 
 
-def _matches(box: Cuboid, key: str) -> bool:
+def _matches(box: Cuboid, key: str, cfg: SpecConfig | None = None) -> bool:
     """`key` = `Class` hoặc `Class/giá trị[/giá trị…]`: box đúng class và mang đủ các giá trị thuộc tính."""
     parts = key.split("/")
-    values = {str(v) for v in box.attrs.values()}
-    return box.label == parts[0] and all(p in values for p in parts[1:])
+    if box.label != parts[0]:
+        return False
+    names = None
+    if cfg is not None:
+        names = set(cfg.required_attributes.get(box.label, ()))
+        for name in cfg.allowed_values:
+            owner, separator, attribute = name.partition(".")
+            if not separator:
+                names.add(name)
+            elif owner == box.label:
+                names.add(attribute)
+        names = names or None  # legacy custom rules without an attribute schema
+    values = {str(v) for name, v in box.attrs.items() if names is None or name in names}
+    return all(p in values for p in parts[1:])
 
 
-def _best_key(box: Cuboid, keys: Iterable[str]) -> str | None:
-    found = [k for k in keys if _matches(box, k)]
+def _best_key(box: Cuboid, keys: Iterable[str], cfg: SpecConfig | None = None) -> str | None:
+    found = [k for k in keys if _matches(box, k, cfg)]
     return max(found, key=lambda k: k.count("/")) if found else None
 
 
@@ -105,12 +118,12 @@ def detect_attribute_height(cuboids: Iterable[Cuboid], cfg: SpecConfig) -> list[
     if not cfg.attribute_height:
         return []
     findings: list[Finding] = []
-    boxes = [c for c in cuboids if c.visible]
+    boxes = [c for c in cuboids if c.visible and c.keyframe]
     runs: list[list[Cuboid]] = []
     for tid, track in group_by_track(boxes).items():
         current: list[Cuboid] = []
         for box in sorted(track, key=lambda b: b.frame):
-            if current and _best_key(box, cfg.attribute_height) != _best_key(current[0], cfg.attribute_height):
+            if current and _best_key(box, cfg.attribute_height, cfg) != _best_key(current[0], cfg.attribute_height, cfg):
                 runs.append(current)
                 current = []
             current.append(box)
@@ -118,7 +131,7 @@ def detect_attribute_height(cuboids: Iterable[Cuboid], cfg: SpecConfig) -> list[
             runs.append(current)
     runs += [[c] for c in boxes if c.track_id is None]
     for run in runs:
-        key = _best_key(run[0], cfg.attribute_height)
+        key = _best_key(run[0], cfg.attribute_height, cfg)
         if key is None:
             continue
         lo, hi = cfg.attribute_height[key]
@@ -146,17 +159,12 @@ def _footprint_contains(outer: Cuboid, x: float, y: float, margin: float = 0.0) 
     return abs(lx) <= outer.length / 2 - margin and abs(ly) <= outer.width / 2 - margin
 
 
-def _overlap_fraction(small: Cuboid, big: Cuboid, samples: int = 7) -> float:
-    """Tỉ lệ footprint của `small` nằm trong footprint của `big` (lấy mẫu lưới)."""
-    c, s = math.cos(small.yaw), math.sin(small.yaw)
-    grid = np.linspace(-0.5, 0.5, samples)
-    inside = 0
-    for u in grid:
-        for v in grid:
-            lx, ly = u * small.length, v * small.width
-            x, y = small.center[0] + c * lx - s * ly, small.center[1] + s * lx + c * ly
-            inside += _footprint_contains(big, x, y)
-    return inside / samples ** 2
+def _overlap_fraction(small: Cuboid, big: Cuboid) -> float:
+    """Exact clipped footprint area, using the same geometry primitive as fit.overlap."""
+    origin = np.asarray(big.center[:2])
+    inner, outer = footprint(small) - origin, footprint(big) - origin
+    area = polygon_area(inner)
+    return min(1.0, max(0.0, polygon_area(_clip_convex(inner, outer)) / area)) if area > 0 else 0.0
 
 
 def detect_spec_geometry(cuboids: Sequence[Cuboid], cfg: SpecConfig) -> list[Finding]:
@@ -165,21 +173,23 @@ def detect_spec_geometry(cuboids: Sequence[Cuboid], cfg: SpecConfig) -> list[Fin
         return []
     hits: dict[tuple[str, object, object], list[tuple[Cuboid, Cuboid]]] = defaultdict(list)
     # Xét cả box occluded: người ngồi trong xe thường bị đánh occluded, nhưng câu hỏi là box đó có nên tồn tại không.
-    for frame, boxes in group_by_frame(c for c in cuboids if not c.outside).items():
+    for frame, boxes in group_by_frame(c for c in cuboids if not c.outside and c.keyframe).items():
         for inner in boxes:
             for outer in boxes:
                 if inner is outer:
                     continue
+                inner_id = ("track", inner.label, inner.track_id) if inner.track_id is not None else ("shape", id(inner))
+                outer_id = ("track", outer.label, outer.track_id) if outer.track_id is not None else ("shape", id(outer))
                 for a, b in cfg.inside_forbidden:
-                    if (_matches(inner, a) and _matches(outer, b)
+                    if (_matches(inner, a, cfg) and _matches(outer, b, cfg)
                             and _footprint_contains(outer, inner.center[0], inner.center[1], margin=0.1)
                             and inner.bottom_z - outer.bottom_z < cfg.inside_min_lift_m
                             and inner.center[2] < outer.center[2] + outer.height / 2):
-                        hits[("spec.inside", inner.track_id or id(inner), outer.track_id or id(outer))].append((inner, outer))
+                        hits[("spec.inside", inner_id, outer_id)].append((inner, outer))
                 for a, b in cfg.rider_double:
-                    if (_matches(outer, a) and _matches(inner, b) and _overlap_fraction(inner, outer) >= 0.5
+                    if (_matches(outer, a, cfg) and _matches(inner, b, cfg) and _overlap_fraction(inner, outer) >= 0.5
                             and abs(inner.bottom_z - outer.bottom_z) < 1.0):
-                        hits[("spec.rider_double", inner.track_id or id(inner), outer.track_id or id(outer))].append(
+                        hits[("spec.rider_double", inner_id, outer_id)].append(
                             (inner, outer))
     findings: list[Finding] = []
     for (rule, _, _), pairs_ in hits.items():
@@ -204,30 +214,32 @@ def detect_spec_geometry(cuboids: Sequence[Cuboid], cfg: SpecConfig) -> list[Fin
 
 
 def detect_rider_state(cuboids: Sequence[Cuboid], cfg: SpecConfig, sensor_to_world=None,
-                       interval_s: float = 0.5) -> list[Finding]:
+                       interval_s: float = 0.5, timestamps=None) -> list[Finding]:
     """`attr.rider_state`: thuộc tính có người lái không khớp chuyển động / người xuống xe."""
     rs = cfg.rider_state
-    if not rs:
+    if not rs or not sensor_to_world:
         return []
     cls, attr, with_v, without_v, person = rs["class"], rs["attribute"], rs["with"], rs["without"], rs["person"]
 
     def world(box: Cuboid) -> np.ndarray:
-        if sensor_to_world and box.frame in sensor_to_world:
-            m = np.asarray(sensor_to_world[box.frame])
-            return (m[:3, :3] @ np.asarray(box.center) + m[:3, 3])[:2]
-        return np.asarray(box.center[:2])
+        m = np.asarray(sensor_to_world[box.frame])
+        return (m[:3, :3] @ np.asarray(box.center) + m[:3, 3])[:2]
 
     findings: list[Finding] = []
-    tracks = group_by_track([c for c in cuboids if c.visible])
+    tracks = group_by_track([c for c in cuboids if c.visible and c.keyframe])
     starts = [(t[0].frame, world(t[0]), tid) for tid, t in ((tid, sorted(tb, key=lambda b: b.frame))
-                                                         for tid, tb in tracks.items()) if t[0].label == person]
+                                                         for tid, tb in tracks.items()) if t[0].label == person
+              and t[0].frame in sensor_to_world]
     for tid, tb in tracks.items():
         tb = sorted(tb, key=lambda b: b.frame)
-        if tb[0].label != cls:
+        tb = [b for b in tb if b.label == cls]
+        if not tb or not all(b.frame in sensor_to_world for b in tb):
             continue
         pos = [world(b) for b in tb]
-        speed = [float(np.linalg.norm(pos[i] - pos[i - 1])) / max((tb[i].frame - tb[i - 1].frame) * interval_s, 1e-6)
-                 for i in range(1, len(tb))]
+        times = ([float(timestamps[b.frame]) for b in tb] if timestamps and all(b.frame in timestamps for b in tb)
+                 else [b.frame * interval_s for b in tb])
+        speed = [float(np.linalg.norm(pos[i] - pos[i - 1])) / (times[i] - times[i - 1])
+                 if times[i] > times[i - 1] else 0.0 for i in range(1, len(tb))]
         # Lên xe mà quên đổi: without_rider chạy nhanh ≥ 2 bước liền
         fast = [i + 1 for i, v in enumerate(speed) if v > cfg.rider_max_speed_mps
                 and tb[i].attrs.get(attr) == without_v and tb[i + 1].attrs.get(attr) == without_v]
@@ -249,8 +261,9 @@ def detect_rider_state(cuboids: Sequence[Cuboid], cfg: SpecConfig, sensor_to_wor
                 continue
             here = pos[k]
             newcomer = next((t for f, p, t in starts if f == box.frame and np.linalg.norm(p - here) <= 1.2), None)
-            after = [b for b in tb[k + 1:k + 4] if b.attrs.get(attr) == with_v]
-            if newcomer is None or len(after) < 2:
+            after = tb[k + 1:k + 3]
+            if (newcomer is None or len(after) < 2 or any(b.attrs.get(attr) != with_v for b in after)
+                    or any(v > 0.5 for v in speed[k:k + 2])):
                 continue
             findings.append(Finding(
                 error_type=ErrorType.ATTRIBUTE, rule="attr.rider_state", severity=Severity.WARNING, frame=box.frame,

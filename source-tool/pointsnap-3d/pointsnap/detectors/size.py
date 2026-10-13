@@ -16,7 +16,7 @@ from __future__ import annotations
 import dataclasses
 from collections import defaultdict
 import math
-from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Iterable, Mapping, Sequence
 
 import numpy as np
 
@@ -342,15 +342,17 @@ FILLED_OCCUPANCY = 0.8
 
 
 def relax_filled_oversize(findings: Sequence[Finding], cuboids: Sequence[Cuboid], frames, cargo_classes: Sequence[str],
-                          max_frames: int = 3) -> list[Finding]:
+                          max_frames: int = 3, *, class_key: Callable[[Cuboid], str] | None = None) -> list[Finding]:
     """C5: mục `size.class_range` mức Lỗi "lớn bất thường" mà điểm LiDAR của vật trải kín chiều đó → hạ Cảnh báo.
 
     Chỉ cho class hay chở hàng (`cargo_classes`, vd xe máy chở hàng cồng kềnh, box gồm cả hàng theo spec 4.3C):
     kích thước vượt class nhưng đúng với vật. Box bị phóng to so với vật thì điểm không phủ kín nên vẫn là Lỗi. Thử
     trên mọi class thì người đứng cạnh cột, ô tô cạnh bụi cây bị phóng to vẫn "phủ kín" (lẫn điểm vật bên cạnh).
     """
-    from pointsnap.detectors.static import yaw_excluded as _in_classes
     from pointsnap.core.box_points import box_point_sets
+
+    # A subtype needs an explicit key resolver; arbitrary notes are not a classification.
+    class_key = class_key or (lambda box: box.label)
 
     by_frame: dict[int, list[Cuboid]] = {}
     for c in cuboids:
@@ -358,15 +360,18 @@ def relax_filled_oversize(findings: Sequence[Finding], cuboids: Sequence[Cuboid]
             by_frame.setdefault(c.frame, []).append(c)
     out = []
     for f in findings:
-        owner = next((c for c in cuboids if c.frame == f.frame and (c.track_id == f.track_id if f.track_id is not None
-                                                                     else c.source_id == f.source_id)), None)
+        owners = [c for c in cuboids if c.visible and c.keyframe and c.frame == f.frame and c.label == f.label
+                  and (c.track_id == f.track_id if f.track_id is not None else c.source_id == f.source_id)]
+        owner = owners[0] if len(owners) == 1 else None
+        cargo = owner is not None and any(key in (owner.label, class_key(owner)) for key in cargo_classes)
         if (f.rule != "size.class_range" or f.severity is not Severity.ERROR
-                or f.details.get("bound_type") != "lớn" or owner is None or not _in_classes(owner, cargo_classes)):
+                or f.details.get("bound_type") != "lớn" or not cargo):
             out.append(f)
             continue
         axis = DIM_NAMES.index(f.details["dimension"])
-        boxes = [c for c in cuboids if c.visible and (c.track_id == f.track_id if f.track_id is not None
-                                                        else (c.frame == f.frame and c.source_id == f.source_id))]
+        boxes = [c for c in cuboids if c.visible and c.keyframe and c.label == owner.label
+                 and class_key(c) == class_key(owner)
+                 and (c.track_id == f.track_id if f.track_id is not None else c is owner)]
         boxes = sorted(boxes, key=lambda c: math.hypot(c.center[0], c.center[1]))[:max_frames]
         filled, gap_seen = False, 1.0
         for box in boxes:

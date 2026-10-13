@@ -172,8 +172,9 @@ Kết luận lưu trong `reviews.json` của lần quét. Từ đó PointSnap h�
 
 1. **Precision theo luật** (luôn có): phân phối Beta(1 + số Đúng, 1 + số Báo nhầm) — luật ít kết luận thì độ tin cậy gần
    50% và khoảng tin cậy rộng.
-2. **Mô hình logistic** (khi có ≥ 40 kết luận, đủ cả hai loại): xác suất mục là lỗi thật theo luật, mức, class và độ vượt
-   ngưỡng. Chỉ thay mô hình cũ nếu **kiểm chéo 5 lần tốt hơn**; mọi phiên bản cũ được giữ để quay về.
+2. **Mô hình logistic** (khi có ≥ 40 kết luận, đủ cả hai loại và ≥ 2 nguồn job): ước lượng độ tin cậy theo luật, mức,
+   class và độ vượt ngưỡng. Kiểm chéo tối đa 5 fold, giữ toàn bộ một nguồn CVAT/job trong cùng fold. Chỉ dùng logistic
+   nếu log-loss tốt hơn thống kê theo luật trên cùng fold. Không so trực tiếp với CV loss cũ từ tập kết luận khác.
 
 ```bash
 pointsnap learn --project cvat-local      # hoặc nút "Học từ kết luận đã duyệt" ở tab Lịch sử trên web
@@ -184,6 +185,31 @@ cậy thấp được hạ xuống Thông tin. **Cách thu kết luận tốt:**
 người duyệt; đừng chỉ duyệt mục dễ.
 
 Mục **Đúng là lỗi** cũng là **dữ liệu khó** quý nhất cho Box Critic (mục 9).
+
+Kết luận được đọc riêng theo project. Các lần quét cùng nguồn, box, frame, luật và số đo được tính một lần: bản quét
+mới nhất là bản tham chiếu, sửa/xóa kết luận có hiệu lực khi học lại. Nếu số đo thay đổi, đây là quan sát khác; tool
+không tự chuyển verdict cũ sang quan sát mới. Run cũ thiếu nguồn/ID được giữ riêng, không đoán danh tính.
+
+`learned.json` được ghi qua file tạm rồi thay nguyên vẹn; bản cũ được sao vào `learned-history/` trước khi thay.
+Hai tiến trình học cùng project bị khóa bằng `.learn.lock`. Nếu tiến trình chết cứng, xác nhận nó đã dừng rồi xóa lock
+để học lại. Có thể khôi phục bằng cách sao bản lịch sử về `learned.json` khi không có tiến trình học; lần học tiếp
+không tái sử dụng số phiên bản đã lưu. Xung đột nội dung cùng phiên bản được báo lỗi để giữ mô hình đang dùng.
+
+`adjust_severity` vẫn mặc định tắt, chỉ hạ WARNING khi đủ kết luận và thấp hơn ngưỡng; ERROR luôn giữ nguyên.
+Hạ mức có thể làm gate đạt, nên kiểm verdict người duyệt trước khi bật. Độ tin cậy chưa được chứng minh là xác suất
+đã hiệu chuẩn cho dữ liệu mới. Model logistic cũ nên được học lại để áp dụng việc tách nguồn ở phiên bản này.
+
+### Ghi chú hợp đồng sau review 13/10/2026
+
+- Critic chỉ cần PyTorch; camera mới cần torchvision. File `.pt` phải từ tác giả tin cậy vì TorchScript là mã thực thi.
+- Đầu ra phải là tensor số thực hữu hạn `(B,)` và `(B, 7)` đúng batch; checkpoint sai/hỏng làm lần quét thất bại.
+- Critic và static verifier dùng keyframe người nhập, bỏ box occluded/outside, và tách reference theo ID **và class**.
+- Điểm sigmoid và logit tương đối chưa phải xác suất lỗi đã hiệu chuẩn. Reference median không phát hiện được lệch
+  đều toàn track và có thể mất tác dụng khi đa số reference sai.
+- `critic-data` từ chối 5 cảnh held-out và file `.npz` đã tồn tại. Xuất lại vào thư mục mới; seed riêng theo scene
+  giúp đổi thứ tự cảnh không đổi mẫu. Empty scene vẫn có đầy đủ shape của tensor rỗng.
+- Script huấn luyện giữ tên scene khi tính reference track, bỏ shape ID `-1`. Ngưỡng được in với 6 chữ số có nghĩa
+  cùng tỷ lệ báo trên validation đã đo; tỷ lệ mục tiêu không bảo đảm đạt trên validation nhỏ hoặc trên cảnh mới.
 
 ## 8. Bài học đã rút ra
 

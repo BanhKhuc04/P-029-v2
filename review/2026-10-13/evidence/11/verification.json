@@ -1,0 +1,129 @@
+{
+  "date": "2026-10-13",
+  "timezone": "Asia/Saigon",
+  "branch": "codex/review-11-verifier-learning",
+  "base_commit": "8fce666",
+  "code_commit": "9d110710c4b73f701547c8a73997cf90c5de93bc",
+  "source_hashes": {
+    "pointsnap/critic.py": {
+      "workspace_sha256": "3a08f5deff3aaccdc0a46cfdf3d1c0f4d53146b9059a9c648361b6679a29e3a8",
+      "canonical_lf_sha256": "595044e371fb2bbc2e2f758482b989dac4680e1e160493474f53e0e953648453",
+      "matches_commit": true
+    },
+    "pointsnap/learn.py": {
+      "workspace_sha256": "7084e38b7e965cc1168912cb9a0540db1e254bbb3b7f6696e4613a4a411013e6",
+      "canonical_lf_sha256": "2105f6d86d2c269e1546409995a7b3c93451364dac9a282e98acde9d1bda1876",
+      "matches_commit": true
+    },
+    "pointsnap/detectors/static.py": {
+      "workspace_sha256": "71a0231cc86f08f329a1b2ca1df37420e2ee37335b54b6f2012b4a24000c51c1",
+      "canonical_lf_sha256": "ad4f9e2347616ccf4ceff575936d53063d5e1f970b8bd62cd9c6bfdfd8931644",
+      "matches_commit": true
+    },
+    "pointsnap/core/scanner.py": {
+      "workspace_sha256": "dfc18e4f534a072367a59e9294554325b44e54029fbd1acc9ba18b1943ae3b6f",
+      "canonical_lf_sha256": "bd2a00439b8160036b37db74563b142b9443f776cf0c84204e6b62520439e95d",
+      "matches_commit": true
+    },
+    "pointsnap/cli/eval_cmd.py": {
+      "workspace_sha256": "c2981027391b4fd4e5bc1bb29f80f668ddcec5e0b5a81b8ab43d26020786869b",
+      "canonical_lf_sha256": "9e857d529128bc4bd4c7b2dc7eda4164e41030b91df215ce1a3ab84adc5e5cad",
+      "matches_commit": true
+    },
+    "scripts/train_critic_example.py": {
+      "workspace_sha256": "919bb60359ba5cffe22245242ff6d78e5878b6d692371cb1c5262f4f91a2e59e",
+      "canonical_lf_sha256": "4317d5cfff995b3fe240c9eac6860456d11f3ae8a3852265d924c0831bd69df7",
+      "matches_commit": true
+    },
+    "tests/test_verifier_review11.py": {
+      "workspace_sha256": "6a9c2b60ef3b80c7c04820f6f2b07ac2443b5c2eca4cc44d13c5affaf86f14d2",
+      "canonical_lf_sha256": "6a9c2b60ef3b80c7c04820f6f2b07ac2443b5c2eca4cc44d13c5affaf86f14d2",
+      "matches_commit": true
+    }
+  },
+  "python_suite": {
+    "passed": 713,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 3,
+    "xfail": 0,
+    "skip_details": [
+      {
+        "test": "tests.test_live_cvat.test_upload_then_read_back_matches_ground_truth",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      },
+      {
+        "test": "tests.test_live_cvat.test_flag_then_rescan_on_live_cvat",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      },
+      {
+        "test": "tests.test_live_cvat.test_flag_tilted_shapes_preserves_all_other_annotations",
+        "reason": "đặt POINTSNAP_LIVE_CVAT=1 để chạy"
+      }
+    ],
+    "junit_sha256": "e1732c9eb9592b1d9d952dda49a178d315c75d2791bc38334675d2ddf33a5f6c",
+    "command": "pytest -q -p no:cacheprovider -o faulthandler_timeout=60; NUSCENES_ROOT mini; POINTSNAP_LIVE_CVAT=0; isolated PyTorch CPU and bundled DLL directory"
+  },
+  "node_suite": {
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0,
+    "command": "node --test tests/*.test.js"
+  },
+  "coverage": {
+    "modules": {
+      "pointsnap/critic.py": {
+        "covered_lines": 143,
+        "num_statements": 147,
+        "percent_covered": 97.27891156462584
+      },
+      "pointsnap/learn.py": {
+        "covered_lines": 220,
+        "num_statements": 229,
+        "percent_covered": 96.06986899563319
+      },
+      "pointsnap/detectors/static.py": {
+        "covered_lines": 54,
+        "num_statements": 54,
+        "percent_covered": 100.0
+      },
+      "pointsnap/core/scanner.py": {
+        "covered_lines": 209,
+        "num_statements": 232,
+        "percent_covered": 90.08620689655173
+      },
+      "pointsnap/cli/eval_cmd.py": {
+        "covered_lines": 35,
+        "num_statements": 55,
+        "percent_covered": 63.63636363636363
+      },
+      "scripts/train_critic_example.py": {
+        "covered_lines": 172,
+        "num_statements": 183,
+        "percent_covered": 93.98907103825137
+      }
+    },
+    "changed_covered": 833,
+    "changed_statements": 900,
+    "package_covered": 6504,
+    "package_statements": 7089,
+    "package_percent": 91.74777824798984,
+    "kind": "statement coverage; full suite plus controlled training smoke"
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "torch": "2.8.0+cpu",
+    "installed_under": "source-tool/pointsnap-3d/out/review11-runtime",
+    "cuda_tested": false,
+    "checkpoint_quality_accepted": false,
+    "human_precision_verdicts": 0
+  },
+  "evidence_hashes": {
+    "real-data-summary.json": "1f8acc6a5c539ee8e2113aaf00e199550500b5b39da7bdaefe6bcea87bc544c8",
+    "training-summary.json": "23bd74c43cc9ebc7221782b6e1eb7ceafac6bcc8897570311a4adfeafc1e95c3",
+    "regression-summary.json": "30c1a6e48949e20018ccfc969299598e02548bdeb31b0ca5cfbf23f1f080b242",
+    "verifier_probe.py": "d7ddeb6493c2ca0a26ef55ebedf53106c1059a3de383006c01898a193d2fa74a",
+    "training_probe.py": "50927e0b5e3012a51060e78d7aac69fa7c24067e4267dfc0299b91dab05af4d2",
+    "runtime-recovery.md": "31e56f4632f0ca8391304e5a32f11d692ea4d84a99a3b17768e8e3deed6eded9"
+  }
+}

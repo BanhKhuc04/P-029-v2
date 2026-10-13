@@ -1,0 +1,113 @@
+{
+  "baseline_commit": "8fce666",
+  "new_cases": 49,
+  "baseline_training_helper_excluded": 2,
+  "runs": {
+    "baseline-final": {
+      "xml_sha256": "ac46a7f813d82c248a5eea5dcae0d9342838bef6e157e6a3f3b109b2ea2d67e3",
+      "passed": 5,
+      "failed": 42,
+      "errors": 0,
+      "skipped": 0,
+      "failed_cases": [
+        "test_collect_rescans_count_one_verdict_and_latest_edit_or_delete",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[reviews.json-{\"bad-index\":\"ok\"}]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[reviews.json-{\"0\":\"automatic-label\"}]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[reviews.json-[]]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[findings.json-[{\"rule\":\"floating\",\"value\":NaN}]]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[findings.json-[{\"rule\":\"floating\",\"value\":\"oops\"}]]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[findings.json-[{}]]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[summary.json-{broken]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[summary.json-{\"job_id\":1,\"cvat_url\":[] }]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[findings.json-[{\"rule\":\"floating\",\"track_id\":[]} ]]",
+        "test_learning_requires_independent_groups_for_cross_validation",
+        "test_grouped_cv_never_splits_a_job",
+        "test_failed_learned_write_preserves_active_model_and_history",
+        "test_restored_model_gets_new_monotonic_version",
+        "test_load_rejects_invalid_model_schema[change0]",
+        "test_load_rejects_invalid_model_schema[change1]",
+        "test_load_rejects_invalid_model_schema[change2]",
+        "test_load_rejects_invalid_model_schema[change3]",
+        "test_static_does_not_count_interpolated_boxes_as_keyframes",
+        "test_static_keeps_classes_with_same_track_id_separate",
+        "test_verifier_missing_evidence_cannot_pass_gate[track_static_shift]",
+        "test_verifier_missing_evidence_cannot_pass_gate[heading_static]",
+        "test_verifier_missing_evidence_cannot_pass_gate[critic_box]",
+        "test_critic_extreme_negative_logit_is_finite",
+        "test_critic_rejects_invalid_tensor_contract[short]",
+        "test_critic_rejects_invalid_tensor_contract[matrix]",
+        "test_critic_rejects_invalid_tensor_contract[delta6]",
+        "test_critic_rejects_invalid_tensor_contract[integer]",
+        "test_critic_rejects_invalid_tensor_contract[nan]",
+        "test_critic_reloads_replaced_checkpoint_and_reports_actual_error_threshold",
+        "test_critic_track_references_do_not_cross_classes",
+        "test_critic_does_not_report_interpolated_box",
+        "test_scanner_critic_needs_torch_without_camera_dependencies",
+        "test_export_empty_scene_has_valid_tensor_shapes",
+        "test_learning_exclusive_writer_preserves_active_version",
+        "test_learning_unknown_label_falls_back_to_rule_statistics",
+        "test_training_export_rejects_held_out_scenes[scenes0]",
+        "test_training_export_rejects_held_out_scenes[scenes1]",
+        "test_training_export_rejects_held_out_scenes[scenes2]",
+        "test_export_seed_is_independent_of_scene_order_and_does_not_overwrite",
+        "test_learning_does_not_compare_cv_loss_from_different_review_dataset",
+        "test_history_collision_refuses_to_discard_active_model"
+      ]
+    },
+    "red-training": {
+      "xml_sha256": "005b64d1051dbafa6d5dea216eed60d897678abd7c37bc9c1ad180e2793b92e7",
+      "passed": 0,
+      "failed": 4,
+      "errors": 0,
+      "skipped": 0,
+      "failed_cases": [
+        "test_scanner_critic_needs_torch_without_camera_dependencies",
+        "test_training_track_references_are_scoped_to_scene_and_ignore_shapes",
+        "test_training_load_retains_scene_provenance_and_closes_npz",
+        "test_export_empty_scene_has_valid_tensor_shapes"
+      ]
+    },
+    "red-export": {
+      "xml_sha256": "a33e4152cf87dd7822ee3172fbd635a99dd59903c874aab68f852c3af0e57f4c",
+      "passed": 0,
+      "failed": 4,
+      "errors": 0,
+      "skipped": 0,
+      "failed_cases": [
+        "test_training_export_rejects_held_out_scenes[scenes0]",
+        "test_training_export_rejects_held_out_scenes[scenes1]",
+        "test_training_export_rejects_held_out_scenes[scenes2]",
+        "test_export_seed_is_independent_of_scene_order_and_does_not_overwrite"
+      ]
+    },
+    "red-history-schema": {
+      "xml_sha256": "c10810984e987043621ce839d01223e4b175173d70535c1b62f219c67dcac907",
+      "passed": 7,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "failed_cases": [
+        "test_collect_rejects_corrupt_inputs_with_storage_error[summary.json-{\"job_id\":1,\"cvat_url\":[] }]",
+        "test_collect_rejects_corrupt_inputs_with_storage_error[findings.json-[{\"rule\":\"floating\",\"track_id\":[]} ]]",
+        "test_history_collision_refuses_to_discard_active_model"
+      ]
+    },
+    "baseline-suite": {
+      "xml_sha256": "b88b356d3127a61b6b124dac54f48cff30cc9a32fdd633fb470dbdeb1eee14d3",
+      "passed": 49,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 2,
+      "failed_cases": []
+    },
+    "focused-final": {
+      "xml_sha256": "76632262acf2b75fe1ae63588c13ba5f480488f0237dd748cc371ba258100eba",
+      "passed": 53,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "failed_cases": []
+    }
+  },
+  "notes": "Baseline package path asserted before pytest. Early wrong-cwd or DLL-error runs excluded; see runtime-recovery.md."
+}

@@ -3,7 +3,7 @@
 - **Nhánh:** `codex/review-11-verifier-learning`.
 - **Thứ tự:** 11 trong chuỗi 09 → 16.
 - **Dependency:** Nhận kết quả 09–10; chuẩn bị PyTorch/checkpoint thử và dữ liệu verdict tách riêng.
-- **Trạng thái ban đầu:** 8 ca Chưa chạy. Nhánh hiện mới chứa mã nguồn main d18b1a9 và bộ tài liệu chuẩn bị.
+- **Trạng thái:** Đã nhận phần 10, review/sửa 8 ca; code `9d11071`, 713 Python + 37 Node PASS, 3 live-CVAT SKIP. [Báo cáo](11-report.md) / [bàn giao](11-handoff.md); quality model, GPU/Colab và precision tay chưa nghiệm thu.
 - **Nguồn chung:** [kế hoạch 09–16](REVIEW-PLAN-09-16.md), [phân nhánh](README.md), [inventory 131 file](scope-inventory.tsv).
 
 ## Prompt để thực hiện phần này

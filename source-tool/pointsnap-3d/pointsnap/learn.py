@@ -7,7 +7,7 @@ lần quét). Module này dùng các kết luận đó để chấm **độ tin 
    nên luật ít kết luận có độ tin cậy gần 50% và khoảng tin cậy rộng.
 2. **Mô hình logistic** (khi có ≥ `MIN_SAMPLES_MODEL` kết luận và đủ cả hai loại): xác suất mục là lỗi thật theo luật,
    mức, class và **độ vượt ngưỡng** (số đo / ngưỡng). Chỉ dùng mô hình mới nếu sai số kiểm chéo (log-loss, 5 lần chia)
-   **tốt hơn** tầng 1 và tốt hơn mô hình đang dùng; mọi phiên bản cũ được giữ lại để quay về.
+   **tốt hơn** tầng 1 trên cùng các fold tách theo job; mọi phiên bản cũ được giữ lại để quay về.
 
 Độ tin cậy dùng để xếp mục (mục chắc chắn lên trước) và, nếu guideline bật `learning.adjust_severity`, hạ mục Cảnh báo có
 độ tin cậy < `downgrade_below` xuống Thông tin. Tool không bao giờ tự sửa box.
@@ -18,11 +18,14 @@ from __future__ import annotations
 import json
 import math
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 import numpy as np
+
+from pointsnap.web.storage import StorageError, read_json, write_json
 
 MIN_SAMPLES_MODEL = 40
 """Cần ít nhất chừng này kết luận (có cả Đúng và Báo nhầm) mới thử mô hình logistic."""
@@ -39,6 +42,7 @@ class Sample:
     value: float | None
     threshold: float | None
     verdict: str  # "ok" | "fp"
+    group: str | None = None  # source job; all rescans/tracks remain in one CV fold
 
     @property
     def target(self) -> int:
@@ -47,22 +51,46 @@ class Sample:
 
 def collect_reviews(project_dir: str | Path) -> list[Sample]:
     """Mọi kết luận xem tay của dự án (tất cả lần quét)."""
-    samples: list[Sample] = []
+    samples: dict[tuple, Sample] = {}
     runs = Path(project_dir) / "runs"
     for run_dir in sorted(p for p in runs.iterdir() if p.is_dir()) if runs.is_dir() else []:
         review_path, findings_path = run_dir / "reviews.json", run_dir / "findings.json"
-        if not review_path.is_file() or not findings_path.is_file():
+        if not findings_path.is_file():
+            if review_path.is_file():
+                raise StorageError("reviews.json thiếu findings.json tương ứng")
             continue
-        reviews = json.loads(review_path.read_text(encoding="utf-8"))
-        findings = json.loads(findings_path.read_text(encoding="utf-8"))
-        for index, verdict in reviews.items():
-            i = int(index)
-            if verdict not in ("ok", "fp") or not 0 <= i < len(findings):
-                continue
-            f = findings[i]
-            samples.append(Sample(f["rule"], f.get("severity", "warning"), f.get("label", ""), f.get("value"), f.get("threshold"),
-                                  verdict))
-    return samples
+        from pointsnap.web.preview import load_reviews
+        reviews = load_reviews(run_dir)
+        findings = read_json(findings_path, list)
+        summary_path = run_dir / "summary.json"
+        summary = read_json(summary_path) if summary_path.is_file() else {}
+        if (not isinstance(summary.get("cvat_url", ""), str)
+                or summary.get("job_id") is not None and
+                (type(summary["job_id"]) is not int or summary["job_id"] < 0)):
+            raise StorageError("summary.json có nguồn job không hợp lệ")
+        source = (summary.get("cvat_url", "").rstrip("/"), summary.get("job_id"))
+        # Without source metadata, preserve old runs independently rather than guessing box identity.
+        group = json.dumps(source) if source[1] is not None else run_dir.name
+        for i, f in enumerate(findings):
+            rule, label, severity = f.get("rule"), f.get("label", ""), f.get("severity", "warning")
+            if (not isinstance(rule, str) or not rule or not isinstance(label, str)
+                    or severity not in ("error", "warning", "info")
+                    or any(v is not None and (type(v) is not int or v < 0)
+                           for v in (f.get("track_id"), f.get("source_id"), f.get("frame")))
+                    or any(v is not None and (isinstance(v, bool) or not isinstance(v, (int, float))
+                           or not math.isfinite(v)) for v in (f.get("value"), f.get("threshold")))):
+                raise StorageError("findings.json có dữ liệu học không hợp lệ")
+            owner = ("track", f["track_id"]) if f.get("track_id") is not None else ("shape", f.get("source_id"))
+            if owner[1] is not None and f.get("frame") is not None and source[1] is not None:
+                # Same observation only: changed measurements must not inherit a stale verdict.
+                key = (group, owner, f["frame"], rule, label, severity, f.get("value"), f.get("threshold"))
+            else:
+                key = (run_dir.name, i)
+            samples.pop(key, None)
+            verdict = reviews.get(str(i))
+            if verdict is not None:
+                samples[key] = Sample(rule, severity, label, f.get("value"), f.get("threshold"), verdict, group)
+    return list(samples.values())
 
 
 # --- Tầng 1: thống kê theo luật ---------------------------------------------------------------------------
@@ -121,23 +149,30 @@ def _logloss(p: np.ndarray, y: np.ndarray) -> float:
     return float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p)))
 
 
+def _review_folds(samples: Sequence[Sample], seed: int = 0):
+    groups: dict[str, list[Sample]] = {}
+    for i, s in enumerate(samples):
+        groups.setdefault(s.group if s.group is not None else f"sample:{i}", []).append(s)
+    if len(groups) < 2:
+        return []
+    keys = sorted(groups)
+    order = np.random.default_rng(seed).permutation(len(keys))
+    folds = np.array_split(order, min(FOLDS, len(keys)))
+    return [([s for i in test for s in groups[keys[i]]],
+             [s for i in order if i not in set(test) for s in groups[keys[i]]]) for test in folds]
+
+
 def _cross_validate(samples: Sequence[Sample], seed: int = 0) -> tuple[float, float]:
     """Log-loss kiểm chéo của (tầng 1, mô hình logistic)."""
-    rng = np.random.default_rng(seed)
-    order = rng.permutation(len(samples))
-    folds = np.array_split(order, FOLDS)
     p_rule, p_model, ys = [], [], []
-    for k in range(FOLDS):
-        test = [samples[i] for i in folds[k]]
-        train = [samples[i] for j in range(FOLDS) if j != k for i in folds[j]]
+    for test, train in _review_folds(samples, seed):
         stats = rule_stats(train)
         vocab = Vocabulary.build(train)
         w = _fit(np.stack([vocab.features(s.rule, s.severity, s.label, s.value, s.threshold) for s in train]),
                  np.array([s.target for s in train], dtype=float))
         for s in test:
             p_rule.append(stats.get(s.rule, {}).get("precision", 0.5))
-            p_model.append(1.0 / (1.0 + math.exp(-float(vocab.features(s.rule, s.severity, s.label, s.value,
-                                                                        s.threshold) @ w))))
+            p_model.append(_sigmoid(float(vocab.features(s.rule, s.severity, s.label, s.value, s.threshold) @ w)))
             ys.append(s.target)
     y = np.array(ys, dtype=float)
     return _logloss(np.array(p_rule), y), _logloss(np.array(p_model), y)
@@ -159,10 +194,11 @@ class LearnedModel:
 
     def confidence(self, rule: str, severity: str, label: str, value: float | None, threshold: float | None) -> float:
         """Xác suất mục là lỗi thật."""
-        if self.use_model and self.weights:
+        if (self.use_model and self.weights and rule in self.vocabulary["rules"]
+                and label in self.vocabulary["labels"]):
             vocab = Vocabulary(self.vocabulary["rules"], self.vocabulary["labels"])
             z = float(vocab.features(rule, severity, label, value, threshold) @ np.array(self.weights))
-            return 1.0 / (1.0 + math.exp(-z))
+            return _sigmoid(z)
         return float(self.rule_stats.get(rule, {}).get("precision", 0.5))
 
     def to_dict(self) -> dict[str, Any]:
@@ -170,11 +206,37 @@ class LearnedModel:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> LearnedModel:
-        return cls(**data)
+        try:
+            model = cls(**data)
+            if (type(model.version) is not int or model.version < 1
+                    or type(model.n_samples) is not int or model.n_samples < 0
+                    or not isinstance(model.trained_at, str) or type(model.use_model) is not bool
+                    or not isinstance(model.rule_stats, dict)):
+                raise ValueError("invalid metadata")
+            for rule, row in model.rule_stats.items():
+                if (not isinstance(rule, str) or not isinstance(row, dict)
+                        or not all(type(row.get(k)) in (int, float) and math.isfinite(row[k])
+                                   for k in ("ok", "fp", "n", "precision", "std"))
+                        or min(row["ok"], row["fp"], row["n"], row["std"]) < 0
+                        or not 0 <= row["precision"] <= 1 or row["n"] != row["ok"] + row["fp"]):
+                    raise ValueError("invalid statistics")
+            if model.use_model:
+                vocab = Vocabulary(**model.vocabulary)
+                if (any(not isinstance(v, list) or any(not isinstance(k, str) for k in v)
+                        for v in (vocab.rules, vocab.labels))
+                        or len(model.weights) != 3 + len(vocab.rules) + len(vocab.labels)
+                        or any(type(w) not in (int, float) or not math.isfinite(w) for w in model.weights)):
+                    raise ValueError("invalid weights")
+            for loss in (model.cv_logloss_rule, model.cv_logloss_model):
+                if loss is not None and (type(loss) not in (int, float) or not math.isfinite(loss) or loss < 0):
+                    raise ValueError("invalid loss")
+            return model
+        except (TypeError, ValueError, KeyError, AttributeError) as exc:
+            raise StorageError("learned.json có mô hình không hợp lệ; khôi phục bản sao lưu") from exc
 
 
 def train(samples: Sequence[Sample], previous: LearnedModel | None = None) -> LearnedModel:
-    """Học từ các kết luận. Mô hình logistic chỉ được dùng khi kiểm chéo tốt hơn thống kê theo luật (và mô hình cũ)."""
+    """Mô hình logistic chỉ được dùng khi kiểm chéo theo nguồn tốt hơn thống kê theo luật."""
     model = LearnedModel(
         version=(previous.version + 1) if previous else 1,
         trained_at=time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -182,11 +244,11 @@ def train(samples: Sequence[Sample], previous: LearnedModel | None = None) -> Le
         rule_stats=rule_stats(samples),
     )
     targets = {s.target for s in samples}
-    if len(samples) >= MIN_SAMPLES_MODEL and targets == {0, 1}:
+    if len(samples) >= MIN_SAMPLES_MODEL and targets == {0, 1} and _review_folds(samples):
         cv_rule, cv_model = _cross_validate(samples)
         model.cv_logloss_rule, model.cv_logloss_model = cv_rule, cv_model
-        best_previous = previous.cv_logloss_model if previous and previous.use_model else None
-        if cv_model < cv_rule and (best_previous is None or cv_model <= best_previous + 0.02):
+        # Old CV scores use different reviews/folds and cannot rank this dataset.
+        if cv_model < cv_rule:
             vocab = Vocabulary.build(samples)
             x = np.stack([vocab.features(s.rule, s.severity, s.label, s.value, s.threshold) for s in samples])
             model.weights = _fit(x, np.array([s.target for s in samples], dtype=float)).tolist()
@@ -230,21 +292,49 @@ def load_model(project_dir: str | Path) -> LearnedModel | None:
     path = model_path(project_dir)
     if not path.is_file():
         return None
-    return LearnedModel.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    return LearnedModel.from_dict(read_json(path))
+
+
+def _sigmoid(z: float) -> float:
+    if z >= 0:
+        return 1.0 / (1.0 + math.exp(-z))
+    exp = math.exp(z)
+    return exp / (1.0 + exp)
+
+
+@contextmanager
+def _learning_lock(project_dir: Path):
+    # Exclusive file creation serializes CLI and web writers, including separate processes.
+    lock = project_dir / ".learn.lock"
+    try:
+        lock.open("x", encoding="utf-8").close()
+    except FileExistsError as exc:
+        raise StorageError("Dự án đang học; thử lại sau. Nếu tiến trình đã dừng, xóa .learn.lock.") from exc
+    try:
+        yield
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def learn_project(project_dir: str | Path) -> LearnedModel:
     """Học lại từ mọi kết luận của dự án, lưu `learned.json` (bản cũ chuyển vào `learned-history/`)."""
     project_dir = Path(project_dir)
-    previous = load_model(project_dir)
-    model = train(collect_reviews(project_dir), previous)
-    path = model_path(project_dir)
-    if path.is_file():
+    with _learning_lock(project_dir):
+        previous = load_model(project_dir)
+        model = train(collect_reviews(project_dir), previous)
         history = project_dir / "learned-history"
-        history.mkdir(exist_ok=True)
-        path.replace(history / f"learned-v{previous.version if previous else 0}.json")
-    path.write_text(json.dumps(model.to_dict(), ensure_ascii=False, indent=1), encoding="utf-8")
-    return model
+        versions = [int(p.stem.removeprefix("learned-v")) for p in history.glob("learned-v*.json")
+                    if p.stem.removeprefix("learned-v").isdigit()]
+        model.version = max([model.version, *(v + 1 for v in versions)])
+        if previous is not None:
+            history.mkdir(exist_ok=True)
+            archive = history / f"learned-v{previous.version}.json"
+            if archive.exists() and read_json(archive) != previous.to_dict():
+                raise StorageError("Lịch sử có nội dung khác cùng phiên bản; giữ mô hình đang dùng")
+            if not archive.exists():
+                write_json(archive, previous.to_dict())
+        write_json(model_path(project_dir), model.to_dict())
+        return model
 
 
 def report(model: LearnedModel) -> str:
@@ -257,5 +347,5 @@ def report(model: LearnedModel) -> str:
         lines.append(f"Mô hình logistic: log-loss kiểm chéo {model.cv_logloss_model:.3f} so với "
                      f"{model.cv_logloss_rule:.3f} của thống kê theo luật → {used}.")
     else:
-        lines.append(f"Chưa đủ {MIN_SAMPLES_MODEL} kết luận có cả Đúng và Báo nhầm để thử mô hình logistic.")
+        lines.append(f"Cần ≥ {MIN_SAMPLES_MODEL} kết luận, cả Đúng và Báo nhầm và ≥ 2 nhóm nguồn độc lập để kiểm chéo.")
     return "\n".join(lines)

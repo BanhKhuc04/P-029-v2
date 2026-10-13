@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Mapping, Sequence
 import numpy as np
 
 from pointsnap.core.geometry import normalize_angle
-from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_track
+from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity
 
 if TYPE_CHECKING:
     from pointsnap.core.config import StaticConfig
@@ -54,8 +54,12 @@ def detect_static_errors(
     if not sensor_to_world:
         return []
     findings: list[Finding] = []
-    for boxes in group_by_track(cuboids).values():
-        visible = [b for b in boxes if b.visible and b.frame in sensor_to_world]
+    groups = {}
+    for b in cuboids:
+        if b.track_id is not None:
+            groups.setdefault((b.track_id, b.label), []).append(b)
+    for boxes in groups.values():
+        visible = [b for b in boxes if b.visible and b.keyframe and b.frame in sensor_to_world]
         if len(visible) < cfg.min_keyframes:
             continue
         centers, headings = _world(visible, sensor_to_world)

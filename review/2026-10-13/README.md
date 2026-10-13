@@ -1,7 +1,5 @@
 # Phân nhánh để thực hiện review 09–16
 
-**Cập nhật sau bàn giao tối 13/10:** [báo cáo tổng](handoff-final-report.md), [14](14-report.md), [15](15-report.md), [16](16-report.md). Các sửa được đưa vào PR riêng có base main; nhánh `codex/handoff-integration-check` hợp nhất để chạy test và không thay thế main. Bảng phân nhánh bên dưới giữ kế hoạch ban đầu.
-
 **8 nhánh**, làm theo thứ tự **09 → 16**. Cả tám bắt đầu từ commit chuẩn bị trên main `d18b1a9`. Phần **09–11 đã review/sửa và push GitHub**, với ancestry tiếp nối. [Báo cáo 11](11-report.md) / [bàn giao 11](11-handoff.md). Phần 12–16 cần nhận kết quả 11 theo dependency trước khi thực hiện. Các giới hạn quality và kiểm tay được ghi riêng trong báo cáo.
 
 ## Chọn phần cần làm
@@ -58,3 +56,5 @@ Nếu cần làm phần sau khi phần trước chưa merge, nhập kết quả 
 > Thực hiện review phần 09 trên nhánh codex/review-09-geometry. Đọc review/2026-10-13/09-geometry.md và kế hoạch chung; làm đủ 8 ca, sửa lỗi có bằng chứng trong phạm vi phần 09, kiểm lại và lưu báo cáo/bàn giao. Bắt đầu từ ca C4 bằng → dốc còn XFAIL. Ghi rõ ca bị chặn và phần cần tôi kiểm tay.
 
 Prompt cho các phần còn lại có trong hướng dẫn tương ứng. Bộ tài liệu không xác nhận tính năng đã được nghiệm thu.
+
+**Cập nhật sau bàn giao tối 13/10:** [báo cáo tổng](handoff-final-report.md), [14](14-report.md), [15](15-report.md), [16](16-report.md). Các sửa được đưa vào PR riêng có base main; nhánh `codex/handoff-integration-check` hợp nhất để chạy test và không thay thế main. Bảng phân nhánh bên trên giữ kế hoạch ban đầu.

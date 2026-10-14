@@ -162,8 +162,9 @@ fit:                                  # box vẽ lệch khỏi vật (C1), spec 
   sparse_warning_points: 0            # > 0: Cảnh báo box có ít điểm hơn mức này ("không nên gán", chờ chốt P-009)
   outside_margin_m: 0.5               # xét điểm trong box nới mỗi phía max(0.5 m, 25% cạnh box), bỏ điểm mặt đất,
   outside_margin_rel: 0.25            # điểm của box khác, và điểm không nối liền với điểm trong box
-  outside_min_points: 30              # cần ít nhất 30 điểm của vật nằm ngoài box
-  outside_warning_ratio: 0.5          # > 50% điểm của vật (nối liền với điểm trong box) nằm ngoài box: Cảnh báo
+  outside_min_object_points: 30       # chỉ xét vật có ≥ 30 điểm
+  outside_min_points: 15              # cần ít nhất 15 điểm của vật nằm ngoài box
+  outside_warning_ratio: 0.4          # tỉ lệ điểm của vật nằm ngoài box cao hơn trung vị track > 40 điểm %: Cảnh báo
   outside_error_ratio: 0.7            # > 70%: Lỗi (box nhỏ hoặc lệch hẳn khỏi vật)
   ground_clearance_m: 0.25            # điểm thấp hơn đáy box + 0.25 m coi là mặt đất
   loose_min_points: 40                # box dư: chỉ xét box gần, nhiều điểm

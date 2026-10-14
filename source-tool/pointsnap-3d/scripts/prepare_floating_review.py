@@ -49,6 +49,12 @@ def select_cases(candidates, count):
     return result
 
 
+def packet_id(config_hash, cases, asset_hashes):
+    """Keep verdicts bound to this exact evidence, including the rendered images."""
+    data={'config':config_hash,'cases':cases,'assets':asset_hashes}
+    return hashlib.sha256(json.dumps(data,sort_keys=True,ensure_ascii=False,allow_nan=False).encode()).hexdigest()
+
+
 def camera_image(box, frames, path):
     """Scientific overlay of the current cuboid; same calibrated pose as the scanner."""
     from PIL import Image, ImageDraw
@@ -163,6 +169,9 @@ def main():
                 'dataset':'nuScenes mini; previously used for tuning/review, not independent held-out.',
                 'g7_status':'UNASSESSED','verdicts_created':0,'cvat_writes':0,
                 'limits':'Floating-only exploratory review; preview has not been accepted by a human. No Apply endpoint, no automatic repair. Crop and views support manual inspection; not a full scene or sensor visibility proof.'}
+    asset_hashes={p.relative_to(args.out).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(assets.iterdir()) if p.is_file()}
+    provenance['packet_id']=packet_id(provenance['config_sha256'],cases,asset_hashes)
+    provenance['assets_sha256']=asset_hashes
     (args.out/'packet.json').write_bytes((json.dumps({'provenance':provenance,'cases':cases},ensure_ascii=False,allow_nan=False)+'\n').encode())
     (args.out/'provenance.json').write_bytes((json.dumps(provenance,indent=2,ensure_ascii=False)+'\n').encode())
     fields=['scene','frame','track_id','label','rule','severity','message','verdict','note','repair_verdict','repair_note']

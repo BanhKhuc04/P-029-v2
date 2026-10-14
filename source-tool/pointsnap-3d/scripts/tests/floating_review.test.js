@@ -5,11 +5,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function viewer(initial = {}, storageFails = false) {
+function viewer(initial = {}, storageFails = false, packetId = 'test-packet') {
   const template = fs.readFileSync(path.join(__dirname, '..', 'floating_review.html'), 'utf8');
   const code = template.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
   const packet = {
-    provenance: { package_sha256: 'test-package', config_sha256: 'test-config', dataset: 'synthetic test only' },
+    provenance: { packet_id: packetId, package_sha256: 'test-package', config_sha256: 'test-config', dataset: 'synthetic test only' },
     cases: [0, 1].map(i => ({
       number: i + 1, scene: 'synthetic', object_points: 40, context: 'fixture.png', context_frames: [0, 2],
       camera: null, camera_channel: null, box: { length: 4, width: 2, height: 1.6 }, points: [[0, 0, 0]],
@@ -45,7 +45,7 @@ function viewer(initial = {}, storageFails = false) {
     setTimeout: f => f(),
   });
   vm.runInContext(code, context);
-  return { element, storage, key: 'pointsnap-floating-review:test-package:test-config:2',
+  return { element, storage, key: 'pointsnap-floating-review:' + packetId,
     verdict(v) { element('detection-answers').onchange({ target: { value: v } }); },
     next() { element('next').onclick(); },
     async csv() { element('export').onclick(); return exported.text(); },
@@ -115,4 +115,11 @@ test('Storage failure is visible and does not prevent CSV export', async () => {
   const ui = viewer({}, true); ui.verdict('Không rõ');
   assert.match(ui.element('storage-status').textContent, /Hãy tải CSV/);
   assert.match(await ui.csv(), /"Không rõ"/);
+});
+
+test('A changed evidence packet never inherits old human verdicts', () => {
+  const first = viewer(); first.verdict('Đúng lỗi');
+  const second = viewer({ [first.key]: first.storage.get(first.key) }, false, 'changed-packet');
+  assert.match(second.element('progress').textContent, /Đã chấm 0\/2/);
+  assert.equal(second.element('repair-section').hidden, true);
 });

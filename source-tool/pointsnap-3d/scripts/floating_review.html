@@ -50,7 +50,7 @@
 <script>
 'use strict';
 const packet=JSON.parse(document.getElementById('packet').textContent), cases=packet.cases;
-const key='pointsnap-floating-review:'+packet.provenance.package_sha256+':'+packet.provenance.config_sha256+':'+cases.length;
+const key='pointsnap-floating-review:'+packet.provenance.packet_id;
 let answers={}, at=0, showProposal=false;
 const detectionValues=['','Đúng lỗi','Báo nhầm','Không rõ'], repairValues=['','Tốt hơn','Không tốt hơn','Không rõ'];
 try{answers=JSON.parse(localStorage.getItem(key)||'{}');if(!answers||Array.isArray(answers)||typeof answers!=='object')answers={};}catch(_){document.getElementById('storage-status').textContent='Không đọc được lưu cục bộ. Hãy tải CSV để giữ kết quả.';}

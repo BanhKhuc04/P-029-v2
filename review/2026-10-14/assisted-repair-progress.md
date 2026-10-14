@@ -23,7 +23,7 @@ Mở bộ mẫu local `source-tool/pointsnap-3d/out/floating-review/index.html` 
 2. Chỉ sau khi chọn Đúng lỗi, trang mới cho xem phần gợi ý. Nếu bị chặn, mục ghi rõ giữ sửa tay; không có thao tác ghi CVAT.
 3. Bấm **Tải CSV kết quả**, giữ file rồi cung cấp đường dẫn file đã tải để tổng hợp. Công cụ không đọc câu trả lời từ trạng thái ẩn của trình duyệt.
 
-Câu trả lời được lưu localStorage nếu trình duyệt cho phép; khi lưu thất bại, trang báo rõ và vẫn cho tải CSV. CSV là bản lưu có thể mang sang máy/phiên khác. Precision của bộ mẫu chỉ là mô tả; Không rõ báo riêng và không nằm trong mẫu số. Chất lượng phát hiện và chất lượng gợi ý có hai cột kết luận riêng.
+Câu trả lời được lưu localStorage theo hash của đúng bộ bằng chứng (case/config/ảnh); bộ mẫu đổi không tự mang theo verdict cũ. Nếu trình duyệt cho phép, câu trả lời được giữ local; khi lưu thất bại, trang báo rõ và vẫn cho tải CSV. CSV là bản lưu có thể mang sang máy/phiên khác. Precision của bộ mẫu chỉ là mô tả; Không rõ báo riêng và không nằm trong mẫu số. Chất lượng phát hiện và chất lượng gợi ý có hai cột kết luận riêng.
 
 ## Script và kiểm thử
 
@@ -38,7 +38,7 @@ python auto-tests/manual_precision.py --verdicts out/floating-review/verdicts-te
 
 Script từ chối ghi đè thư mục đã có để giữ câu trả lời của người chấm. Ảnh, point cloud lấy mẫu và CSV thô nằm trong `out/` bị Git ignore. Chỉ commit script, tests và evidence đã rút gọn; không commit token, nhãn thô hoặc ảnh nuScenes.
 
-Kiểm kỹ thuật mới: **26 Python PASS** (24 ca proposal, 2 ca chọn mẫu), **7 Node PASS** cho viewer. Các test viewer dùng fixture synthetic, không ghi verdict vào bộ mẫu thật. Ca proposal kiểm hướng nâng/hạ, giữ khoảng đáy–mặt đất tham chiếu khác 0, bảo toàn hình học khác, chặn thiếu/sai evidence, slope/curb, ID/frame lệch, điểm thưa và dịch quá lớn. Node kiểm chưa chấm mặc định, Không rõ, tách precision, xem trước sau kết luận, CSV và lỗi lưu local. JavaScript syntax check đạt; đã xem ảnh camera/context được render. Chưa có kiểm browser E2E mới cho viewer.
+Kiểm kỹ thuật mới: **27 Python PASS** (24 ca proposal, 3 ca chọn mẫu/định danh), **8 Node PASS** cho viewer. Các test viewer dùng fixture synthetic, không ghi verdict vào bộ mẫu thật. Ca proposal kiểm hướng nâng/hạ, giữ khoảng đáy–mặt đất tham chiếu khác 0, bảo toàn hình học khác, chặn thiếu/sai evidence, slope/curb, ID/frame lệch, điểm thưa và dịch quá lớn. Node kiểm chưa chấm mặc định, Không rõ, tách precision, xem trước sau kết luận, CSV và lỗi lưu local. JavaScript syntax check đạt; đã xem ảnh camera/context được render. Chưa có kiểm browser E2E mới cho viewer.
 
 Lượt kiểm đầu proposal có ba assertion so float chính xác thất bại ở sai số biểu diễn khoảng `1e-16`; đã dùng dung sai `1e-9` cho tâm Z, các trường không đổi vẫn so chính xác. Hai lượt chuẩn bị đầu gọi sai API `reader.scenes` được sửa theo `SceneInfo.name`; không tính lượt dở là bộ mẫu hoàn thành. Bộ cuối đã kiểm đủ 24 định danh độc lập, asset tồn tại, CSV blank và JSON hữu hạn.
 

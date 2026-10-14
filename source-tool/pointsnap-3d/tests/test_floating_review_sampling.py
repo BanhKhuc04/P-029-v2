@@ -26,3 +26,10 @@ def test_selection_is_deterministic_across_candidate_input_order_and_can_be_smal
     rows = [item('b', 2, 1), item('a', 1, 3), item('a', 1, 0)]
     assert module.select_cases(rows, 20) == module.select_cases(list(reversed(rows)), 20)
     assert len(module.select_cases(rows, 20)) == 2
+
+
+def test_packet_identity_changes_with_measurement_config_or_image_evidence():
+    before=module.packet_id('cfg',[{'value':.2}],{'camera.jpg':'image-a'})
+    assert before != module.packet_id('cfg',[{'value':.3}],{'camera.jpg':'image-a'})
+    assert before != module.packet_id('new-cfg',[{'value':.2}],{'camera.jpg':'image-a'})
+    assert before != module.packet_id('cfg',[{'value':.2}],{'camera.jpg':'image-b'})

@@ -281,17 +281,37 @@
     if (seen || !splash) return;
 
     splash.hidden = false;
+    const appContainer = document.getElementById('app-container');
+    const previousInert = appContainer.inert;
+    appContainer.inert = true;
+    splash.tabIndex = -1;
     const startBtn = document.getElementById('splash-start');
+    const onSplashKeydown = (event) => {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        (startBtn.hidden ? splash : startBtn).focus();
+      } else if (event.key === 'Escape' && !startBtn.hidden) {
+        event.preventDefault();
+        startBtn.click();
+      }
+    };
+    splash.addEventListener('keydown', onSplashKeydown);
     startBtn.focus();
     startBtn.addEventListener('click', async () => {
       startBtn.hidden = true;
+      splash.focus();
       document.getElementById('splash-logo').innerHTML = loaderSvg(120, { ground: true, ring: true, label: 'Đang mở PointSnap 3D' });
       const status = document.getElementById('splash-status');
       status.textContent = 'Đang tải dự án và kết nối CVAT…';
       await Promise.all([appReady.catch(() => {}), new Promise((r) => setTimeout(r, 1200))]);
       status.textContent = 'Đã sẵn sàng';
       splash.classList.add('leaving');
-      setTimeout(() => { splash.hidden = true; }, 350);
+      setTimeout(() => {
+        splash.hidden = true;
+        splash.removeEventListener('keydown', onSplashKeydown);
+        appContainer.inert = previousInert;
+        document.getElementById('btn-project-dropdown').focus();
+      }, 350);
       try {
         sessionStorage.setItem('pointsnap_splash_done', '1');
       } catch (_) {}

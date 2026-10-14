@@ -39,6 +39,24 @@ async function fetchPointSnap(base, path, method = 'GET', body) {
   return { ok: res.ok, status: res.status, data };
 }
 
+async function fetchCamera(base, path) {
+  const res = await fetch(`${base}${path}`, { method: 'GET', redirect: 'error', signal: AbortSignal.timeout(10000) });
+  if (!res.ok) return { ok: false, status: res.status, error: 'Không có ảnh camera cho mục này; kiểm tra ảnh và pose của bản xuất' };
+  if ((res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase() !== 'image/jpeg') {
+    return { ok: false, error: 'Ảnh camera trả về sai định dạng' };
+  }
+  const limit = 2 * 1024 * 1024;
+  if (Number(res.headers.get('Content-Length')) > limit) return { ok: false, error: 'Ảnh camera quá lớn' };
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.length > limit || bytes.length < 4 || bytes[0] !== 255 || bytes[1] !== 216) {
+    return { ok: false, error: 'Ảnh camera không hợp lệ hoặc quá lớn' };
+  }
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 16384) binary += String.fromCharCode(...bytes.subarray(i, i + 16384));
+  return { ok: true, data: { image_url: `data:image/jpeg;base64,${btoa(binary)}`,
+                            channel: (res.headers.get('X-Camera-Channel') || '').slice(0, 80) } };
+}
+
 function requestRoute(method, path, body, sender) {
   if (!METHODS.has(method) || typeof path !== 'string' || !path.startsWith('/api/') || path.includes('..') || path.includes('#')) return null;
   const url = new URL(path, 'http://pointsnap.invalid');
@@ -50,6 +68,7 @@ function requestRoute(method, path, body, sender) {
   const job = page.pathname.match(/^\/tasks\/\d+\/jobs\/(\d+)\/?$/);
   if (!job) return null;
   const jobId = Number(job[1]);
+  if (method === 'GET' && url.pathname === '/api/rules' && !url.search) return { jobId, origin: page.origin };
   if (method === 'GET' && (url.pathname === `/api/extension/jobs/${jobId}` || url.pathname === '/api/extension/poll')) {
     const keys = [...url.searchParams.keys()];
     if (keys.some(k => !['cvat_url','job_id','after'].includes(k)) || keys.length !== new Set(keys).size) return null;
@@ -58,6 +77,10 @@ function requestRoute(method, path, body, sender) {
     return { jobId, origin: page.origin };
   }
   if (url.search) return null;
+  const camera = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans\/(\d{8}-\d{6}(?:-\d+)?-job\d+)\/findings\/(\d+)\/camera$/);
+  if (camera && method === 'GET' && body === undefined && Number.isSafeInteger(Number(camera[3]))) {
+    return { slug: camera[1], runId: camera[2], cameraIndex: Number(camera[3]), jobId, origin: page.origin };
+  }
   const match = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans(?:\/(\d{8}-\d{6}(?:-\d+)?-job\d+)(?:\/(reviews)(?:\/(\d+))?)?)?$/);
   if (!match) return null;
   const [,slug,runId,reviews,index] = match;
@@ -81,6 +104,10 @@ async function callPointSnap({ method, path, body }, sender) {
       if (route.runId) {
         const run = await fetchPointSnap(base, `/api/projects/${route.slug}/scans/${route.runId}`);
         if (!run.ok || run.data.job_id !== route.jobId || (run.data.summary?.cvat_url && !sameCvatOrigin(run.data.summary.cvat_url, route.origin))) return { ok: false, error: 'Run không thuộc job đang mở' };
+        if (route.cameraIndex !== undefined) {
+          if (!Array.isArray(run.data.findings) || route.cameraIndex >= run.data.findings.length) return { ok: false, error: 'Không có mục camera này' };
+          return await fetchCamera(base, path);
+        }
         if (method === 'GET' && !path.endsWith('/reviews')) return run;
       }
     }

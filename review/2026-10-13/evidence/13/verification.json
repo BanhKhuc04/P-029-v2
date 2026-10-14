@@ -1,0 +1,62 @@
+{
+  "evidence_id": "EV-13-001",
+  "code_commit": "ae1d5795c5a5132afb2985b5cde18de7f79399f1",
+  "baseline_commit": "699433b",
+  "python_version": "3.12.14",
+  "sources": {
+    "pointsnap/detectors/missing.py": {
+      "workspace_sha256": "e922b56e4c17e9c506e34a299d4e2413604363582fd690c6e41b07d87b53fbb4",
+      "canonical_lf_sha256": "51cdd5b7c3693e107fbaddc8d47cc115b53498e6dd36f684cca82dd57461c422",
+      "matches_commit": true
+    },
+    "tests/test_missing_review13.py": {
+      "workspace_sha256": "911876e9515cb867c79bba1713d76d23bd1980d96e323a4001620e4702bb4404",
+      "canonical_lf_sha256": "911876e9515cb867c79bba1713d76d23bd1980d96e323a4001620e4702bb4404",
+      "matches_commit": true
+    }
+  },
+  "full_suite": {
+    "artifact": "source-tool/pointsnap-3d/out/review13-final.xml",
+    "sha256": "adb9c00935e6019ea3ef2540408c7594bf1d07936dcca541fa0fc35fb09aa001",
+    "passed": 792,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 3
+  },
+  "initial_red_15_cases": {
+    "artifact": "source-tool/pointsnap-3d/out/review13-red.xml",
+    "sha256": "aa22978c90c8c7ab6a5dd0121d0a3ab05cb57f78d9f945985f70e2e86ac7641f",
+    "passed": 1,
+    "failed": 14,
+    "errors": 0,
+    "skipped": 0
+  },
+  "focused_before_six_additional_cases": {
+    "artifact": "source-tool/pointsnap-3d/out/review13-focused.xml",
+    "sha256": "1bc446e68c0e951641b4e685d8820e671888f468a189a81bb02f75ff87687c14",
+    "passed": 127,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_cases_in_final_suite": 21,
+  "node": {
+    "command": "node --test tests/core.test.js tests/review05.test.js tests/security06.test.js",
+    "passed": 37,
+    "failed": 0,
+    "skipped": 0
+  },
+  "changed_module_statement_coverage": {
+    "covered_lines": 276,
+    "num_statements": 285,
+    "percent_covered": 96.84210526315789,
+    "percent_covered_display": "97",
+    "missing_lines": 9,
+    "excluded_lines": 2,
+    "percent_statements_covered": 96.84210526315789,
+    "percent_statements_covered_display": "97"
+  },
+  "pretrained_tested": false,
+  "gpu_tested": false,
+  "human_verdicts": 0
+}

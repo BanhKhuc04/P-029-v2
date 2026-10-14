@@ -1,5 +1,7 @@
 # PointSnap 3D — Báo cáo dự án
 
+> Đối chiếu 13/10: số liệu dưới đây là snapshot 12/10, không đại diện mặc nhiên cho mã mới. Các scene kiểm tra đã được dùng chấm tay/chỉnh evidence nên không còn là held-out độc lập. Xem [kết quả bàn giao hiện hành](../../../review/2026-10-13/handoff-final-report.md); G7 dùng precision tay từng luật và còn chưa nghiệm thu khi thiếu mẫu. Proxy finding trên nhãn chuẩn không phải số báo nhầm đã xác nhận.
+
 **Công cụ phát hiện và cảnh báo sớm lỗi nhãn 3D cuboid trên CVAT** · Đội P-029, Cohort 4A · Cập nhật 12/10/2026
 
 > **Tóm tắt.** Gán nhãn 3D trên CVAT mất nhiều thời gian nhất ở vòng *nộp → bị trả về → sửa → nộp lại*. PointSnap đọc

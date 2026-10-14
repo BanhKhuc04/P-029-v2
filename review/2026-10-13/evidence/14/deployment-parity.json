@@ -1,0 +1,82 @@
+{
+  "model": "gpt-6.1-sol",
+  "endpoints": [
+    {
+      "endpoint": "health",
+      "status": 200,
+      "mime": "application/json; charset=utf-8",
+      "json": {
+        "status": "ok"
+      }
+    },
+    {
+      "endpoint": "report without PAT",
+      "status": 401
+    },
+    {
+      "endpoint": "report json",
+      "status": 200,
+      "mime": "application/json; charset=utf-8",
+      "bytes": 64426
+    },
+    {
+      "endpoint": "report html",
+      "status": 200,
+      "mime": "text/html; charset=utf-8",
+      "bytes": 193383
+    },
+    {
+      "endpoint": "report csv",
+      "status": 200,
+      "mime": "text/csv; charset=utf-8",
+      "bytes": 31427
+    }
+  ],
+  "job_id": 4,
+  "cloud_available": true,
+  "pose_available": true,
+  "findings": 127,
+  "cli_web_api_equal": true,
+  "annotations_unchanged": true,
+  "real_cli_exit": 0,
+  "real_cli_csv_equal": true,
+  "gate_equal": true,
+  "gate_passed": false,
+  "coverage_equal": true,
+  "camera_available": false,
+  "critic_available": false,
+  "before_sha256": "774da0f4be5a76722e372fcc242485fb974d2506a79d74a59bd9cb47b1db3923",
+  "after_sha256": "774da0f4be5a76722e372fcc242485fb974d2506a79d74a59bd9cb47b1db3923",
+  "api_checks": [
+    "floating",
+    "size.class_range",
+    "size.in_track",
+    "track.jump",
+    "track.split_id",
+    "track.long_interpolation",
+    "heading.flip",
+    "heading.motion",
+    "heading.points",
+    "fit.empty",
+    "fit.outside",
+    "fit.overlap",
+    "track.reuse_id",
+    "track.occluded_long",
+    "track.id_swap",
+    "attr.height",
+    "spec.inside",
+    "spec.rider_double",
+    "attr.rider_state",
+    "lidar.missing",
+    "attr.missing",
+    "attr.invalid",
+    "track.static_shift",
+    "heading.static"
+  ],
+  "review_learn_test_only": {
+    "status": "PASS",
+    "samples": 2,
+    "use_model": false
+  },
+  "scope": "Geometry parity: CLI/Web explicitly disable camera; base API auto is inactive without vision. Other defaults match; no learned model, no flag writes; not human precision"
+}

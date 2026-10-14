@@ -1,0 +1,1311 @@
+{
+  "model": "gpt-6.1-sol",
+  "source_commit": "3a8bde275a0ecd574eda2dc0275e07c768c34829",
+  "files": [
+    {
+      "path": "README.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c22c86b99b55c36dcd8705762f02b5c29c3b4210607b26614a98f00f872239c2",
+      "bytes": 3525,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "nhat-ky-tuan/tuan-01/task1-tuan-01.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "7a8747aff7a247f5f09e6bf625a4130f491a20b0ee2777094f73d5563cc5c8ed",
+      "bytes": 3540,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "nhat-ky-tuan/tuan-01/task2-tuan-01.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "910bcfd95fad4aa50469063477cfdf19e3c6f4ec294baf010d10f23cda6ec7e5",
+      "bytes": 5689,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "nhat-ky-tuan/tuan-04/tuan-04.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "9b9a3c6b4414a56597132a6eb3375cd71244625f899070b29a2642c83486d593",
+      "bytes": 11018,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/README-template.md",
+      "owner": "16",
+      "status": "D",
+      "exists": false,
+      "links_missing": [],
+      "conclusion": "Expected deletion/rename; retained in historical inventory, not a missing runtime module."
+    },
+    {
+      "path": "source-tool/README.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "4b8b971c7fb0a16fa4359a1fa5e8dadf7d671ff4b1cd9fd1e0f7f38edf87b9e3",
+      "bytes": 1497,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/CAI-DAT.md",
+      "owner": "16",
+      "status": "R081",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "43f1b9280803d317242ec8eab4276cd82ebad24e5538722977ed29ca2c8b6a0d",
+      "bytes": 16453,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/CONVENTIONS.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "3fc86025952f52f4720f1178cc157c6048a684ab9f48cb7c018d95278ed3c9a4",
+      "bytes": 23677,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/README.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "81af91b707797de43c0f61811e0563a7dd4bc7c027c86d681fabcf483f881df3",
+      "bytes": 12090,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/README.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "1596aeee3795ba08fb8e7d3599621c60ca72b39f3788e4feb71a534699761831",
+      "bytes": 2799,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/bao-cao-du-an.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e8570acaeb48812f5ab36c0e751e46df9dece631b201023660a43d15b4bb10c7",
+      "bytes": 17826,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/connection-dark.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "01897c34d4e611fca39badc49c82221cd2a2dfdb3f385bcb8f511dc9b864c037",
+      "bytes": 84662,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/connection-light.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "38b2d62c977276c2036c5165857125e77224f507f0a83ed75f44e7ba9d729333",
+      "bytes": 83966,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/extension-cvat-panel.jpg",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "b07335f12a775c2cc8d9f223a3903c6095377d47bcb46f38df90eaab91f0c481",
+      "bytes": 78897,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/extension-options.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ed7012077a86d5098dd74a874d0de50862f5f98dac7c27b59219920facae92e7",
+      "bytes": 32882,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/guideline-dark.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "af9454669dc88dce00a11cf1c1df94f6699acc03ced530161189a3faebe812cb",
+      "bytes": 104060,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/guideline-light.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e5d1e00f59bb0e83c4bf819101d5e81cd00b17b4fb6c08a1049bac820edfcf40",
+      "bytes": 103439,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/history-dark.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "06df570fea25196aeb817ecd33b917dd5429d2b3d2d664ad6f09aa479228812c",
+      "bytes": 75941,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/history-light.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "0f6739e5b7d2a4aa3843e7a3ad82c6f0f68e1ee8d9706fec8091f7524f333a87",
+      "bytes": 75633,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/responsive-narrow-dark.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "81565622b66f50a5526d5037a8ba50244801f38928d5a42a816e38172c8d3ddb",
+      "bytes": 101566,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/responsive-narrow-light.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "41f1b8186684bf069cfc61de3307eeae1747f686817256869de0f9fc8540b816",
+      "bytes": 100469,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/results-dark.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "edae239b5aa5cde0bf7d2bae81f890c6cf8c23b59918866d3be1c75175ce116a",
+      "bytes": 166942,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/results-light.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "5ab20bd7f637f9379d72c03dd00704f575fb4e74185819a949ccb0d13285e459",
+      "bytes": 165003,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/scan-dark.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "befe301e64edc87314de56c0e72b26f230e51c0ffc75fb567041eb6f8cb02f5a",
+      "bytes": 85400,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/giao-dien/scan-light.png",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c54710b7d094a5861ffde071be6f7458370e97f7aefbe52b4e55a8bf7ab29e4b",
+      "bytes": 84810,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/1-mat-dat-vanh-dai.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "2aa0ea38ad8381b965aea0f267479efa3eef52497777c5a8eb8db1aff449041d",
+      "bytes": 115711,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/2-mat-doc-diem-tiep-xuc.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "23fef3d7e3120777450f2b5e3300b388a1becd63029585179596eea3d01e682f",
+      "bytes": 57863,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/3-track-nhay-vi-tri.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "92a86be647d8316a454d3edb06308f5dfe66aa5e535d4efd9b31681825bc7b96",
+      "bytes": 68438,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/4-huong-box.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "7722317f0fa3975aaaad6d5da92e6a645fc5cdb1ea6605f95e6dac514f8385e9",
+      "bytes": 69687,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/5-box-lech-khoi-vat.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "d0caa2196162da7babe11392898abd93f19476925664410a2fe07b35864f077e",
+      "bytes": 76525,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/6-sot-doi-tuong.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ad4d42cf5d97e2b6e4b243e4f024531582c8562c58672c7e95ea6e7ba31caa30",
+      "bytes": 150780,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/7-chieu-box-len-anh.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "f4a0a527bc6aedb5900781b2e321d3e574311e1451ffa677e9fb874e4345738c",
+      "bytes": 652680,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/hinh/thuat-toan/8-ket-qua-eval.png",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "b238ef33bfd4324830c94b96eecc85154f585aab116ceb1ab2d5a78fd045e2c9",
+      "bytes": 131405,
+      "conclusion": "Historical illustration retained; file hash recorded. Not a current benchmark or UI acceptance screenshot."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/huong-dan/huan-luyen-box-critic.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "33715f8f6711da95d6dc877bd0a6bafc14b1cf00907788e0f6ba155f8d119265",
+      "bytes": 19328,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/huong-dan/quy-trinh-phat-trien.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "75abe85f78e9b48311187bbe90992489d9b2f56e1ed9f1210d42cd576ca29f66",
+      "bytes": 7278,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/danh-gia.md",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "af2e5f9168c54ac70d98d2f64af25825a62faf88299c79f4f9696d220f9d8929",
+      "bytes": 1780,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/box-verifier/kiem-tra-box-critic.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c24d2303e7921f33e5c33647bf039fbb3de2bf1c78da3e2877604d103d2cb5e9",
+      "bytes": 5902,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/box-verifier/kiem-tra.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "0a1e813a2b0cc27a318dda4f69b098c22ed0e18b976d9154090ae15a130d6f65",
+      "bytes": 5872,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/box-verifier/tinh-chinh-cam-canh-bao.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "38a348e92b8090880e328d33215cec49eac4e902a524c04fe2e579216dc96441",
+      "bytes": 5690,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/box-verifier/tinh-chinh-tat-anh.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "8c76bcda54e4e2036067124bba6d03acac459b2e09470b69ec7b95253d1c022d",
+      "bytes": 5592,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/box-verifier/tinh-chinh.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "158699fb2044befdd10a7f0f269577a60094ba6819a314b72d230a89baa9b63e",
+      "bytes": 5839,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/giai-doan-3/kiem-tra.md",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "80bf255852238b7c890828932251cd92a7450668218564771ef909ecf803aa44",
+      "bytes": 5448,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/giai-doan-3/main-truoc-giai-doan-3.md",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "b38f0a0ea510926c8e23a9184d2815b93f757df0b25f88f2013a801570573c2d",
+      "bytes": 3708,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/giai-doan-3/tinh-chinh.md",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "d41b9ef0b120078e30c7e2f3c9636e950da77dcd35731d68acbe3e5ed792cd3d",
+      "bytes": 5425,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/sau-merge-12-10/kiem-tra.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "828836c41e0e8f3df4da87599f12e0833c0524df8dd5dee91ca4e16f2afd9ba4",
+      "bytes": 5960,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/eval/sau-merge-12-10/tinh-chinh.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "fbeb2f0b4338cb00fbaa6ed66a89b14859d7d550929b75d44fad135c878e3411",
+      "bytes": 5850,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/ket-qua-box-verifier.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "00ecc76b5388e9b19e99582aa409325ccb80682d505ce5ee3c3868c5dc2754d5",
+      "bytes": 13768,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/ket-qua-danh-gia-tu-dong.md",
+      "owner": "16",
+      "status": "R100",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e47fe69aaca2fae8064b6c6a296a4e4c6f6ed0aa931da26f08fcc7eb621626fe",
+      "bytes": 12628,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/ket-qua-giai-doan-3.md",
+      "owner": "15",
+      "status": "R095",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "5931ebd334d3201be380bbfe04f0dee92aa5d7e1c9eb66d85f3ddeb6edcc8f43",
+      "bytes": 4036,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/ket-qua-sot-doi-tuong.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "91e07a0da1d526bed9b20defe1dd682d0cf845930e9b3e17074ef648ddd98249",
+      "bytes": 6202,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/ket-qua-track-jump.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "60dbc3637a14e5596b41da95cbf6789731a859be6deb0412eaa1e15a7891d2f2",
+      "bytes": 3233,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/kiem-chung-ground.md",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e4cfcb0bc7b9087eae326904883829c998de56b7d6319fb73936acc238fa5901",
+      "bytes": 7387,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/ket-qua/thu-extension.md",
+      "owner": "15",
+      "status": "R095",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "b89007450d2705ca8f459a5a59dfcc715a1d3957a2590786920b2ff6301f5aba",
+      "bytes": 5707,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/kiem-chung-ground.md",
+      "owner": "16",
+      "status": "D",
+      "exists": false,
+      "links_missing": [],
+      "conclusion": "Expected deletion/rename; retained in historical inventory, not a missing runtime module."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/test/CHUAN-KIEM-THU.md",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ee4e1377db0473a6bd1dbb7614058ba2f96d10bd96fb251c244c01a15bdbc609",
+      "bytes": 19629,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/docs/thiet-ke/de-xuat-de-tai.md",
+      "owner": "16",
+      "status": "R089",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c08285d4407a576584d373e38dc66b527a545825e9596f4e5abe55ba423c73db",
+      "bytes": 59655,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/extension/src/content.js",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "5cc2fc1247e38765198f0396bdc2449595ac9a44f43424342b544c40c3b0abcc",
+      "bytes": 41656,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/extension/src/core.js",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "cf7332984f86eb87b67a5e1f02980ad92560630cced02a73003ccd38d73490b4",
+      "bytes": 18066,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/extension/tests/core.test.js",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "b58b8e18fe3195d13c78883b8e75e62dac5fc755943532c58a46d6d16d760801",
+      "bytes": 10277,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/giao-viec/tuan-gia-han.md",
+      "owner": "16",
+      "status": "D",
+      "exists": false,
+      "links_missing": [],
+      "conclusion": "Expected deletion/rename; retained in historical inventory, not a missing runtime module."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/adapters/cvat/reader.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "932a5bf72677b91b6e1d99da64050e675a853c5f55f88cf68f6091b55a6ff1e5",
+      "bytes": 12831,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/adapters/nuscenes/reader.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "65f70df15650cdea617bddb6c211ac5215aaa0eb81c07101b77da376d9d04809",
+      "bytes": 19023,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/cli/eval_cmd.py",
+      "owner": "15",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "9e857d529128bc4bd4c7b2dc7eda4164e41030b91df215ce1a3ab84adc5e5cad",
+      "bytes": 4142,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/cli/learn_cmd.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c61a22c8f230ff0bee1398a8f78d41d65692a8e86ec5a5c13bac539e3ba6cf40",
+      "bytes": 1218,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/cli/main.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ee5f71c5c08194626c3efbfcf2095398a640389b978e1371cf5bfd92f9be2f1c",
+      "bytes": 5307,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/config.yaml",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "cb2e8d8ee9f699e2de9e6ea709483fbc2b10f7939cef2d69576e0fa5114753d0",
+      "bytes": 20122,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/core/box_points.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "cedc25445ef08c7b9e33bfadcc2b810d084288d35713621ce2073b3d4dbaa390",
+      "bytes": 6275,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/core/camera.py",
+      "owner": "12",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "1898b8f3751c06b7ed0f5e0cd8c53ec5836527b726645be50196d559beee14c8",
+      "bytes": 5085,
+      "conclusion": "Covered by owner 12 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/core/config.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "59b234042d2393d5b764107f2ffbaa1171a1a4d0d21f39cabf9752738586cc13",
+      "bytes": 46187,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/core/ground.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "fe87302578c05f8e9ee18c124b3b7d043b1b17f5d02d3f65c0676dcd77d882a4",
+      "bytes": 22709,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/core/scanner.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "db3a7f3761bb3ebc9f22883b132e9fbd9c054996723cf093a30ea269d94f3587",
+      "bytes": 25855,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/critic.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "595044e371fb2bbc2e2f758482b989dac4680e1e160493474f53e0e953648453",
+      "bytes": 13234,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/attributes.py",
+      "owner": "10",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "266542969ae8e5b6dfadb57402b53752e7b3619b20d87ffcaf88b94b7f84da78",
+      "bytes": 16677,
+      "conclusion": "Covered by owner 10 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/camera.py",
+      "owner": "12",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "22dcfc8f71f3ae607ea3049bd3670ab5410fad5f379d14084eb17aff5b56221c",
+      "bytes": 19024,
+      "conclusion": "Covered by owner 12 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/fit.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "657bd992d1b5adbc2c82ba9b73bb34e7b05e343e00213c430927fac49e781fd9",
+      "bytes": 19741,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/floating.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c227b834b17f1fb5cc8aa9dbea30045a208583eff9be7ad83e9346752a67655b",
+      "bytes": 18198,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/heading.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "f1318902906a38b5ce34b5ffedb31ace315b42b12a707c766bd20ce07ffb8375",
+      "bytes": 16169,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/missing.py",
+      "owner": "13",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e731a21a357d32bde835b399b5c8fa283469b2e74c2f39ebb981064098974692",
+      "bytes": 25745,
+      "conclusion": "Covered by owner 13 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/size.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e878621d8ca37cc2a017807a38787af03de7f02348f484a843e9424e2b3ab23b",
+      "bytes": 18026,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/static.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ad4f9e2347616ccf4ceff575936d53063d5e1f970b8bd62cd9c6bfdfd8931644",
+      "bytes": 5663,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/detectors/track.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "5b4aa73b653e152c8e543eefdf3a0a83b9856ff2c09d8424a3028b561c3db98c",
+      "bytes": 29285,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/eval/evaluate.py",
+      "owner": "15",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "0987b37e18f134ad75be8ae9e59792a2122176be324f398cafc3f2b6d66cd044",
+      "bytes": 25834,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/eval/metrics.py",
+      "owner": "15",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "3a1988533e074e0c02581274745f2eacb37683d4175c0550cd5e1032fc44fe97",
+      "bytes": 10233,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/guidelines/spec-vn.yaml",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "1d981fdc34faceaa3a4017d138a7d5c93e09f99ad0b33da735c3c19c5ee54569",
+      "bytes": 9024,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/learn.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "0e21cd9c685e2eda348dc2df00f7ab0e3fd5372c4c96621d7c45e93300295afc",
+      "bytes": 17210,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/vision/__init__.py",
+      "owner": "12",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "72e0c8926eb0b19fd01e3b888cdfa0c4e413b3ea3b06f77cd114836573b31e9b",
+      "bytes": 115,
+      "conclusion": "Covered by owner 12 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/vision/detector2d.py",
+      "owner": "12",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "4f97567f9cc2fb66734210b4dcfffcb491aa498cbad95a24cb42920b347a4847",
+      "bytes": 18910,
+      "conclusion": "Covered by owner 12 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/web/app.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ac6ee4bc9f05bcdea5429b44451e79c346f26406b5d134d681c94ebb4b591ba8",
+      "bytes": 25582,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/web/projects.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "a93bd9af117193287d9e9d48a439eb30df6fa442cdd0c0d5e122ffc91e0e9b9a",
+      "bytes": 15977,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/web/runner.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ef7ed4c16d2ff2dd63038b59e7496fca760f308651c09339ff5fce7c890254d6",
+      "bytes": 17940,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/web/static/app.js",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "a2104c88a0a224aaea53c565661ed1611984e877aa64755cd3a29ec39050cd09",
+      "bytes": 97239,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pointsnap/web/static/index.html",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ba38b06246b994dba40c455bc62941bf5b15c94d710b6bc9daf54f59d3bd4bd4",
+      "bytes": 77312,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/pyproject.toml",
+      "owner": "16",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "5400d559db97bc6f846ca5d438b16da4852cb04d10addbac741d4f5775e8f3cc",
+      "bytes": 1047,
+      "conclusion": "Clean wheel/sdist install and Linux base container verified; Windows GPU vision smoke verified; no fresh CPU vision installation claim."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/TASKS.md",
+      "owner": "16",
+      "status": "R066",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "41121d13b2e8b2eee9fcfdb1087bb394c255e9314c9372e0df70812fee3642be",
+      "bytes": 16866,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/ban-giao-12-10.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "67ab29df461d541fb78c9fdb8f628479dd2044ed485b50ad6b54e66d99ab52b6",
+      "bytes": 9640,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/2026-10-06.md",
+      "owner": "16",
+      "status": "R091",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "0820c277813d6e892047a7687374f5986002b25439d8368e8f0f4afcf2718168",
+      "bytes": 1956,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/2026-10-07.md",
+      "owner": "16",
+      "status": "R094",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "4e93684533aec8a98796b5ce33d99750841b553dd825faede8a97379782c26f0",
+      "bytes": 2784,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/2026-10-08.md",
+      "owner": "16",
+      "status": "R093",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "9f7a08b607710c340fd6c205cf6d5d064f6c2b5e1b4f6b9787335c26679f778d",
+      "bytes": 1786,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/2026-10-09.md",
+      "owner": "16",
+      "status": "R079",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "7359649a9dfbd583688e67683e93b58a0c9526d456253a7f1124ce82486f2f2d",
+      "bytes": 2442,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/C4-mat-dat-nghieng.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "c84c237f2e7f3a24224148ffff51f2b5ad6203bfd22da38a5fe62ec7ff4f8f9e",
+      "bytes": 4461,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/C5-tinh-huong-thuc-te.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "8736d04707b2a95744d8500d0c374e22edfb9dea208cef6042d01b3d5c3fa4ee",
+      "bytes": 4935,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/C6-bam-spec.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "21dbd922919d7f400c5ed61a7fa8f6f9959b30a8f580bfdf37102d0c2b3cb2a2",
+      "bytes": 4488,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/README.md",
+      "owner": "16",
+      "status": "R090",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "2d7f629cbad3742d0fb50928bdf7f407f6787736b56a59f3d72242edb5e88d69",
+      "bytes": 1844,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/review-test.md",
+      "owner": "16",
+      "status": "R089",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "76c2d95a44d71ed6d15b31c1b9215dd33423b9d6623e79575fc3c1282b268a2a",
+      "bytes": 5822,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/test-va-gop-y.md",
+      "owner": "16",
+      "status": "R098",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "412b47a098e7d964e08992dc6f5e065e8a403d9eec1a5662c3e2d3ad03004880",
+      "bytes": 12692,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/quan-ly/giao-viec/tuan-gia-han.md",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "e4e0178ed449ad92e7f31bb8189d8d8a8fdc841d924915e7e7ad357493f79113",
+      "bytes": 9907,
+      "conclusion": "Historical document; paths audited, claims remain tied to its stated date/source. Current acceptance: 16-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/colab_train_critic.ipynb",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "56ed027795c97498b28120a88f4ec00547b68af1e91471bfeb3f069f27cb53ce",
+      "bytes": 4180,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/eval_camera.py",
+      "owner": "12",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "492bfedb122f4cbb3d2a7254f9fbaf2666f562e1bd69bae096d95d659294af9d",
+      "bytes": 9109,
+      "conclusion": "Covered by owner 12 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/eval_heading_points.py",
+      "owner": "15",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "512bd50a9194202f094e603d24378a0cbfb2d65575ca91f338e3c9f6b7d74aea",
+      "bytes": 3228,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/eval_metrics.py",
+      "owner": "15",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "eac1595b3d6d93785b7277bfe4d7f03bde50c1e39bfa1431fd29865572c63e73",
+      "bytes": 2871,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/run_eval_suite.py",
+      "owner": "15",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "34d6d287653306cc446b949cd1b15b3301930220513559edd98d297c14e1595c",
+      "bytes": 457,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/train_critic_example.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "4317d5cfff995b3fe240c9eac6860456d11f3ae8a3852265d924c0831bd69df7",
+      "bytes": 13950,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/ve_hinh_minh_hoa.py",
+      "owner": "16",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "685963e7d37f213c9df2c4f7b52ab7313c2c5886b4ee87819028d6c10ca8bb9d",
+      "bytes": 27367,
+      "conclusion": "Covered by owner 16 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/scripts/verify_ground.py",
+      "owner": "15",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "6fcca7e09cd208155663ec17fd3fc0ea209f4dbd13c315edd25881f7d0a8a223",
+      "bytes": 6187,
+      "conclusion": "Evaluation metric/split regression coverage; human precision and long vision/OOM remain unassessed. See 15-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/scenario_sim.py",
+      "owner": "10",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "039e4d765bcf6dfd630d762400ea9658b52decc016de43065edeccb92322c9c5",
+      "bytes": 8981,
+      "conclusion": "Covered by owner 10 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_camera.py",
+      "owner": "12",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "a0df9c26fadb52c301ae12f9ccaef01f93243f8a5ea4eae2246ef0beafaf8e22",
+      "bytes": 14021,
+      "conclusion": "Covered by owner 12 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_config.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "80682dbbff00169c1fb6b2fa60c0e22c36ad28ba263a15259484aae4a0190178",
+      "bytes": 5062,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_critic.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "49b2f4de2b94c29abbef4d87a6055e1a74477eaa47ac57f93a7af41ae4d5e5ac",
+      "bytes": 6124,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_floating_detector.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "a6be34bbb5710361ac86779e8ff2f6507533253f543785ca551b273dac1af19f",
+      "bytes": 4817,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_ground.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "a1113b9762fd2a6ee9c85adab464af560f53c2730cbb5210e1f9a60f5e5cd735",
+      "bytes": 11975,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_ground_slope.py",
+      "owner": "09",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "b1cb36ea8d14b053ab26fdfdbd2561ed6ff36d813e2008840456521df88362d9",
+      "bytes": 7223,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_heading_fit.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "a15d6b9fd7976e6099c62d547d577bb0aeea6d802c1edbc6a2a300b61307b402",
+      "bytes": 15840,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_learn.py",
+      "owner": "11",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "95564354bb18d728862047dd28bce469dcc713cfd9a931d49bf803801fb20130",
+      "bytes": 3854,
+      "conclusion": "Covered by owner 11 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_missing.py",
+      "owner": "13",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "ec62b9c5170fc308be9c90b17e373a3ae284790169860cc2f3c73821871c8075",
+      "bytes": 7376,
+      "conclusion": "Covered by owner 13 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_scenarios.py",
+      "owner": "10",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "876b8617a57fe808761e3d2b13e2051031da9df72afa56c34f67b79035f9eb4b",
+      "bytes": 6110,
+      "conclusion": "Covered by owner 10 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_size_detector.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "89ae6a5a39f991d287d46818563327b8ccc4edb3ad156382c6bb94b3535bed7a",
+      "bytes": 6065,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_spec_geometry.py",
+      "owner": "10",
+      "status": "A",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "7847bf5dd561155b79d7859981ee16daed18a7ba53cd15b228a83a9faba9ddff",
+      "bytes": 6803,
+      "conclusion": "Covered by owner 10 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_spec_rules.py",
+      "owner": "10",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "2d835139df1dfdcd629c9dccb2d15b7ac843c160cd80123ef111e89a4f001899",
+      "bytes": 7881,
+      "conclusion": "Covered by owner 10 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_track_detector.py",
+      "owner": "09",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "685af6aab56cb99bd6a175b8110b6fe282ad3cb11c0ab140a0a0e554ac986067",
+      "bytes": 7623,
+      "conclusion": "Covered by owner 09 report and handoff regression suites; model/data limits are retained."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_web.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "cb78d7565c162866eece564d6b2fa6d82f7f928993ef4e88da35287a0db566de",
+      "bytes": 29269,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    },
+    {
+      "path": "source-tool/pointsnap-3d/tests/test_web_a14.py",
+      "owner": "14",
+      "status": "M",
+      "exists": true,
+      "links_missing": [],
+      "sha256": "1c6dc4964eb03d19143267b20eff96630388fc2a94cff665a01e08bdba54ab02",
+      "bytes": 7617,
+      "conclusion": "Integration regression suites and real CLI/Web/API geometry parity; installed MV3 acceptance remains partial. See 14-report.md."
+    }
+  ],
+  "scope": "Per-file structural audit and owner evidence references; not 131 fresh independent deep reviews or visual reproduction of historical figures."
+}

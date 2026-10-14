@@ -114,3 +114,43 @@ def test_token_query_is_rejected_and_not_logged(api_server, capsys):
     assert response.status_code == 400
     assert 'TEST-SECRET-URL-06' not in capsys.readouterr().err
     assert not calls
+
+
+def test_report_serializes_numpy_boolean_measurements_and_geometry(report_data):
+    import numpy as np
+    from dataclasses import replace
+    job, findings, config = report_data
+    finding = replace(findings[0], details={'terrain_reference':np.bool_(False),
+                      'distance':np.float32(.25),'centers':np.array([[1.,2.,3.]])})
+    data = json.loads(report_bytes(job,[finding],config,'json',{'coverage_gaps':[]}))
+    assert data['findings'][0]['details'] == {'terrain_reference':False,'distance':.25,'centers':[[1.,2.,3.]]}
+    assert data['passed'] is False
+
+
+def test_report_still_rejects_nonfinite_numpy_measurements(report_data):
+    import numpy as np
+    from dataclasses import replace
+    job, findings, config = report_data
+    finding = replace(findings[0], details={'distance':np.float32(np.nan)})
+    with pytest.raises(ValueError):
+        report_bytes(job,[finding],config,'json',{'coverage_gaps':[]})
+
+
+def test_report_does_not_claim_unavailable_optional_models_were_checked(report_data):
+    job, findings, config = report_data
+    data = json.loads(report_bytes(job, findings, config, 'json', {
+        'coverage_gaps': [], 'point_cloud_available': True, 'pose_available': True,
+    }))
+    assert 'cam.mismatch' in data['enabled_checks'] and 'critic.box' in data['enabled_checks']
+    assert not any(name.startswith('cam.') for name in data['checks'])
+    assert 'critic.box' not in data['checks']
+    assert 'lidar.missing' in data['checks']
+
+
+def test_report_excludes_static_and_missing_without_pose(report_data):
+    job, findings, config = report_data
+    data = json.loads(report_bytes(job, findings, config, 'json', {
+        'coverage_gaps': ['missing pose'], 'point_cloud_available': True, 'pose_available': False,
+    }))
+    assert not {'track.static_shift', 'heading.static', 'lidar.missing'} & set(data['checks'])
+    assert data['passed'] is False

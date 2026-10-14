@@ -112,7 +112,7 @@ function panel(transport) {
     document:{querySelector(){return null;}},window:{addEventListener(){}},
     performance:{now(){return 0;}},setInterval(){},clearInterval(){},setTimeout(){},Map,Set,URL};
   vm.createContext(context);
-  vm.runInContext(source.replace('  loadSettings().then', '  root.testPanel={S,pickFor,reviewState,review,startScan};\n  loadSettings().then'),context);
+  vm.runInContext(source.replace('  loadSettings().then', '  root.testPanel={S,pickFor,reviewState,review,startScan,showCamera};\n  loadSettings().then'),context);
   return {...context.testPanel,cvat:context.PointSnapCvat};
 }
 test('focus distinguishes same-frame objects and refuses an ambiguous legacy command',()=>{
@@ -139,6 +139,16 @@ test('extension scan response after a route change cannot attach to the new job'
   const pending=p.startScan(false);p.S.sid++;p.S.job={jobId:2};p.S.ps={active:null};
   resolve({ok:true,data:{run_id:'old'}});await pending;
   assert.equal(p.S.ps.active,null);
+});
+
+test('camera response cannot attach to a new run',async()=>{
+  let resolve;const p=panel(()=>new Promise(r=>{resolve=r;}));
+  const flag={frame:0,label:'car',value:'same',kind:'track',objectId:7};
+  p.S.frame=0;p.S.flags=[flag];p.S.ps.project={slug:'a'};
+  p.S.ps.run={run_id:'old',findings:[{frame:0,label:'car',message:'same',track_id:7}]};
+  const pending=p.showCamera(flag);p.S.sid++;p.S.ps.run={run_id:'next'};
+  resolve({ok:true,data:{image_url:'data:image/jpeg;base64,/9j/2Q==',channel:'CAM_FRONT'}});
+  await pending;assert.equal(p.S.camera,null);
 });
 
 test('security: executable and credential links are not shown',()=>{

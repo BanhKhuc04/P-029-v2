@@ -131,7 +131,8 @@
    * Trả về { ok, reason, needsReload } — needsReload khi CVAT chưa nạp mục PointSnap vào lịch sử.
    */
   async function applyRecentFilter(attrName) {
-    if (filtersActive()) return { ok: true, already: true };
+    // Filters có thể đang lọc ServerID của một box khác. Bật PointSnap phải chọn lại đúng bộ lọc,
+    // không coi một bộ lọc CVAT bất kỳ là bộ lọc pointsnap_error.
     const t0 = performance.now();
     const steps = {};
     const mark = (name) => { steps[name] = Math.round(performance.now() - t0); };

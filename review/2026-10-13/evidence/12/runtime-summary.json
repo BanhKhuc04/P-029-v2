@@ -1,0 +1,52 @@
+{
+  "device": "cpu",
+  "torch": "2.8.0+cpu",
+  "torchvision": "0.23.0+cpu",
+  "transformers": "5.0.0",
+  "scene": "scene-0061",
+  "frame": 0,
+  "channel": "CAM_FRONT",
+  "image_sha256": "b7b7d466207462cf46742297a36afdd65315c05ae33126d5d36412aae70a0b62",
+  "maskrcnn_weights": "random initialization, seed 12; NO pretrained checkpoint",
+  "maskrcnn_input_resize": "64 px maximum; contract smoke only",
+  "detections": 5,
+  "boxes_shape": [
+    5,
+    4
+  ],
+  "mask_shapes": [
+    [
+      225,
+      400
+    ],
+    [
+      225,
+      400
+    ],
+    [
+      225,
+      400
+    ],
+    [
+      225,
+      400
+    ],
+    [
+      225,
+      400
+    ]
+  ],
+  "cold_seconds": 0.8297636000206694,
+  "warm_seconds": 0.00882290001027286,
+  "cache_equal": true,
+  "sam2_processor_revision": "ee5bba1d82bb8749febdf90f45e84b687142ba03",
+  "sam2_processor_mask_shape": [
+    1,
+    1,
+    900,
+    1600
+  ],
+  "sam2_predictions": "synthetic logits; no SAM2 model inference",
+  "pretrained_quality_accepted": false,
+  "human_verdicts_generated": 0
+}

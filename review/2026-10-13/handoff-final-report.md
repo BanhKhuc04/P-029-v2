@@ -1,8 +1,10 @@
 # Kết quả xử lý bàn giao tối 13/10
 
-Model thực hiện review/sửa: **gpt-6.1-sol**. Base main `7ec580a`; code candidate kiểm cuối `3a8bde2`, nhánh `codex/handoff-integration-check`. **Đánh giá 10 vòng đang chạy lại có checkpoint sau khi phiên đầu bị ngắt; báo cáo chưa chốt phần số liệu đó.** Người dùng tự merge; không sửa main và không commit landing/dataset/token/weights/out.
+Model thực hiện review/sửa ban đầu: **gpt-6.1-sol**. Base main `7ec580a`; code candidate kiểm cuối `3a8bde2`, nhánh `codex/handoff-integration-check`. **Cập nhật 14/10: đánh giá checkpointed đã đủ 10 cảnh × 10 vòng; người dùng đã yêu cầu merge toàn bộ PR.** Kết quả và trạng thái bản hợp nhất mới ở [tiến độ 14/10](../2026-10-14/project-progress.md); giữ các số dưới đây đúng mốc candidate lịch sử.
 
 ## Các việc đã xử lý lần lượt
+
+Bảng sau ghi trạng thái tại lúc bàn giao 13/10; trạng thái merge hiện hành đã chuyển sang báo cáo 14/10 ở trên.
 
 | PR (base main) | Kết quả | Trạng thái kiểm |
 |---|---|---|
@@ -14,9 +16,9 @@ Model thực hiện review/sửa: **gpt-6.1-sol**. Base main `7ec580a`; code can
 | [#66](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/66) | No-ID missing preview/camera | Geometry list/centers3D theo frame; khung tham khảo thật 88 điểm + JPEG |
 | [#67](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/67) | Gộp missing review13, giữ elevation filter, thêm occlusion | 33 tests; 98 deletion targets, current/main cùng 32/47 và 33/51; clean0. Protocol khác mốc handoff nên không gán tăng chất lượng |
 | [#68](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/68) | Ảnh camera extension + sửa generic filter/scope/race | 47 Node PASS; bản mới cần reload/kiểm MV3 thật |
-| [#69](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/69) | Phần14–16, JSON NumPy 500, checks model, runner archive-root, link docs | [14](14-report.md), [15](15-report.md), [16](16-report.md); draft đang hoàn thiện evidence eval |
+| [#69](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/69) | Phần14–16, JSON NumPy 500, checks model, runner archive-root, link docs | [14](14-report.md), [15](15-report.md), [16](16-report.md); đã bổ sung tổng hợp eval 14/10, G7 vẫn chưa nghiệm thu |
 
-PR #61–68 hiện có đủ 5 checks SUCCESS mỗi PR (Ubuntu Python3.10/3.11, Windows3.12, artifact, extension). Đây là CI từng PR, không thay test hợp nhất hay dữ liệu/model acceptance. Main tại lần fetch cuối vẫn `7ec580a`.
+Ở mốc kiểm 13/10, PR #61–68 có đủ 5 checks SUCCESS mỗi PR (Ubuntu Python3.10/3.11, Windows3.12, artifact, extension). Đây là CI từng PR, không thay test hợp nhất hay dữ liệu/model acceptance. Main tại lần fetch của mốc đó là `7ec580a`.
 
 ## Kết quả kiểm cuối
 

@@ -60,15 +60,17 @@ def test_rule_helpers():
 
 def test_is_rule_enabled_with_catalog():
     """Kiểm tra is_rule_enabled trong scanner đọc đúng cấu hình thông qua catalog."""
+    import dataclasses
     config = load_config()
     assert is_rule_enabled("floating", config) is True
     assert is_rule_enabled("heading.flip", config) is True
     assert is_rule_enabled("track.jump", config) is True
-    assert is_rule_enabled("fit.loose", config) is True
+    assert is_rule_enabled("fit.loose", config) is False
+    enabled = dataclasses.replace(config, rules=dataclasses.replace(config.rules, fit_loose=True))
+    assert is_rule_enabled("fit.loose", enabled) is True
     assert is_rule_enabled("fit.outside", config) is True
 
     # Thay đổi cờ luật (RulesConfig là frozen dataclass)
-    import dataclasses
     new_rules = dataclasses.replace(config.rules, floating=False, track_jump=False, fit_loose=False)
     config = dataclasses.replace(config, rules=new_rules)
     assert is_rule_enabled("floating", config) is False

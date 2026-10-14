@@ -301,7 +301,9 @@ RULES = {
 @pytest.mark.parametrize("switch", list(RULES))
 def test_each_switch_removes_only_its_findings(switch):
     cfg = load_config(env={})
-    cfg = dataclasses.replace(cfg, rules=dataclasses.replace(cfg.rules, **{switch: False}))
+    switches = {name: True for name in RULES}
+    switches[switch] = False
+    cfg = dataclasses.replace(cfg, rules=dataclasses.replace(cfg.rules, **switches))
     findings = [Finding(ErrorType.SIZE, rule, Severity.WARNING, 0, "car", rule) for rule in RULES.values()]
     result = scan_cuboids([car()], cfg, detectors=[lambda *args: findings])
     assert {f.rule for f in result} == set(RULES.values()) - {RULES[switch]}

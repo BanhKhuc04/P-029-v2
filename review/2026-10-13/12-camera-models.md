@@ -3,7 +3,7 @@
 - **Nhánh:** `codex/review-12-camera-models`.
 - **Thứ tự:** 12 trong chuỗi 09 → 16.
 - **Dependency:** Nhận kết quả 09–11; cần ảnh/calibration thật và môi trường model ảnh để nghiệm thu.
-- **Trạng thái ban đầu:** 8 ca Chưa chạy. Nhánh hiện mới chứa mã nguồn main d18b1a9 và bộ tài liệu chuẩn bị.
+- **Trạng thái hiện hành:** Đã review đủ 8 ca trong [báo cáo 12](12-report.md), nhận 09–11 tới `5920522`, sửa `b0cbba8`; 771 Python + 37 Node PASS, 3 live-CVAT SKIP. TC-12-008 bị chặn do thiếu pretrained weights; GPU và human precision chưa nghiệm thu. Các ca còn lại nêu rõ giới hạn fixture/CPU/một mẫu thật. Xem [bàn giao 12](12-handoff.md). Checklist dưới đây là yêu cầu gốc, không tự chứng nhận mọi ca đạt.
 - **Nguồn chung:** [kế hoạch 09–16](REVIEW-PLAN-09-16.md), [phân nhánh](README.md), [inventory 131 file](scope-inventory.tsv).
 
 ## Prompt để thực hiện phần này

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import math
 from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
@@ -80,11 +81,14 @@ def _inside_hull(xy: np.ndarray, hull: np.ndarray) -> np.ndarray:
     return inside
 
 
-def _mask_outside(mask: np.ndarray, polygon: np.ndarray) -> float | None:
+def _mask_outside(mask: np.ndarray, polygon: np.ndarray, image_size=None) -> float | None:
     ys, xs = np.nonzero(mask)
     if len(xs) < 20:
         return None
-    xy = np.column_stack([xs * MASK_SCALE + MASK_SCALE / 2, ys * MASK_SCALE + MASK_SCALE / 2])
+    x, y = xs*MASK_SCALE, ys*MASK_SCALE
+    widths = MASK_SCALE if image_size is None else np.minimum(MASK_SCALE,image_size[1]-x)
+    heights = MASK_SCALE if image_size is None else np.minimum(MASK_SCALE,image_size[0]-y)
+    xy = np.column_stack([x+widths/2,y+heights/2])
     return float(1.0 - _inside_hull(xy, _hull(polygon)).mean())
 
 
@@ -102,7 +106,7 @@ def _observe(box: Cuboid, proj: Projection, det: Detections, group: str, cfg: Ca
             overlap |= iou >= 0.05
             if iou > best_iou:
                 best_iou, best_i = iou, i
-    mask_out = (_mask_outside(det.masks[best_i], proj.polygon)
+    mask_out = (_mask_outside(det.masks[best_i], proj.polygon,det.image_size)
                 if best_i is not None and det.masks and best_iou >= cfg.min_mask_iou else None)
     other = groups[best_any_i] if best_any_i is not None and best_any >= 0.5 else None
     return Observation(box, channel, best_iou, overlap, mask_out, other,
@@ -115,7 +119,6 @@ def collect_observations(
     """Quan sát của mọi box trên mọi ảnh, và các mục `cam.missing`."""
     observations: list[Observation] = []
     missing: list[Finding] = []
-    supported = getattr(detector, "supported_groups", None)
     for frame, boxes in group_by_frame(c for c in cuboids if c.visible).items():
         data = frames.frame_data(frame)
         if data.sensor_to_world is None:
@@ -123,16 +126,20 @@ def collect_observations(
         world_points = None
         views = list(frames.camera_views(frame))
         detections = [detector.detect(view.path) for view in views]
+        supported = getattr(detector,"supported_groups",None)
         brightness = [d.brightness for d in detections if d.brightness is not None]
         if brightness and float(np.median(brightness)) < cfg.min_brightness:
             continue  # frame ban đêm: xét theo trung vị các camera vì ảnh hướng về đèn đường vẫn sáng
         for view, det in zip(views, detections):
+            if det.brightness is not None and det.brightness < cfg.min_brightness:
+                continue
             projections = [(b, project_box(b, data.sensor_to_world, view)) for b in boxes]
             projections = [(b, p) for b, p in projections if p is not None]
             for box, proj in projections:
                 group = cfg.group_of(box.label)
                 height = proj.box[3] - proj.box[1]
                 if (group is None or (supported is not None and group not in supported)
+                        or not box.keyframe
                         or proj.inside_ratio < cfg.min_inside or proj.depth > cfg.max_depth_m
                         or height < cfg.min_box_px):
                     continue
@@ -183,7 +190,9 @@ def camera_findings(observations: Sequence[Observation], cfg: CameraConfig, mism
                     wrong_class: bool = True) -> list[Finding]:
     by_track: dict[object, list[Observation]] = defaultdict(list)
     for o in observations:
-        key = o.box.track_id if o.box.track_id is not None else ("shape", id(o.box))
+        if not o.box.visible or not o.box.keyframe:
+            continue
+        key = ("track",o.box.track_id,o.box.label) if o.box.track_id is not None else ("shape",id(o.box))
         by_track[key].append(o)
     findings: list[Finding] = []
     for key, obs in by_track.items():
@@ -194,14 +203,25 @@ def camera_findings(observations: Sequence[Observation], cfg: CameraConfig, mism
     return findings
 
 
+def mask_reference(observations: Sequence[Observation], candidate: Observation, minimum: int) -> float | None:
+    """Same-camera reference with one measurement per distinct manual frame."""
+    by_frame = defaultdict(list)
+    for o in observations:
+        if (o.channel == candidate.channel and o.box.frame != candidate.box.frame and o.box.visible
+                and o.box.keyframe and o.mask_outside is not None):
+            by_frame[o.box.frame].append(o.mask_outside)
+    if len(by_frame) < minimum:
+        return None
+    return float(np.median([np.median(v) for v in by_frame.values()]))
+
+
 def _mismatch(obs: list[Observation], cfg: CameraConfig) -> list[Finding]:
     measured = [o for o in obs if o.mask_outside is not None]
     worst: dict[int, tuple[float, Observation, float]] = {}
     for o in measured:
-        others = [x.mask_outside for x in measured if x.box.frame != o.box.frame]
-        if len(others) < cfg.min_track_observations:
+        reference = mask_reference(measured,o,cfg.min_track_observations)
+        if reference is None:
             continue
-        reference = float(np.median(others))
         rise = o.mask_outside - reference
         if rise <= cfg.mask_rise_warning:
             continue
@@ -220,7 +240,13 @@ def _mismatch(obs: list[Observation], cfg: CameraConfig) -> list[Finding]:
 
 def _wrong_class(obs: list[Observation], cfg: CameraConfig) -> list[Finding]:
     expected = cfg.group_of(obs[0].box.label)
-    seen = [o for o in obs if o.best_other_group is not None]
+    frames = defaultdict(list)
+    for o in obs:
+        if o.best_other_group is not None and o.best_other_score >= cfg.class_min_score:
+            frames[o.box.frame].append(o)
+    # Conflicting views of one frame cannot provide a stable class vote.
+    seen = [max(rows,key=lambda o:o.best_other_score) for rows in frames.values()
+            if len({o.best_other_group for o in rows}) == 1]
     if len(seen) < cfg.class_min_observations:
         return []
     other = [o for o in seen if o.best_other_group != expected and o.best_other_score >= cfg.class_min_score
@@ -231,12 +257,15 @@ def _wrong_class(obs: list[Observation], cfg: CameraConfig) -> list[Finding]:
     for o in other:
         votes[o.best_other_group] += 1
     group = max(votes, key=votes.get)
-    first = min(other, key=lambda o: o.box.frame)
+    consistent = [o for o in other if o.best_other_group == group]
+    if len(consistent) < cfg.class_vote*len(seen):
+        return []
+    first = min(consistent,key=lambda o:o.box.frame)
     return [Finding(
         error_type=ErrorType.ATTRIBUTE, rule="cam.class", severity=Severity.WARNING, frame=first.box.frame,
         label=first.box.label, track_id=first.box.track_id, source_id=first.box.source_id,
-        value=len(other) / len(seen), threshold=cfg.class_vote,
-        message=(f"Ảnh camera nhận vật là {GROUP_VI.get(group, group)} ở {len(other)}/{len(seen)} lần nhìn rõ, nhãn là "
+        value=len(consistent) / len(seen), threshold=cfg.class_vote,
+        message=(f"Ảnh camera nhận vật là {GROUP_VI.get(group, group)} ở {len(consistent)}/{len(seen)} keyframe nhìn rõ, nhãn là "
                  f"{first.box.label}: nghi sai class"),
         details={"camera_group": group, "votes": dict(votes)},
     )]
@@ -254,17 +283,19 @@ def sparse_unconfirmed(cuboids: Sequence[Cuboid], frames, detector, cfg: CameraC
         return []
     runs: dict[object, list[Cuboid]] = defaultdict(list)
     dense: set[object] = set()     # track có frame thấy rõ vật (nhiều điểm) hoặc ảnh xác nhận
-    key_of = lambda b: b.track_id if b.track_id is not None else ("shape", id(b))  # noqa: E731
-    for frame, boxes in group_by_frame(c for c in cuboids if c.visible).items():
+    key_of = lambda b: ("track",b.track_id,b.label) if b.track_id is not None else ("shape", id(b))  # noqa: E731
+    supported = getattr(detector,"supported_groups",None)
+    for frame, boxes in group_by_frame(c for c in cuboids if c.visible and c.keyframe).items():
         data = frames.frame_data(frame)
         if data.sensor_to_world is None:
             continue
         pts = np.asarray(data.points, dtype=np.float64)[:, :3]
         sparse = []
         for b in boxes:
-            if cfg.group_of(b.label) is None:
+            group = cfg.group_of(b.label)
+            if group is None or (supported is not None and group not in supported):
                 continue
-            reach = max(b.dims[:2]) / 2 + 0.1
+            reach = math.hypot(*b.dims[:2]) / 2 + 0.1
             near = (np.abs(pts[:, 0] - b.center[0]) <= reach) & (np.abs(pts[:, 1] - b.center[1]) <= reach)
             if key_of(b) in dense:
                 continue
@@ -280,8 +311,13 @@ def sparse_unconfirmed(cuboids: Sequence[Cuboid], frames, detector, cfg: CameraC
         if bright and float(np.median(bright)) < cfg.min_brightness:
             continue
         for b in sparse:
+            supported = getattr(detector,"supported_groups",None)
+            if supported is not None and cfg.group_of(b.label) not in supported:
+                continue
             in_image = seen = False
             for view, det in zip(views, dets):
+                if det.brightness is not None and det.brightness < cfg.min_brightness:
+                    continue
                 proj = project_box(b, data.sensor_to_world, view)
                 if proj is None or proj.inside_ratio < 0.5:
                     continue
@@ -301,6 +337,9 @@ def sparse_unconfirmed(cuboids: Sequence[Cuboid], frames, detector, cfg: CameraC
             continue
         boxes.sort(key=lambda b: b.frame)
         first = boxes[0]
+        supported = getattr(detector,"supported_groups",None)
+        if supported is not None and cfg.group_of(first.label) not in supported:
+            continue
         where = f"frame {first.frame}" if len(boxes) == 1 else f"{len(boxes)} keyframe ({first.frame}–{boxes[-1].frame})"
         findings.append(Finding(
             error_type=ErrorType.FIT, rule="cam.sparse", severity=Severity.INFO, frame=first.frame, label=first.label,

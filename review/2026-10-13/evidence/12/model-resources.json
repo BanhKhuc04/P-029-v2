@@ -1,0 +1,48 @@
+{
+  "evidence_id": "EV-12-005",
+  "blocked_case": "TC-12-008",
+  "status": "blocked_pretrained_weights",
+  "user_resource_reply": "chưa có sam đâu",
+  "dataset": "nuScenes v1.0-mini",
+  "device_tested": "cpu",
+  "runtime_versions": {
+    "python": "3.12.14",
+    "torch": "2.8.0+cpu",
+    "torchvision": "0.23.0+cpu",
+    "transformers": "5.0.0",
+    "pillow": "12.3.0",
+    "numpy": "2.5.4"
+  },
+  "runtime_directories": [
+    "source-tool/pointsnap-3d/out/review11-runtime",
+    "source-tool/pointsnap-3d/out/review12-runtime"
+  ],
+  "models": {
+    "maskrcnn": {
+      "source": "https://download.pytorch.org/models/maskrcnn_resnet50_fpn_v2_coco-73cbd019.pth",
+      "expected_bytes": 185828065,
+      "checkpoint_complete": false,
+      "checkpoint_hash_verified": false,
+      "attempt": "HTTP 200 reached approximately 55 MB then read timeout; other requests reset. Partial file deleted."
+    },
+    "grounding_dino": {
+      "source": "https://huggingface.co/IDEA-Research/grounding-dino-base",
+      "revision": "12bdfa3120f3e7ec7b434d90674b3396eccf88eb",
+      "checkpoint_complete": false,
+      "checkpoint_hash_verified": false,
+      "attempt": "Processor cached; model download timed out and DNS resolution failed."
+    },
+    "sam2": {
+      "source": "https://huggingface.co/facebook/sam2.1-hiera-small",
+      "revision": "ee5bba1d82bb8749febdf90f45e84b687142ba03",
+      "processor_cached": true,
+      "checkpoint_complete": false,
+      "checkpoint_hash_verified": false,
+      "model_forward_tested": false
+    }
+  },
+  "pretrained_quality_accepted": false,
+  "gpu_tested": false,
+  "human_verdicts_generated": 0,
+  "smoke_scope": "Real Torchvision operators with random initialization and real SAM2 processor with synthetic logits; no pretrained acceptance."
+}

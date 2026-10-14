@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pointsnap.core.geometry import corners, invert_pose
+from pointsnap.core.geometry import corners, invert_pose, validate_pose
 from pointsnap.core.model import Cuboid
 
 MIN_DEPTH_M = 0.5
@@ -29,6 +29,18 @@ class CameraView:
     camera_to_world: np.ndarray
     width: int
     height: int
+
+    def __post_init__(self):
+        intrinsic = np.asarray(self.intrinsic, dtype=np.float64)
+        if (intrinsic.shape != (3, 3) or not np.isfinite(intrinsic).all()
+                or intrinsic[0, 0] <= 0 or intrinsic[1, 1] <= 0
+                or not np.allclose(intrinsic[2], [0, 0, 1])
+                or type(self.width) is not int or type(self.height) is not int
+                or min(self.width, self.height) <= 0):
+            raise ValueError("Camera intrinsic and image dimensions must be finite and valid")
+        object.__setattr__(self, "intrinsic", intrinsic)
+        object.__setattr__(self, "camera_to_world", validate_pose(self.camera_to_world))
+        object.__setattr__(self, "path", Path(self.path))
 
 
 @dataclass(frozen=True)
@@ -55,6 +67,7 @@ def project_points(points_world: np.ndarray, view: CameraView) -> tuple[np.ndarr
 def project_box(box: Cuboid, sensor_to_world: np.ndarray, view: CameraView) -> Projection | None:
     """Chiếu box lên ảnh; `None` nếu có góc nằm sau / quá sát camera hoặc box nằm ngoài ảnh."""
     pts = corners(box)
+    sensor_to_world = validate_pose(sensor_to_world)
     world = pts @ np.asarray(sensor_to_world)[:3, :3].T + np.asarray(sensor_to_world)[:3, 3]
     pixels, depth = project_points(world, view)
     if np.any(depth < MIN_DEPTH_M):
@@ -80,13 +93,22 @@ def iou_2d(a: tuple[float, ...], b: tuple[float, ...]) -> float:
 
 
 def covered_fraction(target: tuple[float, ...], others: list[tuple[float, ...]]) -> float:
-    """Tỉ lệ diện tích khung `target` bị các khung `others` che (xấp xỉ bằng lưới 16x16 điểm mẫu)."""
-    if not others:
+    """Exact union area of axis-aligned rectangles clipped to target."""
+    area = max(0.0, target[2]-target[0]) * max(0.0, target[3]-target[1])
+    if not others or area == 0:
         return 0.0
-    xs = np.linspace(target[0], target[2], 16)
-    ys = np.linspace(target[1], target[3], 16)
-    gx, gy = np.meshgrid(xs, ys)
-    covered = np.zeros(gx.shape, dtype=bool)
+    rectangles = []
     for o in others:
-        covered |= (gx >= o[0]) & (gx <= o[2]) & (gy >= o[1]) & (gy <= o[3])
-    return float(covered.mean())
+        clipped = (max(target[0],o[0]),max(target[1],o[1]),min(target[2],o[2]),min(target[3],o[3]))
+        if clipped[2] > clipped[0] and clipped[3] > clipped[1]:
+            rectangles.append(clipped)
+    xs = sorted({x for r in rectangles for x in (r[0],r[2])})
+    covered = 0.0
+    for left, right in zip(xs, xs[1:]):
+        intervals = sorted((r[1],r[3]) for r in rectangles if r[0] < right and r[2] > left)
+        end, length = target[1], 0.0
+        for bottom, top in intervals:
+            length += max(0.0,top-max(bottom,end))
+            end = max(end,top)
+        covered += (right-left)*length
+    return min(1.0, covered/area)

@@ -33,3 +33,16 @@ def test_packet_identity_changes_with_measurement_config_or_image_evidence():
     assert before != module.packet_id('cfg',[{'value':.3}],{'camera.jpg':'image-a'})
     assert before != module.packet_id('new-cfg',[{'value':.2}],{'camera.jpg':'image-a'})
     assert before != module.packet_id('cfg',[{'value':.2}],{'camera.jpg':'image-b'})
+
+
+def test_csv_has_evidence_identity_and_never_seeds_an_attached_verdict(tmp_path):
+    import csv
+    finding={'frame':1,'track_id':7,'label':'car','rule':'floating','severity':'warning',
+             'message':'quote "and"\nnewline','verdict':'Đúng lỗi','repair_verdict':'Tốt hơn'}
+    provenance={'packet_id':'test-packet','source_commit':'test-source','config_sha256':'test-config'}
+    path=tmp_path/'template.csv'
+    module.write_verdict_template(path,[{'scene':'synthetic','finding':finding}],provenance)
+    rows=list(csv.DictReader(path.open(encoding='utf-8-sig',newline='')))
+    assert len(rows)==1 and rows[0]['message']==finding['message']
+    assert rows[0]['verdict']=='' and rows[0]['repair_verdict']==''
+    assert all(rows[0][key]==value for key,value in provenance.items())

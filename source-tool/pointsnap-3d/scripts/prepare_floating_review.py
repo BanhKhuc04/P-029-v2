@@ -55,6 +55,17 @@ def packet_id(config_hash, cases, asset_hashes):
     return hashlib.sha256(json.dumps(data,sort_keys=True,ensure_ascii=False,allow_nan=False).encode()).hexdigest()
 
 
+def write_verdict_template(path, cases, provenance):
+    """Start with blank human answers, even if a finding has an old verdict attached."""
+    fields=['scene','frame','track_id','label','rule','severity','message','verdict','note','repair_verdict','repair_note','packet_id','source_commit','config_sha256']
+    with Path(path).open('w',encoding='utf-8-sig',newline='') as handle:
+        writer=csv.DictWriter(handle,fieldnames=fields);writer.writeheader()
+        for case in cases:
+            f=case['finding']
+            writer.writerow({**{k:f[k] for k in ('frame','track_id','label','rule','severity','message')},'scene':case['scene'],
+                             **{k:provenance[k] for k in ('packet_id','source_commit','config_sha256')}})
+
+
 def camera_image(box, frames, path):
     """Scientific overlay of the current cuboid; same calibrated pose as the scanner."""
     from PIL import Image, ImageDraw
@@ -174,12 +185,7 @@ def main():
     provenance['assets_sha256']=asset_hashes
     (args.out/'packet.json').write_bytes((json.dumps({'provenance':provenance,'cases':cases},ensure_ascii=False,allow_nan=False)+'\n').encode())
     (args.out/'provenance.json').write_bytes((json.dumps(provenance,indent=2,ensure_ascii=False)+'\n').encode())
-    fields=['scene','frame','track_id','label','rule','severity','message','verdict','note','repair_verdict','repair_note','packet_id','source_commit','config_sha256']
-    with (args.out/'verdicts-template.csv').open('w',encoding='utf-8-sig',newline='') as handle:
-        writer=csv.DictWriter(handle,fieldnames=fields);writer.writeheader()
-        for case in cases:
-            f=case['finding']
-            writer.writerow({**{k:f[k] for k in ('frame','track_id','label','rule','severity','message')},'scene':case['scene'], **{k:provenance[k] for k in ('packet_id','source_commit','config_sha256')}})
+    write_verdict_template(args.out/'verdicts-template.csv',cases,provenance)
     template=(Path(__file__).with_name('floating_review.html')).read_text(encoding='utf-8')
     embedded=json.dumps({'provenance':provenance,'cases':cases},ensure_ascii=False,allow_nan=False).replace('<','\\u003c').replace('>','\\u003e').replace('&','\\u0026')
     (args.out/'index.html').write_bytes(template.replace('__PACKET_JSON__',embedded).encode())

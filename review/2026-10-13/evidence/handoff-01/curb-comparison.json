@@ -1,0 +1,317 @@
+{
+  "config": "default; no ground or severity threshold changes",
+  "rows": [
+    {
+      "scene": "scene-0061",
+      "split": "tuning",
+      "without_curb": 7,
+      "merged_curb": 5,
+      "surface_only": 5,
+      "confirmed_true": 0,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-0553",
+      "split": "tuning",
+      "without_curb": 0,
+      "merged_curb": 0,
+      "surface_only": 0,
+      "confirmed_true": 0,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-0757",
+      "split": "tuning",
+      "without_curb": 8,
+      "merged_curb": 3,
+      "surface_only": 3,
+      "confirmed_true": 0,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-0916",
+      "split": "tuning",
+      "without_curb": 34,
+      "merged_curb": 20,
+      "surface_only": 24,
+      "confirmed_true": 0,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-1094",
+      "split": "tuning",
+      "without_curb": 10,
+      "merged_curb": 7,
+      "surface_only": 7,
+      "confirmed_true": 0,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-0103",
+      "split": "reviewed-heldout",
+      "without_curb": 20,
+      "merged_curb": 15,
+      "surface_only": 16,
+      "confirmed_true": 15,
+      "confirmed_true_in_baseline": 15,
+      "merged_lost_true": [
+        [
+          6,
+          315,
+          "car",
+          "floating"
+        ],
+        [
+          38,
+          309,
+          "car",
+          "floating"
+        ],
+        [
+          39,
+          309,
+          "car",
+          "floating"
+        ]
+      ],
+      "surface_only_lost_true": [
+        [
+          6,
+          315,
+          "car",
+          "floating"
+        ],
+        [
+          31,
+          317,
+          "car",
+          "floating"
+        ],
+        [
+          38,
+          309,
+          "car",
+          "floating"
+        ]
+      ]
+    },
+    {
+      "scene": "scene-0655",
+      "split": "reviewed-heldout",
+      "without_curb": 60,
+      "merged_curb": 46,
+      "surface_only": 42,
+      "confirmed_true": 49,
+      "confirmed_true_in_baseline": 44,
+      "merged_lost_true": [
+        [
+          1,
+          517,
+          "car",
+          "floating"
+        ],
+        [
+          10,
+          494,
+          "truck",
+          "floating"
+        ],
+        [
+          11,
+          409,
+          "car",
+          "floating"
+        ],
+        [
+          13,
+          483,
+          "car",
+          "floating"
+        ],
+        [
+          14,
+          483,
+          "car",
+          "floating"
+        ],
+        [
+          15,
+          462,
+          "car",
+          "floating"
+        ],
+        [
+          19,
+          492,
+          "car",
+          "floating"
+        ],
+        [
+          20,
+          416,
+          "car",
+          "floating"
+        ],
+        [
+          28,
+          411,
+          "car",
+          "floating"
+        ],
+        [
+          29,
+          411,
+          "car",
+          "floating"
+        ],
+        [
+          31,
+          417,
+          "construction_vehicle",
+          "floating"
+        ],
+        [
+          32,
+          417,
+          "construction_vehicle",
+          "floating"
+        ]
+      ],
+      "surface_only_lost_true": [
+        [
+          1,
+          517,
+          "car",
+          "floating"
+        ],
+        [
+          10,
+          494,
+          "truck",
+          "floating"
+        ],
+        [
+          10,
+          523,
+          "car",
+          "floating"
+        ],
+        [
+          11,
+          409,
+          "car",
+          "floating"
+        ],
+        [
+          11,
+          415,
+          "car",
+          "floating"
+        ],
+        [
+          12,
+          409,
+          "car",
+          "floating"
+        ],
+        [
+          14,
+          483,
+          "car",
+          "floating"
+        ],
+        [
+          15,
+          462,
+          "car",
+          "floating"
+        ],
+        [
+          19,
+          492,
+          "car",
+          "floating"
+        ],
+        [
+          20,
+          416,
+          "car",
+          "floating"
+        ],
+        [
+          28,
+          411,
+          "car",
+          "floating"
+        ],
+        [
+          29,
+          411,
+          "car",
+          "floating"
+        ],
+        [
+          30,
+          411,
+          "car",
+          "floating"
+        ],
+        [
+          31,
+          417,
+          "construction_vehicle",
+          "floating"
+        ],
+        [
+          32,
+          417,
+          "construction_vehicle",
+          "floating"
+        ]
+      ]
+    },
+    {
+      "scene": "scene-0796",
+      "split": "reviewed-heldout",
+      "without_curb": 1,
+      "merged_curb": 0,
+      "surface_only": 0,
+      "confirmed_true": 0,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-1077",
+      "split": "reviewed-heldout",
+      "without_curb": 0,
+      "merged_curb": 0,
+      "surface_only": 0,
+      "confirmed_true": 1,
+      "confirmed_true_in_baseline": 0,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    },
+    {
+      "scene": "scene-1100",
+      "split": "reviewed-heldout",
+      "without_curb": 3,
+      "merged_curb": 3,
+      "surface_only": 3,
+      "confirmed_true": 3,
+      "confirmed_true_in_baseline": 3,
+      "merged_lost_true": [],
+      "surface_only_lost_true": []
+    }
+  ]
+}

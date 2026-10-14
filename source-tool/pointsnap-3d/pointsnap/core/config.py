@@ -43,7 +43,7 @@ class RulesConfig:
     heading_points: bool = True
     fit_empty: bool = True
     fit_outside: bool = True
-    fit_loose: bool = True
+    fit_loose: bool = False
     fit_overlap: bool = True
     track_reuse_id: bool = True
     track_occluded_long: bool = True

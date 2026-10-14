@@ -2,6 +2,8 @@
 
 Đây là trạng thái **bản hợp nhất #48 và #61–70** đã kiểm trước khi merge. Danh sách nguồn gồm 11 PR người dùng yêu cầu merge; trạng thái merge và CI thực tế xem các PR trên GitHub. Không dùng tỷ lệ test PASS để tính tỷ lệ hoàn thành toàn dự án.
 
+Cập nhật thao tác 14/10: đã xác minh **10/11 PR merge** (#48, #61–68, #70); main local fast-forward tới `84988ca`. #69 còn chờ chốt. GitHub hiện bị lỗi chuỗi chứng chỉ Vingroup Web Gateway nên chưa push commit chuẩn hóa JSON, merge PR cuối hoặc xác minh CI/server head mới; không tắt kiểm chứng TLS. [Review cải tiến](improvement-review.md) có bằng chứng mới về lệch cấu hình container/main và phép đo hiệu năng; chỉ đề xuất nâng chất lượng chức năng hiện có.
+
 ## Phần đã hoàn tất trong bản hợp nhất
 
 | Phần | Trạng thái và bằng chứng |

@@ -1,0 +1,48 @@
+{
+  "candidate_commit": "bd58da09f33fdae08430e234d2ca11811acc4438",
+  "candidate_prs": [
+    48,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70
+  ],
+  "python": {
+    "tests": 862,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3
+  },
+  "live_cvat": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "node_passed": 47,
+  "skipped_case_names": [
+    "test_upload_then_read_back_matches_ground_truth",
+    "test_flag_then_rescan_on_live_cvat",
+    "test_flag_tilted_shapes_preserves_all_other_annotations"
+  ],
+  "initial_live_attempt": {
+    "status": "FAIL_ENVIRONMENT",
+    "reason": "Docker/CVAT daemon stopped; localhost:8080 refused connection"
+  },
+  "interrupted_attempt": {
+    "status": "INTERRUPTED",
+    "accepted_as_pass": false
+  },
+  "log_sha256": {
+    "merge-preflight-v2.log": "11812254125579f9a0f255c49e442422ab626d6784706a099b27d198889cc5f1",
+    "merge-live.log": "e39931b521c47545df7c21c9110f8cbd98a2573dc1be0fac67833cf78370f93d",
+    "merge-all-node.log": "33e183c76518ecfa8c5d014f2432414dc78050f661e0137a2e7287432d6c1003"
+  },
+  "annotation_scope": "Live tests only temporary tasks created and deleted by their finally blocks; no writes to job4"
+}

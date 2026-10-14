@@ -1,0 +1,75 @@
+{
+  "source_commit": "1a3364bff2e2f0a2afe97a5cab22c54535362348",
+  "config_sha256": "9ff244d73177a115727ec295c4261efdfe874574f02d83e4221b27b994fc3e97",
+  "scene": "scene-0061",
+  "boxes": 3333,
+  "frames": 39,
+  "normal": {
+    "scan_seconds": 30.7739,
+    "point_requests": 125,
+    "point_source_loads": 125,
+    "metadata_requests": 232,
+    "metadata_source_loads": 232,
+    "retained_point_bytes": 0,
+    "findings": 156,
+    "findings_sha256": "6a613dfa7f05a9ea63a2cf4a3e7f9ec69414c054bb3ddfafb44949e9471cc1d2",
+    "counts_by_rule": {
+      "fit.empty": 7,
+      "fit.outside": 2,
+      "floating": 7,
+      "floating.no_evidence": 88,
+      "heading.points": 1,
+      "heading.static": 1,
+      "size.class_range": 1,
+      "track.jump": 5,
+      "track.long_interpolation": 39,
+      "track.static_shift": 5
+    }
+  },
+  "experimental_memo": {
+    "scan_seconds": 29.8477,
+    "point_requests": 125,
+    "point_source_loads": 39,
+    "metadata_requests": 232,
+    "metadata_source_loads": 39,
+    "retained_point_bytes": 27082240,
+    "findings": 156,
+    "findings_sha256": "6a613dfa7f05a9ea63a2cf4a3e7f9ec69414c054bb3ddfafb44949e9471cc1d2",
+    "counts_by_rule": {
+      "fit.empty": 7,
+      "fit.outside": 2,
+      "floating": 7,
+      "floating.no_evidence": 88,
+      "heading.points": 1,
+      "heading.static": 1,
+      "size.class_range": 1,
+      "track.jump": 5,
+      "track.long_interpolation": 39,
+      "track.static_shift": 5
+    }
+  },
+  "normal_repeat": {
+    "scan_seconds": 30.6639,
+    "point_requests": 125,
+    "point_source_loads": 125,
+    "metadata_requests": 232,
+    "metadata_source_loads": 232,
+    "retained_point_bytes": 0,
+    "findings": 156,
+    "findings_sha256": "6a613dfa7f05a9ea63a2cf4a3e7f9ec69414c054bb3ddfafb44949e9471cc1d2",
+    "counts_by_rule": {
+      "fit.empty": 7,
+      "fit.outside": 2,
+      "floating": 7,
+      "floating.no_evidence": 88,
+      "heading.points": 1,
+      "heading.static": 1,
+      "size.class_range": 1,
+      "track.jump": 5,
+      "track.long_interpolation": 39,
+      "track.static_shift": 5
+    }
+  },
+  "same_findings": true,
+  "scope": "One scene, default geometry rules, camera disabled and no Critic model. Sequential one-shot runs with OS cache; timings are exploratory, not a performance guarantee. Experiment memoizes per-frame data only inside this script; product is unchanged. Retained bytes exclude Python/index/model/process memory. No network or CVAT writes."
+}

@@ -1,0 +1,30 @@
+{
+  "model": "gpt-6.1-sol",
+  "scene": "scene-0061",
+  "frame": 0,
+  "points": 34688,
+  "boxes": 65,
+  "queries": 30,
+  "repeats": 10,
+  "all_point_sets_equal": true,
+  "build_seconds": 0.009153900000001158,
+  "timings_ms": {
+    "brute": {
+      "median": 4.0748000000121465,
+      "p95": 4.600469999968483
+    },
+    "index": {
+      "median": 0.20050000000537693,
+      "p95": 0.36134500003299763
+    }
+  },
+  "source_sha256": "fe87302578c05f8e9ee18c124b3b7d043b1b17f5d02d3f65c0676dcd77d882a4",
+  "memory": {
+    "process_peak_rss_before_bytes": 139669504,
+    "process_peak_rss_after_bytes": 139669504,
+    "traced_current_bytes": 1568896,
+    "traced_peak_bytes": 1891464,
+    "scope": "Process RSS includes imports and dataset reader; traced allocation around helper/query; not full-app RAM or minimum hardware"
+  },
+  "scope": "One frame/30 boxes; concurrent full evaluation; build cost reported separately; not minimum hardware or whole-app speed"
+}

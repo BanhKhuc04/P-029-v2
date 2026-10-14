@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "health",
+      "status": "PASS",
+      "http_status": 200
+    },
+    {
+      "name": "anonymous rejected",
+      "status": "PASS",
+      "http_status": 401
+    },
+    {
+      "name": "invalid token rejected",
+      "status": "PASS",
+      "http_status": 401
+    },
+    {
+      "name": "authenticated json",
+      "status": "PASS",
+      "http_status": 200,
+      "bytes": 2847,
+      "content_type": "application/json"
+    },
+    {
+      "name": "authenticated html",
+      "status": "PASS",
+      "http_status": 200,
+      "bytes": 12515,
+      "content_type": "text/html"
+    },
+    {
+      "name": "authenticated csv",
+      "status": "PASS",
+      "http_status": 200,
+      "bytes": 813,
+      "content_type": "text/csv"
+    },
+    {
+      "name": "complete annotations unchanged after GET reports",
+      "status": "PASS"
+    }
+  ],
+  "existing_jobs_edited": false,
+  "cleanup": "PASS",
+  "owned_task_id": 13,
+  "owned_job_ids": [
+    13
+  ],
+  "cleanup_http_status": 404
+}

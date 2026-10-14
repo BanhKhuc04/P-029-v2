@@ -1,5 +1,7 @@
 # C4 — Lơ lửng / lún trên mặt đất không phẳng (dốc, đá, bậc vỉa hè)
 
+> Cập nhật 13/10: bộ hồi quy hợp nhất không còn XFAIL C4. [Sửa vỉa hè và đối chiếu verdict](../../../../review/2026-10-13/handoff-final-report.md) khôi phục các lỗi thật bị veto trong phép tái hiện; các thử nghiệm mặt phẳng làm mất lỗi đã xác nhận không được đưa vào. Không suy từ test tổng hợp ra nghiệm thu mọi dốc/vật dưới bánh trên dữ liệu thật. Nội dung bên dưới giữ yêu cầu và mốc đo ban đầu.
+
 Spec 4.2: *đáy box đặt trên mặt tiếp xúc với mặt đường / địa hình*. Hiện `ring_ground_for_box`
 ([core/ground.py](../../pointsnap/core/ground.py)) lấy **trung vị độ cao** điểm thấp trong vành đai 0,1–0,8 m quanh đáy box,
 tức coi mặt đất **phẳng ngang**. Box là 7-DoF (spec 4.1), không có pitch / roll. Luật `floating`

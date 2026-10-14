@@ -48,6 +48,8 @@ Một người có thể giữ nhiều vị trí, nhưng **không review job do 
 
 ## Review PointSnap
 
+[Kết quả xử lý bàn giao tối 13/10, PR và model review](review/2026-10-13/handoff-final-report.md). Đây là kết quả trên nhánh hợp nhất để kiểm thử; xem trạng thái PR trước khi coi mã đã vào main. Precision tay/G7 và MV3 thật có trạng thái riêng.
+
 [Bàn giao review 01–08](review/2026-10-10/08-handoff.md), [kế hoạch và trạng thái](REVIEW-PLAN.md). Kết quả 01–08 đã vào main qua PR #54 (`d18b1a9`); các báo cáo cũ giữ mốc trước merge và phân biệt test đạt với quality/manual/MV3 và deployment chưa xác minh.
 
 [Review và kiểm thử toàn repo ngày 13/10/2026, kèm model](review/2026-10-13/whole-repo-report.md), [hướng dẫn chạy lại các tập lệnh test](source-tool/pointsnap-3d/auto-tests/README.md). Báo cáo ghi riêng PASS/FAIL/SKIP/XFAIL và các giới hạn nghiệm thu.

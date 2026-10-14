@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit
 
 import requests
+import numpy as np
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.reader import load_job
@@ -69,7 +70,24 @@ def create_report(client: CvatClient, job_id: int):
                                               for c in job.cuboids if c.visible and c.track_id is not None)
     metadata = {"point_cloud_available": frames is not None, "pose_available": pose_available,
                 "point_cloud_note": note, "coverage_gaps": gaps}
+    visible_frames = {c.frame for c in job.cuboids if c.visible and c.keyframe}
+    metadata["camera_available"] = bool(
+        frames is not None and hasattr(frames, "camera_views") and config.camera.active()
+        and visible_frames and all(frames.camera_views(frame) for frame in visible_frames)
+        and not any(f.rule == "camera.no_evidence" for f in findings)
+    )
+    from pointsnap.critic import available as critic_available
+    metadata["critic_available"] = bool(frames is not None and config.critic.model and critic_available())
     return job, findings, config, metadata
+
+
+def _json_numeric(value):
+    """Report details can contain NumPy measurements; keep strict JSON and reject arbitrary objects."""
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    raise TypeError(f'Unsupported report value: {type(value).__name__}')
 
 
 def report_bytes(job, findings, config, report_format: str, metadata: dict | None = None) -> bytes:
@@ -85,10 +103,13 @@ def report_bytes(job, findings, config, report_format: str, metadata: dict | Non
                for field in dataclasses.fields(config.rules) if getattr(config.rules, field.name)]
     if not config.track.long_interpolation.enabled:
         enabled = [name for name in enabled if name != "track.long_interpolation"]
-    cloud_rules = {"floating", "heading.points", "fit.empty", "fit.outside", "fit.loose"}
-    pose_rules = {"track.jump", "track.split_id", "track.long_interpolation", "heading.flip", "heading.motion"}
+    cloud_rules = {"floating", "heading.points", "fit.empty", "fit.outside", "fit.loose", "lidar.missing", "critic.box"}
+    pose_rules = {"track.jump", "track.split_id", "track.long_interpolation", "heading.flip", "heading.motion",
+                  "track.static_shift", "heading.static", "lidar.missing", "attr.rider_state"}
     checks = [name for name in enabled if (name not in cloud_rules or metadata.get("point_cloud_available"))
-              and (name not in pose_rules or metadata.get("pose_available"))]
+              and (name not in pose_rules or metadata.get("pose_available"))
+              and (not name.startswith("cam.") or metadata.get("camera_available"))
+              and (name != "critic.box" or (config.critic.model and metadata.get("critic_available")))]
     if report_format == "json":
         errors = sum(f.severity == Severity.ERROR for f in findings)
         warnings = sum(f.severity == Severity.WARNING for f in findings)
@@ -105,6 +126,7 @@ def report_bytes(job, findings, config, report_format: str, metadata: dict | Non
             "coverage_gaps": gaps,
             "enabled_checks": enabled,
             "checks": checks,
+            "checks_scope": "Eligible configured rules; not per-box completeness or model quality acceptance",
             "findings": [
                 {**dataclasses.asdict(f), "severity": f.severity.value, "error_type": f.error_type.value,
                  "cvat_url": job.frame_url(f.frame, track_id=f.track_id,
@@ -112,7 +134,7 @@ def report_bytes(job, findings, config, report_format: str, metadata: dict | Non
                 for f in findings
             ],
         }
-        return json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8")
+        return json.dumps(payload, ensure_ascii=False, allow_nan=False, default=_json_numeric).encode("utf-8")
     with tempfile.TemporaryDirectory(prefix="pointsnap-report-") as directory:
         path = Path(directory) / f"report.{report_format}"
         generator = generate_html_report if report_format == "html" else generate_csv_report

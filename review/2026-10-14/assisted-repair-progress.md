@@ -15,6 +15,8 @@ Reviewer: **Codex, agent dựa trên GPT-6**. Phiên không cung cấp ID model 
 
 [Bằng chứng API sau đồng bộ](evidence/runtime-main44.json). Mẫu hash bốn file chưa phải attestation toàn image. API Docker không phải bản Web đang chạy hay chứng nhận extension đã reload.
 
+[Bằng chứng bộ mẫu đã tạo](evidence/floating-review-summary.json) có commit detector/viewer, hash package/config/bộ bằng chứng, 24 định danh độc lập, đủ ảnh và CSV chưa chấm. Trang và ảnh mẫu được phục vụ qua HTTP local với status 200. Mã xem trước và script ở [PR #72 draft](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/pull/72); chưa hợp nhất thành tính năng Apply của sản phẩm.
+
 ## Người dùng làm gì tiếp
 
 Mở bộ mẫu local `source-tool/pointsnap-3d/out/floating-review/index.html` trong worktree `architecture-ux` hoặc qua server local do phiên chuẩn bị. Bắt đầu **5–10 mẫu đầu** rồi tiếp tục phần còn lại:

@@ -1,0 +1,25 @@
+{
+  "source_commit": "9c4fb1fcfb94cd68d5502adba9c986d61876fec4",
+  "viewer_commit": "12d4d794675d0de512fbd453684ae2a00c310ca2",
+  "package_sha256": "e610913526c24851ebc3e60b5c87368e433adaf1bcf59b1868a6159113be22bc",
+  "config_sha256": "9ff244d73177a115727ec295c4261efdfe874574f02d83e4221b27b994fc3e97",
+  "packet_id": "69a6406e42c10399242fa67b33ba35f455d2bb38a8ce2883b6423aca3944fb05",
+  "candidate_findings": 135,
+  "scene_count": 10,
+  "cases": 24,
+  "preview_cases": 0,
+  "g7_status": "UNASSESSED",
+  "cvat_writes": 0,
+  "verdicts_created": 0,
+  "selected_scenes": 7,
+  "distinct_tracks": 24,
+  "assets_verified": true,
+  "camera_cases": 24,
+  "csv_unreviewed": 24,
+  "proposal_block_reasons": {
+    "Có độ nghiêng của box trong hệ dữ liệu: giữ sửa tay trong bản thử đầu": 24
+  },
+  "python_tests_passed": 27,
+  "node_viewer_tests_passed": 8,
+  "scope": "Exploratory human packet, not independent heldout or CVAT Apply/Undo acceptance"
+}

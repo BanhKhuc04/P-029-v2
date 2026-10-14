@@ -108,6 +108,8 @@ test('CSV preserves human labels and quotes text; text formula prefixes are esca
   ui.element('note').oninput({ target: { value: '=1+1,"line"\nnext' } });
   const csv = await ui.csv();
   assert.match(csv, /"Đúng lỗi"/);
+  assert.match(csv, /"packet_id"/);
+  assert.match(csv, /"test-packet"/);
   assert.match(csv, /"'=1\+1,""line""\nnext"/);
 });
 

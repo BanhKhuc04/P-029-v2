@@ -173,6 +173,9 @@ globalThis.PointSnapPanelCss = `
 .verdict.fp { color: var(--error); }
 
 /* ---- PointSnap: quét, gắn cờ ---- */
+.camera { margin: 10px 0 0; }
+.camera img { width: 100%; max-height: 200px; object-fit: contain; background: #102a43; border-radius: 6px; }
+.camera figcaption { color: var(--text-3); font-size: 11px; }
 .scan { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
 .scan-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); }
 .scan-state { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }

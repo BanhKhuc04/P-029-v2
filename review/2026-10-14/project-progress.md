@@ -2,7 +2,7 @@
 
 Đây là trạng thái **bản hợp nhất #48 và #61–70** đã kiểm trước khi merge. Danh sách nguồn gồm 11 PR người dùng yêu cầu merge; trạng thái merge và CI thực tế xem các PR trên GitHub. Không dùng tỷ lệ test PASS để tính tỷ lệ hoàn thành toàn dự án.
 
-Cập nhật tiếp 14/10: kết nối GitHub đã hoạt động lại; **11/11 PR trong đợt này đã merge**, main local pull tới `44a0623`. Head cuối #69 đạt cả 5 job CI. API Docker đã rebuild/recreate theo main và healthy; bốn file package được lấy mẫu và cấu hình fit khớp main. [Tiến độ kiểm chất lượng/hỗ trợ sửa](assisted-repair-progress.md) ghi bộ 24 mẫu chờ người chấm và prototype xem trước chỉ đọc. Extension cài đặt chưa xác minh lại vì Computer Use chặn URL. Review cải tiến/evidence cũ giữ đúng thời điểm quan sát trước đồng bộ.
+Cập nhật tiếp 14/10: kết nối GitHub đã hoạt động lại; **11/11 PR trong đợt này đã merge**, main local pull tới `44a0623`. Head cuối #69 đạt cả 5 job CI. API Docker đã rebuild/recreate theo main và healthy; bốn file package được lấy mẫu và cấu hình fit khớp main. [Tiến độ kiểm chất lượng/hỗ trợ sửa](assisted-repair-progress.md) ghi **24/24 mẫu floating được người dùng chấm Đúng lỗi**, kèm nhận xét box chưa ôm sát. Precision 100% chỉ mô tả bộ mẫu đã dùng chỉnh luật; G7 vẫn UNASSESSED. Đã có [đối chiếu độ nghiêng gốc với khung gần đúng](floating-tightness-review.md) và prototype chỉ đọc; Apply/Undo CVAT chưa bật. Extension cài đặt chưa xác minh lại vì Computer Use chặn URL. Review cải tiến/evidence cũ giữ đúng thời điểm quan sát trước đồng bộ.
 
 ## Phần đã hoàn tất trong bản hợp nhất
 

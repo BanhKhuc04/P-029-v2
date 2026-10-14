@@ -1,0 +1,60 @@
+{
+  "packet_id": "69a6406e42c10399242fa67b33ba35f455d2bb38a8ce2883b6423aca3944fb05",
+  "source_commit": "9c4fb1fcfb94cd68d5502adba9c986d61876fec4",
+  "human_review": {
+    "recorded_at": "2026-10-14T20:04:57.115637+07:00",
+    "reviewer": "user in current conversation",
+    "scope": "All 24 cases, explicitly confirmed",
+    "verdict_csv_sha256": "9b46df3c55735351ddd581a564a9439cb971fd1b326efacfe6c5032dfe335789",
+    "counts": {
+      "true": 24,
+      "false": 0,
+      "unknown": 0,
+      "unreviewed": 0
+    },
+    "precision_in_this_sample": 1.0,
+    "distinct_tracks": 24,
+    "independent_heldout": false,
+    "user_feedback": "đúng lỗi nhưng và box xung quanh trên dưới trái phải chưa sát với box của xe",
+    "scope_confirmation": "tất cả các 24 bộ đó",
+    "repair_verdicts_recorded": 0,
+    "fit_rule_verdicts_recorded": 0
+  },
+  "geometry_comparison": {
+    "cases": 24,
+    "captured_display_points_verified": 24,
+    "script_sha256": "5ebf8e6840e72e1ed0b5c7edc9129141ec3626f7d058416f0ce9ab944e733e41",
+    "source_tilt_deg_range": [
+      2.1896986052046468,
+      5.31869720105215
+    ],
+    "max_corner_difference_m_range": [
+      0.06025018806647722,
+      0.41428098710511857
+    ],
+    "median_max_corner_difference_m": 0.16607122817633074,
+    "source_lowest_corner_minus_reduced_bottom_m_range": [
+      -0.38281735234415093,
+      -0.041768544133415464
+    ],
+    "center_and_dimensions_unchanged": true,
+    "geometry_edits": 0,
+    "cvat_writes": 0,
+    "rendered_camera_assets": 24,
+    "rendered_lidar_assets": 24,
+    "limits": "Read-only source orientation comparison, not corrected labels or detector rerun. Does not demonstrate source labels are tight. Camera/LiDAR capture times may differ. Point subsets were selected with reduced geometry; outside counts do not establish full-box fit."
+  },
+  "g7_status": "UNASSESSED",
+  "automatically_inferred_human_verdicts": 0,
+  "validation": {
+    "focused_python_tests_passed": 34,
+    "existing_node_viewer_tests_passed": 8,
+    "browser_e2e": false,
+    "visual_spot_checks": [
+      "02-camera.jpg",
+      "11-lidar.png"
+    ],
+    "ci_all_5_pass_head": "23286c20531aae0702fa50087814cf3fa7f46913"
+  },
+  "next_step": "Review source-orientation comparison, then choose a human-guided correction on one copied CVAT task. Do not automatically resize from sparse points or treat generic fit feedback as fit.loose rule precision."
+}

@@ -10,17 +10,21 @@
   "preview_cases": 0,
   "g7_status": "UNASSESSED",
   "cvat_writes": 0,
-  "verdicts_created": 0,
   "selected_scenes": 7,
   "distinct_tracks": 24,
   "assets_verified": true,
   "camera_cases": 24,
-  "csv_unreviewed": 24,
   "proposal_block_reasons": {
     "Có độ nghiêng của box trong hệ dữ liệu: giữ sửa tay trong bản thử đầu": 24
   },
-  "python_tests_passed": 28,
+  "python_tests_passed": 34,
   "node_viewer_tests_passed": 8,
   "scope": "Exploratory human packet, not independent heldout or CVAT Apply/Undo acceptance",
-  "csv_has_packet_provenance": true
+  "csv_has_packet_provenance": true,
+  "automatically_inferred_verdicts": 0,
+  "csv_template_unreviewed": 24,
+  "human_verdicts_recorded": 24,
+  "human_precision_in_this_sample": 1.0,
+  "repair_verdicts_recorded": 0,
+  "human_review_evidence": "floating-human-review.json"
 }

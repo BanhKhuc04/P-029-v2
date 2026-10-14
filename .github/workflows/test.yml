@@ -64,6 +64,8 @@ jobs:
         with:
           node-version: "22"
       - run: node --test tests/*.test.js
+      - name: Human review packet viewer (synthetic fixtures)
+        run: node --test ../scripts/tests/floating_review.test.js
       - name: Kiểm tra cú pháp các file JS và manifest
         run: |
           for f in background.js options.js src/*.js; do node --check "$f"; done

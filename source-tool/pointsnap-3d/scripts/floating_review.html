@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chấm mẫu lơ lửng/lún — PointSnap</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f6;color:#142c3e;font:16px/1.5 system-ui,sans-serif}header,main{max-width:1280px;margin:auto;padding:20px}header{padding-bottom:0}h1{font-size:26px;margin:0 0 8px}h2{font-size:18px;margin:0 0 10px}p{margin:8px 0}.muted{color:#465b69}.notice{background:#fff6df;border-left:4px solid #c98700;padding:12px 16px;border-radius:6px;margin:16px 0}.card{background:#fff;border:1px solid #cedae3;border-radius:12px;padding:18px;margin-bottom:16px}.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.row>*{min-width:0}.spacer{flex:1}button,select{font:inherit;padding:10px 14px;border-radius:7px;border:1px solid #a9bcc9;background:#fff;color:#12364d;cursor:pointer}button.primary{background:#075b83;color:#fff;border-color:#075b83}button:disabled{opacity:.5;cursor:default}button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #19a5ce;outline-offset:3px}.evidence{display:grid;grid-template-columns:1fr 1fr;gap:16px}.evidence img{width:100%;max-height:540px;object-fit:contain;background:#e7edf2;border-radius:6px}.plots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.plots canvas{width:100%;height:240px;background:#f7fafc;border:1px solid #d7e0e7;border-radius:6px}.answers{display:flex;flex-wrap:wrap;gap:10px}.answers label{display:flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #bcccd7;border-radius:7px;cursor:pointer}.answers input{width:19px;height:19px}textarea{width:100%;font:inherit;padding:10px;border:1px solid #bcccd7;border-radius:7px;min-height:75px;resize:vertical}.tag{display:inline-block;background:#e6f3fb;padding:3px 8px;border-radius:4px;font-size:14px}.metric{font-variant-numeric:tabular-nums;font-weight:600}#repair-section[hidden]{display:none}#repair-answers[hidden]{display:none}#storage-status{color:#884900}footer{font-size:14px;color:#465b69;padding-bottom:28px}summary{cursor:pointer;font-weight:600}#provenance{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 ui-monospace,monospace}
+@media(max-width:800px){.evidence{grid-template-columns:1fr}.plots{grid-template-columns:1fr}.plots canvas{height:250px}header,main{padding:14px}h1{font-size:22px}}
+</style>
+<header>
+  <h1>Chấm mẫu lơ lửng/lún</h1>
+  <p>Đối chiếu box hiện tại với ảnh, LiDAR và frame lân cận. Chấm phát hiện trước, rồi mới xem thử gợi ý sửa.</p>
+  <div class="notice">Đây là mẫu thăm dò trên nuScenes mini đã từng dùng để chỉnh luật. Kết quả giúp tìm điểm cần cải tiến; chưa chứng nhận G7. Trang này chỉ đọc dữ liệu và lưu câu trả lời của bạn, không ghi nhãn lên CVAT.</div>
+</header>
+<main>
+  <section class="card" aria-label="Điều hướng mẫu">
+    <div class="row"><button id="prev">← Mẫu trước</button><label for="case-picker">Chọn mẫu</label><select id="case-picker"></select><button id="next">Mẫu sau →</button><span class="spacer"></span><button id="export" class="primary">Tải CSV kết quả</button></div>
+    <p id="progress" class="metric" aria-live="polite"></p><p id="storage-status"></p>
+  </section>
+  <section class="card">
+    <h2 id="title"></h2><p id="identity" class="muted"></p><p id="message"></p>
+    <p id="measure"></p><p id="object-points" class="muted"></p>
+    <div class="evidence"><div><h2>Ảnh camera — box hiện tại màu xanh</h2><img id="camera" alt="Ảnh camera có chiếu khung 3D của box hiện tại"><p id="camera-note" class="muted"></p></div><div><h2>Keyframe lân cận của cùng track</h2><img id="context" alt="Mặt cắt box và điểm LiDAR ở keyframe lân cận"><p id="context-note" class="muted"></p></div></div>
+    <h2 style="margin-top:20px">LiDAR tại frame đang chấm</h2>
+    <p class="muted">Trục và số đo tính bằng mét trong hệ của box. Khung xanh là box hiện tại; đường nét đứt là mặt đất đo được. Điểm quanh box được lấy mẫu để hiển thị.</p>
+    <div class="plots"><div><div class="tag">Top · x/y</div><canvas id="top" aria-label="Mặt cắt từ trên"></canvas></div><div><div class="tag">Side · x/z</div><canvas id="side" aria-label="Mặt cắt ngang"></canvas></div><div><div class="tag">Front · y/z</div><canvas id="front" aria-label="Mặt cắt trước"></canvas></div></div>
+  </section>
+  <section class="card">
+    <h2>1. Phát hiện này có đúng là lỗi không?</h2>
+    <div class="answers" id="detection-answers" role="group" aria-label="Chấm phát hiện">
+      <label><input type="radio" name="verdict" value="Đúng lỗi">Đúng lỗi</label><label><input type="radio" name="verdict" value="Báo nhầm">Báo nhầm</label><label><input type="radio" name="verdict" value="Không rõ">Không rõ</label>
+    </div>
+    <p class="muted">Nếu ảnh/điểm không đủ rõ, chọn Không rõ. Không rõ được báo riêng và không tính vào mẫu số precision.</p>
+    <label for="note">Ghi chú lý do</label><textarea id="note" placeholder="Ví dụ: đường dốc; không thấy chân/bánh; box đã sát vật…"></textarea>
+  </section>
+  <section id="repair-section" class="card" hidden>
+    <h2>2. Xem thử gợi ý dịch Z</h2>
+    <p id="repair-text"></p><button id="preview-toggle">Xem box đề xuất</button>
+    <p class="muted">Gợi ý chỉ dịch một keyframe theo độ lệch với track; giữ nguyên kích thước, hướng và nhãn. Khung tím là đề xuất. Chưa có nút áp dụng vào CVAT ở bước chấm này.</p>
+    <div id="repair-answers" hidden>
+      <h2>Sau khi xem, gợi ý có giúp box đúng hơn không?</h2>
+      <div class="answers" role="group" aria-label="Chấm gợi ý sửa"><label><input type="radio" name="repair-verdict" value="Tốt hơn">Tốt hơn</label><label><input type="radio" name="repair-verdict" value="Không tốt hơn">Không tốt hơn</label><label><input type="radio" name="repair-verdict" value="Không rõ">Không rõ</label></div>
+      <label for="repair-note">Ghi chú gợi ý</label><textarea id="repair-note" placeholder="Đối chiếu với vật thật và frame lân cận; không chỉ xem lỗi có biến mất không."></textarea>
+    </div>
+  </section>
+  <section class="card"><details><summary>Phạm vi và phiên bản</summary><pre id="provenance"></pre></details></section>
+  <footer>Tải CSV sau khi chấm và giữ cùng bộ mẫu này. Câu trả lời chỉ được lưu trong trình duyệt trên máy bạn; CSV là bản bạn có thể gửi lại để tổng hợp. Không có câu trả lời nào được công cụ tự tạo.</footer>
+</main>
+<script id="packet" type="application/json">__PACKET_JSON__</script>
+<script>
+'use strict';
+const packet=JSON.parse(document.getElementById('packet').textContent), cases=packet.cases;
+const key='pointsnap-floating-review:'+packet.provenance.package_sha256+':'+packet.provenance.config_sha256+':'+cases.length;
+let answers={}, at=0, showProposal=false;
+const detectionValues=['','Đúng lỗi','Báo nhầm','Không rõ'], repairValues=['','Tốt hơn','Không tốt hơn','Không rõ'];
+try{answers=JSON.parse(localStorage.getItem(key)||'{}');if(!answers||Array.isArray(answers)||typeof answers!=='object')answers={};}catch(_){document.getElementById('storage-status').textContent='Không đọc được lưu cục bộ. Hãy tải CSV để giữ kết quả.';}
+function id(c){return [c.scene,c.finding.frame,c.finding.track_id,c.finding.label,c.finding.rule].join('|');}
+function answer(c){const a=answers[id(c)]||{};return {verdict:detectionValues.includes(a.verdict)?a.verdict:'',note:typeof a.note==='string'?a.note:'',repair_verdict:repairValues.includes(a.repair_verdict)?a.repair_verdict:'',repair_note:typeof a.repair_note==='string'?a.repair_note:''};}
+function save(){try{localStorage.setItem(key,JSON.stringify(answers));}catch(_){document.getElementById('storage-status').textContent='Không lưu được cục bộ. Hãy tải CSV trước khi đóng trang.';}progress();}
+function progress(){const aa=cases.map(answer), yes=aa.filter(a=>a.verdict==='Đúng lỗi').length, no=aa.filter(a=>a.verdict==='Báo nhầm').length, unknown=aa.filter(a=>a.verdict==='Không rõ').length;document.getElementById('progress').textContent=`Đã chấm ${yes+no+unknown}/${cases.length} · Đúng ${yes} · Báo nhầm ${no} · Không rõ ${unknown} · Precision mô tả ${yes+no?(100*yes/(yes+no)).toFixed(1)+'%':'chưa có'} · G7 chưa nghiệm thu`;}
+function draw(view){const c=cases[at],canvas=document.getElementById(view),w=Math.max(canvas.clientWidth,240),h=240,dpr=window.devicePixelRatio||1;canvas.width=w*dpr;canvas.height=h*dpr;const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);const {length:L,width:W,height:H}=c.box,hr=view==='front'?W/2+2:L/2+2;const lo=view==='top'?-W/2-2:-H/2-1.5,hi=view==='top'?W/2+2:H/2+1;const scale=Math.min((w-20)/(2*hr),(h-20)/(hi-lo)),mid=(lo+hi)/2,px=x=>w/2+x*scale,py=y=>h/2-(y-mid)*scale;
+  ctx.fillStyle='#657987';for(const p of c.points){const u=view==='front'?p[1]:p[0],v=view==='top'?p[1]:p[2];ctx.fillRect(px(u)-1,py(v)-1,2,2);}if(c.ground&&view!=='top'){const slope=view==='side'?Math.tan((c.ground.pitch_deg||0)*Math.PI/180):0;ctx.strokeStyle='#537814';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(px(-hr),py(c.ground.z-slope*hr));ctx.lineTo(px(hr),py(c.ground.z+slope*hr));ctx.stroke();ctx.setLineDash([]);}
+  const halfU=view==='front'?W/2:L/2,halfV=view==='top'?W/2:H/2;ctx.strokeStyle='#087aad';ctx.lineWidth=2;ctx.strokeRect(px(-halfU),py(halfV),2*halfU*scale,2*halfV*scale);if(showProposal&&c.proposal){const dz=view==='top'?0:c.proposal.delta_z_m;ctx.strokeStyle='#9b24bd';ctx.lineWidth=2.8;ctx.strokeRect(px(-halfU),py(halfV+dz),2*halfU*scale,2*halfV*scale);}ctx.fillStyle='#344e60';ctx.font='12px system-ui';ctx.fillText('0',px(0)+4,py(0)-4);ctx.fillText('1 m',px(1)+2,py(0)+15);ctx.fillText('↑ '+(view==='top'?'y':'z'),8,16);ctx.fillText('→ '+(view==='front'?'y':'x'),w-38,h-8);
+}
+function render(){const c=cases[at],f=c.finding,a=answer(c);showProposal=false;document.getElementById('case-picker').value=String(at);document.getElementById('title').textContent=`Mẫu ${String(c.number).padStart(2,'0')} · ${f.label}`;document.getElementById('identity').textContent=`${c.scene} · frame ${f.frame} · track ${f.track_id} · ${f.severity_label}`;document.getElementById('message').textContent=f.message;document.getElementById('measure').textContent=`Độ lệch so track: ${(100*f.value).toFixed(1)} cm · Ngưỡng ${(100*f.threshold).toFixed(1)} cm`;document.getElementById('object-points').textContent=`${c.object_points} điểm của vật · ${c.points.length} điểm quanh box được hiển thị`;const cam=document.getElementById('camera');cam.hidden=!c.camera;if(c.camera)cam.src=c.camera;document.getElementById('camera-note').textContent=c.camera?`${c.camera_channel} · ảnh cắt quanh box; camera và LiDAR không chụp đúng cùng thời điểm`:'Không có camera thấy rõ box này.';document.getElementById('context').src=c.context;document.getElementById('context-note').textContent=`Frame tham khảo lân cận: ${c.context_frames.join(', ')||'không có'}`;
+  document.querySelectorAll('[name=verdict]').forEach(el=>el.checked=el.value===a.verdict);document.getElementById('note').value=a.note;document.querySelectorAll('[name=repair-verdict]').forEach(el=>el.checked=el.value===a.repair_verdict);document.getElementById('repair-note').value=a.repair_note;document.getElementById('repair-section').hidden=a.verdict!=='Đúng lỗi';const btn=document.getElementById('preview-toggle');btn.disabled=!c.proposal;btn.textContent='Xem box đề xuất';document.getElementById('repair-answers').hidden=true;document.getElementById('repair-text').textContent=c.proposal?`Đề xuất ${c.proposal.delta_z_m>=0?'nâng':'hạ'} ${Math.abs(c.proposal.delta_z_m*100).toFixed(1)} cm, giữ độ lệch đáy–mặt đất tham chiếu ${(c.proposal.reference_distance_m*100).toFixed(1)} cm của track.`:`Giữ sửa tay: ${c.proposal_reason}`;document.getElementById('prev').disabled=at===0;document.getElementById('next').disabled=at===cases.length-1;['top','side','front'].forEach(draw);progress();}
+for(let i=0;i<cases.length;i++){const o=document.createElement('option');o.value=String(i);o.textContent=`Mẫu ${String(i+1).padStart(2,'0')} · ${cases[i].scene} · ${cases[i].finding.label}`;document.getElementById('case-picker').append(o);}
+document.getElementById('prev').onclick=()=>{at--;render();};document.getElementById('next').onclick=()=>{at++;render();};document.getElementById('case-picker').onchange=e=>{at=Number(e.target.value);render();};
+document.getElementById('detection-answers').onchange=e=>{const a=answer(cases[at]);a.verdict=e.target.value;if(a.verdict!=='Đúng lỗi'){a.repair_verdict='';a.repair_note='';}answers[id(cases[at])]=a;save();render();};
+document.getElementById('note').oninput=e=>{const a=answer(cases[at]);a.note=e.target.value;answers[id(cases[at])]=a;save();};
+document.getElementById('preview-toggle').onclick=()=>{showProposal=!showProposal;document.getElementById('preview-toggle').textContent=showProposal?'Ẩn box đề xuất':'Xem box đề xuất';document.getElementById('repair-answers').hidden=!showProposal;['top','side','front'].forEach(draw);};
+document.querySelectorAll('[name=repair-verdict]').forEach(el=>el.onchange=e=>{const a=answer(cases[at]);a.repair_verdict=e.target.value;answers[id(cases[at])]=a;save();});document.getElementById('repair-note').oninput=e=>{const a=answer(cases[at]);a.repair_note=e.target.value;answers[id(cases[at])]=a;save();};
+function cell(v){let s=String(v??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
+document.getElementById('export').onclick=()=>{const fields=['scene','frame','track_id','label','rule','severity','message','verdict','note','repair_verdict','repair_note'];const rows=[fields.map(cell).join(',')];for(const c of cases){const row={scene:c.scene,...c.finding,...answer(c)};rows.push(fields.map(k=>cell(row[k])).join(','));}const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='verdicts-floating.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+document.getElementById('provenance').textContent=JSON.stringify(packet.provenance,null,2);window.addEventListener('resize',()=>['top','side','front'].forEach(draw));if(cases.length)render();else document.getElementById('title').textContent='Không tìm thấy finding đủ điều kiện.';
+</script>
+</html>

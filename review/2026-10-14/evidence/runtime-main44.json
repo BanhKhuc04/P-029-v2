@@ -1,0 +1,35 @@
+{
+  "container": "pointsnap-handoff-pointsnap_api-1",
+  "image": "pointsnap-api:44a0623",
+  "observed_main": "44a06236eedf412a884f27a67561af62c9f541fa",
+  "candidate_commit": "44a06236eedf412a884f27a67561af62c9f541fa",
+  "deployed": {
+    "sha256_lf": {
+      "api.py": "cea79599aaac2e47e55e49cc7a293486b841ed64640eacbf0d4b7341ce1c4b89",
+      "config.yaml": "85551c803df7ebb15c1e7b34981e5d5f0fb7aaaf690464d33bd34babe40b17cb",
+      "core/scanner.py": "db3a7f3761bb3ebc9f22883b132e9fbd9c054996723cf093a30ea269d94f3587",
+      "detectors/missing.py": "e731a21a357d32bde835b399b5c8fa283469b2e74c2f39ebb981064098974692"
+    },
+    "default_fit": {
+      "fit_loose": false,
+      "outside_min_points": 15,
+      "outside_min_object_points": 30,
+      "outside_warning_ratio": 0.4
+    }
+  },
+  "candidate_sha256_lf": {
+    "api.py": "cea79599aaac2e47e55e49cc7a293486b841ed64640eacbf0d4b7341ce1c4b89",
+    "config.yaml": "85551c803df7ebb15c1e7b34981e5d5f0fb7aaaf690464d33bd34babe40b17cb",
+    "core/scanner.py": "db3a7f3761bb3ebc9f22883b132e9fbd9c054996723cf093a30ea269d94f3587",
+    "detectors/missing.py": "e731a21a357d32bde835b399b5c8fa283469b2e74c2f39ebb981064098974692"
+  },
+  "main_sha256_lf": {
+    "api.py": "cea79599aaac2e47e55e49cc7a293486b841ed64640eacbf0d4b7341ce1c4b89",
+    "config.yaml": "85551c803df7ebb15c1e7b34981e5d5f0fb7aaaf690464d33bd34babe40b17cb",
+    "core/scanner.py": "db3a7f3761bb3ebc9f22883b132e9fbd9c054996723cf093a30ea269d94f3587",
+    "detectors/missing.py": "e731a21a357d32bde835b399b5c8fa283469b2e74c2f39ebb981064098974692"
+  },
+  "container_equals_candidate": true,
+  "container_equals_main": true,
+  "scope": "Read-only sample of four package files, normalized LF, and package default fit settings; not a full image/source attestation or effective per-project settings. Container unchanged; no credentials accessed."
+}

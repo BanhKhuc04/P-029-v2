@@ -1,0 +1,51 @@
+{
+  "completed_date": "2026-10-14",
+  "timezone": "Asia/Bangkok",
+  "reviewer": "Codex, GPT-6 based agent; exact deployment model ID unavailable",
+  "base_commit": "7ec580a97fa0cf7eddd553212d06c52873a9057f",
+  "branch": "codex/architecture-ux-20261013",
+  "extension": {
+    "browser": "Edge",
+    "installed_commit_verified": false,
+    "layout_reference_commit": "be1778c",
+    "navigation": {"frame": 37, "class": "bicycle", "client_id": 216, "server_track_id": 654},
+    "flag_confirmation_observed": true,
+    "flag_confirmation_action": "cancel",
+    "camera_action_observed": false
+  },
+  "scan": {
+    "project": "ux-review",
+    "run_id": "20261013-235630-469489710783-job4",
+    "job_id": 4,
+    "status": "done",
+    "flag": false,
+    "num_boxes": 3727,
+    "errors": 4,
+    "warnings": 16,
+    "info": 103,
+    "gate_passed": false,
+    "fit_loose": false,
+    "camera_inference": false,
+    "critic_configured": false,
+    "learned_model_available": false
+  },
+  "job_picker_verified": {"start_frame": 0, "stop_frame": 38, "frame_count": 39, "displayed_frame_count": 39},
+  "keyboard_after_fix": {
+    "tab": "splash-start",
+    "shift_tab": "splash-start",
+    "loading_tab": "splash",
+    "after_close": "btn-project-dropdown",
+    "next_tab": "theme-btn-light"
+  },
+  "responsive": [
+    {"page": "scan", "phase": "before", "viewport_requested": 390, "content_width": 375, "document_width": 507},
+    {"page": "scan", "phase": "after", "viewport_requested": 390, "content_width": 375, "document_width": 375},
+    {"page": "scan", "phase": "after", "viewport_requested": 320, "content_width": 305, "document_width": 305},
+    {"page": "results", "viewport_requested": 390, "content_width": 375, "document_width": 375}
+  ],
+  "automated_validation": {"script": "source-tool/pointsnap-3d/scripts/test_web_ux.py", "pytest_passed": 31, "pytest_seconds": 3.44, "javascript_syntax_passed": true},
+  "annotation_write_exercised": false,
+  "human_usability_study": false,
+  "evidence_local_directory": "source-tool/pointsnap-3d/out/",
+  "accuracy_acceptance": "Not assessed by this UX review; human precision per rule is required"
+}

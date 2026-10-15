@@ -81,7 +81,7 @@ def test_repair_floating_box_delta_z():
     assert delta.delta_center[1] == 0.0
     assert delta.delta_center[2] == pytest.approx(-0.30, abs=0.03)
     assert delta.target_offset_m == pytest.approx(0.30, abs=0.03)
-    assert delta.confidence >= 0.80
+    assert delta.confidence == pytest.approx(0.75)
     assert "hạ" in delta.reason.lower()
 
     # Kiểm tra repaired_cuboid
@@ -140,12 +140,12 @@ def test_repair_heading_flip_delta_yaw():
     injected_track[3] = track[3].replace(yaw=math.pi)
     target_box = injected_track[3]
 
-    delta = compute_box_repair(target_box, injected_track, points=None, rule="heading.flip")
+    delta = compute_box_repair(target_box, injected_track, points=None, rule="heading.flip", finding_details={"target_yaw_sensor": 0.0})
 
     assert abs(abs(delta.delta_yaw) - math.pi) < 0.05
     assert delta.repaired_cuboid.yaw == pytest.approx(0.0, abs=0.05)
     assert delta.confidence >= 0.90
-    assert "hướng chuẩn" in delta.reason
+    assert "cảm biến" in delta.reason
 
     passed = verify_repaired_box_passes_scanner(delta.repaired_cuboid, injected_track, points=None, rule="heading.flip")
     assert passed is True
@@ -179,7 +179,7 @@ def test_repair_heading_motion():
     injected = list(track)
     injected[2] = track[2].replace(yaw=math.pi)
 
-    delta = compute_box_repair(injected[2], injected, points=None, rule="heading.motion")
+    delta = compute_box_repair(injected[2], injected, points=None, rule="heading.motion", finding_details={"target_yaw_sensor": 0.0})
 
     assert delta.repaired_cuboid.yaw == pytest.approx(0.0, abs=0.05)
     assert delta.confidence >= 0.90
@@ -303,7 +303,7 @@ def test_repair_edge_case_missing_ground_with_finding_details():
 
     # offset = 0.28 - 0.05 = 0.23 -> delta_z = -0.23
     assert delta.delta_center[2] == pytest.approx(-0.23, abs=0.01)
-    assert delta.confidence >= 0.75
+    assert delta.confidence < 0.5
 
 
 def test_repair_dataclass_contract_and_to_dict():

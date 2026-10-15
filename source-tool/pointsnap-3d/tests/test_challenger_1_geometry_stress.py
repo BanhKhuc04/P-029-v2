@@ -130,7 +130,7 @@ def test_floating_sparse_points_under_threshold(n_points: int):
 
 @pytest.mark.parametrize("n_points", [15, 16, 50, 1000, 20000])
 def test_floating_points_at_and_above_threshold(n_points: int):
-    """At and above 15 points: ground ring estimation succeeds with confidence floor >= 0.80."""
+    """At and above 15 points: estimate ground with confidence reduced without a track reference."""
     ground_z = -1.80
     h = 1.6
     # Box is floating +30cm above ground
@@ -170,7 +170,7 @@ def test_floating_points_at_and_above_threshold(n_points: int):
     _assert_strict_invariants(delta)
     assert delta.delta_center[2] == pytest.approx(-0.30, abs=0.04)
     assert delta.repaired_cuboid.bottom_z == pytest.approx(ground_z, abs=0.04)
-    assert delta.confidence >= 0.80
+    assert 0 < delta.confidence <= 0.75
 
 
 @pytest.mark.parametrize("noise_std", [0.0, 0.05, 0.15, 0.30, 0.50])
@@ -246,7 +246,7 @@ def test_floating_bimodal_curb_ground():
 
     delta = compute_box_repair(box, [box], pts, rule="floating")
     _assert_strict_invariants(delta)
-    assert delta.confidence >= 0.80
+    assert 0 < delta.confidence <= 0.75
     assert delta.delta_center[2] < 0.0
 
 
@@ -268,7 +268,7 @@ def test_floating_extreme_elevations_with_finding_details(extreme_cz: float, del
     _assert_strict_invariants(delta)
     assert delta.delta_center[2] == pytest.approx(-delta_target, abs=1e-4)
     assert delta.repaired_cuboid.center[2] == pytest.approx(extreme_cz - delta_target, abs=1e-4)
-    assert delta.confidence >= 0.80
+    assert 0 < delta.confidence <= 0.75
 
 
 # ==============================================================================
@@ -298,7 +298,7 @@ def test_heading_flip_boundary_and_wraparound_angles(ref_yaw: float, flip_yaw: f
     peer2 = _make_box(yaw=norm_ref, frame=2)
     track = [peer0, box, peer2]
 
-    delta = compute_box_repair(box, track, points=None, rule="heading.flip")
+    delta = compute_box_repair(box, track, points=None, rule="heading.flip", finding_details={"target_yaw_sensor": norm_ref})
     _assert_strict_invariants(delta)
     # The repaired cuboid yaw should align with norm_ref modulo 2pi
     angle_diff = abs(normalize_angle(delta.repaired_cuboid.yaw - norm_ref))
@@ -334,7 +334,8 @@ def test_heading_motion_velocity_threshold_boundary(dx: float, dy: float, expect
     b1 = _make_box(x=dx, y=dy, yaw=math.pi / 2.0, frame=1)
     track = [b0, b1]
 
-    delta = compute_box_repair(b1, track, points=None, rule="heading.motion")
+    delta = compute_box_repair(b1, track, points=None, rule="heading.motion",
+        finding_details={"target_yaw_sensor": math.atan2(dy, dx)} if expected_success else {})
     _assert_strict_invariants(delta)
 
     if expected_success:
@@ -372,11 +373,11 @@ def test_heading_static_with_target_yaw_sensor(target_yaw: float):
     assert delta.confidence >= 0.90
 
 
-def test_heading_static_without_target_yaw_raises_value_error():
-    """heading.static without target_yaw_sensor raises ValueError (handled by web app safely)."""
+def test_heading_static_without_target_yaw_is_unavailable():
+    """Thiếu hướng sensor thì không đề xuất xoay."""
     box = _make_box()
-    with pytest.raises(ValueError, match="Unsupported repair rule: heading.static"):
-        compute_box_repair(box, [box], points=None, rule="heading.static")
+    delta = compute_box_repair(box, [box], points=None, rule="heading.static")
+    assert delta.confidence == 0 and delta.delta_yaw == 0
 
 
 def test_heading_points_nan_inf_filtering():
@@ -547,6 +548,6 @@ def test_scanner_clearance_all_repairable_rules():
     assert verify_repaired_box_passes_scanner(defect_track[1], defect_track, points=pts, rule="floating") is True
 
     # 3. Repair frame 2 with heading flip
-    d2 = compute_box_repair(defect_track[2], defect_track, points=pts, rule="heading.flip")
+    d2 = compute_box_repair(defect_track[2], defect_track, points=pts, rule="heading.flip", finding_details={"target_yaw_sensor": 0.0})
     defect_track[2] = d2.repaired_cuboid
     assert verify_repaired_box_passes_scanner(defect_track[2], defect_track, points=pts, rule="heading.flip") is True

@@ -102,6 +102,10 @@ def _scalar_details(details: Any) -> dict[str, Any]:
     return out
 
 
+def visible_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [dict(f, index=i) for i, f in enumerate(findings) if not f.get("rule", "").startswith("track.")]
+
+
 class ScanRunner:
     def __init__(self, project_manager: ProjectManager, max_workers: int = 1, max_pending: int = 16) -> None:
         self.pm = project_manager
@@ -109,6 +113,7 @@ class ScanRunner:
         self._scans: dict[str, dict[str, Any]] = {}
         self._lock = threading.RLock()
         self.max_pending = max_pending
+        self._poll_cache = {}
 
     def run_dir(self, slug: str, run_id: str) -> Path:
         self.pm.get_project(slug)
@@ -333,7 +338,7 @@ class ScanRunner:
                 f_path = run_dir / "findings.json"
                 if f_path.is_file():
                     raw_findings = read_json(f_path, list)
-                    run_data["findings"] = [f for f in raw_findings if not f.get("rule", "").startswith("track.")]
+                    run_data["findings"] = visible_findings(raw_findings)
             return run_data
 
         # 2. Đọc từ ổ đĩa
@@ -352,7 +357,7 @@ class ScanRunner:
                 res["summary"] = read_json(run_dir / "summary.json")
                 if include_findings:
                     raw_findings = read_json(run_dir / "findings.json", list)
-                    res["findings"] = [f for f in raw_findings if not f.get("rule", "").startswith("track.")]
+                    res["findings"] = visible_findings(raw_findings)
             return res
         sum_file = run_dir / "summary.json"
         if not sum_file.is_file():
@@ -373,8 +378,25 @@ class ScanRunner:
         }
         if include_findings:
             f_path = run_dir / "findings.json"
-            res["findings"] = read_json(f_path, list)
+            res["findings"] = visible_findings(read_json(f_path, list))
         return res
+
+    def poll_state(self, slug: str, job_id: int) -> tuple[str | None, dict | None, str]:
+        with self._lock:
+            scans = [dict(r) for r in self._scans.values() if r.get("project_slug") == slug and r.get("job_id") == job_id]
+            active = next((r for r in scans if r.get("status") in ("queued", "running")), None)
+            done = [r for r in scans if r.get("status") == "done"]
+            runs_dir = self.pm._project_dir(slug) / "runs"
+            stamp = runs_dir.stat().st_mtime_ns if runs_dir.is_dir() else None
+            signature = (stamp, tuple((r["run_id"], r.get("finished_at")) for r in done))
+            key = (slug, job_id)
+            cached = self._poll_cache.get(key)
+            if cached is None or cached[0] != signature:
+                runs = [r for r in self.list_runs(slug) if r.get("job_id") == job_id and r.get("status") == "done"]
+                latest = runs[0].get("run_id") if runs else None
+                started_at = runs[0].get("started_at") or "" if runs else ""
+                self._poll_cache[key] = (signature, latest, started_at)
+            return self._poll_cache[key][1], active, self._poll_cache[key][2]
 
     @staticmethod
     def _check_outputs(run_dir: Path) -> None:

@@ -294,13 +294,13 @@
    */
   function matchFindings(findings, flag) {
     const out = [];
-    (findings || []).forEach((f, index) => {
+    (findings || []).forEach((f) => {
       if (f.frame === flag.frame && f.label === flag.label && f.message && flag.value.includes(f.message)) {
         if (flag.objectId != null) {
           const id = flag.kind === 'track' ? f.track_id : f.source_id;
           if (id == null || String(id) !== String(flag.objectId)) return;
         }
-        out.push(index);
+        if (Number.isInteger(f.index) && f.index >= 0) out.push(f.index);
       }
     });
     return out;

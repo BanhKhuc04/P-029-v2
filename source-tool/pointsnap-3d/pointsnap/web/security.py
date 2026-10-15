@@ -11,6 +11,7 @@ MAX_BODY_BYTES = 1_048_576
 class LocalRequestBoundary:
     def __init__(self, app):
         self.app = app
+        self.extension_ids = {value.strip() for value in os.environ.get('POINTSNAP_EXTENSION_IDS', '').split(',') if value.strip()}
         self.hosts = {'localhost', '127.0.0.1', '::1'} | {
             value.strip().lower() for value in os.environ.get('POINTSNAP_ALLOWED_HOSTS', '').split(',') if value.strip()
         }
@@ -37,6 +38,10 @@ class LocalRequestBoundary:
                 return await deny(403, 'Host không được phép; dùng địa chỉ local đã cấu hình.')
             origin = headers.get(b'origin')
             extension = bool(origin and re.fullmatch(r'chrome-extension://[a-p]{32}', origin))
+            # Chưa cấu hình danh sách thì giữ hành vi cũ để extension cài sẵn vẫn ghi được.
+            if extension and self.extension_ids and scope['method'] in ('POST', 'PUT', 'DELETE', 'PATCH'):
+                if origin.split('://', 1)[1] not in self.extension_ids:
+                    return await deny(403, 'Extension chưa được cấp quyền ghi; cấu hình POINTSNAP_EXTENSION_IDS.')
             if origin and not extension:
                 parsed = urlsplit(origin)
                 target = urlsplit(f"{scope['scheme']}://{headers.get(b'host', '')}")

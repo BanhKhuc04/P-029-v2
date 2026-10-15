@@ -32,6 +32,7 @@
     lock_angle_deg: 2.0,
   };
   let isCurrentlySnapped = false;
+  let isCurrentlyRotationSnapped = false;
   let currentResiduals = null;
   let ghostGroup = null;
   let currentActiveBox = null;
@@ -64,6 +65,16 @@
     }
 
     return null;
+  }
+
+  function reportUnavailable() {
+    const ctx = findThreeContext();
+    if (!ctx || !ctx.scene || !currentActiveBox || !customThreeContext) {
+      dispatchEventBridge('POINTSNAP_3D_UNAVAILABLE', {
+        reason: !currentActiveBox ? 'Chưa có box đang chọn' : 'Chưa có cầu nối ghi canvas CVAT',
+        message: 'Chưa kết nối được canvas 3D của CVAT',
+      });
+    }
   }
 
   function setThreeContext(ctx) {
@@ -213,9 +224,11 @@
     activeGhostTarget = target ? { ...target } : null;
     if (tolerances) activeTolerances = { ...tolerances };
     isCurrentlySnapped = false;
+    isCurrentlyRotationSnapped = false;
     currentResiduals = null;
 
     updateGhostMesh(activeGhostTarget);
+    reportUnavailable();
 
     if (activeGhostTarget && currentActiveBox) {
       const engine = getGhostEngine();
@@ -240,6 +253,7 @@
   function clearGhostTarget() {
     activeGhostTarget = null;
     isCurrentlySnapped = false;
+    isCurrentlyRotationSnapped = false;
     currentResiduals = null;
     removeGhostMesh();
   }
@@ -254,6 +268,8 @@
 
   function setActiveBox(box) {
     currentActiveBox = box ? { ...box } : null;
+    if (activeGhostTarget) setGhostTarget(activeGhostTarget, activeTolerances);
+    else reportUnavailable();
   }
 
   function getActiveBox() {
@@ -269,14 +285,16 @@
    */
   function handlePointerMove(event, boxOverride = null) {
     const box = boxOverride || currentActiveBox;
-    if (!box || !activeGhostTarget) return box;
+    if (!box || !activeGhostTarget) { reportUnavailable(); return box; }
+    if (typeof window !== 'undefined' && !customThreeContext) { reportUnavailable(); return box; }
 
     const engine = getGhostEngine();
     if (!engine) return box;
 
     isDragging = true;
-    const snapResult = engine.evaluateMagnetSnap(box, activeGhostTarget, isCurrentlySnapped);
+    const snapResult = engine.evaluateMagnetSnap(box, activeGhostTarget, isCurrentlySnapped, isCurrentlyRotationSnapped);
     isCurrentlySnapped = snapResult.snapped;
+    isCurrentlyRotationSnapped = snapResult.rotationSnapped;
     currentResiduals = snapResult.residuals;
 
     if (snapResult.residuals) {
@@ -304,6 +322,7 @@
    */
   function handlePointerUp(event, boxOverride = null) {
     isDragging = false;
+    if (typeof window !== 'undefined' && !customThreeContext) return;
     const box = boxOverride || currentActiveBox;
     if (!activeGhostTarget || !currentResiduals) return;
 
@@ -344,7 +363,8 @@
     if (!isL && !isShiftS) return false;
 
     const box = boxOverride || currentActiveBox;
-    if (!box) return false;
+    if (!box) { reportUnavailable(); return false; }
+    if (typeof window !== 'undefined' && !customThreeContext) { reportUnavailable(); return false; }
 
     const engine = getGhostEngine();
     if (!engine) return false;
@@ -400,9 +420,12 @@
       });
 
       window.addEventListener('message', (e) => {
+        if (e.source !== window) return;
         if (!e.data || typeof e.data !== 'object') return;
         if (e.data.type === 'POINTSNAP_SET_GHOST_TARGET' && e.data.detail) {
           setGhostTarget(e.data.detail.ghostTarget, e.data.detail.tolerances);
+        } else if (e.data.type === 'POINTSNAP_SET_ACTIVE_BOX' && e.data.detail) {
+          setActiveBox(e.data.detail.box);
         } else if (e.data.type === 'POINTSNAP_CLEAR_GHOST_TARGET') {
           clearGhostTarget();
         }
@@ -414,18 +437,18 @@
       }, true);
 
       // Lắng nghe thao tác chuột trên canvas 3D
-      const canvasWrapper = document.querySelector('#cvat-canvas3d-wrapper, .cvat-canvas3d-perspective, .cvat-canvas3d-fullsize');
-      if (canvasWrapper) {
-        canvasWrapper.addEventListener('pointermove', (e) => {
-          if (isDragging) handlePointerMove(e);
-        });
-        canvasWrapper.addEventListener('pointerdown', () => {
-          isDragging = true;
-        });
-        canvasWrapper.addEventListener('pointerup', (e) => {
-          handlePointerUp(e);
-        });
-      }
+      const onCanvas = (e) => e.target && typeof e.target.closest === 'function'
+        && e.target.closest('#cvat-canvas3d-wrapper, .cvat-canvas3d-perspective, .cvat-canvas3d-fullsize');
+      document.addEventListener('pointerdown', (e) => {
+        if (onCanvas(e)) { isDragging = true; reportUnavailable(); }
+      }, true);
+      document.addEventListener('pointermove', (e) => {
+        if (isDragging && onCanvas(e)) handlePointerMove(e);
+      }, true);
+      document.addEventListener('pointerup', (e) => {
+        if (isDragging) handlePointerUp(e);
+      }, true);
+      reportUnavailable();
     }
   }
 

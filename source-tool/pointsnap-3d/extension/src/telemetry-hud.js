@@ -132,10 +132,15 @@
   /**
    * Gắn HUD vào container 3D canvas của CVAT.
    */
+  function isJobPage() {
+    return typeof window !== 'undefined' && /^\/tasks\/\d+\/jobs\/\d+\/?$/.test(window.location?.pathname || '');
+  }
+
   function mountHUD(container = null) {
     if (typeof document === 'undefined') return null;
+    if (!isJobPage()) { hideHUD(); return null; }
     const targetContainer = container || customContainer ||
-      document.querySelector('#cvat-canvas3d-wrapper, .cvat-canvas3d-perspective, .cvat-canvas3d-fullsize, body');
+      document.querySelector('#cvat-canvas3d-wrapper, .cvat-canvas3d-perspective, .cvat-canvas3d-fullsize') || document.body;
     if (!targetContainer) return null;
 
     injectHUDStyles();
@@ -193,6 +198,7 @@
    * Render dữ liệu telemetry trực tiếp lên DOM.
    */
   function renderTelemetry(data) {
+    if (!isJobPage()) { hideHUD(); return; }
     if (!hudElement) {
       mountHUD();
     }
@@ -314,12 +320,14 @@
       hudElement.style.display = 'flex';
       isVisible = true;
     }
+    if (canvasUnavailable) showUnavailable();
   }
 
   /**
    * Cập nhật Telemetry qua requestAnimationFrame (< 16ms, 60 FPS).
    */
   function updateTelemetry(data) {
+    if (!isJobPage() || (!hasGhostTarget && !canvasUnavailable)) return;
     latestTelemetry = data;
     if (typeof requestAnimationFrame === 'function') {
       if (rafId == null) {
@@ -351,6 +359,7 @@
    * Xử lý hiệu ứng xác nhận khi người dùng khóa thành công (Green Lock Committed).
    */
   function onLockCommitted(data) {
+    if (!isJobPage()) { hideHUD(); return; }
     if (!hudElement) return;
     hudElement.className = 'ps-telemetry-hud green-lock committed';
     const badge = hudElement.querySelector('#ps-hud-badge-status');
@@ -370,6 +379,26 @@
   /**
    * Khởi tạo HUD và lắng nghe các tín hiệu telemetry từ 3D Hook.
    */
+  let canvasUnavailable = false;
+  let hasGhostTarget = false;
+
+  function showUnavailable() {
+    if (!isJobPage()) { hideHUD(); return; }
+    canvasUnavailable = true;
+    if (!hudElement) mountHUD();
+    if (!hudElement) return;
+    const hint = hudElement.querySelector('#ps-hud-footer-hint');
+    if (hint) hint.textContent = 'Chưa kết nối được canvas 3D của CVAT';
+    const badge = hudElement.querySelector('#ps-hud-badge-status');
+    if (badge) {
+      badge.textContent = 'CHƯA KẾT NỐI CANVAS';
+      badge.className = 'ps-hud-badge off-target';
+    }
+    hudElement.className = 'ps-telemetry-hud off-target';
+    hudElement.style.display = 'flex';
+    isVisible = true;
+  }
+
   function initTelemetryHUD(options = {}) {
     if (initialized) return;
     initialized = true;
@@ -377,9 +406,38 @@
     if (options.container) customContainer = options.container;
     if (options.camera) cameraRef = options.camera;
 
-    mountHUD();
-
     if (typeof window !== 'undefined') {
+      // CVAT uses pushState for navigation; check routes without replacing its history methods.
+      let pathname = window.location?.pathname;
+      const checkRoute = () => {
+        if (pathname !== window.location?.pathname) {
+          pathname = window.location?.pathname;
+          canvasUnavailable = false;
+          hasGhostTarget = false;
+          latestTelemetry = null;
+          hideHUD();
+        }
+      };
+      window.addEventListener('popstate', checkRoute);
+      if (typeof window.setInterval === 'function') window.setInterval(checkRoute, 300);
+
+      const showGhostTarget = (detail) => {
+        if (!detail?.ghostTarget || !isJobPage()) return;
+        hasGhostTarget = true;
+        mountHUD();
+        if (hudElement) {
+          hudElement.style.display = 'flex';
+          isVisible = true;
+          if (canvasUnavailable) showUnavailable();
+        }
+      };
+      window.addEventListener('POINTSNAP_SET_GHOST_TARGET', (e) => showGhostTarget(e.detail));
+      window.addEventListener('POINTSNAP_3D_UNAVAILABLE', showUnavailable);
+      const clearTarget = () => {
+        hasGhostTarget = false;
+        canvasUnavailable = false;
+        hideHUD();
+      };
       window.addEventListener('POINTSNAP_3D_TELEMETRY', (e) => {
         if (e.detail) {
           if (!cameraRef && window.__THREE_CAMERA__) cameraRef = window.__THREE_CAMERA__;
@@ -388,23 +446,28 @@
       });
 
       window.addEventListener('message', (e) => {
+        if (e.source !== window) return;
         if (!e.data || typeof e.data !== 'object') return;
-        if (e.data.type === 'POINTSNAP_3D_TELEMETRY' && e.data.detail) {
+        if (e.data.type === 'POINTSNAP_3D_UNAVAILABLE') {
+          showUnavailable();
+        } else if (e.data.type === 'POINTSNAP_SET_GHOST_TARGET') {
+          showGhostTarget(e.data.detail);
+        } else if (e.data.type === 'POINTSNAP_3D_TELEMETRY' && e.data.detail) {
           if (!cameraRef && window.__THREE_CAMERA__) cameraRef = window.__THREE_CAMERA__;
           updateTelemetry(e.data.detail);
         } else if (e.data.type === 'POINTSNAP_CLEAR_GHOST_TARGET') {
-          hideHUD();
+          clearTarget();
         } else if (e.data.type === 'POINTSNAP_3D_LOCK_COMMITTED' && e.data.detail) {
-          onLockCommitted(e.data.detail);
+          if (hasGhostTarget || canvasUnavailable) onLockCommitted(e.data.detail);
         }
       });
 
       window.addEventListener('POINTSNAP_CLEAR_GHOST_TARGET', () => {
-        hideHUD();
+        clearTarget();
       });
 
       window.addEventListener('POINTSNAP_3D_LOCK_COMMITTED', (e) => {
-        onLockCommitted(e.detail);
+        if (hasGhostTarget || canvasUnavailable) onLockCommitted(e.detail);
       });
     }
   }

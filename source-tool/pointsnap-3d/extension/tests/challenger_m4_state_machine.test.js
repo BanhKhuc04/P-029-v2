@@ -24,6 +24,7 @@ function createExtensionPanel(transport) {
     },
   };
   const window = {
+    postMessage() {},
     addEventListener(evt, handler) { domEvents.set(evt, handler); },
   };
   const context = {
@@ -53,6 +54,7 @@ function createExtensionPanel(transport) {
     '  root.testHarness = { S, loadRepairProposal, renderRepairSection, applyRepair, rollbackRepair, onClick, setNotice };\n  loadSettings().then'
   );
   vm.runInContext(patched, context);
+  context.testHarness.S.ps.project = {slug: 'p'};
   return { ...context.testHarness, context };
 }
 
@@ -586,15 +588,15 @@ test('Challenger Web 4: Strict LIFO rollback order under multiple sequential app
   const f3 = { track_id: 105, frame: 0, severity: 'error', severity_label: 'Lỗi' };
 
   // Simulate 3 applies in order: f1 -> f2 -> f3
-  web.state.historyStack.push({ history_id: 'snap-1', job_id: 4, track_id: 101, frame: 1, finding: f1 });
+  web.state.historyStack.push({ slug: 'test-proj', history_id: 'snap-1', job_id: 4, track_id: 101, frame: 1, finding: f1 });
   web.state.appliedFindings.add(f1);
   f1.repaired = true;
 
-  web.state.historyStack.push({ history_id: 'snap-2', job_id: 4, track_id: 101, frame: 2, finding: f2 });
+  web.state.historyStack.push({ slug: 'test-proj', history_id: 'snap-2', job_id: 4, track_id: 101, frame: 2, finding: f2 });
   web.state.appliedFindings.add(f2);
   f2.repaired = true;
 
-  web.state.historyStack.push({ history_id: 'snap-3', job_id: 4, track_id: 105, frame: 0, finding: f3 });
+  web.state.historyStack.push({ slug: 'test-proj', history_id: 'snap-3', job_id: 4, track_id: 105, frame: 0, finding: f3 });
   web.state.appliedFindings.add(f3);
   f3.repaired = true;
 

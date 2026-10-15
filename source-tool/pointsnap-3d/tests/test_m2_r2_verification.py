@@ -196,7 +196,7 @@ def test_all_6_repair_permutations_zero_residuals():
         cur_track[3] = cur_track[3].replace(dims=(4.5, 1.0, 1.6))
 
         for frame_idx, rule in perm:
-            delta = compute_box_repair(cur_track[frame_idx], cur_track, pts_by_frame[frame_idx], rule=rule)
+            delta = compute_box_repair(cur_track[frame_idx], cur_track, pts_by_frame[frame_idx], rule=rule, finding_details={"target_yaw_sensor": 0.0, "track_median_distance": 0.0})
             cur_track[frame_idx] = delta.repaired_cuboid
 
         findings = scan_cuboids(cur_track, config=cfg, frames=frames)

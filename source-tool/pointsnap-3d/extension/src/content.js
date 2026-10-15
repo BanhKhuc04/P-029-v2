@@ -37,6 +37,7 @@
     confirmFlag: false,
     notice: null,
     camera: null,
+    canvasUnavailable: 'Chưa kết nối được canvas 3D của CVAT',
     listFilter: 'all',
     tab: 'now',
     pick: 0,
@@ -207,6 +208,7 @@
       if (frame !== S.frame) S.pick = 0;
       S.frame = frame;
       S.active = active;
+      dispatchActiveBox();
       S.filterOn = filterOn;
       render();
     }
@@ -755,6 +757,27 @@
     render();
   }
 
+  async function dispatchActiveBox(trackId = null, frame = S.frame) {
+    const sid = S.sid;
+    const active = S.active;
+    const selected = currentFlag().flag;
+    if (trackId == null && selected && selected.kind === 'track') trackId = selected.objectId;
+    let box = null;
+    if (S.job && active && selected && selected.value === active.flag && selected.label === active.label && trackId != null) {
+      try {
+        const annotations = await api.annotations(S.job.jobId);
+        if (sid !== S.sid || active !== S.active || frame !== S.frame) return;
+        const track = (annotations.tracks || []).find(t => t.id === Number(trackId));
+        const shape = track && (track.shapes || []).find(s => s.frame === frame && !s.outside);
+        const pts = shape && shape.points;
+        if (pts && pts.length >= 9 && pts.slice(0, 9).every(Number.isFinite)) {
+          box = {center: pts.slice(0, 3), dims: pts.slice(6, 9), roll: pts[3], pitch: pts[4], yaw: pts[5]};
+        }
+      } catch (_) {}
+    }
+    window.postMessage({type: 'POINTSNAP_SET_ACTIVE_BOX', detail: {box}}, '*');
+  }
+
   function dispatchGhostTarget(repair, tolerances, trackId, frame) {
     if (!repair) return;
     const targetBox = repair.repaired_cuboid || repair.ghost_target || null;
@@ -814,8 +837,15 @@
       return;
     }
     const frame = flag.frame;
+    if (!S.ps.project?.slug) {
+      S.repair.loading = false;
+      S.repair.error = 'Cần chọn dự án để sửa đúng nguồn CVAT';
+      render();
+      return;
+    }
+    dispatchActiveBox(trackId, frame);
     const rule = flag.items && flag.items[0] ? flag.items[0].rule : 'floating';
-    const slugParam = S.ps.project ? `&slug=${encodeURIComponent(S.ps.project.slug)}` : '';
+    const slugParam = `&slug=${encodeURIComponent(S.ps.project.slug)}`;
     const res = await pointsnap('GET', `/api/jobs/${S.job.jobId}/tracks/${trackId}/repair?frame=${frame}&rule=${encodeURIComponent(rule)}${slugParam}`);
     if (S.repair.trackId !== trackId || S.repair.frame !== frame) return;
     S.repair.loading = false;
@@ -940,7 +970,7 @@
     if (S.repair.applying || !S.repair.data || !S.job || S.repair.data.applicable === false || !(S.repair.data.confidence > 0)) return;
     const trackId = S.repair.trackId;
     const frame = S.repair.frame;
-    if (trackId == null || frame == null) return;
+    if (trackId == null || frame == null || !S.ps.project?.slug) return;
 
     S.repair.applying = true;
     render();
@@ -949,7 +979,7 @@
       frame,
       repair: S.repair.data,
       client_track_etag: S.repair.trackEtag || undefined,
-      slug: S.ps.project?.slug || undefined,
+      slug: S.ps.project.slug,
     };
 
     const res = await pointsnap('POST', `/api/jobs/${S.job.jobId}/tracks/${trackId}/apply-repair`, payload);
@@ -981,14 +1011,14 @@
     if (S.repair.rollingBack || !S.repair.historyId || !S.job) return;
     const trackId = S.repair.trackId;
     const historyId = S.repair.historyId;
-    if (trackId == null) return;
+    if (trackId == null || !S.ps.project?.slug) return;
 
     S.repair.rollingBack = true;
     render();
 
     const payload = {
       history_id: historyId,
-      slug: S.ps.project?.slug || undefined,
+      slug: S.ps.project.slug,
     };
 
     const res = await pointsnap('POST', `/api/jobs/${S.job.jobId}/tracks/${trackId}/rollback`, payload);
@@ -1057,6 +1087,7 @@
     else if (S.filterOn) filter = '<span class="state on"></span>Bộ lọc CVAT đang bật<button class="link" data-action="filter-on">Chỉ box lỗi</button><button class="link" data-action="filter-off">Hiện tất cả</button>';
     else filter = '<span class="state"></span>Đang hiện mọi box<button class="link" data-action="filter-on">Chỉ box lỗi</button>';
     let html = `<div class="status-row"><span class="grow filter">${filter}</span><span class="keys"><span class="kbd">,</span><span class="kbd">.</span>chuyển lỗi</span></div>`;
+    if (S.canvasUnavailable) html += note('warn', esc(S.canvasUnavailable));
     const p = S.filterProblem;
     if (p && !S.filterOn) {
       html += p.needsReload
@@ -1243,6 +1274,11 @@
     });
 
     window.addEventListener('message', (e) => {
+      if (e.source !== window) return;
+      if (e.data && e.data.type === 'POINTSNAP_3D_UNAVAILABLE') {
+        S.canvasUnavailable = e.data.detail?.message || 'Chưa kết nối được canvas 3D của CVAT';
+        render();
+      }
       if (e.data && e.data.type === 'POINTSNAP_3D_TELEMETRY' && e.data.detail) {
         S.telemetry = e.data.detail;
       }

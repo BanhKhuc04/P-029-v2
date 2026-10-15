@@ -136,7 +136,7 @@ def test_multitrack_sequential_repair_scanner_clearance():
     repaired_track[1] = d1.repaired_cuboid
 
     # 2. Repair Frame 2 (heading.flip)
-    d2 = compute_box_repair(repaired_track[2], repaired_track, pts_by_frame[2], rule="heading.flip")
+    d2 = compute_box_repair(repaired_track[2], repaired_track, pts_by_frame[2], rule="heading.flip", finding_details={"target_yaw_sensor": 0.0})
     assert abs(abs(d2.delta_yaw) - math.pi) < 0.05
     repaired_track[2] = d2.repaired_cuboid
 
@@ -179,7 +179,7 @@ def test_multitrack_sequential_repair_order_invariance():
         cur_track[3] = cur_track[3].replace(dims=(4.5, 1.0, 1.6))
 
         for frame_idx, rule in perm:
-            delta = compute_box_repair(cur_track[frame_idx], cur_track, pts_by_frame[frame_idx], rule=rule)
+            delta = compute_box_repair(cur_track[frame_idx], cur_track, pts_by_frame[frame_idx], rule=rule, finding_details={"target_yaw_sensor": 0.0, "track_median_distance": 0.0})
             cur_track[frame_idx] = delta.repaired_cuboid
 
         findings = scan_cuboids(cur_track, config=cfg, frames=frames)
@@ -204,7 +204,7 @@ def test_extended_6frame_track_mixed_defects_clearance():
 
     repaired_track = list(defect_track)
     for frame_idx, rule in [(1, "floating"), (2, "heading.flip"), (3, "fit.outside")]:
-        delta = compute_box_repair(repaired_track[frame_idx], repaired_track, pts_by_frame[frame_idx], rule=rule)
+        delta = compute_box_repair(repaired_track[frame_idx], repaired_track, pts_by_frame[frame_idx], rule=rule, finding_details={"target_yaw_sensor": 0.0, "track_median_distance": 0.0})
         repaired_track[frame_idx] = delta.repaired_cuboid
 
     cfg = load_config()

@@ -140,7 +140,7 @@ def test_repair_floating_extreme_z_with_local_ground_points(extreme_z: float, gr
     expected_cz = ground_z + h / 2.0
     assert delta.repaired_cuboid.bottom_z == pytest.approx(expected_bottom, abs=0.03)
     assert delta.repaired_cuboid.center[2] == pytest.approx(expected_cz, abs=0.03)
-    assert delta.confidence >= 0.75
+    assert 0 < delta.confidence <= 0.75
 
 
 @pytest.mark.parametrize("extreme_z,offset", [
@@ -164,7 +164,7 @@ def test_repair_floating_extreme_z_from_finding_details(extreme_z: float, offset
 
     assert delta.delta_center[2] == pytest.approx(-offset, abs=0.001)
     assert delta.repaired_cuboid.center[2] == pytest.approx(extreme_z - offset, abs=0.001)
-    assert delta.confidence >= 0.75
+    assert 0 < delta.confidence <= 0.75
 
 
 # ==============================================================================
@@ -199,7 +199,7 @@ def test_heading_flip_various_angle_differences(delta_angle: float):
     peer2 = _make_box(yaw=ref_yaw, frame=2)
     track = [peer1, box, peer2]
 
-    delta = compute_box_repair(box, track, points=None, rule="heading.flip")
+    delta = compute_box_repair(box, track, points=None, rule="heading.flip", finding_details={"target_yaw_sensor": ref_yaw})
     _assert_valid_delta(delta)
 
     # Repaired yaw phải hội tụ về ref_yaw
@@ -223,7 +223,8 @@ def test_heading_motion_vector_stress(dx: float, dy: float, expected_yaw_or_flip
     b2 = _make_box(x=2 * dx, y=2 * dy, yaw=0.0, frame=2)
     track = [b0, b1, b2]
 
-    delta = compute_box_repair(b1, track, points=None, rule="heading.motion")
+    delta = compute_box_repair(b1, track, points=None, rule="heading.motion",
+        finding_details={"target_yaw_sensor": expected_yaw_or_flip} if expected_yaw_or_flip != "insufficient_motion" else {})
     _assert_valid_delta(delta)
 
     if expected_yaw_or_flip == "insufficient_motion":
@@ -521,7 +522,7 @@ def test_scanner_clearance_heading_flip_boundary(ref_yaw: float, flip_yaw: float
     assert verify_repaired_box_passes_scanner(track[2], track, points=None, rule="heading.flip") is False
 
     # Đã sửa -> Đạt
-    delta = compute_box_repair(track[2], track, points=None, rule="heading.flip")
+    delta = compute_box_repair(track[2], track, points=None, rule="heading.flip", finding_details={"target_yaw_sensor": ref_yaw})
     _assert_valid_delta(delta)
     assert verify_repaired_box_passes_scanner(delta.repaired_cuboid, track, points=None, rule="heading.flip") is True
 

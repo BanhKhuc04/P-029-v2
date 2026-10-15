@@ -9,7 +9,7 @@ Adversarial Stress Testing Scope:
    - Malformed data types (string job_id, track_id, frame) -> HTTP 422
    - Adversarial query parameters (SQL injection, path traversal, unknown rules) -> graceful HTTP 200 fallback, no 500
 2. Missing Point Cloud Behavior & Edge Fallbacks:
-   - Point cloud is None -> valid GhostTarget, zero roll/pitch, confidence >= 0.70, cluster_bounds is None
+   - Point cloud is None -> valid GhostTarget, zero roll/pitch, confidence = 0 khi thiếu bằng chứng, cluster_bounds is None
    - Empty point cloud (0, 3) -> safe fallback without crash
    - Non-finite point cloud (NaN, Inf, -Inf) -> safe filtering, clean fallback
    - Sparse point clouds (< 5 points: 1, 2, 3, 4 points) -> below quantile threshold, graceful fallback without IndexError
@@ -210,7 +210,7 @@ class TestAdversarialInvalidInputs:
             # Khi rule lạ, động cơ vẫn giữ nguyên cân bằng và roll/pitch = 0
             assert gt["roll"] == 0.0
             assert gt["pitch"] == 0.0
-            assert gt["confidence"] >= 0.70
+            assert gt["confidence"] == 0.0
 
     def test_non_existent_project_slug_graceful_handling(self, app_client: TestClient):
         """Truyền slug dự án không tồn tại không làm sập API."""
@@ -229,7 +229,7 @@ class TestAdversarialPointCloudFallbacks:
     """Kiểm thử hành vi dự phòng (fallback) khi point cloud bị thiếu, rỗng, suy biến hoặc chứa NaN."""
 
     def test_point_cloud_none_fallback(self, app_client: TestClient):
-        """Khi point cloud là None, API trả về GhostTarget hợp lệ với cluster_bounds=None và confidence >= 0.70."""
+        """Khi point cloud là None, API trả về GhostTarget hợp lệ với cluster_bounds=None và confidence = 0 khi thiếu bằng chứng."""
         # Đảm bảo không có mock_points
         if hasattr(app_client.app.state, "mock_points"):
             app_client.app.state.mock_points.clear()
@@ -245,7 +245,7 @@ class TestAdversarialPointCloudFallbacks:
         assert gt["roll"] == 0.0
         assert gt["pitch"] == 0.0
         assert gt["cluster_bounds"] is None
-        assert gt["confidence"] >= 0.70
+        assert gt["confidence"] == 0.0
 
     def test_empty_point_cloud_fallback(self):
         """Khi point cloud có kích thước (0, 3), generate_ghost_target không gây lỗi index hay division by zero."""
@@ -257,7 +257,7 @@ class TestAdversarialPointCloudFallbacks:
         assert ghost.roll == 0.0
         assert ghost.pitch == 0.0
         assert ghost.cluster_bounds is None
-        assert ghost.confidence == 0.70
+        assert ghost.confidence == 0.0
 
     def test_nan_and_inf_point_cloud_cleaning(self):
         """Khi point cloud chứa các giá trị NaN, +Inf, -Inf, động cơ tự động lọc sạch và tiếp tục."""
@@ -491,7 +491,8 @@ class TestAdversarialResidualsAndGreenLock:
         # 2. Khi khoảng cách KHÔNG đạt (1.0m > 8 cm): Kiểm tra góc quay
         pos_far = (1.0, 0.0, 0.0)
         c_at_3_9deg = Cuboid(center=pos_far, dims=(4.0, 2.0, 1.5), yaw=math.radians(3.9), label="car", frame=0)
-        assert compute_spatial_residuals(c_at_3_9deg, target).is_snapped is True
+        assert compute_spatial_residuals(c_at_3_9deg, target).is_snapped is False
+        assert compute_spatial_residuals(c_at_3_9deg, target).rotation_snapped is True
 
         c_at_4_1deg = Cuboid(center=pos_far, dims=(4.0, 2.0, 1.5), yaw=math.radians(4.1), label="car", frame=0)
         assert compute_spatial_residuals(c_at_4_1deg, target).is_snapped is False

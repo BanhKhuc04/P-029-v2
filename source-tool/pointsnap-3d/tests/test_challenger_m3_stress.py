@@ -37,6 +37,7 @@ from pointsnap.history.manager import (
     HistoryManager,
     validate_history_snapshot_schema,
 )
+from pointsnap.web.projects import ProjectManager
 from pointsnap.web.app import create_app
 
 
@@ -311,6 +312,7 @@ def test_multistep_edit_chain_multi_frame_rest_api(tmp_path: Path):
 
 def test_corrupted_snapshot_truncated_json(tmp_path: Path):
     """Stress 2.1: Truncated JSON on disk causes JSONDecodeError; API returns clean 404 without crashing."""
+    ProjectManager(home_dir=tmp_path).create_project(name="corrupt", slug="corrupt-test")
     mgr = HistoryManager(home_dir=tmp_path, slug="corrupt-test")
     job_id = 30
     h_dir = mgr.history_dir(job_id=job_id)

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>PointSnap 3D — Lịch sử quét</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.text}}; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; min-height: 52px; padding: 6px 20px; box-sizing: border-box; background: {{t.topbar}}; color: #FFFFFF">
+<a href="#" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #FFFFFF">
+<svg width="26" height="26" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path><path d="M3 38 H16 M32 38 H45" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.4"></path><circle cx="24" cy="38" r="4.5" fill="#4C9AFF"></circle></svg>
+<span style="font-size: 16px; font-weight: 600">PointSnap 3D</span>
+</a>
+<span style="width: 1px; height: 24px; background: rgba(255,255,255,0.2)"></span>
+<button style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: #FFFFFF; font-size: 13px; cursor: pointer"><span style="color: {{t.topbarText2}}">Dự án</span><span style="font-weight: 600">scene-0061 — CVAT local</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 L6 7.5 L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{t.topbarText2}}"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3FC27F"></span>CVAT 2.77.0 · đã kết nối</span>
+<div role="group" aria-label="Chế độ hiển thị" style="display: flex; padding: 2px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22)">
+<button aria-pressed="{{lightPressed}}" onClick="{{setLight}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{lightBg}}; color: {{lightFg}}">Sáng</button>
+<button aria-pressed="{{darkPressed}}" onClick="{{setDark}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{darkBg}}; color: {{darkFg}}">Tối</button>
+</div>
+</div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap">
+<nav aria-label="Điều hướng" style="flex: 1 1 220px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; background: {{t.surface}}; border-right: 1px solid {{t.border}}">
+<div style="padding: 8px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{t.text3}}">Kiểm tra</div>
+<a href="Quet.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.5 10.5 L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Quét job</a>
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4 H14 M2 8 H14 M2 12 H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><span style="flex: 1">Kết quả</span><span style="min-width: 24px; padding: 0 6px; border-radius: 10px; font-size: 12px; text-align: center; background: {{t.badge}}; color: {{t.text2}}">43</span></a>
+<a href="#" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-weight: 600; background: {{t.primarySoft}}; color: {{t.primaryText}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"></circle><path d="M8 5 V8 L10 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Lịch sử</a>
+<div style="padding: 16px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{t.text3}}">Cấu hình</div>
+<a href="Guideline.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 5 H14 M2 11 H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><circle cx="6" cy="5" r="1.8" fill="{{t.surface}}" stroke="currentColor" stroke-width="1.5"></circle><circle cx="10" cy="11" r="1.8" fill="{{t.surface}}" stroke="currentColor" stroke-width="1.5"></circle></svg>Guideline</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5 L9.5 6.5 M7 4.5 L8.5 3 A2.5 2.5 0 0 1 13 6.5 L11.5 8 M9 11.5 L7.5 13 A2.5 2.5 0 0 1 3 9.5 L4.5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Kết nối CVAT</a>
+<div style="margin-top: auto; padding: 16px 12px 4px; font-size: 12px; color: {{t.text3}}">Phiên bản 0.1.0</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: {{t.text3}}"><a href="#" style="color: {{t.primaryText}}; text-decoration: none">scene-0061 — CVAT local</a> / Lịch sử</div>
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 600">Lịch sử quét</h1>
+<div style="margin-top: 2px; font-size: 13px; color: {{t.text2}}">Theo dõi số Lỗi và Cảnh báo giảm dần sau mỗi lần sửa nhãn và quét lại</div>
+</div>
+
+<section aria-label="Biểu đồ" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; padding: 14px 20px; border-bottom: 1px solid {{t.border}}">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Lỗi và Cảnh báo theo lần quét · job #2</h2>
+<div style="display: flex; gap: 16px; font-size: 13px; color: {{t.text2}}">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 2px; background: {{t.error}}"></span>Lỗi</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 2px; background: {{t.warnBar}}"></span>Cảnh báo</span>
+</div>
+</div>
+<div style="padding: 20px">
+<div style="display: flex; align-items: flex-end; gap: 48px; height: 200px; padding: 0 12px; border-bottom: 1px solid {{t.borderStrong}}">
+<sc-for list="{{runs}}" as="r" hint-placeholder-count="3">
+<div style="flex: 1; max-width: 110px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{t.text2}}">{{r.total}}</div>
+<div style="width: 48px; display: flex; flex-direction: column; border-radius: 3px 3px 0 0; overflow: hidden">
+<div style="height: {{r.warnH}}; background: {{t.warnBar}}"></div>
+<div style="height: {{r.errH}}; background: {{t.error}}"></div>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 48px; padding: 8px 12px 0">
+<sc-for list="{{runs}}" as="r" hint-placeholder-count="3">
+<div style="flex: 1; max-width: 110px; text-align: center; font-size: 12px; color: {{t.text3}}">{{r.when}}</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section aria-label="Các lần quét" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="text-align: left; color: {{t.text2}}; background: {{t.surface2}}">
+<th style="padding: 8px 20px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Thời điểm</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Job</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Loại</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Lỗi</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Cảnh báo</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Kết luận</th>
+<th style="padding: 8px 20px; font-weight: 600; border-bottom: 1px solid {{t.border}}"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Thao tác</span></th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{runsDesc}}" as="r" hint-placeholder-count="3">
+<tr style="border-bottom: 1px solid {{t.border}}">
+<td style="padding: 10px 20px; font-family: 'IBM Plex Mono', monospace">{{r.when}}</td>
+<td style="padding: 10px 12px; font-family: 'IBM Plex Mono', monospace">#2</td>
+<td style="padding: 10px 12px; color: {{t.text2}}">{{r.kind}}</td>
+<td style="padding: 10px 12px; font-family: 'IBM Plex Mono', monospace; color: {{t.error}}">{{r.err}}</td>
+<td style="padding: 10px 12px; font-family: 'IBM Plex Mono', monospace; color: {{t.warn}}">{{r.warn}}</td>
+<td style="padding: 10px 12px"><span style="padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: {{t.errorSoft}}; color: {{t.error}}">Không đạt</span></td>
+<td style="padding: 4px 20px; text-align: right"><a href="Main.dc.html" style="display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-weight: 500; color: {{t.primaryText}}">Xem kết quả</a></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  palette(dark) {
+    if (dark) {
+      return { bg: '#0D1117', surface: '#151B23', surface2: '#1A212B', border: '#2A333F', borderStrong: '#3A4552', text: '#E6EAF0', text2: '#A9B4C2', text3: '#8792A2',
+        topbar: '#0A0F15', topbarText2: '#9FB0C4', primarySoft: '#14284A', primaryText: '#7DB4FF', badge: '#222A35',
+        error: '#F38B85', errorSoft: '#2E1718', warn: '#F0A54A', warnBar: '#8A6427' };
+    }
+    return { bg: '#F4F6F9', surface: '#FFFFFF', surface2: '#F7F9FB', border: '#DDE2E8', borderStrong: '#C3CBD5', text: '#161B22', text2: '#4A5563', text3: '#68717D',
+      topbar: '#0F2A47', topbarText2: '#B7C6D8', primarySoft: '#E8F1FC', primaryText: '#0A57B5', badge: '#EEF1F5',
+      error: '#B42318', errorSoft: '#FDEEEE', warn: '#A35200', warnBar: '#E9B56B' };
+  }
+  renderVals() {
+    const dark = (this.state && this.state.dark !== undefined) ? this.state.dark : !!this.props.dark;
+    const t = this.palette(dark);
+    const data = [
+      { when: '07/10', kind: 'Quét · bản trước A10', err: 116, warn: 135 },
+      { when: '08/10 10:06', kind: 'Quét', err: 8, warn: 35 },
+      { when: '08/10 10:30', kind: 'Quét lại và gắn cờ', err: 8, warn: 35 }
+    ];
+    const max = 251, h = 160;
+    const runs = data.map(r => ({ ...r, total: String(r.err + r.warn),
+      errH: Math.max(2, Math.round(r.err / max * h)) + 'px', warnH: Math.round(r.warn / max * h) + 'px' }));
+    return {
+      t, runs, runsDesc: runs.slice().reverse(),
+      setLight: () => this.setState({ dark: false }), setDark: () => this.setState({ dark: true }),
+      lightPressed: dark ? 'false' : 'true', darkPressed: dark ? 'true' : 'false',
+      lightBg: dark ? 'transparent' : '#FFFFFF', lightFg: dark ? '#B7C6D8' : '#0F2A47',
+      darkBg: dark ? '#FFFFFF' : 'transparent', darkFg: dark ? '#0A0F15' : '#B7C6D8'
+    };
+  }
+}
+</script>
+</body>
+</html>

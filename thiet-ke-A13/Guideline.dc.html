@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>PointSnap 3D — Guideline</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+button,input,select,textarea{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.text}}; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; min-height: 52px; padding: 6px 20px; box-sizing: border-box; background: {{t.topbar}}; color: #FFFFFF">
+<a href="#" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #FFFFFF">
+<svg width="26" height="26" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path><path d="M3 38 H16 M32 38 H45" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.4"></path><circle cx="24" cy="38" r="4.5" fill="#4C9AFF"></circle></svg>
+<span style="font-size: 16px; font-weight: 600">PointSnap 3D</span>
+</a>
+<span style="width: 1px; height: 24px; background: rgba(255,255,255,0.2)"></span>
+<button style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: #FFFFFF; font-size: 13px; cursor: pointer"><span style="color: {{t.topbarText2}}">Dự án</span><span style="font-weight: 600">scene-0061 — CVAT local</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 L6 7.5 L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{t.topbarText2}}"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3FC27F"></span>CVAT 2.77.0 · đã kết nối</span>
+<div role="group" aria-label="Chế độ hiển thị" style="display: flex; padding: 2px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22)">
+<button aria-pressed="{{lightPressed}}" onClick="{{setLight}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{lightBg}}; color: {{lightFg}}">Sáng</button>
+<button aria-pressed="{{darkPressed}}" onClick="{{setDark}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{darkBg}}; color: {{darkFg}}">Tối</button>
+</div>
+</div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap">
+<nav aria-label="Điều hướng" style="flex: 1 1 220px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; background: {{t.surface}}; border-right: 1px solid {{t.border}}">
+<div style="padding: 8px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{t.text3}}">Kiểm tra</div>
+<a href="Quet.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.5 10.5 L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Quét job</a>
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4 H14 M2 8 H14 M2 12 H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><span style="flex: 1">Kết quả</span><span style="min-width: 24px; padding: 0 6px; border-radius: 10px; font-size: 12px; text-align: center; background: {{t.badge}}; color: {{t.text2}}">43</span></a>
+<a href="LichSu.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"></circle><path d="M8 5 V8 L10 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Lịch sử</a>
+<div style="padding: 16px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{t.text3}}">Cấu hình</div>
+<a href="#" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-weight: 600; background: {{t.primarySoft}}; color: {{t.primaryText}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 5 H14 M2 11 H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><circle cx="6" cy="5" r="1.8" fill="{{t.primarySoft}}" stroke="currentColor" stroke-width="1.5"></circle><circle cx="10" cy="11" r="1.8" fill="{{t.primarySoft}}" stroke="currentColor" stroke-width="1.5"></circle></svg>Guideline</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5 L9.5 6.5 M7 4.5 L8.5 3 A2.5 2.5 0 0 1 13 6.5 L11.5 8 M9 11.5 L7.5 13 A2.5 2.5 0 0 1 3 9.5 L4.5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Kết nối CVAT</a>
+<div style="margin-top: auto; padding: 16px 12px 4px; font-size: 12px; color: {{t.text3}}">Phiên bản 0.1.0</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: {{t.text3}}"><a href="#" style="color: {{t.primaryText}}; text-decoration: none">scene-0061 — CVAT local</a> / Guideline</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-start; justify-content: space-between">
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 600">Guideline của dự án</h1>
+<div style="margin-top: 2px; font-size: 13px; color: {{t.text2}}">Luật, ngưỡng và tiêu chí đạt áp dụng cho mọi lần quét trong dự án này</div>
+</div>
+<div role="group" aria-label="Cách chỉnh sửa" style="display: flex; padding: 2px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}">
+<button aria-pressed="{{formPressed}}" onClick="{{showForm}}" style="height: 34px; padding: 0 14px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{formBg}}; color: {{formFg}}">Biểu mẫu</button>
+<button aria-pressed="{{yamlPressed}}" onClick="{{showYaml}}" style="height: 34px; padding: 0 14px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{yamlBg}}; color: {{yamlFg}}">YAML</button>
+</div>
+</div>
+
+<sc-if value="{{yamlMode}}" hint-placeholder-val="{{ false }}">
+<section aria-label="YAML" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<label style="display: flex; flex-direction: column; gap: 8px; font-weight: 600">Toàn bộ guideline (YAML)
+<textarea rows="18" style="box-sizing: border-box; width: 100%; padding: 12px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.bg}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.6; white-space: pre">rules:
+  floating: true
+  size_class_range: true
+  size_in_track: true
+  track_jump: true
+  track_split_id: true
+  track_long_interpolation: true
+gate:
+  max_errors: 0
+  max_warnings: 10
+floating:
+  warning_m: 0.12
+  error_m: 0.22
+  …</textarea>
+</label>
+<div style="font-size: 13px; color: {{t.text3}}">Khi lưu, hệ thống kiểm tra cú pháp và giá trị; nếu sai sẽ báo vị trí lỗi và không lưu.</div>
+</section>
+</sc-if>
+
+<sc-if value="{{formMode}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Luật kiểm tra" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="padding: 14px 20px; border-bottom: 1px solid {{t.border}}">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Luật kiểm tra</h2>
+<div style="font-size: 13px; color: {{t.text2}}">Luật tắt sẽ không được chạy khi quét</div>
+</div>
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="6">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 12px 20px; border-bottom: 1px solid {{t.border}}">
+<div style="flex: 1 1 320px">
+<div style="font-weight: 500">{{r.name}} <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{t.text3}}">{{r.id}}</span></div>
+<div style="font-size: 13px; color: {{t.text2}}">{{r.desc}}</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="font-size: 13px; color: {{t.text2}}; min-width: 28px; text-align: right">{{r.stateLabel}}</span>
+<button role="switch" aria-checked="{{r.checked}}" aria-label="{{r.name}}" onClick="{{r.toggle}}" style="flex: none; width: 44px; height: 24px; padding: 2px; border: 0; border-radius: 12px; cursor: pointer; display: flex; justify-content: {{r.justify}}; background: {{r.track}}"><span style="width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF"></span></button>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section aria-label="Cổng kiểm soát và ngưỡng" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="padding: 14px 20px; border-bottom: 1px solid {{t.border}}">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Cổng kiểm soát và ngưỡng</h2>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px 32px; padding: 16px 20px; border-bottom: 1px solid {{t.border}}">
+<div style="flex: 1 1 240px">
+<div style="font-weight: 500">Tiêu chí đạt</div>
+<div style="font-size: 13px; color: {{t.text2}}">Job đạt khi số mục không vượt các mức này</div>
+</div>
+<div style="flex: 2 1 360px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px">Lỗi tối đa<input type="number" value="0" style="height: 40px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px">Cảnh báo tối đa<input type="number" value="10" style="height: 40px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px"></label>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px 32px; padding: 16px 20px">
+<div style="flex: 1 1 240px">
+<div style="font-weight: 500">Lơ lửng / lún (mét)</div>
+<div style="font-size: 13px; color: {{t.text2}}">So với các frame khác của cùng track; box lẻ so trực tiếp với mặt đất</div>
+</div>
+<div style="flex: 2 1 360px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px">Cảnh báo<input type="number" step="0.01" value="0.12" style="height: 40px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px">Lỗi<input type="number" step="0.01" value="0.22" style="height: 40px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px">Cảnh báo, box lẻ<input type="number" step="0.01" value="0.15" style="height: 40px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px">Lỗi, box lẻ<input type="number" step="0.01" value="0.30" style="height: 40px; box-sizing: border-box; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px"></label>
+</div>
+</div>
+</section>
+
+<section aria-label="Khoảng kích thước theo class" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid {{t.border}}">
+<div>
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Khoảng kích thước theo class (mét)</h2>
+<div style="font-size: 13px; color: {{t.text2}}">Áp dụng cho class ít mẫu; class nhiều mẫu lấy từ thống kê dữ liệu</div>
+</div>
+<button onClick="{{addClass}}" style="height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-size: 14px; cursor: pointer">Thêm class</button>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="text-align: left; color: {{t.text2}}; background: {{t.surface2}}">
+<th style="padding: 8px 20px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Class</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Dài</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Rộng</th>
+<th style="padding: 8px 12px; font-weight: 600; border-bottom: 1px solid {{t.border}}">Cao</th>
+<th style="padding: 8px 20px; font-weight: 600; border-bottom: 1px solid {{t.border}}"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Thao tác</span></th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ranges}}" as="c" hint-placeholder-count="6">
+<tr style="border-bottom: 1px solid {{t.border}}">
+<td style="padding: 8px 20px; font-family: 'IBM Plex Mono', monospace">{{c.cls}}</td>
+<td style="padding: 8px 12px; font-family: 'IBM Plex Mono', monospace">{{c.l}}</td>
+<td style="padding: 8px 12px; font-family: 'IBM Plex Mono', monospace">{{c.w}}</td>
+<td style="padding: 8px 12px; font-family: 'IBM Plex Mono', monospace">{{c.h}}</td>
+<td style="padding: 4px 20px; text-align: right"><button onClick="{{c.remove}}" aria-label="{{c.removeLabel}}" style="height: 36px; padding: 0 10px; border-radius: 6px; border: 0; background: transparent; color: {{t.danger}}; font-size: 13px; cursor: pointer">Xóa</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 20px; border-radius: 6px; background: {{barBg}}; border: 1px solid {{barBorder}}">
+<span style="margin-right: auto; color: {{barFg}}">{{dirtyNote}}</span>
+<button onClick="{{reset}}" style="height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-size: 14px; cursor: pointer">Khôi phục mặc định</button>
+<button onClick="{{save}}" style="height: 40px; padding: 0 18px; border-radius: 6px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 14px; font-weight: 600; cursor: pointer">Lưu thay đổi</button>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  palette(dark) {
+    if (dark) {
+      return { bg: '#0D1117', surface: '#151B23', surface2: '#1A212B', border: '#2A333F', borderStrong: '#3A4552', text: '#E6EAF0', text2: '#A9B4C2', text3: '#8792A2',
+        topbar: '#0A0F15', topbarText2: '#9FB0C4', primary: '#4C9AFF', onPrimary: '#04162E', primarySoft: '#14284A', primaryText: '#7DB4FF',
+        badge: '#222A35', off: '#46505B', danger: '#F38B85', note: '#14284A', noteBorder: '#24447A' };
+    }
+    return { bg: '#F4F6F9', surface: '#FFFFFF', surface2: '#F7F9FB', border: '#DDE2E8', borderStrong: '#C3CBD5', text: '#161B22', text2: '#4A5563', text3: '#68717D',
+      topbar: '#0F2A47', topbarText2: '#B7C6D8', primary: '#0B63CE', onPrimary: '#FFFFFF', primarySoft: '#E8F1FC', primaryText: '#0A57B5',
+      badge: '#EEF1F5', off: '#B4BCC6', danger: '#B42318', note: '#E8F1FC', noteBorder: '#B8D3F5' };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const dark = s.dark !== undefined ? s.dark : !!this.props.dark;
+    const t = this.palette(dark);
+    const yaml = !!s.yaml;
+    const off = s.off || {};
+    const ruleDefs = [
+      ['floating', 'Lơ lửng / lún đất', 'Đáy box lệch so với mặt đất quanh box'],
+      ['size_class_range', 'Kích thước theo class', 'Dài, rộng, cao ngoài khoảng chuẩn của class'],
+      ['size_in_track', 'Kích thước trong track', 'Một box khác hẳn các box khác cùng track'],
+      ['track_jump', 'Nhảy vị trí', 'Box lệch xa vị trí nội suy từ các frame lân cận'],
+      ['track_split_id', 'Nghi tách ID', 'Một vật bị gán thành hai track nối nhau'],
+      ['track_long_interpolation', 'Khoảng nội suy dài', 'Nhiều frame liền chỉ có box nội suy khi vật đang chạy']
+    ];
+    const rules = ruleDefs.map(([id, name, desc]) => {
+      const on = !off[id];
+      return { id, name, desc, checked: on ? 'true' : 'false', stateLabel: on ? 'Bật' : 'Tắt',
+        justify: on ? 'flex-end' : 'flex-start', track: on ? t.primary : t.off,
+        toggle: () => this.setState({ off: { ...off, [id]: on }, dirty: true }) };
+    });
+    const defaults = [
+      ['bus', '6,0 – 18,5', '2,2 – 3,2', '2,4 – 4,5'],
+      ['trailer', '2,0 – 18,0', '1,5 – 3,2', '1,0 – 4,5'],
+      ['construction_vehicle', '2,5 – 12,0', '1,5 – 3,5', '1,8 – 5,0'],
+      ['truck', '4,5 – 12,5', '1,8 – 3,2', '1,9 – 4,3'],
+      ['motorcycle', '1,5 – 2,6', '0,55 – 1,2', '1,0 – 2,0'],
+      ['bicycle', '1,2 – 2,1', '0,4 – 0,95', '0,8 – 2,0']
+    ];
+    const removed = s.removed || {};
+    const extra = s.extra || [];
+    const ranges = defaults.concat(extra).filter(([cls]) => !removed[cls]).map(([cls, l, w, h]) => ({
+      cls, l, w, h, removeLabel: 'Xóa class ' + cls,
+      remove: () => this.setState({ removed: { ...removed, [cls]: true }, dirty: true })
+    }));
+    const dirty = !!s.dirty;
+    return {
+      t, rules, ranges, yamlMode: yaml, formMode: !yaml,
+      dirtyNote: dirty ? 'Có thay đổi chưa lưu' : 'Guideline hợp lệ · đã lưu',
+      barBg: dirty ? t.note : t.surface, barBorder: dirty ? t.noteBorder : t.border, barFg: dirty ? t.primaryText : t.text2,
+      save: () => this.setState({ dirty: false }),
+      reset: () => this.setState({ off: {}, removed: {}, extra: [], dirty: false }),
+      addClass: () => this.setState({ extra: extra.concat([['class_moi', '–', '–', '–']]), dirty: true }),
+      showForm: () => this.setState({ yaml: false }), showYaml: () => this.setState({ yaml: true }),
+      formPressed: yaml ? 'false' : 'true', yamlPressed: yaml ? 'true' : 'false',
+      formBg: yaml ? 'transparent' : t.primarySoft, formFg: yaml ? t.text2 : t.primaryText,
+      yamlBg: yaml ? t.primarySoft : 'transparent', yamlFg: yaml ? t.primaryText : t.text2,
+      setLight: () => this.setState({ dark: false }), setDark: () => this.setState({ dark: true }),
+      lightPressed: dark ? 'false' : 'true', darkPressed: dark ? 'true' : 'false',
+      lightBg: dark ? 'transparent' : '#FFFFFF', lightFg: dark ? '#B7C6D8' : '#0F2A47',
+      darkBg: dark ? '#FFFFFF' : 'transparent', darkFg: dark ? '#0A0F15' : '#B7C6D8'
+    };
+  }
+}
+</script>
+</body>
+</html>

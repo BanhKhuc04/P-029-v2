@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>PointSnap 3D — Quét job</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.text}}; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.45">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; min-height: 52px; padding: 6px 20px; box-sizing: border-box; background: {{t.topbar}}; color: #FFFFFF">
+<a href="#" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #FFFFFF">
+<svg width="26" height="26" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path><path d="M3 38 H16 M32 38 H45" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.4"></path><circle cx="24" cy="38" r="4.5" fill="#4C9AFF"></circle></svg>
+<span style="font-size: 16px; font-weight: 600">PointSnap 3D</span>
+</a>
+<span style="width: 1px; height: 24px; background: rgba(255,255,255,0.2)"></span>
+<button style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: #FFFFFF; font-size: 13px; cursor: pointer"><span style="color: {{t.topbarText2}}">Dự án</span><span style="font-weight: 600">scene-0061 — CVAT local</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 L6 7.5 L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{t.topbarText2}}"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3FC27F"></span>CVAT 2.77.0 · đã kết nối</span>
+<div role="group" aria-label="Chế độ hiển thị" style="display: flex; padding: 2px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22)">
+<button aria-pressed="{{lightPressed}}" onClick="{{setLight}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{lightBg}}; color: {{lightFg}}">Sáng</button>
+<button aria-pressed="{{darkPressed}}" onClick="{{setDark}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: {{darkBg}}; color: {{darkFg}}">Tối</button>
+</div>
+</div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap">
+<nav aria-label="Điều hướng" style="flex: 1 1 220px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; background: {{t.surface}}; border-right: 1px solid {{t.border}}">
+<div style="padding: 8px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{t.text3}}">Kiểm tra</div>
+<a href="#" aria-current="page" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-weight: 600; background: {{t.primarySoft}}; color: {{t.primaryText}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.5 10.5 L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Quét job</a>
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4 H14 M2 8 H14 M2 12 H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><span style="flex: 1">Kết quả</span><span style="min-width: 24px; padding: 0 6px; border-radius: 10px; font-size: 12px; text-align: center; background: {{t.badge}}; color: {{t.text2}}">43</span></a>
+<a href="LichSu.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"></circle><path d="M8 5 V8 L10 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Lịch sử</a>
+<div style="padding: 16px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{t.text3}}">Cấu hình</div>
+<a href="Guideline.dc.html" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 5 H14 M2 11 H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><circle cx="6" cy="5" r="1.8" fill="{{t.surface}}" stroke="currentColor" stroke-width="1.5"></circle><circle cx="10" cy="11" r="1.8" fill="{{t.surface}}" stroke="currentColor" stroke-width="1.5"></circle></svg>Guideline</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; color: {{t.text2}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5 L9.5 6.5 M7 4.5 L8.5 3 A2.5 2.5 0 0 1 13 6.5 L11.5 8 M9 11.5 L7.5 13 A2.5 2.5 0 0 1 3 9.5 L4.5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>Kết nối CVAT</a>
+<div style="margin-top: auto; padding: 16px 12px 4px; font-size: 12px; color: {{t.text3}}">Phiên bản 0.1.0</div>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: {{t.text3}}"><a href="#" style="color: {{t.primaryText}}; text-decoration: none">scene-0061 — CVAT local</a> / Quét job</div>
+<div>
+<h1 style="margin: 0; font-size: 22px; font-weight: 600">Quét job</h1>
+<div style="margin-top: 2px; font-size: 13px; color: {{t.text2}}">Kiểm lơ lửng / lún, kích thước và đứt track theo guideline của dự án</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section aria-label="Thiết lập lần quét" style="flex: 3 1 480px; min-width: 0; border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="padding: 16px 20px; border-bottom: 1px solid {{t.border}}">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">1. Chọn job</h2>
+</div>
+<div style="padding: 16px 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<label style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Task trên CVAT
+<div style="display: flex; gap: 8px">
+<select style="flex: 1; min-width: 0; height: 40px; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-size: 14px"><option>#2 · PointSnap scene-0061 (kèm ảnh camera)</option><option>#1 · PointSnap scene-0061</option></select>
+<button style="height: 40px; padding: 0 14px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-size: 14px; cursor: pointer">Tải lại</button>
+</div>
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Job
+<select style="height: 40px; padding: 0 10px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-size: 14px"><option>#2 · annotation · 39 frame</option></select>
+</label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500">Hoặc nhập id job
+<input type="number" placeholder="Ví dụ 2" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 6px; border: 1px solid {{t.borderStrong}}; background: {{t.surface}}; color: {{t.text}}; font-size: 14px">
+</label>
+</div>
+<div style="padding: 16px 20px; border-top: 1px solid {{t.border}}; border-bottom: 1px solid {{t.border}}">
+<h2 style="margin: 0 0 12px; font-size: 15px; font-weight: 600">2. Tùy chọn</h2>
+<label style="display: flex; gap: 12px; align-items: flex-start; cursor: pointer">
+<input type="checkbox" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: {{t.primary}}">
+<span><span style="display: block; font-weight: 500">Gắn cờ lên CVAT sau khi quét</span><span style="display: block; font-size: 13px; color: {{t.text2}}">Ghi mục Lỗi và Cảnh báo vào thuộc tính pointsnap_error để lọc box trong CVAT.</span></span>
+</label>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+<span style="font-size: 13px; color: {{t.text3}}">Guideline: mặc định · 6/6 luật bật</span>
+<button onClick="{{start}}" style="height: 40px; padding: 0 20px; border-radius: 6px; border: 0; background: {{t.primary}}; color: {{t.onPrimary}}; font-size: 14px; font-weight: 600; cursor: pointer">{{startLabel}}</button>
+</div>
+</section>
+
+<section aria-label="Tiến độ" style="flex: 2 1 320px; min-width: 0; border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="padding: 16px 20px; border-bottom: 1px solid {{t.border}}; display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Tiến độ</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {{t.text2}}">{{pct}}%</span>
+</div>
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px">
+<div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{pct}}" aria-label="Tiến độ quét" style="height: 6px; border-radius: 3px; background: {{t.track}}; overflow: hidden">
+<div style="height: 100%; width: {{pctWidth}}; background: {{t.primary}}"></div>
+</div>
+<div style="color: {{t.text2}}">{{status}}</div>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<li style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid {{t.border}}">
+<span style="width: 8px; height: 8px; border-radius: 50%; flex: none; background: {{s.dot}}; box-shadow: 0 0 0 2px {{s.ring}}"></span>
+<span style="flex: 1; color: {{s.fg}}">{{s.label}}</span>
+<span style="font-size: 12px; color: {{t.text3}}">{{s.state}}</span>
+</li>
+</sc-for>
+</ol>
+</div>
+</section>
+</div>
+
+<section aria-label="Lần quét gần đây" style="border-radius: 6px; background: {{t.surface}}; border: 1px solid {{t.border}}">
+<div style="padding: 12px 20px; border-bottom: 1px solid {{t.border}}; display: flex; justify-content: space-between; align-items: center">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Lần quét gần đây</h2>
+<a href="LichSu.dc.html" style="font-size: 13px; color: {{t.primaryText}}; text-decoration: none">Xem tất cả</a>
+</div>
+<div style="padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px">08/10 10:06 · job #2</span>
+<span style="color: {{t.error}}">8 Lỗi</span>
+<span style="color: {{t.warn}}">35 Cảnh báo</span>
+<span style="padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: {{t.errorSoft}}; color: {{t.error}}">KHÔNG ĐẠT</span>
+<a href="Main.dc.html" style="margin-left: auto; font-size: 13px; color: {{t.primaryText}}; text-decoration: none">Mở kết quả</a>
+</div>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  palette(dark) {
+    if (dark) {
+      return { bg: '#0D1117', surface: '#151B23', border: '#2A333F', borderStrong: '#3A4552', text: '#E6EAF0', text2: '#A9B4C2', text3: '#8792A2',
+        topbar: '#0A0F15', topbarText2: '#9FB0C4', primary: '#4C9AFF', onPrimary: '#04162E', primarySoft: '#14284A', primaryText: '#7DB4FF',
+        badge: '#222A35', track: '#222A35', error: '#F38B85', errorSoft: '#2E1718', warn: '#F0A54A' };
+    }
+    return { bg: '#F4F6F9', surface: '#FFFFFF', border: '#DDE2E8', borderStrong: '#C3CBD5', text: '#161B22', text2: '#4A5563', text3: '#68717D',
+      topbar: '#0F2A47', topbarText2: '#B7C6D8', primary: '#0B63CE', onPrimary: '#FFFFFF', primarySoft: '#E8F1FC', primaryText: '#0A57B5',
+      badge: '#EEF1F5', track: '#E4E8ED', error: '#B42318', errorSoft: '#FDEEEE', warn: '#A35200' };
+  }
+  renderVals() {
+    const s = this.state || {};
+    const dark = s.dark !== undefined ? s.dark : !!this.props.dark;
+    const t = this.palette(dark);
+    const running = !s.idle;
+    const labels = ['Tải nhãn từ CVAT', 'Đọc point cloud theo manifest', 'Chạy 3 bộ phát hiện', 'Tạo báo cáo HTML / CSV', 'Kết luận cổng kiểm soát'];
+    const doneCount = running ? 2 : 0;
+    const steps = labels.map((label, i) => {
+      const done = i < doneCount, active = running && i === doneCount;
+      return { label, state: done ? 'Xong' : active ? 'Đang chạy' : 'Chờ',
+        dot: done ? t.primary : t.surface, ring: done || active ? t.primary : t.borderStrong, fg: done || active ? t.text : t.text3 };
+    });
+    const pct = running ? 65 : 0;
+    return {
+      t, steps, pct, pctWidth: pct + '%',
+      status: running ? 'Đang quét 3 333 box của job #2…' : 'Chưa chạy. Chọn job rồi bấm Bắt đầu quét.',
+      startLabel: running ? 'Đang quét…' : 'Bắt đầu quét',
+      start: () => this.setState({ idle: !s.idle }),
+      setLight: () => this.setState({ dark: false }), setDark: () => this.setState({ dark: true }),
+      lightPressed: dark ? 'false' : 'true', darkPressed: dark ? 'true' : 'false',
+      lightBg: dark ? 'transparent' : '#FFFFFF', lightFg: dark ? '#B7C6D8' : '#0F2A47',
+      darkBg: dark ? '#FFFFFF' : 'transparent', darkFg: dark ? '#0A0F15' : '#B7C6D8'
+    };
+  }
+}
+</script>
+</body>
+</html>

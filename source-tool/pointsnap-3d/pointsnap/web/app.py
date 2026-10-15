@@ -143,7 +143,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     async def revalidate_ui_files(request, call_next):
         """Trang giao diện luôn được trình duyệt kiểm lại, để bản cập nhật hiện ngay mà không cần xóa cache."""
         response = await call_next(request)
-        if request.url.path == "/" or request.url.path.startswith("/static/"):
+        if request.url.path in ("/", "/app") or request.url.path.startswith("/static/"):
             response.headers["Cache-Control"] = "no-cache"
         return response
 
@@ -487,6 +487,18 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             return f"{parts.scheme}://{host}:{parts.port or (443 if parts.scheme == 'https' else 80)}{parts.path.rstrip('/')}"
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="cvat_url không hợp lệ") from exc
+
+    def _history_scope(slug: str | None) -> str:
+        """Phạm vi CVAT của sự kiện sửa box: theo dự án nếu biết, không thì theo server CVAT duy nhất (nếu có)."""
+        try:
+            if slug:
+                return _extension_scope(pm.get_project(slug)["cvat_url"])
+            return _extension_scope("")
+        except (ProjectError, HTTPException):
+            return ""
+
+    def _notify_history(job_id: int, event: dict[str, Any], slug: str | None) -> int:
+        return link.bump_history(job_id, {**event, "slug": slug}, scope=_history_scope(slug))
 
     @application.get("/api/extension/poll")
     def extension_poll(job_id: int, after: int = -1, cvat_url: str = "") -> dict[str, Any]:
@@ -1184,10 +1196,13 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             if cvat_client is not None and req.slug:
                 link.focus(job_id, {"action": "annotations_changed", "frame": req.frame, "track_id": track_id},
                            scope=_extension_scope(pm.get_project(req.slug)["cvat_url"]))
+            history_rev = _notify_history(
+                job_id, {"action": "apply", "track_id": track_id, "frame": req.frame, "history_id": hid}, req.slug)
 
             return {
                 "status": "ok",
                 "message": "Đã áp dụng sửa đổi hình học thành công lên CVAT",
+                "history_rev": history_rev,
                 "history_id": hid,
                 "job_id": job_id,
                 "track_id": track_id,
@@ -1278,8 +1293,12 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             if cvat_client is not None and req.slug:
                 link.focus(job_id, {"action": "annotations_changed", "frame": snapshot["frame"], "track_id": track_id},
                            scope=_extension_scope(pm.get_project(req.slug)["cvat_url"]))
+            history_rev = _notify_history(
+                job_id, {"action": "rollback", "track_id": track_id, "frame": snapshot.get("frame"),
+                         "history_id": req.history_id}, req.slug)
             return {
                 "status": "ok",
+                "history_rev": history_rev,
                 "restored_track": pre_repair_track,
                 "sync_status": "verified" if cvat_client is not None else "test",
                 "track_etag": compute_track_etag(pre_repair_track),
@@ -1362,7 +1381,12 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     if STATIC_DIR.is_dir():
         application.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+        # Mở PointSnap local: trang giới thiệu (landing) trước, bấm "Mở PointSnap" mới vào ứng dụng ở /app.
         @application.get("/")
+        def serve_landing() -> FileResponse:
+            return FileResponse(STATIC_DIR / "landing.html")
+
+        @application.get("/app")
         def serve_index() -> FileResponse:
             return FileResponse(STATIC_DIR / "index.html")
 

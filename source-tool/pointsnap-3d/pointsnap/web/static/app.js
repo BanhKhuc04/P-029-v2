@@ -164,6 +164,14 @@
     // Trạng thái dirty của Guideline
     guidelineDirty: false,
     guidelineMode: 'form', // 'form' hoặc 'yaml'
+
+    // Feature F11 & F12: Assisted Box Repair & Rollback
+    currentRepair: null,
+    currentTrackEtag: null,
+    isApplyingRepair: false,
+    lastApplyClickTime: 0,
+    historyStack: [],
+    appliedFindings: new Set(),
   };
 
   function projectScope() {
@@ -230,6 +238,7 @@
     if (m) {
       m.returnFocus = document.activeElement?.closest('#project-dropdown-menu') ? document.getElementById('btn-project-dropdown') : document.activeElement;
       m.classList.add('open');
+      m.style.display = 'flex';
       document.getElementById('app-container').inert = true;
       m.querySelector('input, button, textarea, select')?.focus();
     }
@@ -239,6 +248,7 @@
     const m = document.getElementById(id);
     if (m) {
       m.classList.remove('open');
+      m.style.display = 'none';
       document.getElementById('app-container').inert = false;
       m.returnFocus?.focus();
     }
@@ -417,6 +427,29 @@
       state.findingsPage = 1;
       renderFindingsTable();
     });
+
+    // Feature F12: Nút Áp dụng sửa và Hoàn tác
+    const btnApply = document.getElementById('btn-open-apply-repair');
+    if (btnApply) btnApply.addEventListener('click', openApplyRepairModal);
+
+    const btnRollback = document.getElementById('btn-rollback-repair');
+    if (btnRollback) btnRollback.addEventListener('click', handleRollbackRepair);
+
+    const btnModalConfirm = document.getElementById('btn-modal-repair-confirm');
+    if (btnModalConfirm) btnModalConfirm.addEventListener('click', handleConfirmApplyRepair);
+
+    const btnModalClose = document.getElementById('btn-modal-repair-close');
+    if (btnModalClose) btnModalClose.addEventListener('click', () => closeModal('modal-confirm-repair'));
+
+    const btnModalCancel = document.getElementById('btn-modal-repair-cancel');
+    if (btnModalCancel) btnModalCancel.addEventListener('click', () => closeModal('modal-confirm-repair'));
+
+    const modalRepair = document.getElementById('modal-confirm-repair');
+    if (modalRepair) {
+      modalRepair.addEventListener('click', (e) => {
+        if (e.target === modalRepair) closeModal('modal-confirm-repair');
+      });
+    }
 
     // Severity tabs
     ['all', 'error', 'warning', 'info'].forEach((sev) => {
@@ -863,7 +896,7 @@
 
   function updateSeverityTabs() {
     if (!state.currentRun) return;
-    const findings = state.currentRun.findings || [];
+    const findings = (state.currentRun.findings || []).filter((f) => !f.rule || !f.rule.startsWith('track.'));
     const errCount = findings.filter((f) => f.severity === 'error').length;
     const warnCount = findings.filter((f) => f.severity === 'warning').length;
     const infoCount = findings.filter((f) => f.severity === 'info').length;
@@ -887,6 +920,7 @@
     const sevTab = state.selectedSeverityTab;
 
     return state.currentRun.findings.filter((f) => {
+      if (f.rule && f.rule.startsWith('track.')) return false;
       if (sevTab !== 'all' && f.severity !== sevTab) return false;
       if (typeFilter && f.error_type !== typeFilter) return false;
       if (classFilter && f.label !== classFilter) return false;
@@ -898,7 +932,7 @@
     });
   }
 
-  function renderFindingsTable() {
+  function renderFindingsTable(preserveDetail = false) {
     const tbody = document.getElementById('findings-table-body');
     tbody.innerHTML = '';
 
@@ -924,7 +958,7 @@
 
     if (pageItems.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-3); padding: 32px;">Không có mục nào phù hợp bộ lọc.</td></tr>';
-      clearDetailDrawer();
+      if (!preserveDetail) clearDetailDrawer();
       return;
     }
 
@@ -935,8 +969,9 @@
         tr.className = 'selected';
       }
 
-      const sevClass = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info';
-      const sevLabel = f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
+      const isRepaired = state.appliedFindings.has(f);
+      const sevClass = isRepaired ? 'success' : (f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info');
+      const sevLabel = isRepaired ? 'ĐÃ GHI CVAT' : (f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin'));
 
       tr.innerHTML = `
         <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
@@ -959,7 +994,7 @@
 
     // Nạp chi tiết cho dòng đang chọn
     const currentPick = filtered[state.selectedFindingIndex] || pageItems[0];
-    if (currentPick) renderDetailDrawer(currentPick);
+    if (currentPick && !preserveDetail) renderDetailDrawer(currentPick);
   }
 
   // --- Duyệt nhanh (A14): xem point cloud quanh box, chuyển mục, ghi kết luận, không cần mở CVAT ---
@@ -1185,11 +1220,21 @@
       data.color = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warn' : 'primary';
       state.previewData = data;
       drawPreviewViews(data);
+      const numPts = Array.isArray(data.points) ? data.points.length : 0;
+      const ptsDesc = Array.isArray(data.points) ? `${numPts} điểm` : 'Không có điểm';
       status.textContent = data.synthetic_box
-        ? `Khung tham khảo của cụm chưa có nhãn · ${data.points.length} điểm · cách LiDAR ${data.distance_m} m · frame ${data.frame}`
+        ? `Khung tham khảo của cụm chưa có nhãn · ${ptsDesc} · cách LiDAR ${data.distance_m ?? '—'} m · frame ${data.frame ?? '—'}`
         : data.exact_frame
-        ? `${data.points.length} điểm quanh box · cách LiDAR ${data.distance_m} m · frame ${data.frame}`
-        : `Box gần nhất của track ở frame ${data.frame} · ${data.points.length} điểm · cách LiDAR ${data.distance_m} m`;
+        ? `${ptsDesc} quanh box · cách LiDAR ${data.distance_m ?? '—'} m · frame ${data.frame ?? '—'}`
+        : `Box gần nhất của track ở frame ${data.frame ?? '—'} · ${ptsDesc} · cách LiDAR ${data.distance_m ?? '—'} m`;
+
+      // Feature F11 & F12: Tải đề xuất sửa hình học nếu finding thuộc track
+      if (f.track_id !== null && f.track_id !== undefined) {
+        fetchFindingRepair(f, index);
+      } else {
+        updateRepairCard(f, null);
+      }
+
       const nextF = getFilteredFindings()[state.selectedFindingIndex + 1];
       if (nextF) fetchPreview(runFindingIndex(nextF)).catch(() => {});
     } catch (err) {
@@ -1253,17 +1298,22 @@
   // của CVAT: nhìn từ trên (x, y), nhìn ngang (x, z) và nhìn từ đầu box (y, z). Mũi tên đỏ chỉ đầu box; đường đứt
   // là mặt đất đo được của finding lơ lửng / lún, nghiêng theo độ dốc dọc thân box.
   function drawPreview(canvas, data, view) {
+    if (!canvas || !data) return;
     const css = getComputedStyle(document.documentElement);
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
+    const w = canvas.clientWidth || 0;
+    const h = canvas.clientHeight || 0;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const { length: L, width: W, height: H } = data.box;
+    const box = data.box || {};
+    const L = (typeof box.length === 'number' && Number.isFinite(box.length) && box.length > 0) ? box.length : 0;
+    const W = (typeof box.width === 'number' && Number.isFinite(box.width) && box.width > 0) ? box.width : 0;
+    const H = (typeof box.height === 'number' && Number.isFinite(box.height) && box.height > 0) ? box.height : 0;
     const margin = 2.0;
     // Trục ngang của khung: x (top, side) hoặc y (front); trục dọc: y (top) hoặc z (side, front).
     const hr = view === 'front' ? W / 2 + margin : L / 2 + margin;
@@ -1276,7 +1326,10 @@
 
     const outside = css.getPropertyValue('--text-3').trim();
     const inside = css.getPropertyValue('--text').trim();
-    data.points.forEach((p) => {
+    const points = Array.isArray(data.points) ? data.points : [];
+
+    points.forEach((p) => {
+      if (!Array.isArray(p) || p.length < 3) return;
       const [x, y, z] = p;
       const isIn = Math.abs(x) <= L / 2 && Math.abs(y) <= W / 2 && Math.abs(z) <= H / 2;
       const [u, v] = project(p);
@@ -1284,20 +1337,31 @@
       ctx.fillRect(px(u) - 0.75, py(v) - 0.75, 1.5, 1.5);
     });
 
+    if (points.length === 0 && typeof ctx.fillText === 'function') {
+      ctx.save();
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = outside || '#888888';
+      ctx.textAlign = 'center';
+      ctx.fillText(data.points === null ? 'Không có điểm LiDAR' : '0 điểm', w / 2, Math.max(16, h - 8));
+      ctx.restore();
+    }
+
     if (data.ground && view !== 'top') {
-      const slope = view === 'side' ? Math.tan((data.ground.pitch_deg || 0) * Math.PI / 180) : 0;
+      const slope = view === 'side' ? Math.tan(((data.ground && data.ground.pitch_deg) || 0) * Math.PI / 180) : 0;
+      const gz = (data.ground && Number.isFinite(data.ground.z)) ? data.ground.z : 0;
       ctx.save();
       ctx.strokeStyle = css.getPropertyValue('--success').trim();
       ctx.setLineDash([5, 4]);
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.moveTo(px(-hr), py(data.ground.z - slope * hr));
-      ctx.lineTo(px(hr), py(data.ground.z + slope * hr));
+      ctx.moveTo(px(-hr), py(gz - slope * hr));
+      ctx.lineTo(px(hr), py(gz + slope * hr));
       ctx.stroke();
       ctx.restore();
     }
 
-    ctx.strokeStyle = css.getPropertyValue(`--${data.color}`).trim();
+    const colorKey = typeof data.color === 'string' && data.color ? data.color : 'primary';
+    ctx.strokeStyle = css.getPropertyValue(`--${colorKey}`).trim() || '#4CC38A';
     ctx.lineWidth = 1.5;
     const halfU = view === 'front' ? W / 2 : L / 2;
     const halfV = view === 'top' ? W / 2 : H / 2;
@@ -1323,6 +1387,453 @@
       ctx.closePath();
       ctx.fill();
     }
+
+    // --- Feature F11: Overlay hộp đề xuất sửa hình học (Assisted 3D Box Repair) ---
+    if (data.repair && !data.repairApplied) {
+      const rep = data.repair;
+      const dx = (rep.delta_center && rep.delta_center[0]) || 0;
+      const dy = (rep.delta_center && rep.delta_center[1]) || 0;
+      const dz = (rep.delta_center && rep.delta_center[2]) || 0;
+      const dl = (rep.delta_dims && rep.delta_dims[0]) || 0;
+      const dw = (rep.delta_dims && rep.delta_dims[1]) || 0;
+      const dh = (rep.delta_dims && rep.delta_dims[2]) || 0;
+      const dyaw = rep.delta_yaw || 0;
+
+      const rL = L + dl;
+      const rW = W + dw;
+      const rH = H + dh;
+      const hl = rL / 2;
+      const hw = rW / 2;
+      const hh = rH / 2;
+
+      ctx.save();
+      ctx.strokeStyle = '#00ff88'; // Dash contrasting vibrant green (F11.4)
+      ctx.fillStyle = '#00ff88';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]); // Dash pattern [4, 4] (F11.4)
+
+      if (view === 'top') {
+        const cosY = Math.cos(dyaw);
+        const sinY = Math.sin(dyaw);
+        const corners = [
+          [dx + hl * cosY - hw * sinY, dy + hl * sinY + hw * cosY],
+          [dx + hl * cosY + hw * sinY, dy + hl * sinY - hw * cosY],
+          [dx - hl * cosY + hw * sinY, dy - hl * sinY - hw * cosY],
+          [dx - hl * cosY - hw * sinY, dy - hl * sinY + hw * cosY],
+        ];
+        ctx.beginPath();
+        ctx.moveTo(px(corners[0][0]), py(corners[0][1]));
+        for (let i = 1; i < 4; i++) ctx.lineTo(px(corners[i][0]), py(corners[i][1]));
+        ctx.closePath();
+        ctx.stroke();
+
+        // Mũi tên chỉ hướng đề xuất của yaw (F11)
+        ctx.setLineDash([]);
+        const tipLen = hl + 14 / scale;
+        const tipX = dx + tipLen * cosY;
+        const tipY = dy + tipLen * sinY;
+        ctx.beginPath();
+        ctx.moveTo(px(dx), py(dy));
+        ctx.lineTo(px(tipX), py(tipY));
+        ctx.stroke();
+
+        const pTipX = px(tipX);
+        const pTipY = py(tipY);
+        const screenAngle = Math.atan2(py(tipY) - py(dy), px(tipX) - px(dx));
+        const headLen = 8;
+        ctx.beginPath();
+        ctx.moveTo(pTipX, pTipY);
+        ctx.lineTo(pTipX - headLen * Math.cos(screenAngle - Math.PI / 6), pTipY - headLen * Math.sin(screenAngle - Math.PI / 6));
+        ctx.lineTo(pTipX - headLen * Math.cos(screenAngle + Math.PI / 6), pTipY - headLen * Math.sin(screenAngle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+      } else if (view === 'side') {
+        const zBot = dz - hh;
+        const zTop = dz + hh;
+        const cosY = Math.cos(dyaw);
+        const sinY = Math.sin(dyaw);
+
+        const xCorners = [
+          dx + hl * cosY - hw * sinY,
+          dx + hl * cosY + hw * sinY,
+          dx - hl * cosY + hw * sinY,
+          dx - hl * cosY - hw * sinY,
+        ];
+        const minX = Math.min(...xCorners);
+        const maxX = Math.max(...xCorners);
+
+        // Đáy hộp đề xuất (zBot) hiển thị flush với mặt đất
+        ctx.strokeRect(px(minX), py(zTop), (maxX - minX) * scale, (zTop - zBot) * scale);
+
+        // Mũi tên hướng trong Side view
+        ctx.setLineDash([]);
+        const dirSign = cosY >= 0 ? 1 : -1;
+        const tipX = dx + (hl + 14 / scale) * dirSign;
+        ctx.beginPath();
+        ctx.moveTo(px(dx), py(dz));
+        ctx.lineTo(px(tipX), py(dz));
+        ctx.stroke();
+
+        const pTipX = px(tipX);
+        const pTipY = py(dz);
+        const headLen = 8;
+        ctx.beginPath();
+        ctx.moveTo(pTipX + dirSign * 2, pTipY);
+        ctx.lineTo(pTipX - dirSign * headLen, pTipY - 5);
+        ctx.lineTo(pTipX - dirSign * headLen, pTipY + 5);
+        ctx.closePath();
+        ctx.fill();
+      } else if (view === 'front') {
+        const zBot = dz - hh;
+        const zTop = dz + hh;
+        const cosY = Math.cos(dyaw);
+        const sinY = Math.sin(dyaw);
+
+        const yCorners = [
+          dy + hl * sinY + hw * cosY,
+          dy + hl * sinY - hw * cosY,
+          dy - hl * sinY - hw * cosY,
+          dy - hl * sinY + hw * cosY,
+        ];
+        const minY = Math.min(...yCorners);
+        const maxY = Math.max(...yCorners);
+
+        ctx.strokeRect(px(minY), py(zTop), (maxY - minY) * scale, (zTop - zBot) * scale);
+
+        // Chấm tròn tâm đầu box đề xuất
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(px(dy), py(dz), 4, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // --- Feature F11 & F12: Tải đề xuất sửa hình học và điều khiển 1-Click Apply / Rollback ---
+
+  async function fetchFindingRepair(f, index) {
+    state.currentRepair = null;
+    state.currentTrackEtag = null;
+    const card = document.getElementById('detail-repair-card');
+    if (!card) return;
+    card.style.display = 'flex';
+    document.getElementById('repair-apply-status').style.display = 'none';
+    document.getElementById('repair-reason-text').textContent = 'Đang tính toán đề xuất sửa tự động…';
+    try {
+      const res = await fetch(`/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/findings/${index}/repair`);
+      if (state.currentDetail !== f) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        updateRepairCard(f, null, err.detail || 'Không có đề xuất sửa cho box này');
+        return;
+      }
+      const data = await res.json();
+      if (state.currentDetail !== f) return;
+      state.currentRepair = data.repair;
+      state.currentTrackEtag = data.track_etag || null;
+      if (state.previewData) {
+        state.previewData.repair = data.repair;
+        state.previewData.repairApplied = state.appliedFindings.has(f);
+        drawPreviewViews(state.previewData);
+      }
+      updateRepairCard(f, data.repair);
+    } catch (err) {
+      if (state.currentDetail === f) {
+        updateRepairCard(f, null, err.message);
+      }
+    }
+  }
+
+  function updateRepairCard(f, rep, errorMsg) {
+    const card = document.getElementById('detail-repair-card');
+    if (!card) return;
+    if (!rep) {
+      if (errorMsg) {
+        card.style.display = 'flex';
+        document.getElementById('repair-reason-text').textContent = errorMsg;
+        document.getElementById('btn-open-apply-repair').style.display = 'none';
+      } else {
+        card.style.display = 'none';
+      }
+      return;
+    }
+    card.style.display = 'flex';
+    const isApplied = state.appliedFindings.has(f);
+    const badge = document.getElementById('repair-confidence-badge');
+    const confPct = Math.round((rep.confidence ?? 0) * 100);
+    badge.textContent = `${confPct}% tin cậy`;
+    badge.className = `pill-badge ${confPct >= 80 ? 'success' : 'warning'}`;
+
+    const dz = rep.delta_center ? rep.delta_center[2] : 0;
+    const dyaw = rep.delta_yaw || 0;
+    const dd = rep.delta_dims || [0, 0, 0];
+    const dc = rep.delta_center || [0, 0, 0];
+
+    // Format metrics (F11.5)
+    const elDz = document.getElementById('repair-val-dz');
+    if (Math.abs(dz) > 0.001) {
+      const sign = dz > 0 ? '+' : '';
+      elDz.textContent = `${sign}${Math.round(dz * 100)} cm`;
+    } else {
+      elDz.textContent = '0 cm';
+    }
+
+    const elDyaw = document.getElementById('repair-val-dyaw');
+    if (Math.abs(dyaw) > 0.001) {
+      const deg = Math.round(dyaw * 180 / Math.PI);
+      const sign = deg > 0 ? '+' : '';
+      elDyaw.textContent = `${sign}${deg}°`;
+    } else {
+      elDyaw.textContent = '0°';
+    }
+
+    const elDims = document.getElementById('repair-val-ddims');
+    if (Math.abs(dd[0]) > 0.001 || Math.abs(dd[1]) > 0.001 || Math.abs(dd[2]) > 0.001) {
+      const fmt = (x) => (x > 0 ? `+${x.toFixed(2)}` : x.toFixed(2));
+      elDims.textContent = `[${fmt(dd[0])}, ${fmt(dd[1])}, ${fmt(dd[2])}]`;
+    } else {
+      elDims.textContent = '0 m';
+    }
+
+    const elDxy = document.getElementById('repair-val-dxy');
+    if (Math.abs(dc[0]) > 0.001 || Math.abs(dc[1]) > 0.001) {
+      elDxy.textContent = `[${dc[0].toFixed(2)}, ${dc[1].toFixed(2)}]`;
+    } else {
+      elDxy.textContent = '0 m';
+    }
+
+    let reason = rep.reason || 'Đề xuất hiệu chỉnh hình học từ PointSnap 3D.';
+    const prediction = rep.heading_prediction;
+    if (prediction?.moving && prediction.frames_used?.length >= 2) {
+      const heading = Math.round(prediction.heading_world_rad * 180 / Math.PI);
+      reason += ` Hướng chuyển động ước lượng: ${heading}° trong hệ toàn cục, từ ${prediction.frames_used.length} frame gần nhất.`;
+    }
+    document.getElementById('repair-reason-text').textContent = reason;
+
+    const applyBtn = document.getElementById('btn-open-apply-repair');
+    const rollbackBtn = document.getElementById('btn-rollback-repair');
+    const statusEl = document.getElementById('repair-apply-status');
+
+    if (isApplied) {
+      applyBtn.style.display = 'none';
+      rollbackBtn.style.display = 'inline-flex';
+      statusEl.style.display = 'block';
+      statusEl.className = 'repair-apply-status success';
+      statusEl.textContent = 'Đã ghi và đọc lại xác nhận trên CVAT. Tải lại tab CVAT để thấy box mới; quét lại để kiểm tra lỗi.';
+    } else {
+      applyBtn.style.display = 'inline-flex';
+      const hasChange = [...dc, ...dd, dyaw].some(v => Number.isFinite(v) && Math.abs(v) > 0.000001);
+      applyBtn.disabled = rep.applicable === false || !hasChange || !(rep.confidence > 0);
+      rollbackBtn.style.display = state.historyStack.length > 0 ? 'inline-flex' : 'none';
+      statusEl.style.display = 'none';
+    }
+  }
+
+  function openApplyRepairModal() {
+    const now = Date.now();
+    if (now - state.lastApplyClickTime < 500) return; // Debounce 500ms (test_f12_05)
+    state.lastApplyClickTime = now;
+
+    if (state.isApplyingRepair) return; // Concurrency lock (test_f12_b01)
+    const f = state.currentDetail;
+    const rep = state.currentRepair;
+    if (!f || !rep || rep.applicable === false || !(rep.confidence > 0)) return;
+
+    const tbody = document.getElementById('modal-repair-table-body');
+    tbody.innerHTML = '';
+
+    const dz = rep.delta_center ? rep.delta_center[2] : 0;
+    const dyaw = rep.delta_yaw || 0;
+    const dd = rep.delta_dims || [0, 0, 0];
+
+    const box = state.previewData?.box || { length: 0, width: 0, height: 0 };
+    const original = rep.original_cuboid;
+    const L = original?.dims?.[0] ?? box.length ?? 0;
+    const W = original?.dims?.[1] ?? box.width ?? 0;
+    const H = original?.dims?.[2] ?? box.height ?? 0;
+    const z = original?.center?.[2];
+    const yaw = original?.yaw;
+
+    const rows = [
+      {
+        param: 'Tâm box (z)',
+        orig: z === undefined ? '—' : `${z.toFixed(2)} m`,
+        delta: Math.abs(dz) > 0.001 ? `${dz > 0 ? '+' : ''}${(dz * 100).toFixed(1)} cm` : '0 cm',
+        proposed: z === undefined ? '—' : `${(z + dz).toFixed(2)} m`,
+      },
+      {
+        param: 'Góc xoay (yaw)',
+        orig: yaw === undefined ? '—' : `${(yaw * 180 / Math.PI).toFixed(1)}°`,
+        delta: Math.abs(dyaw) > 0.001 ? `${dyaw > 0 ? '+' : ''}${(dyaw * 180 / Math.PI).toFixed(0)}°` : '0°',
+        proposed: yaw === undefined ? '—' : `${(rep.repaired_cuboid.yaw * 180 / Math.PI).toFixed(1)}°`,
+      },
+      {
+        param: 'Kích thước (l, w, h)',
+        orig: `[${L.toFixed(2)}, ${W.toFixed(2)}, ${H.toFixed(2)}] m`,
+        delta: `[${dd[0] > 0 ? '+' : ''}${dd[0].toFixed(2)}, ${dd[1] > 0 ? '+' : ''}${dd[1].toFixed(2)}, ${dd[2] > 0 ? '+' : ''}${dd[2].toFixed(2)}] m`,
+        proposed: `[${(L + dd[0]).toFixed(2)}, ${(W + dd[1]).toFixed(2)}, ${(H + dd[2]).toFixed(2)}] m`,
+      },
+    ];
+
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight: 500;">${escapeHtml(r.param)}</td>
+        <td>${escapeHtml(r.orig)}</td>
+        <td style="color: var(--primary); font-weight: 600;">${escapeHtml(r.delta)}</td>
+        <td style="color: var(--success); font-weight: 600;">${escapeHtml(r.proposed)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('modal-repair-reason').textContent = rep.reason || 'Đề xuất hiệu chỉnh hình học từ PointSnap 3D.';
+    openModal('modal-confirm-repair');
+  }
+
+  async function handleConfirmApplyRepair() {
+    if (state.isApplyingRepair) return;
+    const f = state.currentDetail;
+    const rep = state.currentRepair;
+    if (!f || !rep || !state.currentRun) return;
+
+    const confirmBtn = document.getElementById('btn-modal-repair-confirm');
+    setButtonBusy(confirmBtn, 'Đang áp dụng…');
+    state.isApplyingRepair = true;
+
+    const jobId = Number(state.currentRun.job_id);
+    const trackId = Number(f.track_id);
+    const appliedSlug = state.currentSlug;
+    const payload = {
+      frame: Number(f.frame),
+      repair: rep,
+      client_track_etag: state.currentTrackEtag || undefined,
+      slug: appliedSlug || undefined,
+    };
+
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/tracks/${trackId}/apply-repair`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      setButtonIdle(confirmBtn);
+      state.isApplyingRepair = false;
+
+      if (res.status === 409) {
+        closeModal('modal-confirm-repair');
+        showToast('Xung đột phiên bản (OCC Conflict): Dữ liệu nhãn trên CVAT đã bị thay đổi bởi người khác. Vui lòng quét lại job!', 'error', 5000);
+        return;
+      }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        closeModal('modal-confirm-repair');
+        showToast(err.detail || 'Lỗi khi áp dụng sửa box lên CVAT.', 'error');
+        return;
+      }
+
+      const result = await res.json();
+      if (result.sync_status !== 'verified') throw new Error('Máy chủ chưa xác nhận đồng bộ CVAT');
+      closeModal('modal-confirm-repair');
+
+      state.historyStack.push({
+        history_id: result.history_id,
+        job_id: jobId,
+        track_id: trackId,
+        frame: Number(f.frame),
+        finding: f,
+        slug: appliedSlug,
+      });
+      state.appliedFindings.add(f);
+
+      // Cập nhật trạng thái badge của finding sang PASS (ĐÃ SỬA) (test_f12_04)
+      const badge = document.getElementById('detail-sev-badge');
+      if (badge && state.currentDetail === f) {
+        badge.className = 'pill-badge success';
+        badge.textContent = 'ĐÃ GHI CVAT';
+      }
+      f.repaired = true;
+      if (state.currentDetail === f) state.currentTrackEtag = result.track_etag;
+      renderFindingsTable(true);
+
+      if (state.previewData && state.currentDetail === f) {
+        state.previewData.repairApplied = true;
+        drawPreviewViews(state.previewData);
+      }
+      if (state.currentDetail === f) updateRepairCard(f, rep);
+
+      showToast('Đã xác nhận box mới trên CVAT. Tải lại tab CVAT và quét lại để kiểm tra.', 'success', 6000);
+    } catch (err) {
+      setButtonIdle(confirmBtn);
+      state.isApplyingRepair = false;
+      closeModal('modal-confirm-repair');
+      showToast(`Lỗi kết nối máy chủ: ${err.message}`, 'error');
+    }
+  }
+
+  async function handleRollbackRepair() {
+    if (state.isApplyingRepair) return;
+    if (state.historyStack.length === 0) {
+      showToast('Không có lịch sử sửa để hoàn tác.', 'info');
+      return;
+    }
+    const item = state.historyStack[state.historyStack.length - 1];
+    if (!item) return;
+
+    const rollbackBtn = document.getElementById('btn-rollback-repair');
+    state.isApplyingRepair = true;
+    setButtonBusy(rollbackBtn, 'Đang hoàn tác…');
+
+    try {
+      const res = await fetch(`/api/jobs/${item.job_id}/tracks/${item.track_id}/rollback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          history_id: item.history_id,
+          slug: item.slug || undefined,
+        }),
+      });
+
+      setButtonIdle(rollbackBtn);
+      state.isApplyingRepair = false;
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || 'Lỗi khi hoàn tác box trên CVAT.', 'error');
+        return;
+      }
+
+      const result = await res.json();
+      if (result.sync_status !== 'verified') throw new Error('Máy chủ chưa xác nhận hoàn tác trên CVAT');
+      state.historyStack.pop();
+      state.currentTrackEtag = result.track_etag;
+      state.appliedFindings.delete(item.finding);
+      if (item.finding) item.finding.repaired = false;
+
+      if (state.currentDetail === item.finding) {
+        const sevClass = item.finding.severity === 'error' ? 'error' : item.finding.severity === 'warning' ? 'warning' : 'info';
+        const sevLabel = item.finding.severity_label || (item.finding.severity === 'error' ? 'Lỗi' : item.finding.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
+        const badge = document.getElementById('detail-sev-badge');
+        if (badge) {
+          badge.className = `pill-badge ${sevClass}`;
+          badge.textContent = sevLabel;
+        }
+        if (state.previewData) {
+          state.previewData.repairApplied = false;
+          drawPreviewViews(state.previewData);
+        }
+        updateRepairCard(item.finding, state.currentRepair);
+      }
+
+      renderFindingsTable();
+      showToast('Đã xác nhận hoàn tác trên CVAT. Tải lại tab CVAT để thấy box cũ.', 'success', 6000);
+    } catch (err) {
+      setButtonIdle(rollbackBtn);
+      state.isApplyingRepair = false;
+      showToast(`Lỗi kết nối máy chủ: ${err.message}`, 'error');
+    }
   }
 
   function renderDetailDrawer(f) {
@@ -1333,8 +1844,9 @@
       syncCvatSelection(f);
     }
     updateReviewPanel(f);
-    const sevClass = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info';
-    const sevLabel = f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
+    const isRepaired = state.appliedFindings.has(f);
+    const sevClass = isRepaired ? 'success' : (f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info');
+    const sevLabel = isRepaired ? 'ĐÃ GHI CVAT' : (f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin'));
 
     const badge = document.getElementById('detail-sev-badge');
     badge.className = `pill-badge ${sevClass}`;
@@ -1370,8 +1882,11 @@
 
   function clearDetailDrawer() {
     state.currentDetail = null;
+    state.currentRepair = null;
     state.previewData = null;
     clearPreviewCanvases();
+    const repCard = document.getElementById('detail-repair-card');
+    if (repCard) repCard.style.display = 'none';
     document.getElementById('preview-status').textContent = '';
     document.getElementById('detail-sev-badge').textContent = '—';
     document.getElementById('detail-rule-code').textContent = '—';

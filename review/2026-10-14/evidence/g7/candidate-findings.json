@@ -1,0 +1,907 @@
+[
+  {
+    "scene": "scene-0103",
+    "frame": "21",
+    "track_id": "286",
+    "label": "traffic_cone",
+    "rule": "fit.outside",
+    "severity": "error",
+    "message": "26/32 điểm của vật (81%) nằm ngoài box, nhiều nhất phía đầu (tới 29 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",
+    "details": {
+      "outside": 26,
+      "total": 32,
+      "ratio": 0.8125,
+      "track_median": 0.0,
+      "side": "đầu",
+      "reach_m": 0.2853896019688638
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "22",
+    "track_id": "286",
+    "label": "traffic_cone",
+    "rule": "fit.outside",
+    "severity": "error",
+    "message": "31/43 điểm của vật (72%) nằm ngoài box, nhiều nhất phía đầu (tới 28 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",
+    "details": {
+      "outside": 31,
+      "total": 43,
+      "ratio": 0.7209302325581395,
+      "track_median": 0.0,
+      "side": "đầu",
+      "reach_m": 0.2809853865243287
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "4",
+    "track_id": "315",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "error",
+    "message": "Trục box lệch 45° so với trục của cụm điểm LiDAR của vật (so với trung vị -1° của các frame khác của track) (ngưỡng 30°)",
+    "details": {
+      "deviation_deg": 45.0,
+      "raw_deg": 44.0,
+      "track_median_deg": -1.0000000000000004
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "4",
+    "track_id": "229",
+    "label": "traffic_cone",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "19/31 điểm của vật (61%) nằm ngoài box, nhiều nhất phía bên phải (tới 44 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 19,
+      "total": 31,
+      "ratio": 0.6129032258064516,
+      "track_median": 0.0,
+      "side": "bên phải",
+      "reach_m": 0.43867400933502826
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "20",
+    "track_id": "258",
+    "label": "car",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "18/30 điểm của vật (60%) nằm ngoài box, nhiều nhất phía đuôi (tới 51 cm); các frame khác của track: 1%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 18,
+      "total": 30,
+      "ratio": 0.6,
+      "track_median": 0.013513513513513514,
+      "side": "đuôi",
+      "reach_m": 0.5079836461730776
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "24",
+    "track_id": "334",
+    "label": "car",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "16/38 điểm của vật (42%) nằm ngoài box, nhiều nhất phía đầu (tới 79 cm); các frame khác của track: 1%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 16,
+      "total": 38,
+      "ratio": 0.42105263157894735,
+      "track_median": 0.0129957805907173,
+      "side": "đầu",
+      "reach_m": 0.792922435765294
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "24",
+    "track_id": "340",
+    "label": "pedestrian",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "21/31 điểm của vật (68%) nằm ngoài box, nhiều nhất phía bên phải (tới 32 cm); các frame khác của track: 2%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 21,
+      "total": 31,
+      "ratio": 0.6774193548387096,
+      "track_median": 0.015151515151515152,
+      "side": "bên phải",
+      "reach_m": 0.3216194176151786
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "26",
+    "track_id": "355",
+    "label": "motorcycle",
+    "rule": "heading.static",
+    "severity": "warning",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 4.5° so với các keyframe khác của track (ngưỡng 4°)",
+    "details": {
+      "spread_m": 0.0698927750197463,
+      "deviation_deg": 4.490533156346854
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "29",
+    "track_id": "355",
+    "label": "motorcycle",
+    "rule": "heading.static",
+    "severity": "warning",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 7.5° so với các keyframe khác của track (ngưỡng 4°)",
+    "details": {
+      "spread_m": 0.0698927750197463,
+      "deviation_deg": 7.507854397416062
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "32",
+    "track_id": "355",
+    "label": "motorcycle",
+    "rule": "heading.static",
+    "severity": "warning",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 6.4° so với các keyframe khác của track (ngưỡng 4°)",
+    "details": {
+      "spread_m": 0.0702281994639586,
+      "deviation_deg": 6.41619987511909
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "33",
+    "track_id": "333",
+    "label": "truck",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 25° so với trục của cụm điểm LiDAR của vật (so với trung vị -3° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 25.0,
+      "raw_deg": 22.0,
+      "track_median_deg": -3.0
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "33",
+    "track_id": "355",
+    "label": "motorcycle",
+    "rule": "heading.static",
+    "severity": "warning",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 5.3° so với các keyframe khác của track (ngưỡng 4°)",
+    "details": {
+      "spread_m": 0.0698927750197463,
+      "deviation_deg": 5.325638941775183
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "34",
+    "track_id": "355",
+    "label": "motorcycle",
+    "rule": "heading.static",
+    "severity": "warning",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 5.6° so với các keyframe khác của track (ngưỡng 4°)",
+    "details": {
+      "spread_m": 0.0702281994639586,
+      "deviation_deg": 5.607674440260377
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "35",
+    "track_id": "346",
+    "label": "bicycle",
+    "rule": "heading.static",
+    "severity": "warning",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 4.0° so với các keyframe khác của track (ngưỡng 4°)",
+    "details": {
+      "spread_m": 0.04663136049646725,
+      "deviation_deg": 4.006426349148082
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "37",
+    "track_id": "279",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 17° so với trục của cụm điểm LiDAR của vật (so với trung vị +1° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 17.0,
+      "raw_deg": -16.0,
+      "track_median_deg": 1.0
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "9",
+    "track_id": "332",
+    "label": "pedestrian",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 6 cm) nhưng box ở frame này lệch 31 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.05559935865345417,
+      "distance_m": 0.30706513966946575
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "9",
+    "track_id": "335",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.78 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m)",
+    "details": {
+      "deviation_m": 1.7797713807915676,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        9
+      ]
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "10",
+    "track_id": "288",
+    "label": "pedestrian",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 7 cm) nhưng box ở frame này lệch 22 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.07466118099683225,
+      "distance_m": 0.21949487465531506
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "38",
+    "track_id": "279",
+    "label": "car",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 5 cm) nhưng box ở frame này lệch 26 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.052308724707663165,
+      "distance_m": 0.2603113520383107
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "39",
+    "track_id": "279",
+    "label": "car",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 5 cm) nhưng box ở frame này lệch 26 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.052308724707663165,
+      "distance_m": 0.2603113520381543
+    }
+  },
+  {
+    "scene": "scene-0103",
+    "frame": "39",
+    "track_id": "302",
+    "label": "car",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 7 cm) nhưng box ở frame này lệch 23 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.07050293910681783,
+      "distance_m": 0.2311406498220351
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "8",
+    "track_id": "523",
+    "label": "car",
+    "rule": "fit.outside",
+    "severity": "error",
+    "message": "28/32 điểm của vật (88%) nằm ngoài box, nhiều nhất phía đầu (tới 103 cm); các frame khác của track: 9%: box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",
+    "details": {
+      "outside": 28,
+      "total": 32,
+      "ratio": 0.875,
+      "track_median": 0.09036144578313253,
+      "side": "đầu",
+      "reach_m": 1.0277563233430238
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "22",
+    "track_id": "514",
+    "label": "traffic_cone",
+    "rule": "fit.outside",
+    "severity": "error",
+    "message": "29/36 điểm của vật (81%) nằm ngoài box, nhiều nhất phía đầu (tới 44 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",
+    "details": {
+      "outside": 29,
+      "total": 36,
+      "ratio": 0.8055555555555556,
+      "track_median": 0.0,
+      "side": "đầu",
+      "reach_m": 0.44353188921814074
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "12",
+    "track_id": "462",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "error",
+    "message": "Trục box lệch 42° so với trục của cụm điểm LiDAR của vật (so với trung vị +2° của các frame khác của track) (ngưỡng 30°)",
+    "details": {
+      "deviation_deg": 41.5,
+      "raw_deg": 43.0,
+      "track_median_deg": 1.5
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "19",
+    "track_id": "424",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "error",
+    "message": "Trục box lệch 45° so với trục của cụm điểm LiDAR của vật (so với trung vị +5° của các frame khác của track) (ngưỡng 30°)",
+    "details": {
+      "deviation_deg": 45.0,
+      "raw_deg": -40.0,
+      "track_median_deg": 5.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "21",
+    "track_id": "424",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "error",
+    "message": "Trục box lệch 45° so với trục của cụm điểm LiDAR của vật (so với trung vị -40° của các frame khác của track) (ngưỡng 30°)",
+    "details": {
+      "deviation_deg": 45.0,
+      "raw_deg": 5.0,
+      "track_median_deg": -40.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "28",
+    "track_id": "529",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "error",
+    "message": "Trục box lệch 42° so với trục của cụm điểm LiDAR của vật (so với trung vị +2° của các frame khác của track) (ngưỡng 30°)",
+    "details": {
+      "deviation_deg": 42.0,
+      "raw_deg": 44.0,
+      "track_median_deg": 2.0000000000000018
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "7",
+    "track_id": "445",
+    "label": "car",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "30/45 điểm của vật (67%) nằm ngoài box, nhiều nhất phía đầu (tới 30 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 30,
+      "total": 45,
+      "ratio": 0.6666666666666666,
+      "track_median": 0.0,
+      "side": "đầu",
+      "reach_m": 0.3020727901366021
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "9",
+    "track_id": "523",
+    "label": "car",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "48/85 điểm của vật (56%) nằm ngoài box, nhiều nhất phía đầu (tới 106 cm); các frame khác của track: 9%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 48,
+      "total": 85,
+      "ratio": 0.5647058823529412,
+      "track_median": 0.09036144578313253,
+      "side": "đầu",
+      "reach_m": 1.0574208158938048
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "0",
+    "track_id": "412",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 14° so với trục của cụm điểm LiDAR của vật (so với trung vị -4° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 13.5,
+      "raw_deg": 10.0,
+      "track_median_deg": -3.500000000000001
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "3",
+    "track_id": "431",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 14° so với trục của cụm điểm LiDAR của vật (so với trung vị +1° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 14.0,
+      "raw_deg": -13.0,
+      "track_median_deg": 1.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "3",
+    "track_id": "494",
+    "label": "truck",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị +0° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 15.0,
+      "raw_deg": 14.999999999999998,
+      "track_median_deg": 0.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "4",
+    "track_id": "494",
+    "label": "truck",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 14° so với trục của cụm điểm LiDAR của vật (so với trung vị +0° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 14.0,
+      "raw_deg": 14.0,
+      "track_median_deg": 0.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "5",
+    "track_id": "494",
+    "label": "truck",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị +0° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 15.0,
+      "raw_deg": 14.999999999999998,
+      "track_median_deg": 0.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "11",
+    "track_id": "523",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị -7° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 15.0,
+      "raw_deg": 8.0,
+      "track_median_deg": -7.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "18",
+    "track_id": "424",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 19° so với trục của cụm điểm LiDAR của vật (so với trung vị -70° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 19.0,
+      "raw_deg": 1.0,
+      "track_median_deg": -70.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "20",
+    "track_id": "424",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 30° so với trục của cụm điểm LiDAR của vật (so với trung vị -40° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 30.0,
+      "raw_deg": 20.0,
+      "track_median_deg": -40.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "25",
+    "track_id": "426",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị -2° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 15.0,
+      "raw_deg": -17.0,
+      "track_median_deg": -2.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "26",
+    "track_id": "456",
+    "label": "bus",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 20° so với trục của cụm điểm LiDAR của vật (so với trung vị -0° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 19.5,
+      "raw_deg": 19.0,
+      "track_median_deg": -0.5
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "26",
+    "track_id": "529",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 19° so với trục của cụm điểm LiDAR của vật (so với trung vị +4° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 19.0,
+      "raw_deg": -14.999999999999998,
+      "track_median_deg": 4.0
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "27",
+    "track_id": "529",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 19° so với trục của cụm điểm LiDAR của vật (so với trung vị -15° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 19.0,
+      "raw_deg": 4.0,
+      "track_median_deg": -14.999999999999998
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "29",
+    "track_id": "529",
+    "label": "car",
+    "rule": "heading.points",
+    "severity": "warning",
+    "message": "Trục box lệch 17° so với trục của cụm điểm LiDAR của vật (so với trung vị -15° của các frame khác của track) (ngưỡng 12°)",
+    "details": {
+      "deviation_deg": 17.0,
+      "raw_deg": 2.0,
+      "track_median_deg": -14.999999999999998
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "14",
+    "track_id": "422",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.61 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m)",
+    "details": {
+      "deviation_m": 1.6070812147355613,
+      "has_world_pose": true,
+      "segment_end": true,
+      "cluster_frames": [
+        14
+      ]
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "15",
+    "track_id": "551",
+    "label": "car",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 8 cm) nhưng box ở frame này lệch 21 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.07840434769774998,
+      "distance_m": 0.2130093894646007
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "28",
+    "track_id": "545",
+    "label": "car",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 7 cm) nhưng box ở frame này lệch 22 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.07192206671789295,
+      "distance_m": 0.21959280498239137
+    }
+  },
+  {
+    "scene": "scene-0655",
+    "frame": "40",
+    "track_id": "520",
+    "label": "construction_vehicle",
+    "rule": "track.static_shift",
+    "severity": "warning",
+    "message": "Vật đứng yên (các keyframe khác tụ trong 9 cm) nhưng box ở frame này lệch 24 cm so với vị trí chung (ngưỡng 20 cm)",
+    "details": {
+      "spread_m": 0.08985009965874426,
+      "distance_m": 0.24116799124283655
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "0",
+    "track_id": "607",
+    "label": "car",
+    "rule": "heading.static",
+    "severity": "error",
+    "message": "Vật đứng yên nhưng hướng box ở frame này lệch 10.4° so với các keyframe khác của track (ngưỡng 10°)",
+    "details": {
+      "spread_m": 0.099484089354306,
+      "deviation_deg": 10.382614879094064
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "1",
+    "track_id": "624",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "error",
+    "message": "Tâm box nhảy vị trí 3.78 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 3.0 m)",
+    "details": {
+      "deviation_m": 3.7757949698250615,
+      "has_world_pose": true,
+      "segment_end": true,
+      "cluster_frames": [
+        1,
+        2
+      ]
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "5",
+    "track_id": "589",
+    "label": "pedestrian",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "37/54 điểm của vật (69%) nằm ngoài box, nhiều nhất phía bên trái (tới 31 cm); các frame khác của track: 22%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 37,
+      "total": 54,
+      "ratio": 0.6851851851851852,
+      "track_median": 0.21951219512195122,
+      "side": "bên trái",
+      "reach_m": 0.310833293801588
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "8",
+    "track_id": "586",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.09 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m)",
+    "details": {
+      "deviation_m": 1.0855724755235794,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        8
+      ]
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "11",
+    "track_id": "595",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.02 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m)",
+    "details": {
+      "deviation_m": 1.0154671536978952,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        11
+      ]
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "24",
+    "track_id": "595",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.73 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m)",
+    "details": {
+      "deviation_m": 1.7345483537095476,
+      "has_world_pose": true,
+      "segment_end": true,
+      "cluster_frames": [
+        24
+      ]
+    }
+  },
+  {
+    "scene": "scene-0796",
+    "frame": "25",
+    "track_id": "616",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 2.22 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m)",
+    "details": {
+      "deviation_m": 2.218151856839381,
+      "has_world_pose": true,
+      "segment_end": true,
+      "cluster_frames": [
+        24,
+        25
+      ]
+    }
+  },
+  {
+    "scene": "scene-1077",
+    "frame": "7",
+    "track_id": "740",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "error",
+    "message": "Tâm box nhảy vị trí 2.03 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 2.0 m)",
+    "details": {
+      "deviation_m": 2.030116014873729,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        6,
+        7
+      ]
+    }
+  },
+  {
+    "scene": "scene-1077",
+    "frame": "7",
+    "track_id": "749",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "error",
+    "message": "Tâm box nhảy vị trí 3.11 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 2.0 m)",
+    "details": {
+      "deviation_m": 3.1098513499683453,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        5,
+        6,
+        7,
+        8
+      ]
+    }
+  },
+  {
+    "scene": "scene-1077",
+    "frame": "37",
+    "track_id": "743",
+    "label": "barrier",
+    "rule": "fit.outside",
+    "severity": "warning",
+    "message": "40/98 điểm của vật (41%) nằm ngoài box, nhiều nhất phía đầu (tới 42 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",
+    "details": {
+      "outside": 40,
+      "total": 98,
+      "ratio": 0.40816326530612246,
+      "track_median": 0.0,
+      "side": "đầu",
+      "reach_m": 0.4217326614156631
+    }
+  },
+  {
+    "scene": "scene-1077",
+    "frame": "15",
+    "track_id": "724",
+    "label": "car",
+    "rule": "track.split_id",
+    "severity": "warning",
+    "message": "Track 786 kết thúc ở frame 14 và track 724 cùng class bắt đầu ở frame 15 cách vị trí ngoại suy 0.52 m (nghi tách ID)",
+    "details": {
+      "previous_track_id": 786,
+      "extrapolated_dist": 0.5179339663143241,
+      "frame_gap": 1,
+      "has_world_pose": true
+    }
+  },
+  {
+    "scene": "scene-1077",
+    "frame": "24",
+    "track_id": "748",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 2.45 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m)",
+    "details": {
+      "deviation_m": 2.4456291124596796,
+      "has_world_pose": true,
+      "segment_end": true,
+      "cluster_frames": [
+        24,
+        25
+      ]
+    }
+  },
+  {
+    "scene": "scene-1077",
+    "frame": "28",
+    "track_id": "742",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.45 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m)",
+    "details": {
+      "deviation_m": 1.4525291086466658,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        28
+      ]
+    }
+  },
+  {
+    "scene": "scene-1100",
+    "frame": "19",
+    "track_id": "907",
+    "label": "car",
+    "rule": "track.jump",
+    "severity": "warning",
+    "message": "Tâm box nhảy vị trí 1.80 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m)",
+    "details": {
+      "deviation_m": 1.8004646203662191,
+      "has_world_pose": true,
+      "segment_end": false,
+      "cluster_frames": [
+        19
+      ]
+    }
+  }
+]

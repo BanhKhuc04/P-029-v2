@@ -1,125 +1,185 @@
 ﻿scene,frame,track_id,label,rule,severity,message,verdict,note
-"scene-0103","5","315","car","floating","error","Đáy box cách mặt đất 32 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị +7 cm)","Đúng lỗi","cắt mặt dọc thì đường đang dốc nên ko bo được phần bánh xe và nhìn từ trên thì thấy ổn vì tính cả gương thì bốc chiều dài oke nhưng mà chiều rộng thì ko sát với đầu xe và đít xe "
-"scene-0103","7","281","car","floating","error","Đáy box cách mặt đất 17 cm (lơ lửng); cao hơn 26 cm so với các frame khác của track (trung vị -8 cm)","",""
-"scene-0103","19","335","car","floating","error","Đáy box cách mặt đất 18 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -7 cm)","",""
-"scene-0103","5","245","pedestrian","size.class_range","error","Chiều dài 0.33 m (trung vị của 12 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","",""
-"scene-0103","10","276","pedestrian","size.class_range","error","Chiều dài 0.35 m (trung vị của 4 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","",""
-"scene-0103","33","311","traffic_cone","size.class_range","error","Chiều rộng 0.21 m nhỏ bất thường so với class traffic_cone (khoảng chuẩn [0.36, 0.96] m)","Không rõ","nhận dạng sai vẽ sai mật độ chấm ko đủ để đánh giá"
-"scene-0103","4","315","car","floating","warning","Đáy box cách mặt đất 28 cm (lơ lửng); cao hơn 21 cm so với các frame khác của track (trung vị +7 cm)","Đúng lỗi","box lơ lửng đúng nhìn tứ trên ko bo sát với viền xe đầu xe"
-"scene-0103","6","228","pedestrian","floating","warning","Đáy box nằm dưới mặt đất 16 cm (lún); thấp hơn 15 cm so với các frame khác của track (trung vị -1 cm)","Đúng lỗi","mặt cắt dọc con người tại sao chân ko cso dầu chấm vậy"
-"scene-0103","6","315","car","floating","warning","Đáy box cách mặt đất 7 cm (lơ lửng); thấp hơn 21 cm so với các frame khác của track (trung vị +28 cm)","Đúng lỗi","góc quay của xe đang bị lệch khiến xe mặt cắt dọc bị méo mó"
-"scene-0103","7","315","car","floating","warning","Đáy box nằm dưới mặt đất 3 cm (lún); thấp hơn 31 cm so với các frame khác của track (trung vị +28 cm)","Đúng lỗi","lún 3cm đúng oge"
-"scene-0103","8","281","car","floating","warning","Đáy box cách mặt đất 8 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -8 cm)","Đúng lỗi","góc quay của xe đang bị lệch khiến xe mặt cắt dọc bị méo mó"
-"scene-0103","9","281","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +8 cm)","Đúng lỗi","góc độ ko đúng khiến xe méo và box đang bị lún"
-"scene-0103","9","285","car","floating","warning","Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -4 cm)","Đúng lỗi","lỗi lơ lửng đúng"
-"scene-0103","10","281","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +8 cm)","Đúng lỗi","box đang bị lún"
-"scene-0103","10","285","car","floating","warning","Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -4 cm)","Đúng lỗi","góc độ quay khiến xe bị méo và box đang lơ lửng ko sát với mặt đất và trần xe"
-"scene-0103","11","258","car","floating","warning","Đáy box cách mặt đất 42 cm (lơ lửng); cao hơn 21 cm so với các frame khác của track (trung vị +21 cm)","Không rõ","không xác định được vật thể"
-"scene-0103","11","285","car","floating","warning","Đáy box cách mặt đất 12 cm (lơ lửng); cao hơn 15 cm so với các frame khác của track (trung vị -4 cm)","Đúng lỗi","góc độ bị lệch của mặt cắt dọc khiến xe bi méo và mặt đất lơ lửng"
-"scene-0103","16","269","pedestrian","floating","warning","Đáy box cách mặt đất 21 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị +5 cm)","Không rõ","không rõ vật xác định"
-"scene-0103","28","335","car","floating","warning","Đáy box nằm dưới mặt đất 19 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị -3 cm)","Đúng lỗi","mặt cắt dọc phần góc độ xoay ko đúng khiên xe bị méo và bị lún"
-"scene-0103","31","317","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +9 cm)","Đúng lỗi","ko xác định được xe nhưng ở phần nhìn từ trên có thể xác đinh được 1 xíu và box nằm phía dưới "
-"scene-0103","32","294","car","floating","warning","Đáy box nằm dưới mặt đất 7 cm (lún); thấp hơn 17 cm so với các frame khác của track (trung vị +10 cm)","Không rõ",""
-"scene-0103","38","309","car","floating","warning","Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -3 cm)","Đúng lỗi","xác định được xe ở phần nhìn phía trên mặt cắt dọc ko rõ và đang bị cách với mặt đất"
-"scene-0103","39","309","car","floating","warning","Đáy box nằm dưới mặt đất 9 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +9 cm)","Đúng lỗi","góc quay có vẻ bị sai và xe đang bị lỗi "
-"scene-0103","0","277","pedestrian","size.class_range","warning","Chiều dài 0.40 m (trung vị của 20 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ","khống xác định đấy ko phải xe"
-"scene-0103","0","301","pedestrian","size.class_range","warning","Chiều cao 2.21 m (trung vị của 4 keyframe) lớn bất thường so với class pedestrian (khoảng chuẩn [1.28, 2.00] m)","Không rõ",""
-"scene-0103","0","314","pedestrian","size.class_range","warning","Chiều dài 1.24 m (trung vị của 4 keyframe) lớn bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0103","3","266","pedestrian","size.class_range","warning","Chiều dài 0.37 m (trung vị của 17 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0103","5","230","pedestrian","size.class_range","warning","Chiều dài 0.41 m (trung vị của 9 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0103","7","267","pedestrian","size.class_range","warning","Chiều dài 0.41 m (trung vị của 4 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0103","7","286","traffic_cone","size.class_range","warning","Chiều rộng 0.29 m (trung vị của 15 keyframe) nhỏ bất thường so với class traffic_cone (khoảng chuẩn [0.36, 0.96] m)","Không rõ",""
-"scene-0103","7","300","car","size.class_range","warning","Chiều dài 3.48 m (trung vị của 32 keyframe) nhỏ bất thường so với class car (khoảng chuẩn [3.90, 5.79] m)","Không rõ",""
-"scene-0103","20","336","pedestrian","size.class_range","warning","Chiều dài 0.41 m (trung vị của 3 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0103","24","282","pedestrian","size.class_range","warning","Chiều dài 0.40 m (trung vị của 9 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0103","33","326","traffic_cone","size.class_range","warning","Chiều rộng 0.28 m (trung vị của 7 keyframe) nhỏ bất thường so với class traffic_cone (khoảng chuẩn [0.36, 0.96] m)","Không rõ",""
-"scene-0103","38","356","pedestrian","size.class_range","warning","Chiều dài 0.41 m (trung vị của 2 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0655","1","494","truck","floating","error","Đáy box cách mặt đất 42 cm (lơ lửng); cao hơn 35 cm so với các frame khác của track (trung vị +8 cm)","Đúng lỗi",""
-"scene-0655","2","482","car","floating","error","Đáy box cách mặt đất 38 cm (lơ lửng)","Báo nhầm","đang bị lún"
-"scene-0655","2","494","truck","floating","error","Đáy box cách mặt đất 32 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị +8 cm)","Đúng lỗi",""
-"scene-0655","5","415","car","floating","error","Đáy box cách mặt đất 16 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -8 cm)","Đúng lỗi",""
-"scene-0655","6","415","car","floating","error","Đáy box cách mặt đất 16 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -8 cm)","Đúng lỗi",""
-"scene-0655","13","413","car","floating","error","Đáy box cách mặt đất 20 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị -5 cm)","Đúng lỗi","góc quay sai"
-"scene-0655","20","411","car","floating","error","Đáy box cách mặt đất 34 cm (lơ lửng); cao hơn 30 cm so với các frame khác của track (trung vị +4 cm)","Không rõ",""
-"scene-0655","29","417","construction_vehicle","floating","error","Đáy box cách mặt đất 36 cm (lơ lửng); cao hơn 38 cm so với các frame khác của track (trung vị -2 cm)","Đúng lỗi",""
-"scene-0655","30","456","bus","floating","error","Đáy box cách mặt đất 36 cm (lơ lửng); cao hơn 26 cm so với các frame khác của track (trung vị +10 cm)","",""
-"scene-0655","34","456","bus","floating","error","Đáy box nằm dưới mặt đất 15 cm (lún); thấp hơn 32 cm so với các frame khác của track (trung vị +16 cm)","Không rõ",""
-"scene-0655","35","456","bus","floating","error","Đáy box nằm dưới mặt đất 16 cm (lún); thấp hơn 32 cm so với các frame khác của track (trung vị +16 cm)","Không rõ",""
-"scene-0655","36","549","car","floating","error","Đáy box cách mặt đất 35 cm (lơ lửng)","Không rõ",""
-"scene-0655","37","417","construction_vehicle","floating","error","Đáy box nằm dưới mặt đất 17 cm (lún); thấp hơn 30 cm so với các frame khác của track (trung vị +13 cm)","Không rõ",""
-"scene-0655","38","417","construction_vehicle","floating","error","Đáy box nằm dưới mặt đất 17 cm (lún); thấp hơn 30 cm so với các frame khác của track (trung vị +13 cm)","Không rõ",""
-"scene-0655","0","532","truck","floating","warning","Đáy box nằm dưới mặt đất 22 cm (lún)","Đúng lỗi",""
-"scene-0655","1","482","car","floating","warning","Đáy box cách mặt đất 28 cm (lơ lửng)","Đúng lỗi",""
-"scene-0655","1","517","car","floating","warning","Đáy box cách mặt đất 6 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị -13 cm)","Đúng lỗi",""
-"scene-0655","1","532","truck","floating","warning","Đáy box nằm dưới mặt đất 20 cm (lún)","Đúng lỗi",""
-"scene-0655","2","517","car","floating","warning","Đáy box cách mặt đất 3 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -13 cm)","Đúng lỗi",""
-"scene-0655","3","494","truck","floating","warning","Đáy box cách mặt đất 26 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị +8 cm)","Đúng lỗi",""
-"scene-0655","7","415","car","floating","warning","Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 22 cm so với các frame khác của track (trung vị -8 cm)","Đúng lỗi",""
-"scene-0655","7","445","car","floating","warning","Đáy box cách mặt đất 25 cm (lơ lửng)","Không rõ",""
-"scene-0655","7","494","truck","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 25 cm so với các frame khác của track (trung vị +17 cm)","Đúng lỗi",""
-"scene-0655","8","494","truck","floating","warning","Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 29 cm so với các frame khác của track (trung vị +17 cm)","Đúng lỗi",""
-"scene-0655","9","494","truck","floating","warning","Đáy box nằm dưới mặt đất 13 cm (lún); thấp hơn 30 cm so với các frame khác của track (trung vị +17 cm)","Đúng lỗi",""
-"scene-0655","10","438","car","floating","warning","Đáy box cách mặt đất 16 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị -3 cm)","Đúng lỗi",""
-"scene-0655","10","473","car","floating","warning","Đáy box cách mặt đất 25 cm (lơ lửng)","Không rõ",""
-"scene-0655","10","494","truck","floating","warning","Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 28 cm so với các frame khác của track (trung vị +17 cm)","Đúng lỗi",""
-"scene-0655","10","523","car","floating","warning","Đáy box nằm dưới mặt đất 7 cm (lún); thấp hơn 28 cm so với các frame khác của track (trung vị +21 cm)","Đúng lỗi",""
-"scene-0655","11","409","car","floating","warning","Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +10 cm)","Đúng lỗi",""
-"scene-0655","11","415","car","floating","warning","Đáy box nằm dưới mặt đất 14 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +3 cm)","Đúng lỗi",""
-"scene-0655","11","438","car","floating","warning","Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -3 cm)","Đúng lỗi",""
-"scene-0655","12","409","car","floating","warning","Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +10 cm)","Đúng lỗi",""
-"scene-0655","12","413","car","floating","warning","Đáy box cách mặt đất 17 cm (lơ lửng); cao hơn 22 cm so với các frame khác của track (trung vị -5 cm)","Đúng lỗi",""
-"scene-0655","12","415","car","floating","warning","Đáy box nằm dưới mặt đất 14 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +3 cm)","Đúng lỗi",""
-"scene-0655","13","483","car","floating","warning","Đáy box cách mặt đất 12 cm (lơ lửng); cao hơn 26 cm so với các frame khác của track (trung vị -14 cm)","Đúng lỗi",""
-"scene-0655","13","496","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +9 cm)","Đúng lỗi",""
-"scene-0655","13","524","car","floating","warning","Đáy box cách mặt đất 15 cm (lơ lửng)","Không rõ",""
-"scene-0655","14","410","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 17 cm so với các frame khác của track (trung vị +9 cm)","Đúng lỗi",""
-"scene-0655","14","413","car","floating","warning","Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -5 cm)","Đúng lỗi","cỏ vẻ đang vẽ đương sai đường này đang dốc xuống"
-"scene-0655","14","416","car","floating","warning","Đáy box cách mặt đất 21 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị +3 cm)","Đúng lỗi",""
-"scene-0655","14","462","car","floating","warning","Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +13 cm)","Đúng lỗi",""
-"scene-0655","14","483","car","floating","warning","Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị -14 cm)","Đúng lỗi",""
-"scene-0655","15","410","car","floating","warning","Đáy box nằm dưới mặt đất 13 cm (lún); thấp hơn 22 cm so với các frame khác của track (trung vị +9 cm)","Đúng lỗi",""
-"scene-0655","15","438","car","floating","warning","Đáy box nằm dưới mặt đất 15 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +1 cm)","Đúng lỗi",""
-"scene-0655","15","462","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 21 cm so với các frame khác của track (trung vị +13 cm)","Đúng lỗi",""
-"scene-0655","16","425","car","floating","warning","Đáy box cách mặt đất 21 cm (lơ lửng)","Không rõ",""
-"scene-0655","17","492","car","floating","warning","Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 23 cm so với các frame khác của track (trung vị -13 cm)","Không rõ",""
-"scene-0655","17","548","truck","floating","warning","Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 15 cm so với các frame khác của track (trung vị -1 cm)","Đúng lỗi","vẽ đường sai đường phải nghiêng"
-"scene-0655","18","492","car","floating","warning","Đáy box cách mặt đất 7 cm (lơ lửng); cao hơn 20 cm so với các frame khác của track (trung vị -13 cm)","Đúng lỗi",""
-"scene-0655","19","483","car","floating","warning","Đáy box nằm dưới mặt đất 25 cm (lún); thấp hơn 20 cm so với các frame khác của track (trung vị -5 cm)","Đúng lỗi",""
-"scene-0655","19","492","car","floating","warning","Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -13 cm)","Đúng lỗi",""
-"scene-0655","20","416","car","floating","warning","Đáy box nằm dưới mặt đất 4 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +14 cm)","Đúng lỗi",""
-"scene-0655","20","492","car","floating","warning","Đáy box cách mặt đất 8 cm (lơ lửng); cao hơn 21 cm so với các frame khác của track (trung vị -13 cm)","Đúng lỗi",""
-"scene-0655","21","416","car","floating","warning","Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 20 cm so với các frame khác của track (trung vị +14 cm)","Đúng lỗi",""
-"scene-0655","26","422","car","floating","warning","Đáy box nằm dưới mặt đất 29 cm (lún)","Đúng lỗi",""
-"scene-0655","28","411","car","floating","warning","Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 20 cm so với các frame khác của track (trung vị +12 cm)","Đúng lỗi","vẽ box sai độ dốc sai "
-"scene-0655","28","520","construction_vehicle","floating","warning","Đáy box nằm dưới mặt đất 7 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị +19 cm)","",""
-"scene-0655","29","411","car","floating","warning","Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 22 cm so với các frame khác của track (trung vị +12 cm)","Đúng lỗi","vẽ bốc sai độ dốc sai mặt đường sai "
-"scene-0655","29","456","bus","floating","warning","Đáy box cách mặt đất 28 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị +10 cm)","Không rõ",""
-"scene-0655","30","411","car","floating","warning","Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 23 cm so với các frame khác của track (trung vị +12 cm)","Đúng lỗi",""
-"scene-0655","30","507","bus","floating","warning","Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 27 cm so với các frame khác của track (trung vị -12 cm)","Không rõ",""
-"scene-0655","31","411","car","floating","warning","Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 21 cm so với các frame khác của track (trung vị +12 cm)","Không rõ",""
-"scene-0655","31","417","construction_vehicle","floating","warning","Đáy box cách mặt đất 18 cm (lơ lửng); cao hơn 20 cm so với các frame khác của track (trung vị -2 cm)","Đúng lỗi",""
-"scene-0655","31","507","bus","floating","warning","Đáy box cách mặt đất 6 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -12 cm)","Không rõ",""
-"scene-0655","32","417","construction_vehicle","floating","warning","Đáy box cách mặt đất 17 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị -2 cm)","Đúng lỗi",""
-"scene-0655","33","417","construction_vehicle","floating","warning","Đáy box cách mặt đất 18 cm (lơ lửng); cao hơn 20 cm so với các frame khác của track (trung vị -2 cm)","Đúng lỗi","đường vẽ sai"
-"scene-0655","33","456","bus","floating","warning","Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị +16 cm)","Không rõ",""
-"scene-0655","36","417","construction_vehicle","floating","warning","Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 22 cm so với các frame khác của track (trung vị +13 cm)","Báo nhầm","đường vẽ sai "
-"scene-0655","39","417","construction_vehicle","floating","warning","Đáy box nằm dưới mặt đất 15 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị +13 cm)","Không rõ",""
-"scene-0655","39","500","car","floating","warning","Đáy box cách mặt đất 30 cm (lơ lửng)","Không rõ",""
-"scene-0655","40","500","car","floating","warning","Đáy box cách mặt đất 22 cm (lơ lửng)","Không rõ",""
-"scene-0655","22","489","trailer","size.class_range","warning","Chiều dài 1.79 m (trung vị của 17 keyframe) nhỏ bất thường so với class trailer (khoảng chuẩn [2.00, 18.00] m)","Không rõ",""
-"scene-0796","5","578","truck","floating","error","Đáy box cách mặt đất 47 cm (lơ lửng)","Không rõ",""
-"scene-0796","1","622","pedestrian","size.class_range","error","Chiều rộng 0.35 m (trung vị của 13 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.50, 0.98] m)","Không rõ",""
-"scene-0796","24","584","car","floating","warning","Đáy box cách mặt đất 10 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -6 cm)","Không rõ",""
-"scene-0796","0","623","car","size.class_range","warning","Chiều rộng 2.73 m lớn bất thường so với class car (khoảng chuẩn [1.58, 2.41] m)","Không rõ",""
-"scene-0796","1","606","pedestrian","size.class_range","warning","Chiều dài 0.36 m (trung vị của 16 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Không rõ",""
-"scene-0796","29","615","bus","size.class_range","warning","Chiều rộng 3.53 m (trung vị của 10 keyframe) lớn bất thường so với class bus (khoảng chuẩn [2.20, 3.20] m)","Không rõ",""
-"scene-1077","33","739","car","floating","warning","Đáy box nằm dưới mặt đất 16 cm (lún)","Đúng lỗi",""
-"scene-1077","21","791","motorcycle","size.class_range","warning","Chiều rộng 1.41 m (trung vị của 8 keyframe) lớn bất thường so với class motorcycle (khoảng chuẩn [0.55, 1.20] m)","Không rõ",""
-"scene-1100","3","882","car","floating","warning","Đáy box nằm dưới mặt đất 14 cm (lún); thấp hơn 21 cm so với các frame khác của track (trung vị +7 cm)","Đúng lỗi",""
-"scene-1100","21","887","pedestrian","floating","warning","Đáy box cách mặt đất 28 cm (lơ lửng)","Không rõ",""
-"scene-1100","32","901","motorcycle","floating","warning","Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +5 cm)","Đúng lỗi",""
-"scene-1100","39","906","car","floating","warning","Đáy box nằm dưới mặt đất 9 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +9 cm)","Đúng lỗi",""
-"scene-1100","0","884","motorcycle","size.class_range","warning","Chiều dài 1.27 m (trung vị của 35 keyframe) nhỏ bất thường so với class motorcycle (khoảng chuẩn [1.50, 2.60] m)","Không rõ",""
-"scene-1100","0","891","pedestrian","size.class_range","warning","Chiều rộng 0.41 m (trung vị của 40 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.50, 0.98] m)","Không rõ",""
-"scene-1100","0","908","pedestrian","size.class_range","warning","Chiều dài 0.41 m (trung vị của 40 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)","Đúng lỗi",""
-"scene-1100","10","901","motorcycle","size.class_range","warning","Chiều dài 1.28 m (trung vị của 25 keyframe) nhỏ bất thường so với class motorcycle (khoảng chuẩn [1.50, 2.60] m)","Không rõ",""
+scene-0103,5,315,car,floating,error,Đáy box cách mặt đất 32 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị +7 cm),Đúng lỗi,cắt mặt dọc thì đường đang dốc nên ko bo được phần bánh xe và nhìn từ trên thì thấy ổn vì tính cả gương thì bốc chiều dài oke nhưng mà chiều rộng thì ko sát với đầu xe và đít xe 
+scene-0103,7,281,car,floating,error,Đáy box cách mặt đất 17 cm (lơ lửng); cao hơn 26 cm so với các frame khác của track (trung vị -8 cm),,
+scene-0103,19,335,car,floating,error,Đáy box cách mặt đất 18 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -7 cm),,
+scene-0103,5,245,pedestrian,size.class_range,error,"Chiều dài 0.33 m (trung vị của 12 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",,
+scene-0103,10,276,pedestrian,size.class_range,error,"Chiều dài 0.35 m (trung vị của 4 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",,
+scene-0103,33,311,traffic_cone,size.class_range,error,"Chiều rộng 0.21 m nhỏ bất thường so với class traffic_cone (khoảng chuẩn [0.36, 0.96] m)",Không rõ,nhận dạng sai vẽ sai mật độ chấm ko đủ để đánh giá
+scene-0103,4,315,car,floating,warning,Đáy box cách mặt đất 28 cm (lơ lửng); cao hơn 21 cm so với các frame khác của track (trung vị +7 cm),Đúng lỗi,box lơ lửng đúng nhìn tứ trên ko bo sát với viền xe đầu xe
+scene-0103,6,228,pedestrian,floating,warning,Đáy box nằm dưới mặt đất 16 cm (lún); thấp hơn 15 cm so với các frame khác của track (trung vị -1 cm),Đúng lỗi,mặt cắt dọc con người tại sao chân ko cso dầu chấm vậy
+scene-0103,6,315,car,floating,warning,Đáy box cách mặt đất 7 cm (lơ lửng); thấp hơn 21 cm so với các frame khác của track (trung vị +28 cm),Đúng lỗi,góc quay của xe đang bị lệch khiến xe mặt cắt dọc bị méo mó
+scene-0103,7,315,car,floating,warning,Đáy box nằm dưới mặt đất 3 cm (lún); thấp hơn 31 cm so với các frame khác của track (trung vị +28 cm),Đúng lỗi,lún 3cm đúng oge
+scene-0103,8,281,car,floating,warning,Đáy box cách mặt đất 8 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -8 cm),Đúng lỗi,góc quay của xe đang bị lệch khiến xe mặt cắt dọc bị méo mó
+scene-0103,9,281,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +8 cm),Đúng lỗi,góc độ ko đúng khiến xe méo và box đang bị lún
+scene-0103,9,285,car,floating,warning,Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -4 cm),Đúng lỗi,lỗi lơ lửng đúng
+scene-0103,10,281,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +8 cm),Đúng lỗi,box đang bị lún
+scene-0103,10,285,car,floating,warning,Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -4 cm),Đúng lỗi,góc độ quay khiến xe bị méo và box đang lơ lửng ko sát với mặt đất và trần xe
+scene-0103,11,258,car,floating,warning,Đáy box cách mặt đất 42 cm (lơ lửng); cao hơn 21 cm so với các frame khác của track (trung vị +21 cm),Không rõ,không xác định được vật thể
+scene-0103,11,285,car,floating,warning,Đáy box cách mặt đất 12 cm (lơ lửng); cao hơn 15 cm so với các frame khác của track (trung vị -4 cm),Đúng lỗi,góc độ bị lệch của mặt cắt dọc khiến xe bi méo và mặt đất lơ lửng
+scene-0103,16,269,pedestrian,floating,warning,Đáy box cách mặt đất 21 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị +5 cm),Không rõ,không rõ vật xác định
+scene-0103,28,335,car,floating,warning,Đáy box nằm dưới mặt đất 19 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị -3 cm),Đúng lỗi,mặt cắt dọc phần góc độ xoay ko đúng khiên xe bị méo và bị lún
+scene-0103,31,317,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +9 cm),Đúng lỗi,ko xác định được xe nhưng ở phần nhìn từ trên có thể xác đinh được 1 xíu và box nằm phía dưới 
+scene-0103,32,294,car,floating,warning,Đáy box nằm dưới mặt đất 7 cm (lún); thấp hơn 17 cm so với các frame khác của track (trung vị +10 cm),Không rõ,
+scene-0103,38,309,car,floating,warning,Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -3 cm),Đúng lỗi,xác định được xe ở phần nhìn phía trên mặt cắt dọc ko rõ và đang bị cách với mặt đất
+scene-0103,39,309,car,floating,warning,Đáy box nằm dưới mặt đất 9 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +9 cm),Đúng lỗi,góc quay có vẻ bị sai và xe đang bị lỗi 
+scene-0103,0,277,pedestrian,size.class_range,warning,"Chiều dài 0.40 m (trung vị của 20 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,khống xác định đấy ko phải xe
+scene-0103,0,301,pedestrian,size.class_range,warning,"Chiều cao 2.21 m (trung vị của 4 keyframe) lớn bất thường so với class pedestrian (khoảng chuẩn [1.28, 2.00] m)",Không rõ,
+scene-0103,0,314,pedestrian,size.class_range,warning,"Chiều dài 1.24 m (trung vị của 4 keyframe) lớn bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0103,3,266,pedestrian,size.class_range,warning,"Chiều dài 0.37 m (trung vị của 17 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0103,5,230,pedestrian,size.class_range,warning,"Chiều dài 0.41 m (trung vị của 9 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0103,7,267,pedestrian,size.class_range,warning,"Chiều dài 0.41 m (trung vị của 4 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0103,7,286,traffic_cone,size.class_range,warning,"Chiều rộng 0.29 m (trung vị của 15 keyframe) nhỏ bất thường so với class traffic_cone (khoảng chuẩn [0.36, 0.96] m)",Không rõ,
+scene-0103,7,300,car,size.class_range,warning,"Chiều dài 3.48 m (trung vị của 32 keyframe) nhỏ bất thường so với class car (khoảng chuẩn [3.90, 5.79] m)",Không rõ,
+scene-0103,20,336,pedestrian,size.class_range,warning,"Chiều dài 0.41 m (trung vị của 3 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0103,24,282,pedestrian,size.class_range,warning,"Chiều dài 0.40 m (trung vị của 9 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0103,33,326,traffic_cone,size.class_range,warning,"Chiều rộng 0.28 m (trung vị của 7 keyframe) nhỏ bất thường so với class traffic_cone (khoảng chuẩn [0.36, 0.96] m)",Không rõ,
+scene-0103,38,356,pedestrian,size.class_range,warning,"Chiều dài 0.41 m (trung vị của 2 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0655,1,494,truck,floating,error,Đáy box cách mặt đất 42 cm (lơ lửng); cao hơn 35 cm so với các frame khác của track (trung vị +8 cm),Đúng lỗi,
+scene-0655,2,482,car,floating,error,Đáy box cách mặt đất 38 cm (lơ lửng),Báo nhầm,đang bị lún
+scene-0655,2,494,truck,floating,error,Đáy box cách mặt đất 32 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị +8 cm),Đúng lỗi,
+scene-0655,5,415,car,floating,error,Đáy box cách mặt đất 16 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -8 cm),Đúng lỗi,
+scene-0655,6,415,car,floating,error,Đáy box cách mặt đất 16 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -8 cm),Đúng lỗi,
+scene-0655,13,413,car,floating,error,Đáy box cách mặt đất 20 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị -5 cm),Đúng lỗi,góc quay sai
+scene-0655,20,411,car,floating,error,Đáy box cách mặt đất 34 cm (lơ lửng); cao hơn 30 cm so với các frame khác của track (trung vị +4 cm),Không rõ,
+scene-0655,29,417,construction_vehicle,floating,error,Đáy box cách mặt đất 36 cm (lơ lửng); cao hơn 38 cm so với các frame khác của track (trung vị -2 cm),Đúng lỗi,
+scene-0655,30,456,bus,floating,error,Đáy box cách mặt đất 36 cm (lơ lửng); cao hơn 26 cm so với các frame khác của track (trung vị +10 cm),,
+scene-0655,34,456,bus,floating,error,Đáy box nằm dưới mặt đất 15 cm (lún); thấp hơn 32 cm so với các frame khác của track (trung vị +16 cm),Không rõ,
+scene-0655,35,456,bus,floating,error,Đáy box nằm dưới mặt đất 16 cm (lún); thấp hơn 32 cm so với các frame khác của track (trung vị +16 cm),Không rõ,
+scene-0655,36,549,car,floating,error,Đáy box cách mặt đất 35 cm (lơ lửng),Không rõ,
+scene-0655,37,417,construction_vehicle,floating,error,Đáy box nằm dưới mặt đất 17 cm (lún); thấp hơn 30 cm so với các frame khác của track (trung vị +13 cm),Không rõ,
+scene-0655,38,417,construction_vehicle,floating,error,Đáy box nằm dưới mặt đất 17 cm (lún); thấp hơn 30 cm so với các frame khác của track (trung vị +13 cm),Không rõ,
+scene-0655,0,532,truck,floating,warning,Đáy box nằm dưới mặt đất 22 cm (lún),Đúng lỗi,
+scene-0655,1,482,car,floating,warning,Đáy box cách mặt đất 28 cm (lơ lửng),Đúng lỗi,
+scene-0655,1,517,car,floating,warning,Đáy box cách mặt đất 6 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị -13 cm),Đúng lỗi,
+scene-0655,1,532,truck,floating,warning,Đáy box nằm dưới mặt đất 20 cm (lún),Đúng lỗi,
+scene-0655,2,517,car,floating,warning,Đáy box cách mặt đất 3 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -13 cm),Đúng lỗi,
+scene-0655,3,494,truck,floating,warning,Đáy box cách mặt đất 26 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị +8 cm),Đúng lỗi,
+scene-0655,7,415,car,floating,warning,Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 22 cm so với các frame khác của track (trung vị -8 cm),Đúng lỗi,
+scene-0655,7,445,car,floating,warning,Đáy box cách mặt đất 25 cm (lơ lửng),Không rõ,
+scene-0655,7,494,truck,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 25 cm so với các frame khác của track (trung vị +17 cm),Đúng lỗi,
+scene-0655,8,494,truck,floating,warning,Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 29 cm so với các frame khác của track (trung vị +17 cm),Đúng lỗi,
+scene-0655,9,494,truck,floating,warning,Đáy box nằm dưới mặt đất 13 cm (lún); thấp hơn 30 cm so với các frame khác của track (trung vị +17 cm),Đúng lỗi,
+scene-0655,10,438,car,floating,warning,Đáy box cách mặt đất 16 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị -3 cm),Đúng lỗi,
+scene-0655,10,473,car,floating,warning,Đáy box cách mặt đất 25 cm (lơ lửng),Không rõ,
+scene-0655,10,494,truck,floating,warning,Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 28 cm so với các frame khác của track (trung vị +17 cm),Đúng lỗi,
+scene-0655,10,523,car,floating,warning,Đáy box nằm dưới mặt đất 7 cm (lún); thấp hơn 28 cm so với các frame khác của track (trung vị +21 cm),Đúng lỗi,
+scene-0655,11,409,car,floating,warning,Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +10 cm),Đúng lỗi,
+scene-0655,11,415,car,floating,warning,Đáy box nằm dưới mặt đất 14 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +3 cm),Đúng lỗi,
+scene-0655,11,438,car,floating,warning,Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -3 cm),Đúng lỗi,
+scene-0655,12,409,car,floating,warning,Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +10 cm),Đúng lỗi,
+scene-0655,12,413,car,floating,warning,Đáy box cách mặt đất 17 cm (lơ lửng); cao hơn 22 cm so với các frame khác của track (trung vị -5 cm),Đúng lỗi,
+scene-0655,12,415,car,floating,warning,Đáy box nằm dưới mặt đất 14 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +3 cm),Đúng lỗi,
+scene-0655,13,483,car,floating,warning,Đáy box cách mặt đất 12 cm (lơ lửng); cao hơn 26 cm so với các frame khác của track (trung vị -14 cm),Đúng lỗi,
+scene-0655,13,496,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +9 cm),Đúng lỗi,
+scene-0655,13,524,car,floating,warning,Đáy box cách mặt đất 15 cm (lơ lửng),Không rõ,
+scene-0655,14,410,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 17 cm so với các frame khác của track (trung vị +9 cm),Đúng lỗi,
+scene-0655,14,413,car,floating,warning,Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -5 cm),Đúng lỗi,cỏ vẻ đang vẽ đương sai đường này đang dốc xuống
+scene-0655,14,416,car,floating,warning,Đáy box cách mặt đất 21 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị +3 cm),Đúng lỗi,
+scene-0655,14,462,car,floating,warning,Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +13 cm),Đúng lỗi,
+scene-0655,14,483,car,floating,warning,Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 25 cm so với các frame khác của track (trung vị -14 cm),Đúng lỗi,
+scene-0655,15,410,car,floating,warning,Đáy box nằm dưới mặt đất 13 cm (lún); thấp hơn 22 cm so với các frame khác của track (trung vị +9 cm),Đúng lỗi,
+scene-0655,15,438,car,floating,warning,Đáy box nằm dưới mặt đất 15 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +1 cm),Đúng lỗi,
+scene-0655,15,462,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 21 cm so với các frame khác của track (trung vị +13 cm),Đúng lỗi,
+scene-0655,16,425,car,floating,warning,Đáy box cách mặt đất 21 cm (lơ lửng),Không rõ,
+scene-0655,17,492,car,floating,warning,Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 23 cm so với các frame khác của track (trung vị -13 cm),Không rõ,
+scene-0655,17,548,truck,floating,warning,Đáy box cách mặt đất 14 cm (lơ lửng); cao hơn 15 cm so với các frame khác của track (trung vị -1 cm),Đúng lỗi,vẽ đường sai đường phải nghiêng
+scene-0655,18,492,car,floating,warning,Đáy box cách mặt đất 7 cm (lơ lửng); cao hơn 20 cm so với các frame khác của track (trung vị -13 cm),Đúng lỗi,
+scene-0655,19,483,car,floating,warning,Đáy box nằm dưới mặt đất 25 cm (lún); thấp hơn 20 cm so với các frame khác của track (trung vị -5 cm),Đúng lỗi,
+scene-0655,19,492,car,floating,warning,Đáy box cách mặt đất 11 cm (lơ lửng); cao hơn 24 cm so với các frame khác của track (trung vị -13 cm),Đúng lỗi,
+scene-0655,20,416,car,floating,warning,Đáy box nằm dưới mặt đất 4 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +14 cm),Đúng lỗi,
+scene-0655,20,492,car,floating,warning,Đáy box cách mặt đất 8 cm (lơ lửng); cao hơn 21 cm so với các frame khác của track (trung vị -13 cm),Đúng lỗi,
+scene-0655,21,416,car,floating,warning,Đáy box nằm dưới mặt đất 6 cm (lún); thấp hơn 20 cm so với các frame khác của track (trung vị +14 cm),Đúng lỗi,
+scene-0655,26,422,car,floating,warning,Đáy box nằm dưới mặt đất 29 cm (lún),Đúng lỗi,
+scene-0655,28,411,car,floating,warning,Đáy box nằm dưới mặt đất 8 cm (lún); thấp hơn 20 cm so với các frame khác của track (trung vị +12 cm),Đúng lỗi,vẽ box sai độ dốc sai 
+scene-0655,28,520,construction_vehicle,floating,warning,Đáy box nằm dưới mặt đất 7 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị +19 cm),,
+scene-0655,29,411,car,floating,warning,Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 22 cm so với các frame khác của track (trung vị +12 cm),Đúng lỗi,vẽ bốc sai độ dốc sai mặt đường sai 
+scene-0655,29,456,bus,floating,warning,Đáy box cách mặt đất 28 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị +10 cm),Không rõ,
+scene-0655,30,411,car,floating,warning,Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 23 cm so với các frame khác của track (trung vị +12 cm),Đúng lỗi,
+scene-0655,30,507,bus,floating,warning,Đáy box cách mặt đất 15 cm (lơ lửng); cao hơn 27 cm so với các frame khác của track (trung vị -12 cm),Không rõ,
+scene-0655,31,411,car,floating,warning,Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 21 cm so với các frame khác của track (trung vị +12 cm),Không rõ,
+scene-0655,31,417,construction_vehicle,floating,warning,Đáy box cách mặt đất 18 cm (lơ lửng); cao hơn 20 cm so với các frame khác của track (trung vị -2 cm),Đúng lỗi,
+scene-0655,31,507,bus,floating,warning,Đáy box cách mặt đất 6 cm (lơ lửng); cao hơn 18 cm so với các frame khác của track (trung vị -12 cm),Không rõ,
+scene-0655,32,417,construction_vehicle,floating,warning,Đáy box cách mặt đất 17 cm (lơ lửng); cao hơn 19 cm so với các frame khác của track (trung vị -2 cm),Đúng lỗi,
+scene-0655,33,417,construction_vehicle,floating,warning,Đáy box cách mặt đất 18 cm (lơ lửng); cao hơn 20 cm so với các frame khác của track (trung vị -2 cm),Đúng lỗi,đường vẽ sai
+scene-0655,33,456,bus,floating,warning,Đáy box nằm dưới mặt đất 11 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị +16 cm),Không rõ,
+scene-0655,36,417,construction_vehicle,floating,warning,Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 22 cm so với các frame khác của track (trung vị +13 cm),Báo nhầm,đường vẽ sai 
+scene-0655,39,417,construction_vehicle,floating,warning,Đáy box nằm dưới mặt đất 15 cm (lún); thấp hơn 27 cm so với các frame khác của track (trung vị +13 cm),Không rõ,
+scene-0655,39,500,car,floating,warning,Đáy box cách mặt đất 30 cm (lơ lửng),Không rõ,
+scene-0655,40,500,car,floating,warning,Đáy box cách mặt đất 22 cm (lơ lửng),Không rõ,
+scene-0655,22,489,trailer,size.class_range,warning,"Chiều dài 1.79 m (trung vị của 17 keyframe) nhỏ bất thường so với class trailer (khoảng chuẩn [2.00, 18.00] m)",Không rõ,
+scene-0796,5,578,truck,floating,error,Đáy box cách mặt đất 47 cm (lơ lửng),Không rõ,
+scene-0796,1,622,pedestrian,size.class_range,error,"Chiều rộng 0.35 m (trung vị của 13 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.50, 0.98] m)",Không rõ,
+scene-0796,24,584,car,floating,warning,Đáy box cách mặt đất 10 cm (lơ lửng); cao hơn 16 cm so với các frame khác của track (trung vị -6 cm),Không rõ,
+scene-0796,0,623,car,size.class_range,warning,"Chiều rộng 2.73 m lớn bất thường so với class car (khoảng chuẩn [1.58, 2.41] m)",Không rõ,
+scene-0796,1,606,pedestrian,size.class_range,warning,"Chiều dài 0.36 m (trung vị của 16 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Không rõ,
+scene-0796,29,615,bus,size.class_range,warning,"Chiều rộng 3.53 m (trung vị của 10 keyframe) lớn bất thường so với class bus (khoảng chuẩn [2.20, 3.20] m)",Không rõ,
+scene-1077,33,739,car,floating,warning,Đáy box nằm dưới mặt đất 16 cm (lún),Đúng lỗi,
+scene-1077,21,791,motorcycle,size.class_range,warning,"Chiều rộng 1.41 m (trung vị của 8 keyframe) lớn bất thường so với class motorcycle (khoảng chuẩn [0.55, 1.20] m)",Không rõ,
+scene-1100,3,882,car,floating,warning,Đáy box nằm dưới mặt đất 14 cm (lún); thấp hơn 21 cm so với các frame khác của track (trung vị +7 cm),Đúng lỗi,
+scene-1100,21,887,pedestrian,floating,warning,Đáy box cách mặt đất 28 cm (lơ lửng),Không rõ,
+scene-1100,32,901,motorcycle,floating,warning,Đáy box nằm dưới mặt đất 10 cm (lún); thấp hơn 16 cm so với các frame khác của track (trung vị +5 cm),Đúng lỗi,
+scene-1100,39,906,car,floating,warning,Đáy box nằm dưới mặt đất 9 cm (lún); thấp hơn 18 cm so với các frame khác của track (trung vị +9 cm),Đúng lỗi,
+scene-1100,0,884,motorcycle,size.class_range,warning,"Chiều dài 1.27 m (trung vị của 35 keyframe) nhỏ bất thường so với class motorcycle (khoảng chuẩn [1.50, 2.60] m)",Không rõ,
+scene-1100,0,891,pedestrian,size.class_range,warning,"Chiều rộng 0.41 m (trung vị của 40 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.50, 0.98] m)",Không rõ,
+scene-1100,0,908,pedestrian,size.class_range,warning,"Chiều dài 0.41 m (trung vị của 40 keyframe) nhỏ bất thường so với class pedestrian (khoảng chuẩn [0.48, 1.10] m)",Đúng lỗi,
+scene-1100,10,901,motorcycle,size.class_range,warning,"Chiều dài 1.28 m (trung vị của 25 keyframe) nhỏ bất thường so với class motorcycle (khoảng chuẩn [1.50, 2.60] m)",Không rõ,
+scene-0103,21,286,traffic_cone,fit.outside,error,"26/32 điểm của vật (81%) nằm ngoài box, nhiều nhất phía đầu (tới 29 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",Đúng lỗi,"Box cọc tiêu bị đặt lệch, điểm LiDAR tràn ra ngoài 29cm ở phía đầu"
+scene-0103,22,286,traffic_cone,fit.outside,error,"31/43 điểm của vật (72%) nằm ngoài box, nhiều nhất phía đầu (tới 28 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",Đúng lỗi,"Box cọc tiêu lệch tương tự frame 21, 72% điểm nằm ngoài"
+scene-0103,4,229,traffic_cone,fit.outside,warning,"19/31 điểm của vật (61%) nằm ngoài box, nhiều nhất phía bên phải (tới 44 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Box cọc tiêu đặt lệch hẳn sang bên trái của cụm điểm 44cm
+scene-0103,20,258,car,fit.outside,warning,"18/30 điểm của vật (60%) nằm ngoài box, nhiều nhất phía đuôi (tới 51 cm); các frame khác của track: 1%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Box xe bị hụt phần đuôi 51cm so với cụm điểm thật
+scene-0103,24,334,car,fit.outside,warning,"16/38 điểm của vật (42%) nằm ngoài box, nhiều nhất phía đầu (tới 79 cm); các frame khác của track: 1%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Box xe lùi về phía sau làm đầu xe nhô ra 79cm
+scene-0103,24,340,pedestrian,fit.outside,warning,"21/31 điểm của vật (68%) nằm ngoài box, nhiều nhất phía bên phải (tới 32 cm); các frame khác của track: 2%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Box người đi bộ lệch 32cm so với cụm điểm người
+scene-0655,8,523,car,fit.outside,error,"28/32 điểm của vật (88%) nằm ngoài box, nhiều nhất phía đầu (tới 103 cm); các frame khác của track: 9%: box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",Đúng lỗi,Box xe lệch hơn 1m so với cụm điểm xe ở frame 8
+scene-0655,22,514,traffic_cone,fit.outside,error,"29/36 điểm của vật (81%) nằm ngoài box, nhiều nhất phía đầu (tới 44 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 70%)",Đúng lỗi,"Cọc tiêu bị lệch box, 81% điểm nằm ngoài"
+scene-0655,7,445,car,fit.outside,warning,"30/45 điểm của vật (67%) nằm ngoài box, nhiều nhất phía đầu (tới 30 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Box xe ngắn hơn cụm điểm thực tế 30cm
+scene-0655,9,523,car,fit.outside,warning,"48/85 điểm của vật (56%) nằm ngoài box, nhiều nhất phía đầu (tới 106 cm); các frame khác của track: 9%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Track 523 tiếp tục bị vẽ lệch đầu hơn 1m
+scene-0796,5,589,pedestrian,fit.outside,warning,"37/54 điểm của vật (69%) nằm ngoài box, nhiều nhất phía bên trái (tới 31 cm); các frame khác của track: 22%: box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Đúng lỗi,Box người đi bộ lệch sang phải làm điểm thân người tràn sang trái
+scene-1077,37,743,barrier,fit.outside,warning,"40/98 điểm của vật (41%) nằm ngoài box, nhiều nhất phía đầu (tới 42 cm): box nhỏ hoặc lệch khỏi vật (ngưỡng 40%)",Báo nhầm,Rào chắn liên tục bị chia đoạn nên điểm dọc mép rào tràn ra ngoài box
+scene-0103,4,315,car,heading.points,error,Trục box lệch 45° so với trục của cụm điểm LiDAR của vật (so với trung vị -1° của các frame khác của track) (ngưỡng 30°),Đúng lỗi,Trục box lệch 45° so với cụm điểm LiDAR do góc xoay vẽ vội
+scene-0103,17,281,car,heading.points,warning,,Đúng lỗi,Box lệch 15° so với trục thân xe
+scene-0103,28,285,car,heading.points,warning,,Đúng lỗi,Box lệch 15° so với hướng xe trên cụm điểm
+scene-0655,17,548,truck,heading.points,warning,,Đúng lỗi,Xe tải lệch 36° so với cụm điểm LiDAR
+scene-0655,18,416,car,heading.points,warning,,Đúng lỗi,Xe con lệch 36° so với trục cụm điểm
+scene-0655,21,424,car,heading.points,error,Trục box lệch 45° so với trục của cụm điểm LiDAR của vật (so với trung vị -40° của các frame khác của track) (ngưỡng 30°),Đúng lỗi,Góc yaw lệch 45° so với thân xe
+scene-0655,28,529,car,heading.points,error,Trục box lệch 42° so với trục của cụm điểm LiDAR của vật (so với trung vị +2° của các frame khác của track) (ngưỡng 30°),Đúng lỗi,Góc yaw lệch 42° so với cụm điểm xe
+scene-0655,0,412,car,heading.points,warning,Trục box lệch 14° so với trục của cụm điểm LiDAR của vật (so với trung vị -4° của các frame khác của track) (ngưỡng 12°),Không rõ,"Cụm điểm xe một phía góc khuất, chưa đủ điểm xác định chính xác trục chính"
+scene-0655,3,431,car,heading.points,warning,Trục box lệch 14° so với trục của cụm điểm LiDAR của vật (so với trung vị +1° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Trục box lệch 14° so với cụm điểm LiDAR
+scene-0655,3,494,truck,heading.points,warning,Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị +0° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Đầu xe tải rẽ góc nhưng box vẽ thẳng lệch 15°
+scene-0655,4,494,truck,heading.points,warning,Trục box lệch 14° so với trục của cụm điểm LiDAR của vật (so với trung vị +0° của các frame khác của track) (ngưỡng 12°),Báo nhầm,"Xe tải đang bẻ lái nhẹ, thân xe uốn góc không phải lỗi box cứng"
+scene-0655,5,494,truck,heading.points,warning,Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị +0° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Box tiếp tục lệch 15° so với hướng di chuyển thật
+scene-0655,11,523,car,heading.points,warning,Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị -7° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Trục box lệch 15° so với cụm điểm
+scene-0655,18,424,car,heading.points,warning,Trục box lệch 19° so với trục của cụm điểm LiDAR của vật (so với trung vị -70° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Xe cua góc nhưng yaw box chưa xoay theo
+scene-0655,20,424,car,heading.points,warning,Trục box lệch 30° so với trục của cụm điểm LiDAR của vật (so với trung vị -40° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Yaw box lệch 30° so với hướng xe
+scene-0655,25,426,car,heading.points,warning,Trục box lệch 15° so với trục của cụm điểm LiDAR của vật (so với trung vị -2° của các frame khác của track) (ngưỡng 12°),Báo nhầm,"Mặt đường dốc làm hình chiếu nghiêng, box thực tế khớp thân xe"
+scene-0655,26,456,bus,heading.points,warning,Trục box lệch 20° so với trục của cụm điểm LiDAR của vật (so với trung vị -0° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Xe buýt dài lệch 20° so với vệt LiDAR
+scene-0655,26,529,car,heading.points,warning,Trục box lệch 19° so với trục của cụm điểm LiDAR của vật (so với trung vị +4° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Góc yaw xe lệch 19°
+scene-0655,27,529,car,heading.points,warning,Trục box lệch 19° so với trục của cụm điểm LiDAR của vật (so với trung vị -15° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Góc yaw xe tiếp tục lệch 19°
+scene-0655,29,529,car,heading.points,warning,Trục box lệch 17° so với trục của cụm điểm LiDAR của vật (so với trung vị -15° của các frame khác của track) (ngưỡng 12°),Đúng lỗi,Góc yaw xe lệch 17°
+scene-0103,26,355,motorcycle,heading.static,warning,Vật đứng yên nhưng hướng box ở frame này lệch 4.5° so với các keyframe khác của track (ngưỡng 4°),Đúng lỗi,Xe máy đỗ đứng yên nhưng yaw box dao động 4.5°
+scene-0103,29,355,motorcycle,heading.static,warning,Vật đứng yên nhưng hướng box ở frame này lệch 7.5° so với các keyframe khác của track (ngưỡng 4°),Đúng lỗi,Xe máy đứng yên yaw box dao động 7.5°
+scene-0103,32,355,motorcycle,heading.static,warning,Vật đứng yên nhưng hướng box ở frame này lệch 6.4° so với các keyframe khác của track (ngưỡng 4°),Đúng lỗi,Xe máy đứng yên yaw box dao động 6.4°
+scene-0103,33,355,motorcycle,heading.static,warning,Vật đứng yên nhưng hướng box ở frame này lệch 5.3° so với các keyframe khác của track (ngưỡng 4°),Đúng lỗi,Xe máy đứng yên yaw box dao động 5.3°
+scene-0103,34,355,motorcycle,heading.static,warning,Vật đứng yên nhưng hướng box ở frame này lệch 5.6° so với các keyframe khác của track (ngưỡng 4°),Đúng lỗi,Xe máy đứng yên yaw box dao động 5.6°
+scene-0103,35,346,bicycle,heading.static,warning,Vật đứng yên nhưng hướng box ở frame này lệch 4.0° so với các keyframe khác của track (ngưỡng 4°),Không rõ,"Xe đạp ít điểm, dao động 4.0° nằm ở biên sai số cảm biến"
+scene-0796,0,607,car,heading.static,error,Vật đứng yên nhưng hướng box ở frame này lệch 10.4° so với các keyframe khác của track (ngưỡng 10°),Đúng lỗi,Ô tô đỗ đứng yên frame đầu vẽ lệch 10.4° so với toàn bộ các frame sau
+scene-0103,9,335,car,track.jump,warning,Tâm box nhảy vị trí 1.78 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m),Đúng lỗi,Tâm box nhảy 1.78m so với nội suy 2 frame lân cận
+scene-0655,14,422,car,track.jump,warning,Tâm box nhảy vị trí 1.61 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m),Đúng lỗi,Tâm box nhảy 1.61m ở frame đầu tiên của track
+scene-0796,1,624,car,track.jump,error,Tâm box nhảy vị trí 3.78 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 3.0 m),Đúng lỗi,Tâm box nhảy 3.78m đột biến ở frame 1
+scene-0796,8,586,car,track.jump,warning,Tâm box nhảy vị trí 1.09 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m),Đúng lỗi,Tâm box nhảy 1.09m so với nội suy
+scene-0796,11,595,car,track.jump,warning,Tâm box nhảy vị trí 1.02 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m),Báo nhầm,Xe giảm tốc vào cua chuyển làn tự nhiên
+scene-0796,24,595,car,track.jump,warning,Tâm box nhảy vị trí 1.73 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m),Đúng lỗi,Tâm box nhảy 1.73m ở frame cuối track
+scene-0796,25,616,car,track.jump,warning,Tâm box nhảy vị trí 2.22 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m),Đúng lỗi,Tâm box nhảy 2.22m ở đoạn kết thúc track
+scene-1077,7,740,car,track.jump,error,Tâm box nhảy vị trí 2.03 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 2.0 m),Đúng lỗi,Tâm box nhảy 2.03m so với frame lân cận
+scene-1077,7,749,car,track.jump,error,Tâm box nhảy vị trí 3.11 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 2.0 m),Đúng lỗi,Tâm box nhảy 3.11m đột biến giữa chuyển động
+scene-1077,24,748,car,track.jump,warning,Tâm box nhảy vị trí 2.45 m so với vị trí ngoại suy (đầu / cuối đoạn track) (ngưỡng 1.5 m),Đúng lỗi,Tâm box nhảy 2.45m ở frame ngoại suy
+scene-1077,28,742,car,track.jump,warning,Tâm box nhảy vị trí 1.45 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m),Đúng lỗi,Tâm box nhảy 1.45m so với nội suy
+scene-1100,19,907,car,track.jump,warning,Tâm box nhảy vị trí 1.80 m so với vị trí nội suy từ 2 frame lân cận (ngưỡng 1.0 m),Đúng lỗi,Tâm box nhảy 1.80m so với nội suy
+scene-1077,15,724,car,track.split_id,warning,Track 786 kết thúc ở frame 14 và track 724 cùng class bắt đầu ở frame 15 cách vị trí ngoại suy 0.52 m (nghi tách ID),Đúng lỗi,Cùng một ô tô đỗ bị cắt đôi track 786 sang track 724 cách nhau 0.52m
+scene-0103,9,332,pedestrian,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 6 cm) nhưng box ở frame này lệch 31 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Người đứng yên nhưng box frame 9 trôi 31cm
+scene-0103,10,288,pedestrian,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 7 cm) nhưng box ở frame này lệch 22 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Người đứng yên nhưng box frame 10 trôi 22cm
+scene-0103,38,279,car,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 5 cm) nhưng box ở frame này lệch 26 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Xe đỗ đứng yên nhưng box frame 38 lệch 26cm
+scene-0103,39,279,car,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 5 cm) nhưng box ở frame này lệch 26 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Xe đỗ đứng yên nhưng box frame 39 tiếp tục lệch 26cm
+scene-0103,39,302,car,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 7 cm) nhưng box ở frame này lệch 23 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Xe đỗ đứng yên nhưng box frame 39 lệch 23cm
+scene-0655,15,551,car,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 8 cm) nhưng box ở frame này lệch 21 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Xe đỗ đứng yên nhưng box frame 15 lệch 21cm
+scene-0655,28,545,car,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 7 cm) nhưng box ở frame này lệch 22 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Xe đỗ đứng yên nhưng box frame 28 lệch 22cm
+scene-0655,40,520,construction_vehicle,track.static_shift,warning,Vật đứng yên (các keyframe khác tụ trong 9 cm) nhưng box ở frame này lệch 24 cm so với vị trí chung (ngưỡng 20 cm),Đúng lỗi,Xe máy công trình đứng yên nhưng box frame 40 lệch 24cm

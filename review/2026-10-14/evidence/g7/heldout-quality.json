@@ -1,0 +1,138 @@
+{
+  "status": "REPORT_ONLY",
+  "proxy_reference_met": false,
+  "g7_status": "UNASSESSED",
+  "split": "reviewed-heldout",
+  "scenes": [
+    {
+      "scene": "scene-0103",
+      "visible_boxes": 1754,
+      "clean_counts": {
+        "fit.outside|error": 2,
+        "floating|error": 3,
+        "heading.points|error": 1,
+        "fit.outside|warning": 4,
+        "lidar.missing|warning": 2,
+        "floating|warning": 16,
+        "heading.static|warning": 6,
+        "heading.points|warning": 2,
+        "track.static_shift|warning": 5,
+        "track.jump|warning": 1,
+        "cam.mismatch|info": 23,
+        "cam.missing|info": 85,
+        "cam.sparse|info": 4,
+        "floating.no_evidence|info": 120,
+        "floating|info": 1,
+        "size.class_range|info": 15
+      },
+      "scan_seconds": 30.953
+    },
+    {
+      "scene": "scene-0655",
+      "visible_boxes": 1720,
+      "clean_counts": {
+        "fit.outside|error": 2,
+        "floating|error": 12,
+        "heading.points|error": 4,
+        "fit.outside|warning": 2,
+        "fit.empty|warning": 1,
+        "floating|warning": 48,
+        "heading.points|warning": 13,
+        "track.jump|warning": 1,
+        "track.static_shift|warning": 3,
+        "cam.missing|info": 34,
+        "cam.sparse|info": 2,
+        "cam.mismatch|info": 6,
+        "floating.no_evidence|info": 131,
+        "size.class_range|info": 1
+      },
+      "scan_seconds": 23.812
+    },
+    {
+      "scene": "scene-0796",
+      "visible_boxes": 513,
+      "clean_counts": {
+        "heading.static|error": 1,
+        "track.jump|error": 1,
+        "fit.outside|warning": 1,
+        "track.jump|warning": 4,
+        "cam.sparse|info": 6,
+        "cam.mismatch|info": 2,
+        "cam.missing|info": 14,
+        "floating.no_evidence|info": 51,
+        "floating|info": 1,
+        "size.class_range|info": 4
+      },
+      "scan_seconds": 13.781
+    },
+    {
+      "scene": "scene-1077",
+      "visible_boxes": 609,
+      "clean_counts": {
+        "track.jump|error": 2,
+        "fit.outside|warning": 1,
+        "track.split_id|warning": 1,
+        "track.jump|warning": 2,
+        "floating.no_evidence|info": 54,
+        "size.class_range|info": 1
+      },
+      "scan_seconds": 12.531
+    },
+    {
+      "scene": "scene-1100",
+      "visible_boxes": 844,
+      "clean_counts": {
+        "floating|warning": 3,
+        "size.class_range|warning": 1,
+        "track.jump|warning": 1,
+        "floating.no_evidence|info": 31,
+        "size.class_range|info": 3
+      },
+      "scan_seconds": 22.907
+    }
+  ],
+  "boxes": 5440,
+  "clean_counts": {
+    "fit.outside|error": 4,
+    "floating|error": 15,
+    "heading.points|error": 5,
+    "fit.outside|warning": 8,
+    "lidar.missing|warning": 2,
+    "floating|warning": 67,
+    "heading.static|warning": 6,
+    "heading.points|warning": 15,
+    "track.static_shift|warning": 8,
+    "track.jump|warning": 9,
+    "cam.mismatch|info": 31,
+    "cam.missing|info": 133,
+    "cam.sparse|info": 12,
+    "floating.no_evidence|info": 387,
+    "floating|info": 2,
+    "size.class_range|info": 24,
+    "fit.empty|warning": 1,
+    "heading.static|error": 1,
+    "track.jump|error": 3,
+    "track.split_id|warning": 1,
+    "size.class_range|warning": 1
+  },
+  "rates": {
+    "warning": {
+      "count": 118,
+      "per_100_boxes": 2.1691176470588234
+    },
+    "error": {
+      "count": 28,
+      "per_100_boxes": 0.5147058823529411
+    }
+  },
+  "thresholds": {
+    "warning": 2.0,
+    "error": 0.5
+  },
+  "config_sha256": "351bd492e1dcae4abb44e22102f1d98ee6fe6d355030f09861f97fd52adaf58b",
+  "camera_active": true,
+  "camera_model": "maskrcnn",
+  "manual_precision": null,
+  "false_alarm_proxy": true,
+  "timing_context": "Serial clean scans after full evaluation; OS/model caches warm; not a hardware minimum benchmark"
+}

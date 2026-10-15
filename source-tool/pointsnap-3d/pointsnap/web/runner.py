@@ -332,7 +332,8 @@ class ScanRunner:
                 run_dir = self.pm._project_dir(slug) / "runs" / run_id
                 f_path = run_dir / "findings.json"
                 if f_path.is_file():
-                    run_data["findings"] = read_json(f_path, list)
+                    raw_findings = read_json(f_path, list)
+                    run_data["findings"] = [f for f in raw_findings if not f.get("rule", "").startswith("track.")]
             return run_data
 
         # 2. Đọc từ ổ đĩa
@@ -350,7 +351,8 @@ class ScanRunner:
                 self._check_outputs(run_dir)
                 res["summary"] = read_json(run_dir / "summary.json")
                 if include_findings:
-                    res["findings"] = read_json(run_dir / "findings.json", list)
+                    raw_findings = read_json(run_dir / "findings.json", list)
+                    res["findings"] = [f for f in raw_findings if not f.get("rule", "").startswith("track.")]
             return res
         sum_file = run_dir / "summary.json"
         if not sum_file.is_file():

@@ -1,0 +1,342 @@
+{
+  "task": {
+    "url": "http://localhost:8080/api/tasks/18",
+    "id": 18,
+    "name": "PointSnap scene-0061",
+    "project_id": null,
+    "project_name": null,
+    "owner": {
+      "url": "http://localhost:8080/api/users/1",
+      "id": 1,
+      "username": "vanhkhuc",
+      "first_name": "",
+      "last_name": ""
+    },
+    "assignee": null,
+    "bug_tracker": "",
+    "created_date": "2026-10-14T13:34:36.697951Z",
+    "updated_date": "2026-10-14T13:34:40.691084Z",
+    "overlap": 0,
+    "segment_size": 39,
+    "status": "annotation",
+    "data_chunk_size": 72,
+    "data_original_chunk_type": "imageset",
+    "data_compressed_chunk_type": "imageset",
+    "data_cloud_storage_id": null,
+    "guide_id": null,
+    "size": 39,
+    "image_quality": 70,
+    "data": 18,
+    "dimension": "3d",
+    "mode": "annotation",
+    "media_type": "point_cloud",
+    "subset": "",
+    "organization_id": null,
+    "organization": null,
+    "target_storage": null,
+    "source_storage": null,
+    "jobs": {
+      "count": 1,
+      "completed": 0,
+      "validation": 0,
+      "url": "http://localhost:8080/api/jobs?task_id=18"
+    },
+    "labels": {
+      "url": "http://localhost:8080/api/labels?task_id=18"
+    },
+    "assignee_updated_date": null,
+    "validation_mode": null,
+    "consensus_enabled": false
+  },
+  "jobs": [
+    {
+      "url": "http://localhost:8080/api/jobs/18",
+      "id": 18,
+      "task_id": 18,
+      "task_name": "PointSnap scene-0061",
+      "project_id": null,
+      "project_name": null,
+      "assignee": null,
+      "guide_id": null,
+      "dimension": "3d",
+      "mode": "annotation",
+      "media_type": "point_cloud",
+      "bug_tracker": null,
+      "status": "annotation",
+      "stage": "annotation",
+      "state": "new",
+      "frame_count": 39,
+      "start_frame": 0,
+      "stop_frame": 38,
+      "data_chunk_size": 72,
+      "data_compressed_chunk_type": "imageset",
+      "data_original_chunk_type": "imageset",
+      "created_date": "2026-10-14T13:34:37.675572Z",
+      "updated_date": "2026-10-14T13:34:40.685121Z",
+      "issues": {
+        "url": "http://localhost:8080/api/issues?job_id=18",
+        "count": 0
+      },
+      "labels": {
+        "url": "http://localhost:8080/api/labels?job_id=18"
+      },
+      "type": "annotation",
+      "organization": null,
+      "target_storage": null,
+      "source_storage": null,
+      "assignee_updated_date": null,
+      "parent_job_id": null,
+      "replicas_count": 0,
+      "consensus_replicas": 0
+    }
+  ],
+  "labels": [
+    {
+      "id": 156,
+      "name": "Vehicle",
+      "color": "#10a0c0",
+      "attributes": [
+        {
+          "id": 301,
+          "name": "subtype",
+          "mutable": true,
+          "input_type": "select",
+          "default_value": "car",
+          "values": [
+            "car",
+            "van",
+            "truck",
+            "contruction",
+            "bus",
+            "pickup",
+            "Trailer",
+            "Tricycle",
+            "Stroller",
+            "Wheelchair",
+            "other"
+          ]
+        },
+        {
+          "id": 302,
+          "name": "pointsnap_error",
+          "mutable": true,
+          "input_type": "text",
+          "default_value": "",
+          "values": [
+            ""
+          ]
+        },
+        {
+          "id": 303,
+          "name": "reviewed",
+          "mutable": true,
+          "input_type": "checkbox",
+          "default_value": "false",
+          "values": [
+            "false"
+          ]
+        }
+      ],
+      "type": "cuboid",
+      "sublabels": [],
+      "task_id": 18,
+      "parent_id": null,
+      "has_parent": false
+    },
+    {
+      "id": 157,
+      "name": "Two-wheels",
+      "color": "#41b262",
+      "attributes": [
+        {
+          "id": 304,
+          "name": "rider_state",
+          "mutable": true,
+          "input_type": "select",
+          "default_value": "with_rider",
+          "values": [
+            "with_rider",
+            "without_rider"
+          ]
+        },
+        {
+          "id": 305,
+          "name": "pointsnap_error",
+          "mutable": true,
+          "input_type": "text",
+          "default_value": "",
+          "values": [
+            ""
+          ]
+        },
+        {
+          "id": 306,
+          "name": "reviewed",
+          "mutable": true,
+          "input_type": "checkbox",
+          "default_value": "false",
+          "values": [
+            "false"
+          ]
+        }
+      ],
+      "type": "cuboid",
+      "sublabels": [],
+      "task_id": 18,
+      "parent_id": null,
+      "has_parent": false
+    },
+    {
+      "id": 158,
+      "name": "Pedestrian",
+      "color": "#80e060",
+      "attributes": [
+        {
+          "id": 307,
+          "name": "age_group",
+          "mutable": true,
+          "input_type": "select",
+          "default_value": "adult",
+          "values": [
+            "adult",
+            "child"
+          ]
+        },
+        {
+          "id": 308,
+          "name": "pose",
+          "mutable": true,
+          "input_type": "select",
+          "default_value": "standing",
+          "values": [
+            "standing",
+            "sitting",
+            "bending"
+          ]
+        },
+        {
+          "id": 309,
+          "name": "pointsnap_error",
+          "mutable": true,
+          "input_type": "text",
+          "default_value": "",
+          "values": [
+            ""
+          ]
+        },
+        {
+          "id": 310,
+          "name": "reviewed",
+          "mutable": true,
+          "input_type": "checkbox",
+          "default_value": "false",
+          "values": [
+            "false"
+          ]
+        }
+      ],
+      "type": "cuboid",
+      "sublabels": [],
+      "task_id": 18,
+      "parent_id": null,
+      "has_parent": false
+    },
+    {
+      "id": 159,
+      "name": "Animal",
+      "color": "#c00000",
+      "attributes": [
+        {
+          "id": 311,
+          "name": "species",
+          "mutable": true,
+          "input_type": "select",
+          "default_value": "dog",
+          "values": [
+            "dog",
+            "cat",
+            "cow",
+            "buffalo",
+            "other"
+          ]
+        },
+        {
+          "id": 312,
+          "name": "pointsnap_error",
+          "mutable": true,
+          "input_type": "text",
+          "default_value": "",
+          "values": [
+            ""
+          ]
+        },
+        {
+          "id": 313,
+          "name": "reviewed",
+          "mutable": true,
+          "input_type": "checkbox",
+          "default_value": "false",
+          "values": [
+            "false"
+          ]
+        }
+      ],
+      "type": "cuboid",
+      "sublabels": [],
+      "task_id": 18,
+      "parent_id": null,
+      "has_parent": false
+    },
+    {
+      "id": 160,
+      "name": "Obstacle",
+      "color": "#411413",
+      "attributes": [
+        {
+          "id": 314,
+          "name": "type",
+          "mutable": true,
+          "input_type": "select",
+          "default_value": "brick",
+          "values": [
+            "brick",
+            "traffic barrier",
+            "traffic cone",
+            "sack",
+            "trash_bag",
+            "container",
+            "metal_sheet",
+            "wood",
+            "charging point",
+            "other"
+          ]
+        },
+        {
+          "id": 315,
+          "name": "pointsnap_error",
+          "mutable": true,
+          "input_type": "text",
+          "default_value": "",
+          "values": [
+            ""
+          ]
+        },
+        {
+          "id": 316,
+          "name": "reviewed",
+          "mutable": true,
+          "input_type": "checkbox",
+          "default_value": "false",
+          "values": [
+            "false"
+          ]
+        }
+      ],
+      "type": "cuboid",
+      "sublabels": [],
+      "task_id": 18,
+      "parent_id": null,
+      "has_parent": false
+    }
+  ]
+}

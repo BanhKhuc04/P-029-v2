@@ -34,13 +34,25 @@
   "content_scripts": [
     {
       "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
-      "js": ["src/core.js", "src/cvat-dom.js", "src/cvat-api.js", "src/seed.js"],
+      "js": ["src/ghost-engine.js", "src/core.js", "src/cvat-dom.js", "src/cvat-api.js", "src/seed.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["src/ghost-engine.js", "src/cvat-3d-hook.js", "src/telemetry-hud.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
     },
     {
       "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
       "js": ["src/panel-css.js", "src/content.js"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/cvat-3d-hook.js", "src/ghost-engine.js", "src/telemetry-hud.js"],
+      "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"]
     }
   ]
 }

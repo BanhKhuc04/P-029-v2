@@ -167,10 +167,17 @@ def check_size(job: JobData, config: Config, frames: FrameSource | None = None) 
 
 def check_track(job: JobData, config: Config, frames: FrameSource | None = None) -> list[Finding]:
     """Đứt track (B5, `detectors.track`). Có `frames` thì dùng pose xe thu và thời điểm thật của từng frame."""
+    r = getattr(config, "rules", None)
+    if r is not None and not (r.track_jump or r.track_split_id or r.track_long_interpolation or r.track_reuse_id
+            or r.track_occluded_long or r.track_id_swap or r.track_static_shift):
+        return []
     sensor_to_world, timestamps = _poses(job, frames)
-    return detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps,
-                               stop_frame=getattr(job, "stop_frame", None),
-                               class_key=lambda box: _typed_label(box, config))
+    findings = detect_track_errors(job.cuboids, config.track, sensor_to_world, timestamps,
+                                   stop_frame=getattr(job, "stop_frame", None),
+                                   class_key=lambda box: _typed_label(box, config))
+    if r is not None:
+        findings = [f for f in findings if is_rule_enabled(f.rule, config)]
+    return findings
 def _poses(job: JobData, frames: FrameSource | None):
     if frames is None:
         return None, None
@@ -349,7 +356,7 @@ def is_rule_enabled(rule: str, config: Config) -> bool:
     if rule == "track.split_id":
         return bool(config.rules.track_split_id)
     if rule == "track.long_interpolation":
-        return bool(config.rules.track_long_interpolation and config.track.long_interpolation.enabled)
+        return bool(config.rules.track_long_interpolation)
     switch = _RULE_SWITCH.get(rule)
     return True if switch is None else bool(getattr(config.rules, switch))
 

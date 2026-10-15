@@ -76,6 +76,43 @@ function requestRoute(method, path, body, sender) {
     if (url.pathname.endsWith('/poll') && Number(url.searchParams.get('job_id')) !== jobId) return null;
     return { jobId, origin: page.origin };
   }
+  const jobRepair = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/repair$/);
+  if (jobRepair && method === 'GET') {
+    if (Number(jobRepair[1]) !== jobId) return null;
+    const keys = [...url.searchParams.keys()];
+    if (keys.some(k => !['frame', 'rule', 'slug'].includes(k)) || keys.length !== new Set(keys).size) return null;
+    const frame = url.searchParams.get('frame');
+    if (frame !== null && !/^\d+$/.test(frame)) return null;
+    const rule = url.searchParams.get('rule');
+    if (rule && !/^[a-zA-Z0-9_.-]+$/.test(rule)) return null;
+    const slug = url.searchParams.get('slug') || undefined;
+    if (slug && !/^[a-zA-Z0-9_-]+$/.test(slug)) return null;
+    return { jobId, origin: page.origin, trackId: Number(jobRepair[2]), frame: frame !== null ? Number(frame) : undefined, rule: rule || undefined, slug };
+  }
+  const jobApply = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/apply-repair$/);
+  if (jobApply && method === 'POST' && !url.search) {
+    if (Number(jobApply[1]) !== jobId) return null;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+    const keys = Object.keys(body);
+    if (!keys.includes('frame') || !keys.includes('repair')) return null;
+    if (keys.some(k => !['frame', 'repair', 'client_track_etag', 'slug'].includes(k))) return null;
+    if (!Number.isInteger(body.frame) || body.frame < 0) return null;
+    if (typeof body.repair !== 'object' || body.repair === null || Array.isArray(body.repair)) return null;
+    if (body.client_track_etag !== undefined && body.client_track_etag !== null && typeof body.client_track_etag !== 'string') return null;
+    if (body.slug !== undefined && body.slug !== null && (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug))) return null;
+    return { jobId, origin: page.origin, trackId: Number(jobApply[2]), slug: body.slug || undefined };
+  }
+  const jobRollback = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/rollback$/);
+  if (jobRollback && method === 'POST' && !url.search) {
+    if (Number(jobRollback[1]) !== jobId) return null;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+    const keys = Object.keys(body);
+    if (!keys.includes('history_id')) return null;
+    if (keys.some(k => !['history_id', 'slug'].includes(k))) return null;
+    if (typeof body.history_id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.history_id)) return null;
+    if (body.slug !== undefined && body.slug !== null && (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug))) return null;
+    return { jobId, origin: page.origin, trackId: Number(jobRollback[2]), slug: body.slug || undefined };
+  }
   if (url.search) return null;
   const camera = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans\/(\d{8}-\d{6}(?:-\d+)?-job\d+)\/findings\/(\d+)\/camera$/);
   if (camera && method === 'GET' && body === undefined && Number.isSafeInteger(Number(camera[3]))) {

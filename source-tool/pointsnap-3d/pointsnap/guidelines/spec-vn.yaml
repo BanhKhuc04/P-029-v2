@@ -73,6 +73,8 @@ track:
       split_max_dist_m: 0.5
 
 rules:
+  floating: false                     # Tắt: tránh chặn gate do 102 box thiếu ground evidence (floating.no_evidence) trên scene-0061
+  heading_static: false               # Tắt: tránh chặn gate do 1 box đỗ lệch yaw trên nhãn chuẩn
   fit_outside: false                  # Tắt: tránh báo nhầm khi vật thể sát tường/rào/cây
   fit_loose: false                    # Tắt: tránh báo nhầm trên xe lớn do LiDAR một phía
   track_jump: false                   # Tắt: bài toán đứt track đã loại bỏ

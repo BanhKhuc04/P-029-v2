@@ -20,6 +20,12 @@
     attrWrapper: '.cvat-object-item-attribute-wrapper',
     labelSelector: '.cvat-objects-sidebar-state-item-label-selector',
     canvas3d: '.cvat-canvas3d-fullsize, .cvat-canvas3d-perspective, #cvat-canvas3d-wrapper',
+    canvas3dWrapper: '#cvat-canvas3d-wrapper, .cvat-canvas3d-perspective, .cvat-canvas3d-fullsize',
+    canvas3dCanvas: '#cvat-canvas3d-wrapper canvas, .cvat-canvas3d-perspective canvas, .cvat-canvas3d-fullsize canvas',
+    canvas3dTopView: '.cvat-canvas3d-topview',
+    canvas3dSideView: '.cvat-canvas3d-sideview',
+    canvas3dFrontView: '.cvat-canvas3d-frontview',
+    canvas3dOverlay: '.pointsnap-3d-overlay, #pointsnap-canvas3d-overlay',
   };
 
   const FILTERS_HISTORY = 'annotationFiltersHistory';
@@ -280,6 +286,28 @@
     return parts.filter(([, sel]) => !$(sel)).map(([name]) => name);
   }
 
+  /**
+   * Truy xuất phần tử bao quanh khung 3D canvas của CVAT.
+   */
+  function canvas3dWrapper() {
+    return $(SEL.canvas3dWrapper);
+  }
+
+  /**
+   * Truy xuất thẻ canvas WebGL 3D thực tế.
+   */
+  function canvas3dCanvas() {
+    return $(SEL.canvas3dCanvas);
+  }
+
+  /**
+   * Lấy kích thước và toạ độ màn hình của viewport 3D để căn vị trí HUD.
+   */
+  function canvas3dRect() {
+    const el = canvas3dCanvas() || canvas3dWrapper();
+    return el && typeof el.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : null;
+  }
+
   root.PointSnapCvat = {
     missingParts,
     SEL,
@@ -295,5 +323,12 @@
     sidebarItems,
     hoverItem,
     expandDetails,
+    canvas3dWrapper,
+    canvas3dCanvas,
+    canvas3dRect,
   };
-})(globalThis);
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = root.PointSnapCvat;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this);

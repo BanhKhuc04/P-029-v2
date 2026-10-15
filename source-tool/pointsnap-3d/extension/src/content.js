@@ -43,6 +43,11 @@
     collapsed: false,
     pos: null,
     timing: {},
+    repair: {
+      loading: false, error: null, data: null, trackId: null, frame: null,
+      trackEtag: null, rule: null, confirming: false, applying: false,
+      applied: false, rollingBack: false, historyId: null, verdict: null,
+    },
   };
   const settings = { autoFilter: true, autoHighlight: true, autoExpand: true };
   const expanded = new Set();
@@ -116,6 +121,11 @@
       missing: [],
       linkSeq: -1,
       reviewsRev: null,
+      repair: {
+        loading: false, error: null, data: null, trackId: null, frame: null,
+        trackEtag: null, rule: null, confirming: false, applying: false,
+        applied: false, rollingBack: false, historyId: null, verdict: null,
+      },
     });
     mountPanel();
     render();
@@ -157,10 +167,15 @@
       const specs = core.flagSpecs(labels, ATTR);
       S.hasFlagAttr = specs.size > 0;
       const cvatFlags = core.collectFlags(annotations, specs);
-      if (cvatFlags.length > 0) {
-        S.flags = cvatFlags;
+      const cleanCvatFlags = cvatFlags.map((f) => {
+        const nonTrack = (f.items || []).filter((it) => !it.rule || !it.rule.startsWith('track.'));
+        return nonTrack.length > 0 ? { ...f, items: nonTrack, severity: core.worstSeverity(nonTrack) } : null;
+      }).filter(Boolean);
+      if (cleanCvatFlags.length > 0) {
+        S.flags = cleanCvatFlags;
       } else if (S.ps.run && S.ps.run.findings && S.ps.run.findings.length > 0) {
-        S.flags = core.flagsFromFindings(S.ps.run.findings);
+        const cleanFindings = S.ps.run.findings.filter((f) => !f.rule || !f.rule.startsWith('track.'));
+        S.flags = core.flagsFromFindings(cleanFindings);
       } else {
         S.flags = [];
       }
@@ -389,6 +404,13 @@
 
   /** Lệnh từ web: chuyển tới frame của mục, làm sáng đúng box; `bring` thì đưa tab CVAT này lên trước. */
   async function runCommand(command) {
+    if (command.action === 'annotations_changed') {
+      setNotice('info', 'Nhãn đã được cập nhật và xác nhận trên CVAT. Tải lại trang để nạp box mới; lưu các sửa đổi đang làm trước khi tải lại.', [
+        { action: 'reload', text: 'Tải lại nhãn CVAT' },
+      ]);
+      render();
+      return;
+    }
     if (navigating) {
       pendingCommand = command;
       return;
@@ -639,13 +661,16 @@
       const hits = here.filter((f) => f.value === a.flag && f.label === a.label);
       const hit = hits.length === 1 ? hits[0] : null;
       if (hit) return { flag: hit, index: here.indexOf(hit), here, clientId: a.clientId };
-      const items = core.parseFlag(a.flag);
-      return {
-        flag: { frame: S.frame, label: a.label, value: a.flag, items, severity: core.worstSeverity(items), ambiguous: true },
-        index: -1,
-        here,
-        clientId: a.clientId,
-      };
+      const rawItems = core.parseFlag(a.flag);
+      const items = rawItems.filter((it) => !it.rule || !it.rule.startsWith('track.'));
+      if (items.length > 0) {
+        return {
+          flag: { frame: S.frame, label: a.label, value: a.flag, items, severity: core.worstSeverity(items), ambiguous: true },
+          index: -1,
+          here,
+          clientId: a.clientId,
+        };
+      }
     }
     if (!here.length || S.pick < 0) return { flag: null, index: -1, here };
     const i = ((S.pick % here.length) + here.length) % here.length;
@@ -725,6 +750,264 @@
       + '</div>';
   }
 
+  function setNotice(kind, text, actions) {
+    S.notice = { kind, text, actions };
+    render();
+  }
+
+  function dispatchGhostTarget(repair, tolerances, trackId, frame) {
+    if (!repair) return;
+    const targetBox = repair.repaired_cuboid || repair.ghost_target || null;
+    if (!targetBox || !targetBox.center || !targetBox.dims) return;
+
+    const ghostTarget = {
+      center: targetBox.center,
+      dims: targetBox.dims,
+      yaw: targetBox.yaw || 0.0,
+      roll: 0.0,
+      pitch: 0.0,
+      target_bottom_z: targetBox.target_bottom_z != null
+        ? targetBox.target_bottom_z
+        : (targetBox.center[2] - targetBox.dims[2] / 2.0),
+    };
+
+    const tols = tolerances || {
+      snap_distance_m: 0.08,
+      snap_angle_deg: 4.0,
+      lock_distance_m: 0.02,
+      lock_angle_deg: 2.0,
+    };
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new CustomEvent('POINTSNAP_SET_GHOST_TARGET', {
+          detail: { ghostTarget, tolerances: tols, trackId, frame },
+        }));
+      } catch (e) {}
+
+      try {
+        window.postMessage({
+          type: 'POINTSNAP_SET_GHOST_TARGET',
+          detail: { ghostTarget, tolerances: tols, trackId, frame },
+        }, '*');
+      } catch (e) {}
+    }
+  }
+
+  function clearGhostTarget() {
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new CustomEvent('POINTSNAP_CLEAR_GHOST_TARGET'));
+      } catch (e) {}
+      try {
+        window.postMessage({ type: 'POINTSNAP_CLEAR_GHOST_TARGET' }, '*');
+      } catch (e) {}
+    }
+  }
+
+  async function loadRepairProposal(flag, trackId) {
+    if (!S.ps.online || !flag || trackId == null || !S.job) {
+      if (S.repair.trackId === trackId && S.repair.frame === flag.frame) {
+        S.repair.loading = false;
+      }
+      clearGhostTarget();
+      return;
+    }
+    const frame = flag.frame;
+    const rule = flag.items && flag.items[0] ? flag.items[0].rule : 'floating';
+    const slugParam = S.ps.project ? `&slug=${encodeURIComponent(S.ps.project.slug)}` : '';
+    const res = await pointsnap('GET', `/api/jobs/${S.job.jobId}/tracks/${trackId}/repair?frame=${frame}&rule=${encodeURIComponent(rule)}${slugParam}`);
+    if (S.repair.trackId !== trackId || S.repair.frame !== frame) return;
+    S.repair.loading = false;
+    if (res.ok && res.data && res.data.repair) {
+      S.repair.data = res.data.repair;
+      S.repair.trackEtag = res.data.track_etag || null;
+      S.repair.rule = rule;
+      dispatchGhostTarget(res.data.repair, res.data.tolerances, trackId, frame);
+    } else {
+      S.repair.data = null;
+      S.repair.error = res.error || 'Không có đề xuất sửa cho box này';
+      clearGhostTarget();
+    }
+    render();
+  }
+
+  function renderRepairSection(flag, trackId) {
+    if (!S.job || !S.ps.online) return '';
+    const frame = flag.frame;
+    if (S.repair.trackId !== trackId || S.repair.frame !== frame) {
+      clearGhostTarget();
+      S.repair.loading = true;
+      S.repair.error = null;
+      S.repair.data = null;
+      S.repair.trackId = trackId;
+      S.repair.frame = frame;
+      S.repair.confirming = false;
+      S.repair.applying = false;
+      S.repair.applied = false;
+      S.repair.rollingBack = false;
+      S.repair.historyId = null;
+      S.repair.verdict = null;
+      loadRepairProposal(flag, trackId);
+      return '<div class="repair-box"><span class="muted small">Đang chuẩn bị đề xuất sửa…</span></div>';
+    }
+    if (S.repair.loading) {
+      return '<div class="repair-box"><span class="muted small">Đang tính toán tham số sửa tự động…</span></div>';
+    }
+    if (S.repair.applied) {
+      return '<div class="repair-box">'
+        + '<div class="repair-success-box">'
+        + '<div class="success-status">'
+        + '<span class="badge-pass">ĐÃ GHI VÀ XÁC NHẬN CVAT · CẦN QUÉT LẠI</span>'
+        + (S.repair.historyId ? `<span class="small muted">Snapshot: <code>${esc(S.repair.historyId.slice(0, 8))}</code></span>` : '')
+        + '</div>'
+        + `<button class="btn rollback" data-action="repair-rollback" ${S.repair.rollingBack ? 'disabled' : ''}>`
+        + (S.repair.rollingBack ? 'Đang hoàn tác…' : '↩ Hoàn tác (Rollback)')
+        + '</button>'
+        + '</div>'
+        + '</div>';
+    }
+    if (S.repair.error) {
+      return `<div class="repair-box"><span class="muted small">${esc(S.repair.error)}</span></div>`;
+    }
+    const rep = S.repair.data;
+    if (!rep) return '';
+
+    const dz = rep.delta_center ? rep.delta_center[2] : 0;
+    const dyaw = rep.delta_yaw || 0;
+    const dd = rep.delta_dims || [0, 0, 0];
+    const dc = rep.delta_center || [0, 0, 0];
+
+    let cells = '';
+    if (Math.abs(dz) > 0.001) {
+      const dzCm = (dz * 100).toFixed(1);
+      const sign = dz > 0 ? '+' : '';
+      cells += `<div class="delta-cell"><span class="lbl">Độ cao (Δz)</span><span class="val highlight">${sign}${dzCm} cm</span></div>`;
+    }
+    if (Math.abs(dyaw) > 0.001) {
+      const deg = (dyaw * 180 / Math.PI).toFixed(0);
+      const sign = deg > 0 ? '+' : '';
+      cells += `<div class="delta-cell"><span class="lbl">Góc xoay (Δyaw)</span><span class="val highlight">${sign}${deg}°</span></div>`;
+    }
+    if (Math.abs(dd[0]) > 0.001 || Math.abs(dd[1]) > 0.001 || Math.abs(dd[2]) > 0.001) {
+      const fmtDim = (v) => (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2));
+      cells += `<div class="delta-cell"><span class="lbl">Kích thước (Δl,w,h)</span><span class="val">[${fmtDim(dd[0])}, ${fmtDim(dd[1])}, ${fmtDim(dd[2])}] m</span></div>`;
+    }
+    if (Math.abs(dc[0]) > 0.001 || Math.abs(dc[1]) > 0.001) {
+      cells += `<div class="delta-cell"><span class="lbl">Tâm phẳng (Δx,y)</span><span class="val">[${dc[0].toFixed(2)}, ${dc[1].toFixed(2)}] m</span></div>`;
+    }
+
+    if (!cells) {
+      cells = '<div class="delta-cell"><span class="lbl">Hình học</span><span class="val">Đã chuẩn xác</span></div>';
+    }
+
+    const confPct = Math.round((rep.confidence ?? 0) * 100);
+    const confClass = confPct >= 80 ? '' : 'medium';
+    const reasonText = rep.reason || 'Đề xuất sửa đổi hình học tối ưu từ PointSnap.';
+
+    let actionBlock = '';
+    const applicable = rep.applicable !== false && rep.confidence > 0 && [...dc, ...dd, dyaw].some(v => Number.isFinite(v) && Math.abs(v) > 0.000001);
+    if (!applicable) {
+      actionBlock = '<p class="muted small">Chưa có thay đổi hình học đủ bằng chứng để áp dụng.</p>';
+    } else if (S.repair.confirming) {
+      actionBlock = '<div class="repair-confirm-box">'
+        + '<div class="confirm-message">⚠️ Xác nhận áp dụng sửa đổi? Box trên CVAT sẽ được cập nhật và lưu snapshot an toàn.</div>'
+        + '<div class="confirm-actions">'
+        + `<button class="btn confirm-yes" data-action="repair-apply-confirm" ${S.repair.applying ? 'disabled' : ''}>`
+        + (S.repair.applying ? 'Đang áp dụng…' : 'Xác nhận áp dụng')
+        + '</button>'
+        + `<button class="btn confirm-no" data-action="repair-apply-cancel" ${S.repair.applying ? 'disabled' : ''}>Hủy</button>`
+        + '</div>'
+        + '</div>';
+    } else {
+      actionBlock = '<div class="repair-actions">'
+        + `<button class="btn repair-apply" data-action="repair-apply-start">${ICON.check} Áp dụng sửa (1-Click Apply)</button>`
+        + '</div>';
+    }
+
+    return '<div class="repair-box">'
+      + '<div class="repair-head">'
+      + '<span class="title">Gợi ý sửa tự động</span><span class="grow"></span>'
+      + `<span class="repair-conf ${confClass}">Độ tin cậy: ${confPct}%</span>`
+      + '</div>'
+      + `<div class="delta-grid">${cells}</div>`
+      + `<p class="repair-reason">${esc(reasonText)}</p>`
+      + actionBlock
+      + '</div>';
+  }
+
+  async function applyRepair() {
+    if (S.repair.applying || !S.repair.data || !S.job || S.repair.data.applicable === false || !(S.repair.data.confidence > 0)) return;
+    const trackId = S.repair.trackId;
+    const frame = S.repair.frame;
+    if (trackId == null || frame == null) return;
+
+    S.repair.applying = true;
+    render();
+
+    const payload = {
+      frame,
+      repair: S.repair.data,
+      client_track_etag: S.repair.trackEtag || undefined,
+      slug: S.ps.project?.slug || undefined,
+    };
+
+    const res = await pointsnap('POST', `/api/jobs/${S.job.jobId}/tracks/${trackId}/apply-repair`, payload);
+    S.repair.applying = false;
+
+    if (res.ok && res.data && res.data.sync_status === 'verified') {
+      S.repair.confirming = false;
+      S.repair.applied = true;
+      S.repair.historyId = res.data.history_id;
+      S.repair.verdict = res.data.new_scan_verdict || 'NOT_RUN';
+      S.repair.trackEtag = res.data.track_etag;
+      setNotice('info', 'Đã xác nhận sửa box trên CVAT. Tải lại trang để nạp nhãn mới, sau đó quét lại để kiểm tra lỗi.', [
+        { action: 'reload', text: 'Tải lại trang' },
+      ]);
+      try {
+        if (cvat && cvat.goToFrame) cvat.goToFrame(frame);
+      } catch (e) {}
+    } else {
+      if (res.status === 409 || (res.error && res.error.includes('OCC conflict'))) {
+        setNotice('error', 'Xung đột phiên bản (OCC Conflict): Dữ liệu nhãn trên CVAT đã bị sửa đổi bởi người khác. Vui lòng quét lại job.');
+      } else {
+        setNotice('error', res.error || 'Chưa xác nhận được sửa box trên CVAT.');
+      }
+    }
+    render();
+  }
+
+  async function rollbackRepair() {
+    if (S.repair.rollingBack || !S.repair.historyId || !S.job) return;
+    const trackId = S.repair.trackId;
+    const historyId = S.repair.historyId;
+    if (trackId == null) return;
+
+    S.repair.rollingBack = true;
+    render();
+
+    const payload = {
+      history_id: historyId,
+      slug: S.ps.project?.slug || undefined,
+    };
+
+    const res = await pointsnap('POST', `/api/jobs/${S.job.jobId}/tracks/${trackId}/rollback`, payload);
+    S.repair.rollingBack = false;
+
+    if (res.ok && res.data?.sync_status === 'verified') {
+      S.repair.applied = false;
+      S.repair.historyId = null;
+      S.repair.trackEtag = res.data.track_etag;
+      setNotice('info', 'Đã xác nhận hoàn tác trên CVAT. Tải lại trang để nạp box cũ.', [{ action: 'reload', text: 'Tải lại nhãn CVAT' }]);
+      try {
+        if (cvat && cvat.goToFrame && S.repair.frame != null) cvat.goToFrame(S.repair.frame);
+      } catch (e) {}
+    } else {
+      setNotice('error', res.error || 'Lỗi khi hoàn tác box trên CVAT.');
+    }
+    render();
+  }
+
   function renderCard() {
     const { flag, index, here, clientId } = currentFlag();
     if (!flag) {
@@ -751,6 +1034,9 @@
     if (i >= 0) {
       actions += `<span class="grow"></span><button class="icon-btn ghost" data-action="highlight" data-i="${i}" title="Làm sáng box này trên khung 3D" aria-label="Làm sáng box">${ICON.target}</button>`;
     }
+    const trackId = (flag.kind === 'track' && flag.objectId != null) ? flag.objectId
+      : (flag.track_id != null ? flag.track_id : null);
+    const repairHtml = trackId != null ? renderRepairSection(flag, trackId) : '';
     const camera = S.camera && S.camera.flag === flag && S.camera.run === S.ps.run ? S.camera : null;
     const photo = !camera ? '' : camera.pending ? '<p class="muted">Đang tải ảnh camera…</p>'
       : camera.error ? `<p class="muted">${esc(camera.error)}</p>`
@@ -759,6 +1045,7 @@
       + `<div class="card-top">${sevBadge(flag.severity)}${first.rule ? `<code>${esc(first.rule)}</code>` : ''}<span class="grow"></span>${pager}</div>`
       + `<h3 class="card-title">${esc(title)}</h3><div class="card-meta">${meta}</div>${messages}`
       + `<div class="fix"><div class="fix-label">Cách sửa</div>${tips}</div>`
+      + repairHtml
       + (actions ? `<div class="card-actions">${actions}</div>` : '')
       + photo
       + '</article>';
@@ -909,6 +1196,20 @@
         S.notice = null;
         render();
         break;
+      case 'repair-apply-start':
+        S.repair.confirming = true;
+        render();
+        break;
+      case 'repair-apply-cancel':
+        S.repair.confirming = false;
+        render();
+        break;
+      case 'repair-apply-confirm':
+        applyRepair();
+        break;
+      case 'repair-rollback':
+        rollbackRepair();
+        break;
       default:
         break;
     }
@@ -933,7 +1234,31 @@
     step(dir);
   }, true);
 
-  root.PointSnapPanel = { state: S, onRoute, step, goTo, turnFilterOn, render };
+  // Lắng nghe dữ liệu đo đạc thời gian thực từ 3D Hook
+  if (typeof window !== 'undefined') {
+    window.addEventListener('POINTSNAP_3D_TELEMETRY', (e) => {
+      if (e.detail) {
+        S.telemetry = e.detail;
+      }
+    });
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'POINTSNAP_3D_TELEMETRY' && e.data.detail) {
+        S.telemetry = e.data.detail;
+      }
+    });
+  }
+
+  root.PointSnapPanel = {
+    state: S,
+    onRoute,
+    step,
+    goTo,
+    turnFilterOn,
+    render,
+    dispatchGhostTarget,
+    clearGhostTarget,
+  };
 
   loadSettings().then(() => {
     onRoute();

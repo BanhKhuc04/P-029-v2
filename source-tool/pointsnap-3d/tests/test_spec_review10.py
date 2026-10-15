@@ -143,7 +143,8 @@ def swapped_tracks(second_subtype="car", interpolate=False):
 
 def test_id_swap_scanner_respects_configured_subtypes():
     boxes = swapped_tracks("truck")
-    assert not any(f.rule == "track.id_swap" for f in check_track(SimpleNamespace(cuboids=boxes), CFG, Frames()))
+    cfg_enabled = dataclasses.replace(CFG, rules=dataclasses.replace(CFG.rules, track_id_swap=True))
+    assert not any(f.rule == "track.id_swap" for f in check_track(SimpleNamespace(cuboids=boxes), cfg_enabled, Frames()))
 
 
 def test_id_swap_does_not_infer_manual_changes_from_interpolation():
@@ -221,7 +222,8 @@ def test_valid_mount_still_warns_with_real_pose_and_time():
 
 def test_real_same_subtype_swap_still_reports():
     boxes = swapped_tracks()
-    found = check_track(SimpleNamespace(cuboids=boxes), CFG, Frames())
+    cfg_enabled = dataclasses.replace(CFG, rules=dataclasses.replace(CFG.rules, track_id_swap=True))
+    found = check_track(SimpleNamespace(cuboids=boxes), cfg_enabled, Frames())
     assert any(f.rule == "track.id_swap" and f.frame == 2 and f.severity is Severity.ERROR for f in found)
 
 

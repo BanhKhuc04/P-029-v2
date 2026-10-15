@@ -64,7 +64,9 @@ def test_is_rule_enabled_with_catalog():
     config = load_config()
     assert is_rule_enabled("floating", config) is True
     assert is_rule_enabled("heading.flip", config) is True
-    assert is_rule_enabled("track.jump", config) is True
+    assert is_rule_enabled("track.jump", config) is False
+    enabled_track = dataclasses.replace(config, rules=dataclasses.replace(config.rules, track_jump=True))
+    assert is_rule_enabled("track.jump", enabled_track) is True
     assert is_rule_enabled("fit.loose", config) is False
     enabled = dataclasses.replace(config, rules=dataclasses.replace(config.rules, fit_loose=True))
     assert is_rule_enabled("fit.loose", enabled) is True

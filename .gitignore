@@ -1,0 +1,5 @@
+.agents/
+source-tool/pointsnap-3d/landing/
+.pytest_cache/
+*.pyc
+__pycache__/

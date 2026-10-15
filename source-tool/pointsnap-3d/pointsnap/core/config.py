@@ -35,9 +35,9 @@ class RulesConfig:
     floating: bool = True
     size_class_range: bool = True
     size_in_track: bool = True
-    track_jump: bool = True
-    track_split_id: bool = True
-    track_long_interpolation: bool = True
+    track_jump: bool = False
+    track_split_id: bool = False
+    track_long_interpolation: bool = False
     heading_flip: bool = True
     heading_motion: bool = True
     heading_points: bool = True
@@ -45,9 +45,9 @@ class RulesConfig:
     fit_outside: bool = True
     fit_loose: bool = False
     fit_overlap: bool = True
-    track_reuse_id: bool = True
-    track_occluded_long: bool = True
-    track_id_swap: bool = True
+    track_reuse_id: bool = False
+    track_occluded_long: bool = False
+    track_id_swap: bool = False
     attr_height: bool = True
     spec_inside: bool = True
     spec_rider_double: bool = True
@@ -56,7 +56,7 @@ class RulesConfig:
     lidar_missing: bool = True
     attr_missing: bool = True
     attr_invalid: bool = True
-    track_static_shift: bool = True
+    track_static_shift: bool = False
     heading_static: bool = True
     cam_mismatch: bool = True
     cam_class: bool = True
@@ -563,13 +563,16 @@ def _parse_cvat(r: _Reader, env: Mapping[str, str]) -> CvatConfig:
 
 
 def _parse_rules(r: _Reader) -> RulesConfig:
+    track_jump = r.boolean("track_jump") if "track_jump" in r.keys() else False
+    track_split_id = r.boolean("track_split_id") if "track_split_id" in r.keys() else False
+    track_long_interpolation = r.boolean("track_long_interpolation") if "track_long_interpolation" in r.keys() else False
     cfg = RulesConfig(
         floating=r.boolean("floating"),
         size_class_range=r.boolean("size_class_range"),
         size_in_track=r.boolean("size_in_track"),
-        track_jump=r.boolean("track_jump"),
-        track_split_id=r.boolean("track_split_id"),
-        track_long_interpolation=r.boolean("track_long_interpolation"),
+        track_jump=track_jump,
+        track_split_id=track_split_id,
+        track_long_interpolation=track_long_interpolation,
         **{name: r.boolean(name) for name in _NEW_RULES if name in r.keys()},
     )
     r.finish()

@@ -1,0 +1,65 @@
+{
+  "total_basic_injected": 40,
+  "total_basic_detected": 18,
+  "overall_basic_recall": 0.45,
+  "large_injected": 10,
+  "large_as_error": 5,
+  "large_severity_accuracy": 0.5,
+  "by_error_and_magnitude": {
+    "floating|0.05": {
+      "injected": 6,
+      "detected": 0,
+      "as_error": 0
+    },
+    "floating|0.1": {
+      "injected": 6,
+      "detected": 1,
+      "as_error": 0
+    },
+    "floating|0.2": {
+      "injected": 5,
+      "detected": 1,
+      "as_error": 0
+    },
+    "floating|0.4": {
+      "injected": 5,
+      "detected": 0,
+      "as_error": 0
+    },
+    "size_in_track|0.05": {
+      "injected": 4,
+      "detected": 3,
+      "as_error": 0
+    },
+    "size_in_track|0.15": {
+      "injected": 3,
+      "detected": 3,
+      "as_error": 0
+    },
+    "size_in_track|0.3": {
+      "injected": 3,
+      "detected": 3,
+      "as_error": 3
+    },
+    "track_jump|0.5": {
+      "injected": 2,
+      "detected": 2,
+      "as_error": 0
+    },
+    "track_jump|1.0": {
+      "injected": 2,
+      "detected": 1,
+      "as_error": 0
+    },
+    "track_jump|2.0": {
+      "injected": 2,
+      "detected": 2,
+      "as_error": 0
+    },
+    "track_jump|4.0": {
+      "injected": 2,
+      "detected": 2,
+      "as_error": 2
+    }
+  }
+}

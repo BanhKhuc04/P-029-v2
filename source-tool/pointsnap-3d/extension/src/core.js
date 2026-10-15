@@ -335,6 +335,50 @@
     }).sort((a, b) => a.frame - b.frame || SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
   }
 
+  // Ghost target & spatial residuals math (Milestone M2)
+  let ghostEngine = null;
+  if (typeof module !== 'undefined' && module.exports) {
+    try {
+      ghostEngine = require('./ghost-engine.js');
+    } catch (e) {
+      ghostEngine = null;
+    }
+  } else if (root.PointSnapGhostEngine) {
+    ghostEngine = root.PointSnapGhostEngine;
+  }
+
+  function getActiveGhostEngine() {
+    return ghostEngine || (typeof root !== 'undefined' ? root.PointSnapGhostEngine : null);
+  }
+
+  function normalizeAngleWrapper(angle) {
+    const ge = getActiveGhostEngine();
+    if (ge && ge.normalizeAngle) return ge.normalizeAngle(angle);
+    if (!Number.isFinite(angle)) return 0.0;
+    const twoPi = 2.0 * Math.PI;
+    let a = (angle + Math.PI) % twoPi;
+    if (a < 0.0) a += twoPi;
+    return a - Math.PI;
+  }
+
+  function computeSpatialResidualsWrapper(currentBox, targetBox, points) {
+    const ge = getActiveGhostEngine();
+    if (ge && ge.computeSpatialResiduals) return ge.computeSpatialResiduals(currentBox, targetBox, points);
+    return null;
+  }
+
+  function evaluateMagnetSnapWrapper(currentBox, targetBox, isCurrentlySnapped) {
+    const ge = getActiveGhostEngine();
+    if (ge && ge.evaluateMagnetSnap) return ge.evaluateMagnetSnap(currentBox, targetBox, isCurrentlySnapped);
+    return null;
+  }
+
+  function performQuickLevelingWrapper(currentBox, targetBox) {
+    const ge = getActiveGhostEngine();
+    if (ge && ge.performQuickLeveling) return ge.performQuickLeveling(currentBox, targetBox);
+    return null;
+  }
+
   const api = {
     FLAG_ATTR,
     RULE_FIX_TIPS,
@@ -355,6 +399,21 @@
     filterLogic,
     matchFindings,
     flagsFromFindings,
+    // Ghost Target & Magnet Snap exports
+    normalizeAngle: normalizeAngleWrapper,
+    computeSpatialResiduals: computeSpatialResidualsWrapper,
+    evaluateMagnetSnap: evaluateMagnetSnapWrapper,
+    performQuickLeveling: performQuickLevelingWrapper,
+    SNAP_THRESHOLDS: (ghostEngine && ghostEngine.SNAP_THRESHOLDS) || {
+      DIST_CAPTURE_CM: 8.0,
+      DIST_RELEASE_CM: 12.0,
+      ANGLE_CAPTURE_DEG: 4.0,
+      ANGLE_RELEASE_DEG: 6.0,
+      LOCK_DIST_CM: 2.0,
+      LOCK_ANGLE_DEG: 2.0,
+      LOCK_ROLL_DEG: 0.5,
+      LOCK_PITCH_DEG: 0.5,
+    },
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

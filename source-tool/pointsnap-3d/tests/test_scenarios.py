@@ -84,7 +84,7 @@ SCENARIOS = {
         {"heading.static": "error"}),
     "S9 hai xe máy song song bị đổi ID: Lỗi": (lambda: Scene([
         Obj(1, "motorcycle", MOTO, straight(0, 4.0, 0, 7), labelled=_swap),
-        Obj(2, "motorcycle", MOTO, straight(0, 5.2, 0, 7), labelled=_swap)]), {"track.id_swap": "error"}),
+        Obj(2, "motorcycle", MOTO, straight(0, 5.2, 0, 7), labelled=_swap)]), {}),
     "N9a xe máy vượt nhau": (lambda: Scene([
         Obj(1, "motorcycle", MOTO, straight(0, 4.0, 0, 9)), Obj(2, "motorcycle", MOTO, straight(4, 5.2, 0, 6))]), {}),
     "N9b hai người đi cắt chéo": (lambda: Scene([
@@ -97,7 +97,7 @@ SCENARIOS = {
     "S12b che 8 frame, đánh occluded": (lambda: Scene([
         Obj(1, "car", CAR, parked(14, 4, 0), hidden=set(range(2, 10)),
             labelled=lambda f, b: b.replace(attrs={**b.attrs, "occluded": True}) if 2 <= f < 10 else b)]),
-        {"track.occluded_long": "warning"}),
+        {}),
     "S13 xe xa 42 m": (lambda: Scene([Obj(1, "car", CAR, straight(42, 3, math.pi / 2, 5))]), {}),
 }
 
@@ -117,3 +117,21 @@ def test_scenario(name):
 def test_reversing_is_one_finding():
     found = scan(SCENARIOS["S4a xe lùi chậm: một Cảnh báo cho cả đoạn"][0]())
     assert len(found) == 1 and found[0].details["maybe_reversing"]
+
+
+def test_scenarios_track_rules_when_explicitly_enabled(tmp_path):
+    cfg_file = tmp_path / "track_enabled.yaml"
+    cfg_file.write_text("rules:\n  track_id_swap: true\n  track_occluded_long: true\n", encoding="utf-8")
+
+    # S9 with track_id_swap enabled
+    build_s9, _ = SCENARIOS["S9 hai xe máy song song bị đổi ID: Lỗi"]
+    found_s9 = scan(build_s9(), config_path=cfg_file)
+    got_s9 = {f.rule: f.severity.value for f in found_s9}
+    assert got_s9 == {"track.id_swap": "error"}
+
+    # S12b with track_occluded_long enabled
+    build_s12b, _ = SCENARIOS["S12b che 8 frame, đánh occluded"]
+    found_s12b = scan(build_s12b(), config_path=cfg_file)
+    got_s12b = {f.rule: f.severity.value for f in found_s12b}
+    assert got_s12b == {"track.occluded_long": "warning"}
+

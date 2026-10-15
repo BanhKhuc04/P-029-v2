@@ -1,0 +1,95 @@
+{
+  "source": "review\\2026-10-14\\evidence\\g7\\verdicts-heldout.csv",
+  "rules": {
+    "fit.outside": {
+      "counts": {
+        "true": 11,
+        "false": 1,
+        "unknown": 0,
+        "unreviewed": 0
+      },
+      "precision": 0.9166666666666666,
+      "decided_findings": 12,
+      "decided_tracks": 10
+    },
+    "floating": {
+      "counts": {
+        "true": 68,
+        "false": 2,
+        "unknown": 25,
+        "unreviewed": 4
+      },
+      "precision": 0.9714285714285714,
+      "decided_findings": 70,
+      "decided_tracks": 30
+    },
+    "heading.points": {
+      "counts": {
+        "true": 17,
+        "false": 2,
+        "unknown": 1,
+        "unreviewed": 0
+      },
+      "precision": 0.8947368421052632,
+      "decided_findings": 19,
+      "decided_tracks": 12
+    },
+    "heading.static": {
+      "counts": {
+        "true": 6,
+        "false": 0,
+        "unknown": 1,
+        "unreviewed": 0
+      },
+      "precision": 1.0,
+      "decided_findings": 6,
+      "decided_tracks": 2
+    },
+    "size.class_range": {
+      "counts": {
+        "true": 1,
+        "false": 0,
+        "unknown": 22,
+        "unreviewed": 2
+      },
+      "precision": 1.0,
+      "decided_findings": 1,
+      "decided_tracks": 1
+    },
+    "track.jump": {
+      "counts": {
+        "true": 11,
+        "false": 1,
+        "unknown": 0,
+        "unreviewed": 0
+      },
+      "precision": 0.9166666666666666,
+      "decided_findings": 12,
+      "decided_tracks": 11
+    },
+    "track.split_id": {
+      "counts": {
+        "true": 1,
+        "false": 0,
+        "unknown": 0,
+        "unreviewed": 0
+      },
+      "precision": 1.0,
+      "decided_findings": 1,
+      "decided_tracks": 1
+    },
+    "track.static_shift": {
+      "counts": {
+        "true": 8,
+        "false": 0,
+        "unknown": 0,
+        "unreviewed": 0
+      },
+      "precision": 1.0,
+      "decided_findings": 8,
+      "decided_tracks": 7
+    }
+  },
+  "g7_status": "UNASSESSED",
+  "reason": "Descriptive existing verdicts only; sample scope, independent split and coverage need review"
+}

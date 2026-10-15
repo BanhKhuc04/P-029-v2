@@ -12,18 +12,26 @@ Quy ước:
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import math
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
 from pointsnap.adapters.cvat.reader import JobData, LabelInfo, annotations_to_cuboids
+from pointsnap.adapters.cvat.shapes import cuboid_to_points
 from pointsnap.core.model import Cuboid, Finding
 from pointsnap.core.serialize import save_cuboids
 
 DEFAULT_FLAG_ATTR = "pointsnap_error"
 DEFAULT_REVIEWED_ATTR = "reviewed"
+
+
+class OCCConflictError(CvatError):
+    """Xung đột kiểm soát đồng thời lạc quan (OCC) khi ETag client không khớp server."""
+
 
 
 def save_snapshot(job: JobData, path: str | Path, meta: dict[str, Any] | None = None) -> None:
@@ -329,3 +337,89 @@ def verify_geometry_preserved(
                 f"Yaw của box (frame={b.frame}, track={b.track_id}) bị thay đổi: "
                 f"{b.yaw} -> {a.yaw}"
             )
+
+
+def compute_track_etag(track_dict: dict[str, Any]) -> str:
+    """Tính ETag SHA-256 biểu diễn nội dung của track phục vụ kiểm soát đồng thời lạc quan (OCC)."""
+    normalized_json = json.dumps(track_dict, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(normalized_json.encode("utf-8")).hexdigest()[:16]
+
+
+def patch_track_keyframe(
+    client: CvatClient,
+    job_id: int,
+    track_id: int,
+    frame: int,
+    new_points: Sequence[float] | Cuboid,
+    client_etag: str | None = None,
+    clear_error_flag: bool = True,
+    flag_attribute: str = DEFAULT_FLAG_ATTR,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Cập nhật an toàn một keyframe trong track trên CVAT (Feature F9).
+
+    Tuân thủ tuyệt đối quy tắc Safe Update:
+    1. Full track assembly: Lấy trọn vẹn track từ CVAT, chỉ thay đổi mảng `points` tại frame mục tiêu.
+    2. Bảo toàn toàn bộ các keyframes khác, label_id, track_id, outside, occluded và mọi attributes.
+    3. OCC pre-check: Kiểm tra `client_etag` khớp với ETag hiện tại trên server trước khi PATCH.
+    4. Gửi PATCH /api/jobs/<job_id>/annotations?action=update với payload {"tracks": [post_repair_track]}.
+    5. Trả về `(pre_repair_track, post_repair_track)`.
+    """
+    raw_annos = client.get_job_annotations(job_id)
+    tracks = raw_annos.get("tracks", [])
+    target_track = None
+    for t in tracks:
+        if t.get("id") == track_id:
+            target_track = t
+            break
+
+    if target_track is None:
+        raise CvatError(f"Track {track_id} không tồn tại trong job {job_id}")
+
+    server_etag = compute_track_etag(target_track)
+    if client_etag is not None and client_etag != server_etag:
+        raise OCCConflictError(
+            f"OCC conflict: Client ETag '{client_etag}' không khớp server ETag '{server_etag}' cho track {track_id}"
+        )
+
+    pre_repair_track = copy.deepcopy(target_track)
+    post_repair_track = copy.deepcopy(target_track)
+
+    target_shape = None
+    for s in post_repair_track.get("shapes", []):
+        if s.get("frame") == frame:
+            target_shape = s
+            break
+
+    if target_shape is None:
+        raise CvatError(f"Frame {frame} không tồn tại trong track {track_id}")
+
+    if isinstance(new_points, Cuboid):
+        pts = cuboid_to_points(new_points)
+    else:
+        pts = [float(v) for v in new_points]
+        if len(pts) != 16:
+            raise ValueError(f"Mảng points của CVAT cuboid phải có đúng 16 số thực, nhận {len(pts)}")
+
+    target_shape["points"] = pts
+
+    if clear_error_flag:
+        attrs = list(target_shape.get("attributes", []))
+        for a in attrs:
+            if a.get("name") in (flag_attribute, "pointsnap_error") or "error" in str(a.get("name", "")).lower():
+                a["value"] = ""
+        target_shape["attributes"] = attrs
+
+    patch_payload = {"tracks": [post_repair_track]}
+    client.patch_job_annotations(job_id, patch_payload, action="update")
+    return pre_repair_track, post_repair_track
+
+
+def rollback_track_annotation(
+    client: CvatClient,
+    job_id: int,
+    pre_repair_track: dict[str, Any],
+) -> dict[str, Any]:
+    """Khôi phục nguyên trạng track lên CVAT từ bản ghi pre_repair_track (Feature F10)."""
+    client.patch_job_annotations(job_id, {"tracks": [pre_repair_track]}, action="update")
+    return pre_repair_track
+

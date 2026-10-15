@@ -93,7 +93,9 @@ def detect_static_errors(
                     track_id=box.track_id, source_id=box.source_id, value=deviation, threshold=threshold,
                     message=(f"Vật đứng yên nhưng hướng box ở frame này lệch {deviation:.1f}° so với các keyframe khác "
                              f"của track (ngưỡng {threshold:.0f}°)"),
-                    details={"spread_m": spread, "deviation_deg": deviation},
+                    details={"spread_m": spread, "deviation_deg": deviation,
+                             "target_yaw_sensor": normalize_angle(box.yaw + (
+                                 (_axial_mean(headings[rest]) - headings[i] + math.pi / 2) % math.pi - math.pi / 2))},
                 ))
     return findings
 

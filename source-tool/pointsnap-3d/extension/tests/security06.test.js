@@ -104,3 +104,77 @@ test('custom hosts do not reinject built-in content scripts',async()=>{
   b.chrome.scripting.getRegisteredContentScripts=async()=>[];b.chrome.scripting.registerContentScripts=async(s)=>{scripts=s;};await b.syncContentScripts();
   assert.deepEqual(Array.from(scripts[0].matches),['https://cvat.example/*']);
 });
+
+test('F14: repair, apply-repair and rollback routes are whitelisted for sender job',()=>{
+  const b=background();
+  // Valid GET repair with and without query params
+  assert.ok(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=0&rule=floating',undefined,sender));
+  assert.ok(b.requestRoute('GET','/api/jobs/2/tracks/101/repair',undefined,sender));
+  assert.ok(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=5&rule=fit.outside&slug=demo_proj',undefined,sender));
+
+  // Valid POST apply-repair
+  const applyBody={frame:0,repair:{delta_center:[0,0,-0.2],confidence:0.95},client_track_etag:'etag123',slug:'demo_proj'};
+  assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',applyBody,sender));
+  assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:0,repair:{}},sender));
+
+  // Valid POST rollback
+  assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'7f9b8c0a-1e2d-4b5c-8f9a-0e1d2c3b4a5f',slug:'demo_proj'},sender));
+  assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'snap_101_0'},sender));
+});
+
+test('F14: cross-job repair, apply-repair, and rollback are rejected',()=>{
+  const b=background();
+  // Sender is in job 2; target is job 3 or 99
+  assert.equal(b.requestRoute('GET','/api/jobs/3/tracks/101/repair?frame=0',undefined,sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/3/tracks/101/apply-repair',{frame:0,repair:{}},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/99/tracks/101/rollback',{history_id:'snap-1'},sender),null);
+});
+
+test('F14: parameter smuggling, traversal, and invalid body schemas are rejected on repair routes',()=>{
+  const b=background();
+  // Traversal and malformed paths
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/../admin/repair',undefined,sender),null);
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/%2e%2e/repair',undefined,sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'../../etc/passwd'},sender),null);
+
+  // Query smuggling on repair
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?evil=1',undefined,sender),null);
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=0&frame=1',undefined,sender),null);
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=-1',undefined,sender),null);
+
+  // Query strings on POST apply-repair / rollback
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair?x=1',{frame:0,repair:{}},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback?x=1',{history_id:'snap-1'},sender),null);
+
+  // Body schema violations on apply-repair
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:0,repair:{},secret_token:'LEAK'},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:'zero',repair:{}},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:-1,repair:{}},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:0},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',null,sender),null);
+
+  // Body schema violations on rollback
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:123},sender),null);
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'snap-1',unwanted:true},sender),null);
+});
+
+test('F14: callPointSnap executes repair routes successfully',async()=>{
+  const calls=[];
+  const b=background(async(u,opts)=>{
+    calls.push({u,opts});
+    return {ok:true,status:200,json:async()=>({status:'ok'})};
+  });
+
+  const r1=await b.callPointSnap({method:'GET',path:'/api/jobs/2/tracks/101/repair?frame=0&rule=floating'},sender);
+  assert.equal(r1.ok,true);
+
+  const r2=await b.callPointSnap({method:'POST',path:'/api/jobs/2/tracks/101/apply-repair',body:{frame:0,repair:{}}},sender);
+  assert.equal(r2.ok,true);
+
+  const r3=await b.callPointSnap({method:'POST',path:'/api/jobs/2/tracks/101/rollback',body:{history_id:'snap-1'}},sender);
+  assert.equal(r3.ok,true);
+
+  assert.equal(calls.length,3);
+});
+

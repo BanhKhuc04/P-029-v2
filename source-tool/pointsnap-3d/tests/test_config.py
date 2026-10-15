@@ -20,6 +20,13 @@ def test_default_config_loads():
     assert cfg.track.group_for("pedestrian").jump_warning_m == pytest.approx(0.5)
     assert cfg.track.group_for("unknown") is None
     assert cfg.track.long_interpolation.enabled is True
+    assert cfg.rules.track_long_interpolation is False
+    assert cfg.rules.track_jump is False
+    assert cfg.rules.track_split_id is False
+    assert cfg.rules.track_reuse_id is False
+    assert cfg.rules.track_occluded_long is False
+    assert cfg.rules.track_id_swap is False
+    assert cfg.rules.track_static_shift is False
     assert cfg.size.class_range.stats["car"]["length"][0] < cfg.size.class_range.stats["car"]["length"][1]
     assert cfg.gate.max_errors == 0
 
@@ -128,3 +135,24 @@ def test_camera_model_parsing(tmp_path):
     path.write_text("camera:\n  model: yolo\n", encoding="utf-8")
     with pytest.raises(ConfigError):
         load_config(path)
+
+
+def test_track_rules_disabled_by_default_and_can_be_enabled(tmp_path):
+    cfg = load_config(env={})
+    assert cfg.rules.track_jump is False
+    assert cfg.rules.track_split_id is False
+    assert cfg.rules.track_long_interpolation is False
+    assert cfg.rules.track_reuse_id is False
+    assert cfg.rules.track_occluded_long is False
+    assert cfg.rules.track_id_swap is False
+    assert cfg.rules.track_static_shift is False
+    assert cfg.track.long_interpolation.enabled is True
+
+    custom = tmp_path / "custom.yaml"
+    custom.write_text("rules:\n  track_jump: true\n  track_long_interpolation: true\n", encoding="utf-8")
+    loaded = load_config(custom, env={})
+    assert loaded.rules.track_jump is True
+    assert loaded.rules.track_long_interpolation is True
+    assert loaded.rules.track_split_id is False
+    assert loaded.track.long_interpolation.enabled is True
+

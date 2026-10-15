@@ -315,6 +315,41 @@
                   <div id="detail-fix-hint" style="color: var(--text);">—</div>
                 </div>
 
+                <div id="detail-repair-card" class="detail-repair-card" style="display: none;">
+                  <div class="repair-card-header">
+                    <span class="repair-card-title">Gợi ý sửa tự động (Assisted Box Repair)</span>
+                    <span id="repair-confidence-badge" class="pill-badge success">95%</span>
+                  </div>
+                  <div class="repair-metrics-grid">
+                    <div class="repair-metric-item">
+                      <span class="repair-metric-label">Độ cao (Δz)</span>
+                      <span id="repair-val-dz" class="repair-metric-value highlight">—</span>
+                    </div>
+                    <div class="repair-metric-item">
+                      <span class="repair-metric-label">Góc xoay (Δyaw)</span>
+                      <span id="repair-val-dyaw" class="repair-metric-value highlight">—</span>
+                    </div>
+                    <div class="repair-metric-item">
+                      <span class="repair-metric-label">Kích thước (Δl,w,h)</span>
+                      <span id="repair-val-ddims" class="repair-metric-value">—</span>
+                    </div>
+                    <div class="repair-metric-item">
+                      <span class="repair-metric-label">Tâm phẳng (Δx,y)</span>
+                      <span id="repair-val-dxy" class="repair-metric-value">—</span>
+                    </div>
+                  </div>
+                  <p id="repair-reason-text" class="repair-reason-text">—</p>
+                  <div class="repair-actions-row">
+                    <button id="btn-open-apply-repair" class="btn btn-primary" style="flex: 1;">
+                      Áp dụng sửa (1-Click Apply)
+                    </button>
+                    <button id="btn-rollback-repair" class="btn btn-secondary" style="display: none;">
+                      ↩ Hoàn tác (Rollback)
+                    </button>
+                  </div>
+                  <div id="repair-apply-status" class="repair-apply-status" style="display: none;"></div>
+                </div>
+
                 <div class="detail-drawer-actions">
                   <div class="detail-field-label">Kết luận của người xem</div>
                   <div class="review-buttons" role="group" aria-label="Kết luận">
@@ -1103,6 +1138,44 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" data-close="modal-delete-proj">Hủy</button>
         <button id="btn-confirm-delete-proj" class="btn btn-danger" disabled>Xóa vĩnh viễn</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal xác nhận 1-Click Apply Repair (Feature F12) -->
+  <div id="modal-confirm-repair" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-repair-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-repair-title" class="modal-title">Xác nhận áp dụng sửa đổi hình học</h3>
+        <button id="btn-modal-repair-close" class="modal-close-btn" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-repair-summary" style="margin: 0; font-size: 13px; color: var(--text);">
+          Áp dụng đề xuất sửa đổi trực tiếp lên annotation track trên CVAT. Snapshot lịch sử sẽ được lưu tự động để hỗ trợ hoàn tác.
+        </p>
+        <div class="repair-summary-table-wrap">
+          <table class="repair-summary-table">
+            <thead>
+              <tr>
+                <th>Tham số</th>
+                <th>Ban đầu</th>
+                <th>Thay đổi (Δ)</th>
+                <th>Đề xuất mới</th>
+              </tr>
+            </thead>
+            <tbody id="modal-repair-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+        <div id="modal-repair-reason" class="modal-repair-reason"></div>
+        <div class="modal-warning-note">
+          Thao tác này cập nhật keyframe trên CVAT. Tải lại tab CVAT để thấy box mới; quét lại để kiểm tra và cập nhật cờ lỗi.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-modal-repair-cancel" class="btn btn-secondary">Hủy bỏ</button>
+        <button id="btn-modal-repair-confirm" class="btn btn-primary">Xác nhận & Áp dụng ngay</button>
       </div>
     </div>
   </div>

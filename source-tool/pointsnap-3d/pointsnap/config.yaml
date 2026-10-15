@@ -13,9 +13,9 @@ rules:                                # bật / tắt từng luật theo guideli
   floating: true
   size_class_range: true
   size_in_track: true
-  track_jump: true
-  track_split_id: true
-  track_long_interpolation: true
+  track_jump: false
+  track_split_id: false
+  track_long_interpolation: false
   heading_flip: true                  # C1: hướng box đổi đột ngột giữa hai keyframe (lật 180°, xoay nhầm)
   heading_motion: true                # C1: hướng box ngược / lệch hướng chuyển động của track
   heading_points: true                # C1: trục box lệch trục của cụm điểm LiDAR
@@ -23,9 +23,9 @@ rules:                                # bật / tắt từng luật theo guideli
   fit_outside: true                   # C1: nhiều điểm của vật nằm ngoài box (box nhỏ / lệch)
   fit_loose: false                    # chờ chấm tay; có thể bật riêng theo guideline dự án (13/10)
   fit_overlap: true                   # C1: hai box chồng lên nhau (vẽ trùng)
-  track_reuse_id: true                # C2: track xuất hiện lại sau khi đã kết thúc (outside), spec 4.4.3
-  track_occluded_long: true           # C2: occluded liên tục quá max_occluded_frames, spec 4.4.5
-  track_id_swap: true                 # C5: hai track cùng nhóm đổi chỗ nhau (gán nhầm ID), spec 4.4.6
+  track_reuse_id: false               # C2: track xuất hiện lại sau khi đã kết thúc (outside), spec 4.4.3
+  track_occluded_long: false          # C2: occluded liên tục quá max_occluded_frames, spec 4.4.5
+  track_id_swap: false                # C5: hai track cùng nhóm đổi chỗ nhau (gán nhầm ID), spec 4.4.6
   attr_height: true                   # C6: thuộc tính không khớp chiều cao box (spec.attribute_height)
   spec_inside: true                   # C6: người bên trong xe (spec 4.3B; spec.inside_forbidden)
   spec_rider_double: true             # C6: người lái bị gán thêm box riêng (spec 4.3C; spec.rider_double)
@@ -34,7 +34,7 @@ rules:                                # bật / tắt từng luật theo guideli
   lidar_missing: true                 # C7: cụm điểm LiDAR di chuyển mà không có box (sót đối tượng, spec 4.2)
   attr_missing: true                  # C2: thiếu thuộc tính bắt buộc (spec.required_attributes), spec 3.1.3
   attr_invalid: true                  # C2: giá trị thuộc tính ngoài danh sách cho phép (spec.allowed_values)
-  track_static_shift: true            # C3: vật đứng yên mà box ở một keyframe dịch khỏi vị trí chung
+  track_static_shift: false           # C3: vật đứng yên mà box ở một keyframe dịch khỏi vị trí chung
   heading_static: true                # C3: vật đứng yên mà box ở một keyframe xoay lệch
   cam_mismatch: true                  # C3: box chiếu lên ảnh camera lệch vật trên ảnh (so với các frame khác của track)
   cam_class: true                     # C3: ảnh camera nhận vật thuộc nhóm khác với nhãn

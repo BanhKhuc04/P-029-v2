@@ -29,6 +29,7 @@ import numpy as np
 from pointsnap.core.box_points import BoxPointSet
 from pointsnap.core.geometry import normalize_angle, transform_points
 from pointsnap.core.model import Cuboid, ErrorType, Finding, Severity, group_by_track
+from pointsnap.core.heading_memory import HeadingMemory
 
 if TYPE_CHECKING:
     from pointsnap.core.config import Config, HeadingConfig, HeadingGroupConfig, HeadingPointsConfig
@@ -113,6 +114,7 @@ def _flip_findings(
                 "deviation_deg": deviation, "reference_frame": boxes[nearest].frame, "run_frames":
                 [boxes[k].frame for k in run], "track_heading_deg": math.degrees(ref_heading),
                 "has_world_pose": has_world, "in_reference": i in ref_set,
+                "target_yaw_sensor": normalize_angle(boxes[i].yaw + normalize_angle(headings[nearest] - headings[i])),
             }))
     return findings
 
@@ -122,8 +124,12 @@ def _motion_findings(
     min_motion_m: float, has_world: bool, skip: set[int],
 ) -> list[Finding]:
     rows = []
+    memory = HeadingMemory(min_motion_m=min_motion_m, min_speed_mps=grp.min_speed_mps)
+    predictions = {}
     n = len(boxes)
     for i in range(n):
+        memory.update(boxes[i].track_id, boxes[i].frame, times[i], centers[i], headings[i])
+        predictions[i] = memory.predict(boxes[i].track_id).to_dict()
         if i in skip:
             continue
         a, b = max(0, i - 1), min(n - 1, i + 1)
@@ -170,6 +176,9 @@ def _motion_findings(
             message += " [chưa có toạ độ toàn cục]"
         findings.append(_finding("heading.motion", severity, boxes[i], message, deviation, threshold, {
             "deviation_deg": deviation, "speed_mps": speed, "has_world_pose": has_world,
+            "target_yaw_sensor": normalize_angle(boxes[i].yaw + normalize_angle(
+                math.atan2(*(centers[b] - centers[a])[::-1]) - headings[i])),
+            "heading_prediction": predictions[i],
         }))
     return findings
 

@@ -47,6 +47,47 @@
     'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'track_id_swap', 'attr_height', 'spec_inside', 'spec_rider_double', 'attr_rider_state', 'lidar_missing', 'cam_sparse', 'attr_missing', 'attr_invalid',
     'track_static_shift', 'heading_static', 'cam_mismatch', 'cam_class', 'cam_missing', 'critic_box'];
 
+  // Nhóm luật đứt track: tắt cho toàn hệ thống (scanner bỏ qua, runner lọc bỏ), form luôn lưu `false`.
+  const TRACK_RULE_IDS = ['track_jump', 'track_split_id', 'track_long_interpolation', 'track_reuse_id',
+    'track_occluded_long', 'track_id_swap', 'track_static_shift'];
+
+  // Công tắc hiển thị trong tab Guideline, theo nhóm (id = khóa `rules:`; need = điều kiện để luật chạy được).
+  const RULE_GROUPS = [
+    { key: 'ground', title: 'Mặt đất & kích thước', rules: [
+      ['floating', 'Lơ lửng / lún đất', 'Đáy box lệch so với mặt đất quanh box'],
+      ['size_class_range', 'Kích thước theo class', 'Dài, rộng, cao ngoài khoảng chuẩn của class'],
+      ['size_in_track', 'Kích thước trong track', 'Một box khác hẳn các box khác cùng track'],
+    ] },
+    { key: 'heading', title: 'Hướng box', rules: [
+      ['heading_flip', 'Hướng đổi đột ngột', 'Một keyframe bị lật đầu / xoay ngang so với phần còn lại của track'],
+      ['heading_motion', 'Ngược hướng chuyển động', 'Hướng box lệch hướng vật đang chạy (spec 4.2)'],
+      ['heading_points', 'Lệch trục cụm điểm', 'Trục box lệch trục cụm điểm LiDAR của vật'],
+      ['heading_static', 'Vật đứng yên: box xoay', 'Box ở một keyframe xoay lệch so với vật đỗ'],
+    ] },
+    { key: 'fit', title: 'Box khớp với vật', rules: [
+      ['fit_empty', 'Box rỗng', 'Không có điểm LiDAR nào dù vùng quanh được quét rõ'],
+      ['fit_outside', 'Điểm của vật ngoài box', 'Box nhỏ hoặc lệch: nhiều điểm của vật nằm ngoài box'],
+      ['fit_loose', 'Box dư', 'Mặt box nhìn thấy được cách xa điểm của vật', 'chờ chấm tay'],
+      ['fit_overlap', 'Hai box chồng nhau', 'Nghi vẽ trùng một vật hai lần'],
+    ] },
+    { key: 'spec', title: 'Thuộc tính & spec VN', rules: [
+      ['attr_missing', 'Thiếu thuộc tính bắt buộc', 'Theo spec.required_attributes của guideline (spec 3.1.3)'],
+      ['attr_invalid', 'Thuộc tính sai giá trị', 'Giá trị ngoài danh sách spec.allowed_values'],
+      ['attr_height', 'Thuộc tính lệch chiều cao', 'Tư thế, nhóm tuổi, có người lái không khớp chiều cao box'],
+      ['attr_rider_state', 'Quên đổi trạng thái người lái', 'Lên / xuống xe mà không đổi rider_state (spec 4.3C)'],
+      ['spec_inside', 'Người bên trong xe', 'Box người nằm trong box xe (spec 4.3B)'],
+      ['spec_rider_double', 'Người lái bị gán 2 lần', 'Box người chồng lên xe hai bánh with_rider (spec 4.3C)'],
+    ] },
+    { key: 'vision', title: 'Sót đối tượng, camera & Box Critic', rules: [
+      ['lidar_missing', 'Nghi sót đối tượng (LiDAR)', 'Cụm điểm di chuyển qua nhiều frame mà không có box (spec 4.2)'],
+      ['cam_sparse', 'Box quá ít điểm, ảnh không thấy', 'Box ≤ 2 điểm LiDAR mà ảnh camera cũng không thấy vật'],
+      ['cam_mismatch', 'Box lệch vật trên ảnh', 'Khung box chiếu lên ảnh trùng vật kém hẳn các frame khác', 'cần PyTorch'],
+      ['cam_class', 'Ảnh camera thấy class khác', 'Model ảnh nhận vật là nhóm khác với nhãn', 'cần PyTorch'],
+      ['cam_missing', 'Ảnh thấy vật chưa có box', 'Ảnh thấy vật chắc chắn, có điểm LiDAR, mà không có box 3D', 'cần PyTorch'],
+      ['critic_box', 'Box Critic nghi box sai', 'Model nhóm tự huấn luyện (khai critic.model trong guideline)', 'cần model'],
+    ] },
+  ];
+
   let DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
   let SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
 
@@ -159,7 +200,8 @@
     selectedSeverityTab: 'all', // 'all', 'error', 'warning', 'info'
 
     // Liên kết với extension trên tab CVAT (A15): có tab CVAT đang mở job này không, phiên bản kết luận xem tay
-    cvatLink: { online: false, jobId: null, rev: null },
+    cvatLink: { online: false, jobId: null, rev: null, historyRev: null },
+    cvatConnected: null,
 
     // Trạng thái dirty của Guideline
     guidelineDirty: false,
@@ -172,6 +214,7 @@
     lastApplyClickTime: 0,
     historyStack: [],
     appliedFindings: new Set(),
+    historyBusy: 0,
   };
 
   function projectScope() {
@@ -273,65 +316,24 @@
   // --- Khởi động ứng dụng khi DOM sẵn sàng ---
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme(state.theme);
+    renderRuleToggles();
     setupEventListeners();
     setupQuickReview();
     setupCvatLink();
     handleHashNavigation();
     loadRulesCatalog();
-    setupSplash(loadProjects());
+    loadProjects();
   });
-
-  // --- Màn chào (A14): logo + nút Bắt đầu; logo động che đúng thời gian đang tải dự án ---
-  function setupSplash(appReady) {
-    const splash = document.getElementById('splash');
-    let seen = false;
-    try {
-      seen = sessionStorage.getItem('pointsnap_splash_done') === '1';
-    } catch (_) {}
-    if (seen || !splash) return;
-
-    splash.hidden = false;
-    const appContainer = document.getElementById('app-container');
-    const previousInert = appContainer.inert;
-    appContainer.inert = true;
-    splash.tabIndex = -1;
-    const startBtn = document.getElementById('splash-start');
-    const onSplashKeydown = (event) => {
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        (startBtn.hidden ? splash : startBtn).focus();
-      } else if (event.key === 'Escape' && !startBtn.hidden) {
-        event.preventDefault();
-        startBtn.click();
-      }
-    };
-    splash.addEventListener('keydown', onSplashKeydown);
-    startBtn.focus();
-    startBtn.addEventListener('click', async () => {
-      startBtn.hidden = true;
-      splash.focus();
-      document.getElementById('splash-logo').innerHTML = loaderSvg(120, { ground: true, ring: true, label: 'Đang mở PointSnap 3D' });
-      const status = document.getElementById('splash-status');
-      status.textContent = 'Đang tải dự án và kết nối CVAT…';
-      await Promise.all([appReady.catch(() => {}), new Promise((r) => setTimeout(r, 1200))]);
-      status.textContent = 'Đã sẵn sàng';
-      splash.classList.add('leaving');
-      setTimeout(() => {
-        splash.hidden = true;
-        splash.removeEventListener('keydown', onSplashKeydown);
-        appContainer.inert = previousInert;
-        document.getElementById('btn-project-dropdown').focus();
-      }, 350);
-      try {
-        sessionStorage.setItem('pointsnap_splash_done', '1');
-      } catch (_) {}
-    }, { once: true });
-  }
 
   // --- Thiết lập các bộ lắng nghe sự kiện ---
   function setupEventListeners() {
     document.addEventListener('keydown', (event) => {
       const modal = document.querySelector('.modal-overlay.open');
+      if (!modal && event.key === '?' && !isTypingTarget(event.target)) {
+        event.preventDefault();
+        openModal('modal-help');
+        return;
+      }
       if (!modal) return;
       if (event.key === 'Escape') { event.preventDefault(); closeModal(modal.id); }
       if (event.key === 'Tab') {
@@ -483,17 +485,39 @@
     document.getElementById('btn-save-guideline').addEventListener('click', handleSaveGuideline);
     document.getElementById('btn-add-size-class').addEventListener('click', handleAddSizeClass);
 
-    // Setup switch toggles
-    document.querySelectorAll('#rules-toggles-container .switch-btn').forEach((sw) => {
-      sw.addEventListener('click', () => {
-        const checked = sw.getAttribute('aria-checked') === 'true';
-        const next = !checked;
-        sw.setAttribute('aria-checked', next ? 'true' : 'false');
-        const id = sw.id;
-        const labelEl = document.getElementById(`label-${id}`);
-        if (labelEl) labelEl.textContent = next ? 'Bật' : 'Tắt';
-        setGuidelineDirty(true);
-      });
+    // Công tắc luật (vẽ từ RULE_GROUPS): bấm từng luật hoặc bật / tắt cả nhóm.
+    document.getElementById('rules-toggles-container').addEventListener('click', (e) => {
+      const sw = e.target.closest('.switch-btn');
+      const groupBtn = e.target.closest('[data-group-toggle]');
+      if (sw) {
+        setRuleSwitch(sw.id, sw.getAttribute('aria-checked') !== 'true');
+      } else if (groupBtn) {
+        const group = RULE_GROUPS.find((g) => g.key === groupBtn.dataset.groupToggle);
+        if (!group) return;
+        const ids = group.rules.map(([id]) => `rule-${id.replace(/_/g, '-')}`);
+        const turnOn = !ids.every((id) => document.getElementById(id)?.getAttribute('aria-checked') === 'true');
+        ids.forEach((id) => setRuleSwitch(id, turnOn));
+      } else {
+        return;
+      }
+      setGuidelineDirty(true);
+      updateRuleCounts();
+    });
+    document.getElementById('rules-search').addEventListener('input', (e) => filterRuleRows(e.target.value));
+    document.getElementById('new-size-class-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); handleAddSizeClass(); }
+    });
+
+    // Trợ giúp, hướng dẫn bắt đầu
+    document.getElementById('btn-help').addEventListener('click', () => openModal('modal-help'));
+    document.getElementById('onb-create').addEventListener('click', () => {
+      populatePresetOptions();
+      openModal('modal-create-proj');
+    });
+    window.addEventListener('beforeunload', (e) => {
+      if (!state.guidelineDirty) return;
+      e.preventDefault();
+      e.returnValue = '';
     });
 
     // Inputs trong Guideline đánh dấu dirty
@@ -543,6 +567,7 @@
       loadHistoryTab();
     } else if (tabId === 'tab-scan') {
       if (state.tasksList.length === 0) fetchCvatTasks();
+      updateScanGuidelineSummary();
     } else if (tabId === 'tab-results') {
       if (!state.currentRun && state.currentSlug) {
         loadLatestRun();
@@ -566,6 +591,9 @@
         await selectProject(lastSlug);
       } else {
         document.getElementById('current-project-name').textContent = 'Chưa có dự án';
+        state.currentProject = null;
+        showEmptyResults();
+        checkCvatConnectionStatus();
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -646,7 +674,7 @@
 
   function populatePresetOptions() {
     const sel = document.getElementById('create-proj-preset');
-    sel.innerHTML = '<option value="">-- Dùng Guideline mặc định --</option>';
+    sel.innerHTML = '<option value="">Guideline mặc định</option>';
     state.projects.forEach((p) => {
       const opt = document.createElement('option');
       opt.value = p.slug;
@@ -734,6 +762,8 @@
     if (!state.currentSlug) {
       dot.className = 'status-dot disconnected';
       text.textContent = 'CVAT · Chưa chọn dự án';
+      state.cvatConnected = null;
+      renderOnboarding();
       return;
     }
 
@@ -741,17 +771,48 @@
       const res = await fetch(`/api/projects/${scope.slug}/cvat/check`);
       const data = await res.json();
       if (!scope.current()) return;
+      state.cvatConnected = !!data.connected;
       if (data.connected) {
         dot.className = 'status-dot';
         text.textContent = `CVAT ${data.version || ''} · đã kết nối`;
       } else {
         dot.className = 'status-dot disconnected';
-        text.textContent = 'CVAT · Mất kết nối';
+        text.textContent = /token/i.test(data.error || '') ? 'CVAT · Chưa có token' : 'CVAT · Mất kết nối';
+        document.getElementById('cvat-status-badge').title = `${data.error || 'Không kết nối được CVAT'} — bấm để cấu hình`;
       }
     } catch (_) {
       if (!scope.current()) return;
+      state.cvatConnected = false;
       dot.className = 'status-dot disconnected';
       text.textContent = 'CVAT · Không kết nối được';
+    }
+    renderOnboarding();
+  }
+
+  /** Trang Kết quả khi chưa có lần quét: 3 bước bắt đầu, đánh dấu bước đã xong. */
+  function renderOnboarding() {
+    const hasProject = !!state.currentSlug;
+    const steps = [
+      ['onb-step-project', hasProject],
+      ['onb-step-connect', hasProject && state.cvatConnected === true],
+      ['onb-step-scan', false],
+    ];
+    steps.forEach(([id, done]) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('done', done);
+    });
+    const title = document.getElementById('empty-title');
+    const desc = document.getElementById('empty-desc');
+    if (!title || !desc) return;
+    if (!hasProject) {
+      title.textContent = 'Chào mừng tới PointSnap 3D';
+      desc.textContent = 'Làm theo 3 bước dưới đây — xong bước 3 là kết quả hiện ngay tại đây.';
+    } else if (state.cvatConnected === false) {
+      title.textContent = 'Chưa kết nối được CVAT';
+      desc.textContent = 'Kiểm tra URL và token ở mục Kết nối CVAT, rồi quét job đầu tiên.';
+    } else {
+      title.textContent = 'Chưa có kết quả quét';
+      desc.textContent = 'Quét một job để xem lỗi, ảnh camera và point cloud quanh từng box. Hoặc mở một lần quét cũ trong Lịch sử.';
     }
   }
 
@@ -795,7 +856,9 @@
     document.getElementById('results-header-title').textContent = 'Kết quả quét';
     document.getElementById('results-header-subtitle').textContent = 'Chưa có lượt quét nào.';
     document.getElementById('breadcrumb-job').textContent = 'Job —';
-    document.getElementById('nav-badge-findings').textContent = '0';
+    document.getElementById('nav-badge-findings').textContent = '';
+    renderOnboarding();
+    updateCvatButton();
   }
 
   async function loadRunDetails(runId) {
@@ -858,7 +921,7 @@
 
     // Cập nhật badge trên Sidebar
     const totalIssues = (sum.num_errors ?? 0) + (sum.num_warnings ?? 0);
-    document.getElementById('nav-badge-findings').textContent = totalIssues;
+    document.getElementById('nav-badge-findings').textContent = totalIssues || '';
 
     // Liên kết xuất báo cáo
     document.getElementById('btn-download-csv').href = `/api/projects/${state.currentSlug}/scans/${runData.run_id}/report.csv`;
@@ -957,7 +1020,7 @@
     document.getElementById('pagination-summary-text').textContent = summaryText;
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-3); padding: 32px;">Không có mục nào phù hợp bộ lọc.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="table-empty">Không có mục nào phù hợp bộ lọc.</td></tr>';
       if (!preserveDetail) clearDetailDrawer();
       return;
     }
@@ -973,14 +1036,15 @@
       const sevClass = isRepaired ? 'success' : (f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info');
       const sevLabel = isRepaired ? 'ĐÃ GHI CVAT' : (f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin'));
 
+      const review = reviewLabel(runFindingIndex(f));
+      const track = f.track_id !== null && f.track_id !== undefined ? `#${escapeHtml(f.track_id)}` : '—';
       tr.innerHTML = `
-        <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
+        <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${review ? `<span class="review-mark ${review === 'Đúng' ? 'ok' : 'fp'}">${review}</span>` : ''}</td>
         <td class="mono">#${escapeHtml(f.frame)}</td>
-        <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${escapeHtml(f.track_id)}` : '—'}</td>
-        <td>${escapeHtml(f.label || '—')}</td>
-        <td style="color: var(--text-2);">${escapeHtml(f.error_type_label || f.error_type || '—')}</td>
-        <td style="color: var(--text);">${escapeHtml(f.message || '')}</td>
+        <td><span class="mono">${track}</span> <span class="cell-sub">${escapeHtml(f.label || '—')}</span></td>
+        <td><div class="cell-main">${escapeHtml(f.message || '')}</div><div class="cell-sub">${escapeHtml(f.error_type_label || f.error_type || '')}${f.rule ? ` · <span class="mono">${escapeHtml(f.rule)}</span>` : ''}</div></td>
       `;
+      tr.tabIndex = -1;
 
       tr.addEventListener('click', () => {
         state.selectedFindingIndex = globalIndex;
@@ -1013,12 +1077,14 @@
       if (state.currentTab !== 'tab-results' || e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = (e.target.tagName || '').toLowerCase();
       if (['input', 'textarea', 'select'].includes(tag) || e.target.isContentEditable) return;
-      if (document.querySelector('.modal-overlay.open') || !document.getElementById('splash').hidden) return;
+      if (document.querySelector('.modal-overlay.open')) return;
       const key = e.key.toLowerCase();
       if (key === 'j' || e.key === 'ArrowDown') moveSelection(1);
       else if (key === 'k' || e.key === 'ArrowUp') moveSelection(-1);
       else if (key === '1') markReview('ok');
       else if (key === '2') markReview('fp');
+      else if (key === 'o') document.getElementById('detail-btn-cvat-link').click();
+      else if (e.key === '/') document.getElementById('filter-search-box').focus();
       else return;
       e.preventDefault();
     });
@@ -1047,11 +1113,22 @@
       if (!res.ok) return;
       const data = await res.json();
       if (state.currentRun !== run) return;
-      const changed = data.extension_online !== state.cvatLink.online || state.cvatLink.jobId !== run.job_id;
-      const rev = state.cvatLink.jobId === run.job_id ? state.cvatLink.rev : null;
-      state.cvatLink = { online: data.extension_online, jobId: run.job_id, rev: data.reviews_rev };
+      const sameJob = state.cvatLink.jobId === run.job_id;
+      const changed = data.extension_online !== state.cvatLink.online || !sameJob;
+      const rev = sameJob ? state.cvatLink.rev : null;
+      const historyRev = sameJob ? state.cvatLink.historyRev : null;
+      // Web đang tự áp dụng / hoàn tác: để lượt hỏi sau mới đọc sự kiện, tránh coi thao tác của mình là từ CVAT.
+      const takeHistory = state.historyBusy === 0;
+      state.cvatLink = {
+        online: data.extension_online, jobId: run.job_id, rev: data.reviews_rev,
+        historyRev: takeHistory ? (data.history_rev ?? null) : historyRev,
+      };
       if (changed) updateCvatButton();
       if (rev !== null && rev !== data.reviews_rev) await refreshReviewsFromServer(run);
+      const ev = data.history_event;
+      if (takeHistory && historyRev !== null && data.history_rev !== historyRev && ev && ev.rev > historyRev) {
+        applyHistoryEvent(run, ev);
+      }
     } catch (_) {
       // PointSnap tạm không trả lời: giữ trạng thái cũ, lần sau hỏi lại.
     }
@@ -1071,12 +1148,64 @@
   function updateCvatButton() {
     const btn = document.getElementById('detail-btn-cvat-link');
     const status = document.getElementById('cvat-link-status');
-    if (state.cvatLink.online) {
-      btn.textContent = 'Chuyển CVAT tới box này';
+    const run = state.currentRun;
+    const online = !!(state.cvatLink.online && run && state.cvatLink.jobId === run.job_id);
+    if (online) {
+      btn.textContent = 'Chuyển CVAT tới box';
       status.innerHTML = '<span class="link-dot on"></span>CVAT đang mở job này: chọn mục ở đây thì CVAT tự chuyển theo, không tải lại trang.';
     } else {
-      btn.textContent = 'Mở trong CVAT để sửa';
-      status.innerHTML = '<span class="link-dot"></span>Cài extension PointSnap cho CVAT để chuyển box mà không tải lại job.';
+      btn.textContent = 'Mở trong CVAT';
+      status.innerHTML = '<span class="link-dot"></span>Mở job này trên CVAT (đã cài extension) để chuyển box mà không tải lại trang.';
+    }
+    const dot = document.getElementById('ext-status-dot');
+    const text = document.getElementById('ext-status-text');
+    const conn = document.getElementById('ext-conn-status');
+    if (dot) dot.className = online ? 'status-dot' : 'status-dot disconnected';
+    if (text) text.textContent = online ? `Extension · đang mở job #${run.job_id}` : 'Extension · chưa mở job';
+    if (conn) {
+      conn.innerHTML = online
+        ? `<span class="status-dot"></span>Extension đang mở job #${escapeHtml(run.job_id)} trên CVAT — đồng bộ 2 chiều đang chạy.`
+        : '<span class="status-dot disconnected"></span>Chưa thấy tab CVAT nào mở job của lần quét đang xem.';
+    }
+  }
+
+  /**
+   * Box vừa được sửa / hoàn tác ở phía khác (extension trong CVAT): cập nhật bảng, thẻ đề xuất sửa và nút Hoàn tác
+   * ngay, không cần F5. Sự kiện do chính web tạo ra (đã có trong historyStack) thì bỏ qua.
+   */
+  function applyHistoryEvent(run, ev) {
+    if (!ev || state.currentRun !== run || Number(ev.job_id) !== Number(run.job_id)) return;
+    const trackId = Number(ev.track_id);
+    const matches = (run.findings || []).filter((f) => Number(f.track_id) === trackId && Number(f.frame) === Number(ev.frame));
+    const idx = state.historyStack.findIndex((h) => h.history_id === ev.history_id);
+    if (ev.action === 'apply') {
+      if (idx >= 0) return;
+      if (matches.length) {
+        state.historyStack.push({
+          history_id: ev.history_id, job_id: run.job_id, track_id: trackId, frame: Number(ev.frame),
+          finding: matches[0], slug: ev.slug || state.currentSlug,
+        });
+        matches.forEach((f) => { state.appliedFindings.add(f); f.repaired = true; });
+      }
+      showToast(`Box track #${trackId} (frame ${ev.frame}) vừa được sửa từ CVAT — đã cập nhật tại đây.`, 'info', 5000);
+    } else if (ev.action === 'rollback') {
+      if (idx < 0 && !matches.some((f) => state.appliedFindings.has(f))) return;
+      if (idx >= 0) state.historyStack.splice(idx, 1);
+      matches.forEach((f) => { state.appliedFindings.delete(f); f.repaired = false; });
+      showToast(`Box track #${trackId} (frame ${ev.frame}) vừa được hoàn tác từ CVAT.`, 'info', 5000);
+    } else {
+      return;
+    }
+    renderFindingsTable(true);
+    const cur = state.currentDetail;
+    if (cur && Number(cur.track_id) === trackId) {
+      if (state.previewData) {
+        state.previewData.repairApplied = state.appliedFindings.has(cur);
+        drawPreviewViews(state.previewData);
+      }
+      renderDetailDrawer(cur);
+      if (state.currentRepair) updateRepairCard(cur, state.currentRepair);
+      fetchFindingRepair(cur, runFindingIndex(cur));
     }
   }
 
@@ -1700,7 +1829,15 @@
     const confirmBtn = document.getElementById('btn-modal-repair-confirm');
     setButtonBusy(confirmBtn, 'Đang áp dụng…');
     state.isApplyingRepair = true;
+    state.historyBusy += 1;
+    try {
+      await applyRepairRequest(f, rep, confirmBtn);
+    } finally {
+      state.historyBusy -= 1;
+    }
+  }
 
+  async function applyRepairRequest(f, rep, confirmBtn) {
     const jobId = Number(state.currentRun.job_id);
     const trackId = Number(f.track_id);
     const appliedSlug = state.currentSlug;
@@ -1785,7 +1922,15 @@
     const rollbackBtn = document.getElementById('btn-rollback-repair');
     state.isApplyingRepair = true;
     setButtonBusy(rollbackBtn, 'Đang hoàn tác…');
+    state.historyBusy += 1;
+    try {
+      await rollbackRequest(item, rollbackBtn);
+    } finally {
+      state.historyBusy -= 1;
+    }
+  }
 
+  async function rollbackRequest(item, rollbackBtn) {
     try {
       const res = await fetch(`/api/jobs/${item.job_id}/tracks/${item.track_id}/rollback`, {
         method: 'POST',
@@ -1990,7 +2135,10 @@
     try {
       const res = await fetch(`/api/projects/${scope.slug}/cvat/tasks`);
       if (!scope.current()) return;
-      if (!res.ok) throw new Error('Không thể lấy danh sách Task');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Không tải được task từ CVAT: ${errorDetail(err.detail, `lỗi ${res.status}`)}. Kiểm tra mục Kết nối CVAT.`);
+      }
       const data = await res.json();
       if (!scope.current()) return;
       state.tasksList = data.tasks || [];
@@ -2010,7 +2158,7 @@
       }
     } catch (err) {
       if (!scope.current()) return;
-      taskSelect.innerHTML = '<option value="">Không tải được Task (kiểm tra kết nối)</option>';
+      taskSelect.innerHTML = '<option value="">Không tải được task — nhập id job bên dưới</option>';
       showToast(err.message, 'error');
     } finally {
       setButtonIdle(refreshBtn);
@@ -2216,12 +2364,12 @@
     if (dirty) {
       bar.classList.add('dirty');
       note.textContent = 'Có thay đổi chưa lưu';
-      note.style.color = 'var(--primary-text)';
     } else {
       bar.classList.remove('dirty');
       note.textContent = 'Guideline hợp lệ · đã lưu';
-      note.style.color = 'var(--text-2)';
     }
+    const save = document.getElementById('btn-save-guideline');
+    if (save) save.disabled = !dirty;
   }
 
   function setGuidelineMode(mode) {
@@ -2236,18 +2384,99 @@
     const btnForm = document.getElementById('btn-mode-form');
     const btnYaml = document.getElementById('btn-mode-yaml');
 
-    if (mode === 'form') {
-      formView.style.display = 'flex';
-      yamlView.style.display = 'none';
-      btnForm.className = 'btn btn-sm btn-primary';
-      btnYaml.className = 'btn btn-sm btn-outline';
-      btnYaml.style.border = '0';
-    } else {
-      formView.style.display = 'none';
-      yamlView.style.display = 'block';
-      btnForm.className = 'btn btn-sm btn-outline';
-      btnForm.style.border = '0';
-      btnYaml.className = 'btn btn-sm btn-primary';
+    formView.style.display = mode === 'form' ? 'flex' : 'none';
+    yamlView.style.display = mode === 'form' ? 'none' : 'block';
+    btnForm.setAttribute('aria-pressed', mode === 'form' ? 'true' : 'false');
+    btnYaml.setAttribute('aria-pressed', mode === 'form' ? 'false' : 'true');
+  }
+
+  // --- Công tắc luật theo nhóm ---
+  function renderRuleToggles() {
+    const container = document.getElementById('rules-toggles-container');
+    if (!container) return;
+    container.innerHTML = RULE_GROUPS.map((g) => `
+      <div class="rule-group" data-group="${g.key}">
+        <div class="rule-group-head">
+          <span class="rule-group-title">${escapeHtml(g.title)}</span>
+          <span class="rule-group-count" id="rule-group-count-${g.key}"></span>
+          <button type="button" class="btn btn-ghost btn-xs" data-group-toggle="${g.key}">Bật / tắt cả nhóm</button>
+        </div>
+        ${g.rules.map(([id, name, desc, need]) => {
+          const dom = id.replace(/_/g, '-');
+          return `<div class="rule-row" data-search="${escapeHtml(`${name} ${desc} ${id}`.toLowerCase())}">
+            <div class="rule-text">
+              <div class="rule-name" title="Mã luật: ${id}">${escapeHtml(name)}${need ? ` <span class="rule-need">${escapeHtml(need)}</span>` : ''}</div>
+              <div class="rule-desc">${escapeHtml(desc)}</div>
+            </div>
+            <span id="label-rule-${dom}" class="rule-state">Bật</span>
+            <button type="button" role="switch" aria-checked="true" aria-label="${escapeHtml(name)}" id="rule-${dom}" class="switch-btn"><span class="switch-thumb"></span></button>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+  }
+
+  function setRuleSwitch(domId, on) {
+    const sw = document.getElementById(domId);
+    if (!sw) return;
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    const label = document.getElementById(`label-${domId}`);
+    if (label) label.textContent = on ? 'Bật' : 'Tắt';
+  }
+
+  function updateRuleCounts() {
+    let total = 0, on = 0;
+    RULE_GROUPS.forEach((g) => {
+      const n = g.rules.filter(([id]) => document.getElementById(`rule-${id.replace(/_/g, '-')}`)?.getAttribute('aria-checked') === 'true').length;
+      total += g.rules.length;
+      on += n;
+      const el = document.getElementById(`rule-group-count-${g.key}`);
+      if (el) el.textContent = `${n}/${g.rules.length} bật`;
+    });
+    const all = document.getElementById('rules-enabled-count');
+    if (all) all.textContent = `${on}/${total} đang bật`;
+    return on;
+  }
+
+  function filterRuleRows(query) {
+    const q = String(query || '').toLowerCase().trim();
+    document.querySelectorAll('#rules-toggles-container .rule-group').forEach((group) => {
+      let visible = 0;
+      group.querySelectorAll('.rule-row').forEach((row) => {
+        const show = !q || (row.dataset.search || '').includes(q);
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+      group.hidden = visible === 0;
+    });
+  }
+
+  function isTypingTarget(target) {
+    if (!target) return false;
+    const tag = (target.tagName || '').toLowerCase();
+    return ['input', 'textarea', 'select'].includes(tag) || !!target.isContentEditable;
+  }
+
+  /** Tab Quét: số luật đang bật theo guideline của dự án (đọc riêng, không đụng bản đang sửa ở tab Guideline). */
+  async function updateScanGuidelineSummary() {
+    const scope = projectScope();
+    const el = document.getElementById('scan-guideline-summary');
+    if (!el || !scope.slug) return;
+    try {
+      let cfg = state.currentGuideline;
+      if (!cfg) {
+        const res = await fetch(`/api/projects/${scope.slug}/guideline`);
+        if (!res.ok) return;
+        cfg = (await res.json()).config || {};
+      }
+      if (!scope.current()) return;
+      const rules = cfg.rules || {};
+      const ids = RULE_GROUPS.flatMap((g) => g.rules.map(([id]) => id));
+      const on = ids.filter((id) => rules[id] !== false).length;
+      el.textContent = `Guideline của dự án · ${on}/${ids.length} luật đang bật`;
+      const step = document.getElementById('step-label-3');
+      if (step) step.textContent = `Chạy ${on} luật đang bật`;
+    } catch (_) {
+      // Không đọc được guideline: giữ chữ mặc định.
     }
   }
 
@@ -2300,6 +2529,7 @@
     // 4. Size classes table
     const ranges = cfg.size?.manual_ranges || {};
     renderSizeClassesTable(ranges);
+    updateRuleCounts();
   }
 
   function renderSizeClassesTable(ranges) {
@@ -2312,19 +2542,20 @@
       return;
     }
 
+    const pair = (dim, bounds) => {
+      const [lo, hi] = Array.isArray(bounds) ? bounds : ['', ''];
+      const input = (i, v, label) => `<input type="number" step="0.1" min="0" class="form-input mono size-input" data-dim="${dim}" data-i="${i}" value="${escapeHtml(v)}" aria-label="${label}">`;
+      return `<div class="range-pair">${input(0, lo, `${dim} min`)}<span>–</span>${input(1, hi, `${dim} max`)}</div>`;
+    };
     entries.forEach(([cls, bounds]) => {
       const tr = document.createElement('tr');
-      const lStr = bounds.length ? `${bounds.length[0]} – ${bounds.length[1]}` : '—';
-      const wStr = bounds.width ? `${bounds.width[0]} – ${bounds.width[1]}` : '—';
-      const hStr = bounds.height ? `${bounds.height[0]} – ${bounds.height[1]}` : '—';
-
       tr.innerHTML = `
-        <td class="mono" style="padding-left: 20px;">${escapeHtml(cls)}</td>
-        <td class="mono">${escapeHtml(lStr)}</td>
-        <td class="mono">${escapeHtml(wStr)}</td>
-        <td class="mono">${escapeHtml(hStr)}</td>
-        <td style="text-align: right; padding-right: 20px;">
-          <button class="btn btn-outline btn-sm btn-delete-class" data-cls="${escapeHtml(cls)}" style="color: var(--error);">Xóa</button>
+        <td class="mono cls-name">${escapeHtml(cls)}</td>
+        <td>${pair('length', bounds.length)}</td>
+        <td>${pair('width', bounds.width)}</td>
+        <td>${pair('height', bounds.height)}</td>
+        <td class="col-actions">
+          <button class="btn btn-ghost btn-sm btn-delete-class danger-text" data-cls="${escapeHtml(cls)}" aria-label="Xóa class ${escapeHtml(cls)}">Xóa</button>
         </td>
       `;
 
@@ -2333,15 +2564,56 @@
         renderSizeClassesTable(ranges);
         setGuidelineDirty(true);
       });
+      tr.querySelectorAll('.size-input').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          const dim = inp.dataset.dim;
+          const current = Array.isArray(ranges[cls][dim]) ? ranges[cls][dim] : [0, 0];
+          const next = [...current];
+          next[Number(inp.dataset.i)] = inp.value === '' ? '' : Number(inp.value);
+          ranges[cls][dim] = next;
+          setGuidelineDirty(true);
+        });
+      });
 
       tbody.appendChild(tr);
     });
   }
 
+  /** Kiểm tra form trước khi lưu: trả về câu báo lỗi đầu tiên, hoặc '' nếu hợp lệ. */
+  function validateGuidelineForm(fl, ranges) {
+    const nums = Object.values(fl);
+    if (nums.some((v) => !Number.isFinite(v) || v < 0)) return 'Ngưỡng lơ lửng / lún phải là số không âm.';
+    if (fl.error_m <= fl.warning_m) return 'Ngưỡng Lỗi lơ lửng / lún phải lớn hơn ngưỡng Cảnh báo.';
+    if (fl.single_error_m <= fl.single_warning_m) return 'Ngưỡng Lỗi box lẻ phải lớn hơn ngưỡng Cảnh báo box lẻ.';
+    for (const [cls, bounds] of Object.entries(ranges || {})) {
+      for (const dim of ['length', 'width', 'height']) {
+        const b = bounds[dim];
+        if (!b) continue;
+        const [lo, hi] = b.map(Number);
+        if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo <= 0 || hi <= 0) return `Kích thước của class ${cls} phải là số dương.`;
+        if (lo > hi) return `Class ${cls}: giá trị min lớn hơn max.`;
+      }
+    }
+    return '';
+  }
+
   function handleAddSizeClass() {
-    const clsName = prompt('Nhập tên class mới (ví dụ: bus, trailer, van):');
-    if (!clsName || !clsName.trim()) return;
-    const clean = clsName.trim().toLowerCase();
+    const input = document.getElementById('new-size-class-name');
+    const clean = String(input.value || '').trim().toLowerCase();
+    if (!clean) {
+      showToast('Nhập tên class trước khi thêm (ví dụ: trailer).', 'info');
+      input.focus();
+      return;
+    }
+    if (!/^[a-z0-9_.\-]+$/.test(clean)) {
+      showToast('Tên class chỉ gồm chữ thường không dấu, số, dấu _ . -', 'error');
+      return;
+    }
+    if (state.currentGuideline?.size?.manual_ranges?.[clean]) {
+      showToast(`Class ${clean} đã có trong bảng.`, 'info');
+      return;
+    }
+    input.value = '';
 
     if (!state.currentGuideline) state.currentGuideline = {};
     if (!state.currentGuideline.size) state.currentGuideline.size = {};
@@ -2387,7 +2659,8 @@
       } else {
         // Thu thập dữ liệu từ Form
         const rules = Object.fromEntries(RULE_IDS.map((id) => [
-          id, document.getElementById(`rule-${id.replace(/_/g, '-')}`).getAttribute('aria-checked') === 'true',
+          id, !TRACK_RULE_IDS.includes(id)
+            && document.getElementById(`rule-${id.replace(/_/g, '-')}`)?.getAttribute('aria-checked') === 'true',
         ]));
 
         const gate = {
@@ -2403,6 +2676,11 @@
         };
 
         const currentManual = state.currentGuideline?.size?.manual_ranges || {};
+        const invalid = validateGuidelineForm(fl, currentManual);
+        if (invalid) {
+          showToast(invalid, 'error', 5000);
+          return;
+        }
         const configObj = {
           ...(state.currentGuideline || {}),
           rules,
@@ -2430,13 +2708,14 @@
 
       if (!scope.current()) return;
       setGuidelineDirty(false);
-      showToast('Đã lưu cấu hình Guideline thành công', 'success');
+      showToast('Đã lưu Guideline — áp dụng từ lần quét sau.', 'success');
       await loadGuideline();
+      updateScanGuidelineSummary();
     } catch (err) {
       if (!scope.current()) return;
       showToast(err.message, 'error');
     } finally {
-      btn.disabled = false;
+      btn.disabled = !state.guidelineDirty;
     }
   }
 
@@ -2703,7 +2982,7 @@
       timeText.setAttribute('font-size', '11');
       timeText.setAttribute('font-family', 'IBM Plex Mono, monospace');
       const dStr = sum.timestamp || r.started_at;
-      timeText.textContent = dStr ? formatShortDate(dStr) : `#${idx + 1}`;
+      timeText.textContent = dStr ? formatDateTime(dStr) : `#${idx + 1}`;
       svg.appendChild(timeText);
     });
   }
@@ -2719,19 +2998,6 @@
       const DD = String(d.getDate()).padStart(2, '0');
       const MM = String(d.getMonth() + 1).padStart(2, '0');
       return `${hh}:${mm}, ${DD}/${MM}`;
-    } catch (_) {
-      return iso;
-    }
-  }
-
-  function formatShortDate(iso) {
-    if (!iso) return '—';
-    try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return iso;
-      const DD = String(d.getDate()).padStart(2, '0');
-      const MM = String(d.getMonth() + 1).padStart(2, '0');
-      return `${DD}/${MM}`;
     } catch (_) {
       return iso;
     }

@@ -205,27 +205,51 @@
           <h2>Dùng theo cách bạn làm việc.</h2>
         </header>
         <div class="tabs reveal" role="tablist">
-          <button role="tab" aria-selected="true" data-tab="devices">Thiết bị & Hệ sinh thái</button>
-          <button role="tab" aria-selected="false" data-tab="web">Giao diện web</button>
-          <button role="tab" aria-selected="false" data-tab="ext">Extension trong CVAT</button>
-          <button role="tab" aria-selected="false" data-tab="cli">Dòng lệnh</button>
+          <button role="tab" aria-selected="true" data-tab="web">Giao diện web (Máy tính)</button>
+          <button role="tab" aria-selected="false" data-tab="ext">Điện thoại &amp; Extension</button>
+          <button role="tab" aria-selected="false" data-tab="cli">Dòng lệnh (CLI)</button>
         </div>
-        <div class="showcase reveal" data-active="devices">
-          <div class="devices-mockup">
-            <img src="assets/showcase-devices.png" alt="PointSnap 3D trên máy tính và 2 điện thoại hiện đại" class="devices-img">
-            <div class="devices-overlay">
-              <span class="devices-chip"><i class="dot dot--ok"></i> PointSnap 3D Multi-Device Suite</span>
-            </div>
-          </div>
+        <div class="showcase reveal" data-active="web">
+          <!-- Khung máy tính (Laptop Mockup) -->
           <div class="laptop">
-            <div class="laptop__lid"><img class="shot shot--light" src="assets/results-light.png" alt="Màn kết quả quét của PointSnap"><img class="shot shot--dark" src="assets/results-dark.png" alt="Màn kết quả quét của PointSnap (giao diện tối)"></div>
+            <div class="laptop__lid">
+              <div class="laptop__screen">
+                <img class="shot shot--dark" src="assets/screen-laptop.png" alt="PointSnap 3D trên máy tính (Giao diện tối)">
+                <img class="shot shot--light" src="assets/screen-laptop.png" alt="PointSnap 3D trên máy tính">
+              </div>
+            </div>
             <div class="laptop__base"></div>
           </div>
-          <figure class="browser">
-            <div class="browser__bar"><i></i><i></i><i></i><span>🔒 localhost:8080/tasks/7/jobs/12</span></div>
-            <img src="assets/extension-panel.jpg" alt="Bảng PointSnap trong CVAT: thẻ lỗi, cách sửa, nút Đúng là lỗi / Báo nhầm">
-            <figcaption><kbd>,</kbd><kbd>.</kbd> nhảy tới frame lỗi — không tải lại trang</figcaption>
-          </figure>
+
+          <!-- Khung điện thoại 1: 3D QC Companion -->
+          <div class="phone phone--1">
+            <div class="phone__body">
+              <div class="phone__island"><span class="phone__cam"></span></div>
+              <div class="phone__screen">
+                <img src="assets/screen-phone-1.png" alt="PointSnap 3D QC Companion trên điện thoại">
+              </div>
+              <div class="phone__glare"></div>
+            </div>
+            <div class="phone__label">
+              <span class="phone__badge"><i class="dot dot--ok"></i> QC Companion</span>
+            </div>
+          </div>
+
+          <!-- Khung điện thoại 2: Live Telemetry & Quality Gate -->
+          <div class="phone phone--2">
+            <div class="phone__body">
+              <div class="phone__island"><span class="phone__cam"></span></div>
+              <div class="phone__screen">
+                <img src="assets/screen-phone-2.png" alt="PointSnap 3D Telemetry HUD trên điện thoại">
+              </div>
+              <div class="phone__glare"></div>
+            </div>
+            <div class="phone__label">
+              <span class="phone__badge"><i class="dot dot--ok"></i> Telemetry &amp; Gate</span>
+            </div>
+          </div>
+
+          <!-- Dòng lệnh Terminal -->
           <div class="terminal" id="terminal">
             <div class="terminal__dots"><i></i><i></i><i></i></div>
             <pre id="termText"></pre>

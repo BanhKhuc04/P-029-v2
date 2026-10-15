@@ -28,7 +28,7 @@ try:
             if process.poll() is not None:raise RuntimeError(process.stderr.read().decode(errors='replace'))
             time.sleep(.1)
     else:raise RuntimeError('UI startup timeout')
-    for route in ['/','/static/app.js','/static/styles.css','/static/favicon.svg','/static/fonts/fonts.css',
+    for route in ['/','/app','/static/app.js','/static/styles.css','/static/landing.css','/static/landing.js','/static/favicon.svg','/static/fonts/fonts.css',
                   '/static/fonts/'+assets[0],'/api/projects']:
         with urllib.request.urlopen(f'http://127.0.0.1:{port}'+route,timeout=5) as response:
             statuses[route]={'status':response.status,'bytes':len(response.read())}

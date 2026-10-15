@@ -53,6 +53,27 @@ Workflow GitHub Actions cũng thu thập `tests` và `auto-tests` để các reg
 mới không bị bỏ qua; trên main chưa sửa, hai regression track/rider sẽ làm CI
 thất bại, còn regression Critic cần môi trường có torch để thực thi.
 
+## E2E trình duyệt: landing, web và extension thật
+
+`browser/run_browser_e2e.py` dựng máy chủ PointSnap demo (dữ liệu LiDAR tổng hợp, ảnh camera, CVAT giả trong bộ nhớ)
+trong thư mục tạm, rồi điều khiển Chromium thật:
+
+- **web** (52 ca): landing → `/app` (nút, phím Enter, không còn nút tải về, font / Three.js chạy offline), phím tắt
+  J/K/1/2///?, lọc và tìm, áp dụng → hoàn tác sửa box, đồng bộ sửa từ extension không F5, Guideline (bật luật, đếm, tìm,
+  thêm / sửa class, chặn min > max, lưu, YAML, luật track luôn tắt), tab Quét, không tràn ngang ở 390 / 768 / 1024 px.
+- **extension** (17 ca): nạp extension thật (`--load-extension`), popup và Tùy chọn thấy PointSnap, bảng trong trang job
+  CVAT giả, áp dụng sửa ở extension → web cập nhật, hoàn tác / áp dụng ở web → extension cập nhật, kết luận 2 chiều,
+  chọn mục trên web → CVAT chuyển frame.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install playwright pillow
+.\.venv\Scripts\python.exe -m playwright install chromium
+.\.venv\Scripts\python.exe auto-tests\browser\run_browser_e2e.py --out out\browser-e2e
+```
+
+Cần cổng 8765 và 8080 trống (tắt `pointsnap ui` và CVAT thật trước khi chạy) vì extension dùng đúng địa chỉ mặc định.
+Ảnh chụp popup, Tùy chọn, bảng extension nằm trong thư mục `--out`. Không đụng `~/.pointsnap` hay CVAT thật.
+
 Chạy từ thư mục `source-tool/pointsnap-3d` bằng PowerShell:
 
 ```powershell

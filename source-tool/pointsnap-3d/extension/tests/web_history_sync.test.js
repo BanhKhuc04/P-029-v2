@@ -24,7 +24,7 @@ function web(fetchImpl) {
   const toasts = [];
   const source = fs.readFileSync(path.join(__dirname, '../../pointsnap/web/static/app.js'), 'utf8');
   const names = ['state', 'applyHistoryEvent', 'handleSaveGuideline', 'populateGuidelineForm', 'validateGuidelineForm',
-    'renderRuleToggles', 'updateRuleCounts', 'updateCvatButton'];
+    'renderRuleToggles', 'updateRuleCounts', 'updateCvatButton', 'openApplyRepairModal'];
   const context = {
     document, fetch: fetchImpl || (async () => ({ ok: false, json: async () => ({}) })), console,
     getComputedStyle: () => ({ getPropertyValue: () => '' }), URLSearchParams, URL, Map, Set, Date, Math, Number,
@@ -134,4 +134,21 @@ test('extension status chip follows the current run only', () => {
   w.state.currentRun = null;
   w.updateCvatButton();
   assert.match(w.document.getElementById('ext-status-text').textContent, /chưa mở job/);
+});
+
+test('repair confirmation shows current and proposed z / yaw derived from the proposal', () => {
+  const w = web();
+  const f = { rule: 'floating', severity: 'error', frame: 18, track_id: 12 };
+  w.state.currentDetail = f;
+  w.state.currentRepair = {
+    confidence: 0.9, applicable: true, delta_center: [0, 0, -0.26], delta_dims: [0, 0, 0], delta_yaw: 0.1,
+    repaired_cuboid: { center: [11, -3.2, -1.0], dims: [4.6, 1.95, 1.6], yaw: 0.15 },
+  };
+  w.openApplyRepairModal();
+  const rows = w.document.getElementById('modal-repair-table-body').children.map((tr) => tr.innerHTML);
+  assert.match(rows[0], /-0\.74 m/, 'z ban đầu = đề xuất − Δz');
+  assert.match(rows[0], /-1\.00 m/, 'z đề xuất');
+  assert.match(rows[1], /2\.9°/, 'yaw ban đầu = đề xuất − Δyaw');
+  assert.match(rows[1], /8\.6°/, 'yaw đề xuất');
+  assert.ok(!rows.slice(0, 2).some((r) => r.includes('—')), 'không còn ô trống');
 });

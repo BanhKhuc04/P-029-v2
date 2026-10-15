@@ -1777,7 +1777,14 @@
     const dd = rep.delta_dims || [0, 0, 0];
 
     const box = state.previewData?.box || { length: 0, width: 0, height: 0 };
-    const original = rep.original_cuboid;
+    // API trả box đề xuất (`repaired_cuboid`) và các delta: box hiện tại = đề xuất − delta.
+    const repaired = rep.repaired_cuboid;
+    const dc = rep.delta_center || [0, 0, 0];
+    const original = rep.original_cuboid || (repaired && Array.isArray(repaired.center) && Array.isArray(repaired.dims) ? {
+      center: repaired.center.map((v, i) => v - (dc[i] || 0)),
+      dims: repaired.dims.map((v, i) => v - (dd[i] || 0)),
+      yaw: Number.isFinite(repaired.yaw) ? repaired.yaw - dyaw : undefined,
+    } : null);
     const L = original?.dims?.[0] ?? box.length ?? 0;
     const W = original?.dims?.[1] ?? box.width ?? 0;
     const H = original?.dims?.[2] ?? box.height ?? 0;

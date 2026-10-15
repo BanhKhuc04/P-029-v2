@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>PointSnap 3D — Logo và nhận diện</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; padding: 48px; background: #F4F6F9; color: #161B22; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 340px 200px 1fr; gap: 24px">
+
+<div style="border-radius: 8px; background: #FFFFFF; border: 1px solid #E1E5EA; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative">
+<div style="position: absolute; top: 20px; left: 24px; font-size: 13px; color: #66707C">Sáng</div>
+<svg width="120" height="120" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="color: #14171C"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M3 38 H16 M32 38 H45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"></path><circle cx="24" cy="38" r="4.2" fill="{{accent}}"></circle></svg>
+<div style="font-size: 40px; font-weight: 700; letter-spacing: -0.02em">PointSnap <span style="color: {{accent}}">3D</span></div>
+</div>
+
+<div style="border-radius: 8px; background: #0F2A47; border: 1px solid #0F2A47; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; color: #E8EBEF">
+<div style="position: absolute; top: 20px; left: 24px; font-size: 13px; color: #8C96A2">Tối</div>
+<svg width="120" height="120" viewBox="0 0 48 48" fill="none" aria-hidden="true" style="color: #E8EBEF"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M3 38 H16 M32 38 H45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.4"></path><circle cx="24" cy="38" r="4.2" fill="{{accentDark}}"></circle></svg>
+<div style="font-size: 40px; font-weight: 700; letter-spacing: -0.02em">PointSnap <span style="color: {{accentDark}}">3D</span></div>
+</div>
+
+<div style="border-radius: 8px; background: #FFFFFF; border: 1px solid #E1E5EA; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: #66707C">Biểu tượng ứng dụng</div>
+<div style="display: flex; align-items: flex-end; gap: 28px">
+<div style="width: 96px; height: 96px; border-radius: 20px; background: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="64" height="64" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="24" cy="38" r="5" fill="#FFFFFF"></circle></svg></div>
+<div style="width: 48px; height: 48px; border-radius: 12px; background: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="3.5" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="24" cy="38" r="5.5" fill="#FFFFFF"></circle></svg></div>
+<div style="width: 32px; height: 32px; border-radius: 8px; background: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z" stroke="#FFFFFF" stroke-width="4.5" stroke-linejoin="round"></path><path d="M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#FFFFFF" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></path><circle cx="24" cy="38" r="6" fill="#FFFFFF"></circle></svg></div>
+<div style="width: 16px; height: 16px; border-radius: 4px; background: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"></path></svg></div>
+</div>
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #66707C">96 · 48 · 32 · 16 px</div>
+</div>
+
+<div style="border-radius: 8px; background: #FFFFFF; border: 1px solid #E1E5EA; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: #66707C">Chữ</div>
+<div style="font-size: 28px; font-weight: 600; letter-spacing: -0.01em">Kiểm soát chất lượng nhãn 3D</div>
+<div style="display: flex; gap: 24px; align-items: baseline; flex-wrap: wrap">
+<div style="font-size: 15px; color: #47505C">IBM Plex Sans — giao diện</div>
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #47505C">IBM Plex Mono — số, id: 3 333 box · track 260</div>
+</div>
+</div>
+
+<div style="grid-column: 1 / -1; border-radius: 8px; background: #FFFFFF; border: 1px solid #E1E5EA; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<div style="font-size: 13px; color: #66707C">Màu</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{swatches}}" as="s" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; height: 56px; border-radius: 10px; overflow: hidden; border: 1px solid #E1E5EA">
+<div style="flex: 1; background: {{s.light}}"></div>
+<div style="flex: 1; background: {{s.dark}}"></div>
+</div>
+<div style="font-size: 13px; font-weight: 600">{{s.name}}</div>
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #66707C">{{s.light}} / {{s.dark}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0B63CE","options":["#0B63CE","#0F2A47","#1F7A8C","#161B22"]},"accentDark":{"editor":"color","default":"#4C9AFF"},"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      accent: this.props.accent ?? '#0B63CE',
+      accentDark: this.props.accentDark ?? '#4C9AFF',
+      swatches: [
+        { name: 'Nền', light: '#F4F6F9', dark: '#0D1117' },
+        { name: 'Thanh trên', light: '#0F2A47', dark: '#0A0F15' },
+        { name: 'Chữ', light: '#161B22', dark: '#E6EAF0' },
+        { name: 'Xanh chính', light: '#0B63CE', dark: '#4C9AFF' },
+        { name: 'Lỗi', light: '#B42318', dark: '#F38B85' },
+        { name: 'Cảnh báo', light: '#A35200', dark: '#F0A54A' },
+        { name: 'Đạt', light: '#157A4A', dark: '#4CC38A' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

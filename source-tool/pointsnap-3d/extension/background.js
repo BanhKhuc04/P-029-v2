@@ -118,6 +118,11 @@ function requestRoute(method, path, body, sender) {
   if (camera && method === 'GET' && body === undefined && Number.isSafeInteger(Number(camera[3]))) {
     return { slug: camera[1], runId: camera[2], cameraIndex: Number(camera[3]), jobId, origin: page.origin };
   }
+  // Đề xuất sửa theo mục của lần quét (kèm bằng chứng mặt đất / hướng của lần quét), giống web; chỉ đọc.
+  const findingRepair = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans\/(\d{8}-\d{6}(?:-\d+)?-job\d+)\/findings\/(\d+)\/repair$/);
+  if (findingRepair && method === 'GET' && body === undefined && Number.isSafeInteger(Number(findingRepair[3]))) {
+    return { slug: findingRepair[1], runId: findingRepair[2], repairIndex: Number(findingRepair[3]), jobId, origin: page.origin };
+  }
   const match = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans(?:\/(\d{8}-\d{6}(?:-\d+)?-job\d+)(?:\/(reviews)(?:\/(\d+))?)?)?$/);
   if (!match) return null;
   const [,slug,runId,reviews,index] = match;
@@ -144,6 +149,15 @@ async function callPointSnap({ method, path, body }, sender) {
         if (route.cameraIndex !== undefined) {
           if (!Array.isArray(run.data.findings) || route.cameraIndex >= run.data.findings.length) return { ok: false, error: 'Không có mục camera này' };
           return await fetchCamera(base, path);
+        }
+        if (route.repairIndex !== undefined) {
+          if (!Array.isArray(run.data.findings) || route.repairIndex >= run.data.findings.length) return { ok: false, error: 'Không có mục này trong lần quét' };
+          const res = await fetchPointSnap(base, path);
+          if (!res.ok) {
+            const detail = res.data && res.data.detail;
+            return { ok: false, status: res.status, error: typeof detail === 'string' ? detail : `PointSnap trả ${res.status}` };
+          }
+          return { ok: true, status: res.status, data: res.data };
         }
         if (method === 'GET' && !path.endsWith('/reviews')) return run;
       }
@@ -232,4 +246,4 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 chrome.permissions.onAdded.addListener(() => { syncContentScripts(); });
 chrome.permissions.onRemoved.addListener(() => { syncContentScripts(); });
-chrome.action.onClicked.addListener(() => { chrome.runtime.openOptionsPage(); });
+// Bấm biểu tượng extension mở popup.html (trạng thái PointSnap, mở nhanh web / CVAT / Tùy chọn).

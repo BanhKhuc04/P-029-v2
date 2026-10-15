@@ -49,7 +49,9 @@
       applied: false, rollingBack: false, historyId: null, verdict: null,
     },
   };
-  const settings = { autoFilter: true, autoHighlight: true, autoExpand: true };
+  const settings = { autoFilter: true, autoHighlight: true, autoExpand: true, pointsnapUrl: 'http://127.0.0.1:8765' };
+  // Sửa / hoàn tác box từ web (history_rev): nhớ theo `track:frame` để thẻ lỗi hiện đúng trạng thái và nút Hoàn tác.
+  const remoteHistory = new Map();
   const expanded = new Set();
 
   // ---------------------------------------------------------------- PointSnap (qua service worker)
@@ -79,7 +81,7 @@
   function loadSettings() {
     if (!hasChrome || !chrome.storage) return Promise.resolve();
     return new Promise((resolve) => {
-      chrome.storage.sync.get({ autoFilter: true, autoHighlight: true, autoExpand: true }, (data) => {
+      chrome.storage.sync.get({ autoFilter: true, autoHighlight: true, autoExpand: true, pointsnapUrl: settings.pointsnapUrl }, (data) => {
         Object.assign(settings, data || {});
         chrome.storage.local.get({ panelPos: null, panelCollapsed: false }, (local) => {
           S.pos = (local && local.panelPos) || null;
@@ -121,6 +123,7 @@
       missing: [],
       linkSeq: -1,
       reviewsRev: null,
+      historyRev: null,
       repair: {
         loading: false, error: null, data: null, trackId: null, frame: null,
         trackEtag: null, rule: null, confirming: false, applying: false,
@@ -155,6 +158,7 @@
     navigating = false;
     S.navTarget = null;
     highlightTurn.clear();
+    remoteHistory.clear();
     unmountPanel();
   }
 
@@ -375,6 +379,11 @@
         if (res.data.command) runCommand(res.data.command);
         if (S.reviewsRev !== null && res.data.reviews_rev !== S.reviewsRev) refreshReviews();
         S.reviewsRev = res.data.reviews_rev;
+        const ev = res.data.history_event;
+        if (S.historyRev !== null && res.data.history_rev !== S.historyRev && ev && ev.rev > S.historyRev) {
+          applyHistoryEvent(ev);
+        }
+        if (res.data.history_rev !== undefined) S.historyRev = res.data.history_rev;
 
         // Cập nhật trạng thái quét nếu bên Web UI đang quét:
         if (res.data.active) {
@@ -418,6 +427,29 @@
     S.tab = 'now';
     if (command.bring && hasChrome) chrome.runtime.sendMessage({ type: 'focusTab' }, () => void chrome.runtime.lastError);
     await goTo(command.frame, command);
+  }
+
+  /**
+   * Box vừa được sửa / hoàn tác ở phía web: cập nhật thẻ đề xuất sửa (đã ghi / hoàn tác được) ngay, không cần F5.
+   * Thao tác của chính extension trả về cùng history_id nên áp dụng lại cũng không đổi gì.
+   */
+  function applyHistoryEvent(ev) {
+    if (!S.job || Number(ev.job_id) !== S.job.jobId) return;
+    const key = `${Number(ev.track_id)}:${Number(ev.frame)}`;
+    if (ev.action === 'apply') remoteHistory.set(key, ev.history_id);
+    else if (ev.action === 'rollback') remoteHistory.delete(key);
+    else return;
+    const current = S.repair.trackId === Number(ev.track_id) && S.repair.frame === Number(ev.frame);
+    if (!current) return;
+    if (ev.action === 'apply') {
+      S.repair.applied = true;
+      S.repair.confirming = false;
+      S.repair.historyId = ev.history_id;
+    } else if (S.repair.historyId === ev.history_id || !S.repair.historyId) {
+      S.repair.applied = false;
+      S.repair.historyId = null;
+    }
+    render();
   }
 
   /** Kết luận xem tay vừa đổi ở phía web: đọc lại để nút Đúng / Báo nhầm khớp nhau. */
@@ -647,6 +679,7 @@
     cross: svg('M4.5 4.5l7 7M11.5 4.5l-7 7', 14),
     target: svg('M8 2.5v2M8 11.5v2M2.5 8h2M11.5 8h2M8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z', 14),
     refresh: svg('M12.5 6A4.75 4.75 0 1 0 13 9M12.5 2.5V6H9', 14),
+    web: svg('M9 3h4v4M13 3 7.5 8.5M11 9.5V13H3V5h3.5', 14),
   };
 
   function sevBadge(sev) {
@@ -698,7 +731,9 @@
     const count = S.collapsed && S.frames.length
       ? `<span class="head-count">${pos >= 0 ? `${pos + 1} / ${S.frames.length}` : `${S.frames.length} frame lỗi`}</span>` : '';
     const label = S.collapsed ? 'Mở rộng' : 'Thu gọn';
-    return `<div class="head">${LOGO}<span class="brand">PointSnap</span>${count}<span class="grow"></span>${dot}`
+    const web = ps.online
+      ? `<button class="icon-btn" data-action="open-web" aria-label="Mở kết quả trên web PointSnap" title="Mở kết quả job này trên web PointSnap">${ICON.web}</button>` : '';
+    return `<div class="head">${LOGO}<span class="brand">PointSnap</span>${count}<span class="grow"></span>${dot}${web}`
       + `<button class="icon-btn" data-action="collapse" aria-label="${label}" title="${label}">${S.collapsed ? ICON.max : ICON.min}</button></div>`;
   }
 
@@ -748,11 +783,6 @@
       + `<div class="nav-mid"><span class="nav-frame">Frame ${loading ? S.navTarget : frame ?? '—'}</span><span class="nav-sub">${sub}</span></div>`
       + `<button class="nav-btn primary" data-action="next" ${next === null ? 'disabled' : ''} aria-label="Frame có lỗi tiếp theo" title="Frame có lỗi tiếp theo (phím .)">${ICON.next}</button>`
       + '</div>';
-  }
-
-  function setNotice(kind, text, actions) {
-    S.notice = { kind, text, actions };
-    render();
   }
 
   function dispatchGhostTarget(repair, tolerances, trackId, frame) {
@@ -815,8 +845,11 @@
     }
     const frame = flag.frame;
     const rule = flag.items && flag.items[0] ? flag.items[0].rule : 'floating';
-    const slugParam = S.ps.project ? `&slug=${encodeURIComponent(S.ps.project.slug)}` : '';
-    const res = await pointsnap('GET', `/api/jobs/${S.job.jobId}/tracks/${trackId}/repair?frame=${frame}&rule=${encodeURIComponent(rule)}${slugParam}`);
+    // Có mục tương ứng trong lần quét: hỏi đề xuất theo mục (kèm bằng chứng của lần quét) để khớp với web.
+    const matched = reviewState(flag);
+    const res = matched && S.ps.project && S.ps.run
+      ? await pointsnap('GET', `/api/projects/${S.ps.project.slug}/scans/${S.ps.run.run_id}/findings/${matched.indices[0]}/repair`)
+      : await pointsnap('GET', `/api/jobs/${S.job.jobId}/tracks/${trackId}/repair?frame=${frame}&rule=${encodeURIComponent(rule)}${S.ps.project ? `&slug=${encodeURIComponent(S.ps.project.slug)}` : ''}`);
     if (S.repair.trackId !== trackId || S.repair.frame !== frame) return;
     S.repair.loading = false;
     if (res.ok && res.data && res.data.repair) {
@@ -848,6 +881,11 @@
       S.repair.rollingBack = false;
       S.repair.historyId = null;
       S.repair.verdict = null;
+      const remote = remoteHistory.get(`${trackId}:${frame}`);
+      if (remote) {
+        S.repair.applied = true;
+        S.repair.historyId = remote;
+      }
       loadRepairProposal(flag, trackId);
       return '<div class="repair-box"><span class="muted small">Đang chuẩn bị đề xuất sửa…</span></div>';
     }
@@ -1192,6 +1230,7 @@
         loadPointSnap(S.sid);
         break;
       case 'reload': location.reload(); break;
+      case 'open-web': openWeb(); break;
       case 'dismiss':
         S.notice = null;
         render();
@@ -1213,6 +1252,18 @@
       default:
         break;
     }
+  }
+
+  /** Mở web PointSnap (trang Kết quả) trong một tab cố định; web tự nhận ra tab CVAT này đang mở job. */
+  function openWeb() {
+    let base = 'http://127.0.0.1:8765';
+    try {
+      const url = new URL(settings.pointsnapUrl || base);
+      if (['http:', 'https:'].includes(url.protocol)) base = url.origin;
+    } catch (_) {
+      // Địa chỉ trong Tùy chọn hỏng: dùng mặc định.
+    }
+    window.open(`${base}/app#results`, 'pointsnap-web', 'noopener');
   }
 
   function isTyping(target) {

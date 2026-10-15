@@ -65,10 +65,17 @@ $('save').addEventListener('click', () => {
   });
 });
 
-$('test').addEventListener('click', () => {
-  setStatus('Đang kiểm tra…');
+/** Hỏi PointSnap đã lưu trong Tùy chọn; cập nhật ô trạng thái (và dòng trạng thái khi bấm Kiểm tra). */
+function checkConnection(fromButton) {
+  if (fromButton) setStatus('Đang kiểm tra…');
   chrome.runtime.sendMessage({ type: 'pointsnap', method: 'GET', path: '/api/projects' }, (res) => {
-    if (res && res.ok) setStatus(`Kết nối được PointSnap: ${res.data.length} dự án.`, 'ok');
-    else setStatus((res && res.error) || 'Không kết nối được PointSnap.', 'err');
+    const ok = !chrome.runtime.lastError && res && res.ok;
+    const text = ok ? `PointSnap đang chạy · ${res.data.length} dự án` : ((res && res.error) || 'Không kết nối được PointSnap — chạy "pointsnap ui".');
+    $('conn').className = `status ${ok ? 'ok' : 'err'}`;
+    $('conn-text').textContent = text;
+    if (fromButton) setStatus(ok ? `Kết nối được PointSnap: ${res.data.length} dự án.` : text, ok ? 'ok' : 'err');
   });
-});
+}
+
+$('test').addEventListener('click', () => checkConnection(true));
+checkConnection(false);

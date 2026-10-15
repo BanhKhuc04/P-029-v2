@@ -3,71 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PointSnap cho CVAT</title>
-  <style>
-    :root {
-      --bg: #F4F6F9; --surface: #FFFFFF; --border: #DDE2E8; --text: #161B22; --muted: #5B6573;
-      --primary: #0B63CE; --on-primary: #FFFFFF; --success: #157A4A; --error: #B42318; --head: #0F2A47;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0D1117; --surface: #151B23; --border: #2A333F; --text: #E6EAF0; --muted: #9AA5B4;
-        --primary: #4C9AFF; --on-primary: #04162E; --success: #5FD39A; --error: #F38B85; --head: #0A0F15;
-      }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
-    header { background: var(--head); color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 10px; }
-    header b { font-size: 16px; }
-    main { max-width: 640px; margin: 24px auto; padding: 0 16px; }
-    section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
-    h2 { margin: 0 0 4px; font-size: 15px; }
-    p.hint { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
-    label.field { display: block; font-weight: 600; margin: 12px 0 4px; }
-    input[type=url], textarea {
-      width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
-      background: var(--surface); color: var(--text); font: inherit;
-    }
-    textarea { min-height: 70px; resize: vertical; }
-    .check { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
-    .actions { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
-    button {
-      height: 36px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text); font: inherit; cursor: pointer;
-    }
-    button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-    #status { font-size: 13px; }
-    #status.ok { color: var(--success); }
-    #status.err { color: var(--error); }
-    code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
-  </style>
+  <title>PointSnap cho CVAT — Tùy chọn</title>
+  <link rel="stylesheet" href="ui.css">
 </head>
-<body>
-  <header>
+<body class="options">
+  <header class="app-head">
     <svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true">
       <path d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="#fff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
       <circle cx="24" cy="38" r="5" fill="#4C9AFF"/>
     </svg>
-    <b>PointSnap cho CVAT</b>
+    <b>PointSnap cho CVAT · Tùy chọn</b>
   </header>
   <main>
-    <section>
-      <h2>Địa chỉ</h2>
-      <p class="hint">Mặc định extension chạy trên CVAT ở <code>http://localhost:8080</code> và gọi PointSnap ở <code>http://127.0.0.1:8765</code>.</p>
-      <label class="field" for="pointsnap-url">PointSnap</label>
+    <section class="card">
+      <h2>Kết nối</h2>
+      <p class="hint">Mặc định extension chạy trên CVAT ở <code>http://localhost:8080</code> và gọi PointSnap ở <code>http://127.0.0.1:8765</code>. Chỉ cần đổi khi bạn dùng địa chỉ khác.</p>
+      <div id="conn" class="status" role="status"><span class="dot"></span><div><span id="conn-text">Đang kiểm tra PointSnap…</span></div></div>
+      <label class="field" for="pointsnap-url">Địa chỉ PointSnap</label>
       <input id="pointsnap-url" type="url" placeholder="http://127.0.0.1:8765">
       <label class="field" for="cvat-urls">CVAT khác (mỗi dòng một địa chỉ, không bắt buộc)</label>
       <textarea id="cvat-urls" placeholder="http://192.168.1.20:8080"></textarea>
     </section>
-    <section>
-      <h2>Hành vi</h2>
-      <label class="check"><input id="auto-filter" type="checkbox"> <span>Mở job là tự bật bộ lọc chỉ hiện box có cờ lỗi</span></label>
-      <label class="check"><input id="auto-expand" type="checkbox"> <span>Khi đang lọc, tự mở DETAILS của box có cờ để thấy nội dung lỗi trong CVAT</span></label>
-      <label class="check"><input id="auto-highlight" type="checkbox"> <span>Chuyển tới frame có lỗi thì tự làm sáng box lỗi đầu tiên</span></label>
+    <section class="card">
+      <h2>Khi mở một job</h2>
+      <label class="check"><input id="auto-filter" type="checkbox"><span>Tự bật bộ lọc chỉ hiện box có cờ lỗi<small>Dùng bộ lọc sẵn có của CVAT; tắt bằng nút “Hiện tất cả” trong bảng.</small></span></label>
+      <label class="check"><input id="auto-expand" type="checkbox"><span>Tự mở DETAILS của box có cờ khi đang lọc<small>Để đọc nội dung cờ <code>pointsnap_error</code> ngay trong danh sách của CVAT.</small></span></label>
+      <label class="check"><input id="auto-highlight" type="checkbox"><span>Tự làm sáng box lỗi đầu tiên khi chuyển frame<small>Chỉ khi xác định được duy nhất box của lỗi.</small></span></label>
     </section>
-    <div class="actions">
-      <button id="save" class="primary">Lưu</button>
-      <button id="test">Kiểm tra kết nối PointSnap</button>
+    <div class="save-row">
+      <button id="save" class="btn primary">Lưu</button>
+      <button id="test" class="btn">Kiểm tra kết nối PointSnap</button>
       <span id="status" role="status"></span>
     </div>
   </main>

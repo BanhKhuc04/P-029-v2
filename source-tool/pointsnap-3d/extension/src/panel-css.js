@@ -67,7 +67,7 @@ globalThis.PointSnapPanelCss = `
   font: 500 11px/18px 'IBM Plex Mono', Consolas, monospace; color: var(--text-2);
 }
 
-.body { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.body { overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 
 /* ---- Điều hướng frame ---- */
 .nav { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 8px; }
@@ -101,7 +101,9 @@ globalThis.PointSnapPanelCss = `
   background: var(--note); border: 1px solid var(--note-border); font-size: 12px; color: var(--text);
 }
 .fix-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--primary-text); margin-bottom: 2px; }
-.card-actions { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.card-actions .btn { flex: 1 1 auto; justify-content: center; padding: 0 8px; }
+.card-actions .icon-btn { flex: none; }
 .pager { display: inline-flex; align-items: center; gap: 2px; font: 500 12px 'IBM Plex Mono', Consolas, monospace; color: var(--text-2); }
 .pager .icon-btn { color: var(--text-2); }
 

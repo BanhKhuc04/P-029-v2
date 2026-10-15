@@ -124,6 +124,7 @@ p { margin: 0; }
 .hero .lead { font-size: 20px; max-width: 560px; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
 .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.enter-hint { margin-top: 14px; font-size: 14px; color: var(--text-3); }
 .badge { font: 500 13px 'IBM Plex Mono', monospace; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); }
 .proof { display: flex; gap: 32px; margin-top: 28px; }
 .proof b { display: block; font: 600 26px 'IBM Plex Mono', monospace; color: var(--primary); }

@@ -12,12 +12,14 @@ const syncToggle = () => toggle.setAttribute('aria-checked', String(root.dataset
 syncToggle();
 toggle.addEventListener('click', () => {
   root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-  try { localStorage.setItem('pointsnap-theme', root.dataset.theme); } catch (e) {}
+  // Dùng chung khóa với ứng dụng web (/app) để hai trang cùng sáng / tối.
+  try { localStorage.setItem('pointsnap_theme', root.dataset.theme); localStorage.setItem('pointsnap-theme', root.dataset.theme); } catch (e) {}
   syncToggle();
 });
 
 // ---------- marquee ----------
-const RULES = ['floating', 'size.class_range', 'size.in_track', 'track.jump', 'track.split_id', 'track.id_swap', 'heading.flip', 'heading.motion', 'fit.outside', 'fit.empty', 'lidar.missing', 'cam.missing', 'spec.inside', 'attr.rider_state', 'critic.box', 'cam.mismatch'];
+// Nhóm luật đứt track (track.*) đang tắt theo quyết định của dự án nên không đưa vào đây.
+const RULES = ['floating', 'size.class_range', 'size.in_track', 'heading.flip', 'heading.motion', 'heading.points', 'fit.outside', 'fit.empty', 'fit.overlap', 'lidar.missing', 'cam.missing', 'spec.inside', 'attr.missing', 'attr.rider_state', 'critic.box', 'cam.mismatch'];
 const si = (d, c) => `<svg viewBox="0 0 24 24"><path fill="${c}" d="${d}"/></svg>`;
 const LOGOS = [
   ['CVAT', `<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="14" rx="1.5" stroke="#5B5BD6" stroke-width="2"/><rect x="2.5" y="3.5" width="3.5" height="3.5" rx=".8" fill="#5B5BD6"/><rect x="18" y="3.5" width="3.5" height="3.5" rx=".8" fill="#5B5BD6"/><rect x="2.5" y="17" width="3.5" height="3.5" rx=".8" fill="#5B5BD6"/><rect x="18" y="17" width="3.5" height="3.5" rx=".8" fill="#5B5BD6"/><path d="M9 14.5 L12 9 L15 14.5" stroke="#5B5BD6" stroke-width="1.8" stroke-linejoin="round"/></svg>`],
@@ -47,12 +49,13 @@ const ICON = {
   fit: '<path d="M22 12 L36 20 L22 28 L8 20 Z M8 20 V36 L22 44 L36 36 V20 M22 28 V44" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="42" cy="30" r="2.2" fill="#F87171"/><circle cx="47" cy="36" r="2.2" fill="#F87171"/><circle cx="44" cy="42" r="2.2" fill="#F87171"/><circle cx="50" cy="28" r="2.2" fill="#F87171"/><circle cx="22" cy="34" r="2" fill="currentColor"/><circle cx="17" cy="30" r="2" fill="currentColor"/>',
   missing: '<path d="M28 8 L44 17 L28 26 L12 17 Z M12 17 V35 L28 44 L44 35 V17 M28 26 V44" stroke="#F87171" stroke-width="2" stroke-linejoin="round" stroke-dasharray="3 3"/><circle cx="22" cy="30" r="2.2" fill="currentColor"/><circle cx="28" cy="34" r="2.2" fill="currentColor"/><circle cx="34" cy="29" r="2.2" fill="currentColor"/><circle cx="26" cy="24" r="2.2" fill="currentColor"/><circle cx="32" cy="38" r="2.2" fill="currentColor"/><circle cx="20" cy="36" r="2.2" fill="currentColor"/>',
   spec: '<rect x="10" y="8" width="36" height="42" rx="6" stroke="currentColor" stroke-width="2.5"/><path d="M17 20 L20 23 L26 17 M17 32 L20 35 L26 29" stroke="#4CC38A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 20 H39 M31 32 H39 M17 43 H39" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  repair: '<path d="M22 14 L36 22 L22 30 L8 22 Z M8 22 V38 L22 46 L36 38 V22 M22 30 V46" stroke="#4CC38A" stroke-width="2.5" stroke-linejoin="round"/><path d="M28 4 L42 12 L28 20 L14 12 Z" stroke="#F87171" stroke-width="2" stroke-linejoin="round" stroke-dasharray="3 3"/><path d="M46 14 V30 M41 25 L46 30 L51 25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>',
   verifier: '<path d="M24 12 L38 20 L24 28 L10 20 Z M10 20 V36 L24 44 L38 36 V20 M24 28 V44" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="44" r="4" fill="#4C9AFF"/><path d="M44 6 L46 12 L52 14 L46 16 L44 22 L42 16 L36 14 L42 12 Z" fill="#F0A54A"/>',
 };
 const FEATS = [
   ['floating', 'Lơ lửng / lún', 'Đáy box so với mặt đất cục bộ quanh box và các frame khác của track.', 'floating', 'Đáy box cách mặt đất 26 cm', true],
   ['size', 'Sai kích thước', 'Ngoài khoảng của class, hoặc lệch trung vị kích thước của cả track.', 'size.class_range', 'Dài 7.80 m — lớn bất thường cho car'],
-  ['track', 'Đứt track', 'Nhảy vị trí, tách ID, đổi nhầm ID, dùng lại ID theo spec 4.4.', 'track.jump', 'Tâm box nhảy 2.17 m'],
+  ['repair', 'Gợi ý sửa 1 lần bấm', 'Tính sẵn Δz, Δyaw, kích thước từ point cloud; ghi lên CVAT khi bạn xác nhận, hoàn tác được.', 'repair', 'Δz −26 cm · Δyaw +4°'],
   ['heading', 'Sai hướng', 'Lật hướng, ngược chiều chạy, lệch trục cụm điểm.', 'heading.flip', 'Ngược chiều 178°'],
   ['fit', 'Box lệch khỏi vật', 'Điểm của vật nằm ngoài box, box dư, box rỗng, vẽ trùng.', 'fit.outside', '40/60 điểm nằm ngoài box'],
   ['missing', 'Sót đối tượng', 'Cụm LiDAR cỡ xe / người di chuyển mà không có box; camera thấy vật mà không có box.', 'lidar.missing', 'Cụm cỡ xe đi 15.9 m không box'],
@@ -228,3 +231,32 @@ import('./scenes.js').then(m => m.init()).catch(err => {
   console.warn('Không nạp được cảnh 3D:', err);
   $$('.scene, .vf8').forEach(el => el.classList.add('no-3d'));
 });
+
+// ---------- chạy local trong PointSnap hay trang tĩnh (Vercel) ----------
+// Mở từ `pointsnap ui` (127.0.0.1:8765): nút chính vào thẳng ứng dụng ở /app, Enter cũng vào.
+// Mở từ nơi không có máy chủ PointSnap: nút chính dẫn tới hướng dẫn cài.
+const INSTALL_URL = 'https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/CAI-DAT.md';
+const useStaticMode = () => {
+  $$('[data-app-link]').forEach(a => {
+    a.href = INSTALL_URL; a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = 'Hướng dẫn cài đặt <span aria-hidden="true">→</span>';
+  });
+  $('#startTitle').textContent = 'Cài trong 1 phút.';
+  $('#startNote').textContent = 'Cài xong, chạy pointsnap ui rồi mở 127.0.0.1:8765 để vào ứng dụng.';
+};
+fetch('/api/projects', { headers: { Accept: 'application/json' } })
+  .then(res => (res.ok && (res.headers.get('Content-Type') || '').includes('json') ? res.json() : Promise.reject(new Error('static'))))
+  .then(projects => {
+    const n = Array.isArray(projects) ? projects.length : 0;
+    $('#serverPill span').textContent = n ? `PointSnap đang chạy trên máy bạn · ${n} dự án` : 'PointSnap đang chạy trên máy bạn · chưa có dự án';
+    $('#enterHint').hidden = false;
+    $('#startNote').textContent = n
+      ? `Bạn đang có ${n} dự án. Mở ứng dụng để quét job và xem kết quả mới nhất.`
+      : 'Lần đầu: tạo dự án (URL CVAT + token) → quét một job → mở job trên CVAT để sửa bằng extension.';
+    addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.target.closest && e.target.closest('a, button, input, textarea, select, summary, [contenteditable="true"]')) return;
+      location.href = '/app';
+    });
+  })
+  .catch(useStaticMode);

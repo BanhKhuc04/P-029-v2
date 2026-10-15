@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import mimetypes
 import os
 import threading
 from pathlib import Path
@@ -42,6 +43,15 @@ from pointsnap.web.storage import StorageError
 logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
+# Landing page của đội (source-tool/pointsnap-3d/landing, cũng deploy lên Vercel). Cài bằng `pip install -e .` thì
+# có thư mục này; bản wheel không mang theo nên dùng trang giới thiệu dự phòng `static/landing.html`.
+LANDING_DIR = Path(__file__).resolve().parents[2] / "landing"
+_LANDING_FILES = ("styles.css", "main.js", "scenes.js")
+
+# Windows có thể khai .js là text/plain trong registry: trình duyệt từ chối chạy ES module (landing, three.js).
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("image/svg+xml", ".svg")
 
 # run_id hợp lệ: YYYYMMDD-HHMMSS[-<ms>]-job<id>  (điểm nhỏ 3 — chặn path traversal)
 _RUN_ID_RE = RUN_ID_RE
@@ -143,7 +153,9 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     async def revalidate_ui_files(request, call_next):
         """Trang giao diện luôn được trình duyệt kiểm lại, để bản cập nhật hiện ngay mà không cần xóa cache."""
         response = await call_next(request)
-        if request.url.path in ("/", "/app") or request.url.path.startswith("/static/"):
+        path = request.url.path
+        if (path in ("/", "/app") or path.startswith(("/static/", "/vendor/"))
+                or path.lstrip("/") in _LANDING_FILES):
             response.headers["Cache-Control"] = "no-cache"
         return response
 
@@ -1382,9 +1394,24 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         application.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
         # Mở PointSnap local: trang giới thiệu (landing) trước, bấm "Mở PointSnap" mới vào ứng dụng ở /app.
+        team_landing = (LANDING_DIR / "index.html").is_file()
+        if team_landing:
+            for sub in ("assets", "vendor"):
+                if (LANDING_DIR / sub).is_dir():
+                    application.mount(f"/{sub}", StaticFiles(directory=str(LANDING_DIR / sub)), name=f"landing-{sub}")
+
+            def _landing_file(name: str):
+                def serve() -> FileResponse:
+                    return FileResponse(LANDING_DIR / name)
+                return serve
+
+            for name in _LANDING_FILES:
+                if (LANDING_DIR / name).is_file():
+                    application.add_api_route(f"/{name}", _landing_file(name), methods=["GET"], include_in_schema=False)
+
         @application.get("/")
         def serve_landing() -> FileResponse:
-            return FileResponse(STATIC_DIR / "landing.html")
+            return FileResponse(LANDING_DIR / "index.html" if team_landing else STATIC_DIR / "landing.html")
 
         @application.get("/app")
         def serve_index() -> FileResponse:

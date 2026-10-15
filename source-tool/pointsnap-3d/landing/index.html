@@ -6,23 +6,22 @@
   <title>PointSnap 3D</title>
   <meta name="description" content="PointSnap đối chiếu từng box với point cloud LiDAR, track, ảnh camera và spec gán nhãn — rồi gắn cờ thẳng lên box lỗi trong CVAT.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font và Three.js nằm sẵn trên máy (IBM Plex của giao diện PointSnap, three r160 trong vendor/): trang chạy cả khi không có mạng. -->
+  <link rel="stylesheet" href="/static/fonts/fonts.css">
   <link rel="stylesheet" href="styles.css">
   <script>
     // Chọn theme trước khi vẽ trang để không bị nháy màu.
     (function () {
       var t = null;
-      try { t = localStorage.getItem('pointsnap-theme'); } catch (e) {}
+      try { t = localStorage.getItem('pointsnap_theme') || localStorage.getItem('pointsnap-theme'); } catch (e) {}
       if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       document.documentElement.dataset.theme = t;
     })();
   </script>
   <script type="importmap">
     { "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        "three": "/vendor/three/three.module.min.js",
+        "three/addons/": "/vendor/three/addons/"
     } }
   </script>
 </head>
@@ -53,7 +52,7 @@
         <a href="#cach-hoat-dong">Cách hoạt động</a>
         <a href="#ket-qua">Kết quả</a>
         <a href="#doi-ngu">Đội ngũ</a>
-        <a href="#tai-ve">Tải về</a>
+        <a href="#bat-dau">Bắt đầu</a>
       </nav>
       <div class="nav__actions">
         <button class="theme-toggle" id="themeToggle" type="button" role="switch" aria-label="Chuyển giao diện sáng / tối">
@@ -61,7 +60,7 @@
           <span class="theme-toggle__clouds" aria-hidden="true"><i></i><i></i><i></i></span>
           <span class="theme-toggle__knob" aria-hidden="true"><i></i><i></i><i></i></span>
         </button>
-        <a class="btn btn--primary btn--sm magnetic" href="#tai-ve">Tải miễn phí</a>
+        <a class="btn btn--primary btn--sm magnetic" href="/app" data-app-link>Mở PointSnap <span aria-hidden="true">→</span></a>
       </div>
     </div>
   </header>
@@ -72,13 +71,14 @@
       <div class="hero__grid" aria-hidden="true"></div>
       <div class="container hero__inner">
         <div class="hero__copy reveal">
-          <span class="pill"><i class="dot dot--ok"></i>MỚI · Box Verifier — AI tự huấn luyện</span>
+          <span class="pill" id="serverPill"><i class="dot dot--ok"></i><span>MỚI · Box Verifier — AI tự huấn luyện</span></span>
           <h1>Bắt lỗi nhãn 3D<br><span class="grad">trước khi bị trả về.</span></h1>
           <p class="lead">PointSnap đối chiếu từng box với point cloud LiDAR, track, ảnh camera và spec gán nhãn — rồi gắn cờ thẳng lên box lỗi trong CVAT.</p>
           <div class="cta-row">
-            <a class="btn btn--primary magnetic" href="#tai-ve"><span aria-hidden="true">↓</span> Tải Extension Chrome / Edge</a>
+            <a class="btn btn--primary magnetic" href="/app" data-app-link>Mở PointSnap <span aria-hidden="true">→</span></a>
             <a class="btn btn--ghost magnetic" href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/tree/main/source-tool/pointsnap-3d" target="_blank" rel="noopener"><span aria-hidden="true">★</span> Xem trên GitHub</a>
           </div>
+          <p class="enter-hint" id="enterHint" hidden>Nhấn <kbd>Enter</kbd> để vào ứng dụng.</p>
           <div class="badges">
             <span class="badge">Python 3.11</span><span class="badge">CVAT 2.77</span><span class="badge">nuScenes</span><span class="badge">Chrome / Edge</span>
           </div>
@@ -154,7 +154,7 @@
       <div class="container">
         <header class="sec-head reveal">
           <p class="eyebrow">TÍNH NĂNG</p>
-          <h2>Tám nhóm lỗi. Một lần quét.</h2>
+          <h2>Bảy nhóm lỗi. Một lần quét. Sửa một lần bấm.</h2>
           <p class="lead">Mỗi luật đo bằng hình học trên point cloud, track và ảnh camera — có ngưỡng, có bằng chứng, chỉnh được theo guideline của từng dự án.</p>
         </header>
         <div class="bento" id="bento"></div>
@@ -172,11 +172,11 @@
         <ol class="timeline" id="timeline">
           <li class="timeline__beam" aria-hidden="true"><i id="beamFill"></i></li>
           <li class="step reveal"><span class="step__node">✎</span><small>BƯỚC 01</small><h3>Gán nhãn trên CVAT</h3><p>Annotator vẽ cuboid 3D như mọi ngày — không đổi quy trình.</p></li>
-          <li class="step reveal"><span class="step__node">⌕</span><small>BƯỚC 02</small><h3>Quét &amp; gắn cờ</h3><p><code>pointsnap scan --flag</code> ghi lỗi vào thuộc tính <code>pointsnap_error</code> của đúng box.</p></li>
-          <li class="step reveal"><span class="step__node">⚑</span><small>BƯỚC 03</small><h3>Sửa ngay trong CVAT</h3><p>Extension tự lọc box có cờ; phím <kbd>.</kbd> / <kbd>,</kbd> nhảy tới frame lỗi, rê chuột thấy cách sửa.</p></li>
-          <li class="step reveal"><span class="step__node">✓</span><small>BƯỚC 04</small><h3>Qua cổng rồi nộp</h3><p><code>pointsnap gate</code> trả ĐẠT / KHÔNG ĐẠT theo tiêu chí của dự án.</p></li>
+          <li class="step reveal"><span class="step__node">⌕</span><small>BƯỚC 02</small><h3>Quét &amp; gắn cờ</h3><p>Bấm <b>Quét job</b> trên web (hoặc <code>pointsnap scan --flag</code>) — lỗi được ghi vào thuộc tính <code>pointsnap_error</code> của đúng box.</p></li>
+          <li class="step reveal"><span class="step__node">⚑</span><small>BƯỚC 03</small><h3>Sửa ngay trong CVAT</h3><p>Extension tự lọc box có cờ; phím <kbd>.</kbd> / <kbd>,</kbd> nhảy tới frame lỗi; có đề xuất sửa thì áp dụng 1 lần bấm, hoàn tác được.</p></li>
+          <li class="step reveal"><span class="step__node">✓</span><small>BƯỚC 04</small><h3>Qua cổng rồi nộp</h3><p>Quét lại: cổng kiểm soát trả ĐẠT / KHÔNG ĐẠT theo tiêu chí của dự án (<code>pointsnap gate</code> cho CI).</p></li>
         </ol>
-        <p class="principle reveal">🛡 <b>Tool đề xuất, con người quyết định</b> — PointSnap chỉ gắn cờ, không tự sửa box.</p>
+        <p class="principle reveal">🛡 <b>Tool đề xuất, con người quyết định</b> — PointSnap không tự sửa box: chỉ ghi lên CVAT khi bạn bấm xác nhận, và luôn có snapshot để hoàn tác.</p>
       </div>
     </section>
 
@@ -247,20 +247,20 @@
       </div>
     </section>
 
-    <!-- ========== DOWNLOAD ========== -->
-    <section class="section section--tight" id="tai-ve">
+    <!-- ========== BẮT ĐẦU ========== -->
+    <section class="section section--tight" id="bat-dau">
       <div class="container">
         <div class="dl reveal">
           <svg class="dl__cube" viewBox="0 0 48 48" aria-hidden="true"><use href="#logo"/></svg>
           <div class="dl__copy">
-            <p class="eyebrow eyebrow--light">TẢI VỀ</p>
-            <h2>Cài trong 1 phút.</h2>
-            <p class="lead lead--light">Miễn phí cho đội gán nhãn. Chạy trên máy bạn, đọc CVAT qua REST API — dữ liệu không rời khỏi máy.</p>
+            <p class="eyebrow eyebrow--light">BẮT ĐẦU</p>
+            <h2 id="startTitle">Vào việc trong 1 phút.</h2>
+            <p class="lead lead--light" id="startLead">Chạy trên máy bạn, đọc CVAT qua REST API — dữ liệu không rời khỏi máy.</p>
             <div class="cta-row">
-              <a class="btn btn--white magnetic" href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/tree/main/source-tool/pointsnap-3d" target="_blank" rel="noopener"><span aria-hidden="true">↓</span> Lấy mã nguồn trên GitHub</a>
+              <a class="btn btn--white magnetic" href="/app" data-app-link>Mở PointSnap <span aria-hidden="true">→</span></a>
               <a class="btn btn--glass magnetic" href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/CAI-DAT.md" target="_blank" rel="noopener">Hướng dẫn cài</a>
             </div>
-            <p class="dl__note">Repo đang để riêng tư cho Team P-029 — liên hệ nhóm để được cấp quyền truy cập.</p>
+            <p class="dl__note" id="startNote">Lần đầu: tạo dự án (URL CVAT + token) → quét một job → mở job trên CVAT để sửa bằng extension.</p>
           </div>
           <div class="dl__cards">
             <div class="glass">
@@ -272,7 +272,7 @@
               </ol>
             </div>
             <div class="glass">
-              <h3><span class="mono">&gt;_</span>PointSnap CLI · Python 3.11</h3>
+              <h3><span class="mono">&gt;_</span>PointSnap · Python 3.11</h3>
               <div class="code">
                 <button class="copy" type="button" data-copy="pip install -e .&#10;pointsnap ui">Sao chép</button>
                 <pre><span>$</span> pip install -e .
@@ -293,7 +293,7 @@
           <p class="muted">Không thấy câu trả lời? Mở issue trên GitHub của dự án.</p>
         </header>
         <div class="faq__list">
-          <details class="reveal" open><summary>PointSnap có tự sửa box không?</summary><p>Không. PointSnap chỉ ghi thuộc tính <code>pointsnap_error</code> lên box lỗi; không đổi vị trí, kích thước, class và không tạo box mới. Cờ tự xóa khi box hết lỗi.</p></details>
+          <details class="reveal" open><summary>PointSnap có tự sửa box không?</summary><p>Không tự sửa. Khi quét, PointSnap chỉ ghi thuộc tính <code>pointsnap_error</code> lên box lỗi; cờ tự xóa khi box hết lỗi. Với box có đề xuất sửa (Δz, Δyaw, kích thước), PointSnap chỉ ghi lên CVAT khi bạn bấm <b>Áp dụng</b> và xác nhận — mỗi lần đều lưu snapshot để <b>Hoàn tác</b>, và từ chối ghi nếu box vừa bị người khác sửa.</p></details>
           <details class="reveal"><summary>Cần những gì để chạy?</summary><p>Python 3.11 và một CVAT có token API. Muốn thử ngay không cần CVAT: dùng nuScenes v1.0-mini với <code>pointsnap nuscenes … scan --inject</code> để chèn lỗi giả rồi quét.</p></details>
           <details class="reveal"><summary>Có chỉnh theo guideline riêng của dự án được không?</summary><p>Có. Bật / tắt từng luật, đổi ngưỡng, class và thuộc tính bắt buộc ngay trên giao diện, hoặc dán file YAML (ví dụ <code>spec-vn.yaml</code> cho bộ nhãn giao thông VN).</p></details>
           <details class="reveal"><summary>Tích hợp vào CI thế nào?</summary><p><code>pointsnap gate --job 12</code> trả mã thoát 0 = ĐẠT, 1 = KHÔNG ĐẠT — đặt vào pipeline để chặn nộp khi còn lỗi.</p></details>
@@ -311,7 +311,7 @@
           <p>Phát hiện và cảnh báo sớm lỗi nhãn 3D cuboid trên CVAT —<br>trước khi nộp, không phải sau khi bị trả về.</p>
         </div>
         <div class="footer__cols">
-          <div><h4>SẢN PHẨM</h4><a href="#tinh-nang">Tính năng</a><a href="#ket-qua">Kết quả</a><a href="#tai-ve">Tải về</a></div>
+          <div><h4>SẢN PHẨM</h4><a href="#tinh-nang">Tính năng</a><a href="#ket-qua">Kết quả</a><a href="#bat-dau">Bắt đầu</a></div>
           <div><h4>TÀI LIỆU</h4><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/README.md" target="_blank" rel="noopener">README</a><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/CAI-DAT.md" target="_blank" rel="noopener">Cài từ máy trắng</a><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/docs/bao-cao-du-an.md" target="_blank" rel="noopener">Báo cáo dự án</a></div>
           <div><h4>ĐỘI NGŨ</h4><a href="#doi-ngu">Team P-029</a><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029" target="_blank" rel="noopener">GitHub</a></div>
         </div>

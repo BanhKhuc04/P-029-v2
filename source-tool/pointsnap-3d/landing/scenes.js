@@ -142,8 +142,8 @@ function heroScene() {
 function vf8Scene() {
   const el = document.getElementById('vf8Scene'); const canvas = el.querySelector('canvas');
   const renderer = makeRenderer(canvas); const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(30, 1, .1, 100);
-  camera.position.set(...P(6.0, -6.4, 2.9)); camera.lookAt(...P(0, 0, .35));
+  const camera = new THREE.PerspectiveCamera(32, 1, .1, 100);
+  camera.position.set(...P(6.5, -6.9, 3.1)); camera.lookAt(...P(0, 0, .25));
   fit(renderer, camera, el);
 
   const L = 4.75, HL = L / 2, Wd = 1.934, Hh = 1.667, AXF = 1.40, AXR = -1.55, WR = .38;
@@ -184,13 +184,13 @@ function vf8Scene() {
     const g = new THREE.BufferGeometry().setFromPoints(pts); const m = dashed ? new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: .12, gapSize: .18 }) : new THREE.LineBasicMaterial({ color, transparent: true, opacity });
     const l = new THREE.Line(g, m); if (dashed) l.computeLineDistances(); return l; };
   const floor = new THREE.Group(); scene.add(floor);
-  floor.add(circle(3.0, 0x7DB4FF, .95)); floor.add(circle(3.02, 0x7DB4FF, .6)); floor.add(circle(3.55, 0x4C9AFF, .4)); floor.add(circle(3.85, 0x4C9AFF, .3, true));
-  const ticks = []; for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; ticks.push(new THREE.Vector3(3 * Math.cos(a), .002, 3 * Math.sin(a)), new THREE.Vector3(3.25 * Math.cos(a), .002, 3.25 * Math.sin(a))); }
+  floor.add(circle(2.75, 0x7DB4FF, .95)); floor.add(circle(2.77, 0x7DB4FF, .6)); floor.add(circle(3.10, 0x4C9AFF, .4)); floor.add(circle(3.35, 0x4C9AFF, .35, true));
+  const ticks = []; for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; ticks.push(new THREE.Vector3(2.75 * Math.cos(a), .002, 2.75 * Math.sin(a)), new THREE.Vector3(2.95 * Math.cos(a), .002, 2.95 * Math.sin(a))); }
   floor.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ticks), new THREE.LineBasicMaterial({ color: 0x7DB4FF, transparent: true, opacity: .8 })));
   const discTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128); gr.addColorStop(0, 'rgba(76,154,255,.55)'); gr.addColorStop(.7, 'rgba(76,154,255,.18)'); gr.addColorStop(1, 'rgba(76,154,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c); })();
-  const disc = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 7.4), new THREE.MeshBasicMaterial({ map: discTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); disc.rotation.x = -Math.PI / 2; floor.add(disc);
+  const disc = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 6.4), new THREE.MeshBasicMaterial({ map: discTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); disc.rotation.x = -Math.PI / 2; floor.add(disc);
   const shadowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(2,8,20,.7)'); gr.addColorStop(1, 'rgba(2,8,20,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 2.6), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; shadow.position.y = .004; car.add(shadow);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.4), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; shadow.position.y = .004; car.add(shadow);
   // vạch tốc độ nền
   const lines = []; for (let i = 0; i < 18; i++) { const z = -6 - rnd() * 8, y = .5 + rnd() * 3.5, x = -8 + rnd() * 10; lines.push(new THREE.Vector3(x, y, z), new THREE.Vector3(x + 1.5 + rnd() * 3, y, z)); }
   const speed = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: 0x4C9AFF, transparent: true, opacity: .2 })); scene.add(speed);

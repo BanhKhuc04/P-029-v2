@@ -141,28 +141,140 @@
             </div>
           </div>
 
-          <!-- Trạng thái trống + hướng dẫn bắt đầu -->
-          <div id="results-empty-state" class="empty-state card-section">
-            <svg class="empty-illus" width="56" height="56" aria-hidden="true"><use href="#i-logo"></use></svg>
-            <h2 id="empty-title">Chưa có kết quả quét</h2>
-            <p id="empty-desc">Làm theo 3 bước dưới đây — xong bước 3 là kết quả hiện ngay tại đây.</p>
-            <ol class="onboard-steps">
-              <li id="onb-step-project" class="onb-step">
-                <span class="onb-num">1</span>
-                <div class="onb-text"><b>Tạo dự án</b><span>Tên dự án, URL máy chủ CVAT và token.</span></div>
-                <button id="onb-create" class="btn btn-secondary btn-sm">Tạo dự án</button>
-              </li>
-              <li id="onb-step-connect" class="onb-step">
-                <span class="onb-num">2</span>
-                <div class="onb-text"><b>Kết nối CVAT</b><span>Kiểm tra kết nối, khai thư mục point cloud.</span></div>
-                <a href="#connection" class="btn btn-secondary btn-sm">Mở Kết nối</a>
-              </li>
-              <li id="onb-step-scan" class="onb-step">
-                <span class="onb-num">3</span>
-                <div class="onb-text"><b>Quét một job</b><span>Chọn task / job rồi bấm Bắt đầu quét.</span></div>
-                <a href="#scan" class="btn btn-primary btn-sm">Quét job</a>
-              </li>
-            </ol>
+          <!-- Hub trung tâm kiểm tra hệ thống & điều hướng phiên làm việc -->
+          <div id="results-empty-state" class="hub-container card-section">
+            <!-- Animated 3D Logo Header -->
+            <div class="hub-header">
+              <div class="hub-logo-wrap">
+                <div class="hub-radar-ring"></div>
+                <div class="hub-radar-ring outer"></div>
+                <div class="hub-cube-3d">
+                  <svg class="hub-cube-svg" width="64" height="64" viewBox="0 0 48 48" fill="none">
+                    <path class="cube-top" d="M24 6 L38 14 L24 22 L10 14 Z" fill="rgba(76,154,255,0.25)" stroke="#4C9AFF" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path class="cube-left" d="M10 14 V30 L24 38 V22 Z" fill="rgba(76,154,255,0.15)" stroke="#4C9AFF" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path class="cube-right" d="M24 22 V38 L38 30 V14 Z" fill="rgba(76,154,255,0.35)" stroke="#4C9AFF" stroke-width="2.5" stroke-linejoin="round"/>
+                    <circle class="cube-dot" cx="24" cy="22" r="3.5" fill="#38E1A0"/>
+                  </svg>
+                  <div class="hub-scan-laser"></div>
+                </div>
+              </div>
+              <h2 class="hub-title" id="empty-title">Trung tâm Điều khiển PointSnap 3D</h2>
+              <p class="hub-desc" id="empty-desc">Kiểm tra kết nối CVAT, mô hình AI và tiếp tục phiên làm việc gần nhất.</p>
+            </div>
+
+            <!-- Bảng kiểm tra toàn bộ hệ thống (Health Check) -->
+            <div class="hub-section">
+              <div class="hub-section-head">
+                <span class="hub-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Trạng thái Sẵn sàng của Hệ thống</span>
+                <button id="btn-recheck-health" class="btn btn-ghost btn-sm" title="Kiểm tra lại toàn bộ kết nối">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  Kiểm tra lại
+                </button>
+              </div>
+
+              <div class="sys-health-grid">
+                <!-- 1. CVAT Server -->
+                <div class="health-card" id="card-health-cvat">
+                  <div class="health-icon cvat-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                  </div>
+                  <div class="health-body">
+                    <div class="health-row">
+                      <span class="health-label">Máy chủ CVAT</span>
+                      <span id="health-cvat-badge" class="health-badge badge-checking">Đang kiểm tra...</span>
+                    </div>
+                    <div id="health-cvat-detail" class="health-detail">http://localhost:8080</div>
+                  </div>
+                </div>
+
+                <!-- 2. AI Models -->
+                <div class="health-card" id="card-health-models">
+                  <div class="health-icon ai-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L13 22h-2l.25-12.07A4.002 4.002 0 0 1 12 2z"/><circle cx="12" cy="6" r="1.5"/></svg>
+                  </div>
+                  <div class="health-body">
+                    <div class="health-row">
+                      <span class="health-label">Mô hình AI & Trọng số</span>
+                      <span id="health-models-badge" class="health-badge badge-checking">Đang kiểm tra...</span>
+                    </div>
+                    <div id="health-models-detail" class="health-detail">Box Critic v3 Ensemble</div>
+                  </div>
+                </div>
+
+                <!-- 3. Extension CVAT -->
+                <div class="health-card" id="card-health-ext">
+                  <div class="health-icon ext-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  </div>
+                  <div class="health-body">
+                    <div class="health-row">
+                      <span class="health-label">Extension CVAT</span>
+                      <span id="health-ext-badge" class="health-badge badge-checking">Đang kiểm tra...</span>
+                    </div>
+                    <div id="health-ext-detail" class="health-detail">Đồng bộ 2 chiều (history_rev)</div>
+                  </div>
+                </div>
+
+                <!-- 4. Point Cloud & 3D Rules -->
+                <div class="health-card" id="card-health-rules">
+                  <div class="health-icon rules-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                  </div>
+                  <div class="health-body">
+                    <div class="health-row">
+                      <span class="health-label">Bộ Quy tắc Kiểm tra</span>
+                      <span class="health-badge badge-ok">✓ 23/23 Luật sẵn sàng</span>
+                    </div>
+                    <div class="health-detail">Mặt đất, xoay, kích thước, camera</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Khu vực Phiên làm việc (Tiếp tục hoặc bắt đầu mới) -->
+            <div class="hub-section">
+              <!-- Thẻ phiên làm việc gần nhất (nếu có) -->
+              <div id="hub-recent-card" class="recent-session-card" style="display: none;">
+                <div class="recent-card-header">
+                  <span class="recent-pill">⚡ Phiên làm việc gần nhất</span>
+                  <span id="recent-time" class="recent-timestamp">vừa xong</span>
+                </div>
+                <div class="recent-card-body">
+                  <div class="recent-project-info">
+                    <h3 id="recent-proj-title">Dự án CVAT NEW · Job #2</h3>
+                    <div class="recent-meta" id="recent-meta-text">Đã quét 160 box · 15 cảnh báo / lỗi</div>
+                  </div>
+                  <div class="recent-actions">
+                    <button id="btn-continue-recent" class="btn btn-primary btn-lg">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Tiếp tục xem kết quả
+                    </button>
+                    <button id="btn-rescan-recent" class="btn btn-secondary">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      Quét lại Job này
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hàng thao tác khởi tạo hoặc chuyển đổi -->
+              <div class="hub-actions-bar">
+                <span class="hub-action-hint">Khởi tạo hoặc chuyển đổi công việc:</span>
+                <div class="hub-buttons-row">
+                  <button id="btn-hub-create-proj" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Tạo dự án mới
+                  </button>
+                  <a href="#scan" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Quét Job mới
+                  </a>
+                  <a href="#connection" class="btn btn-ghost">
+                    Cấu hình CVAT
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div id="results-content-box" style="display: none; flex-direction: column; gap: 16px;">
@@ -294,23 +406,10 @@
                     </div>
                   </div>
 
-                  <div id="detail-repair-card" class="detail-repair-card" style="display: none;">
-                    <div class="repair-card-header">
-                      <span class="repair-card-title">Đề xuất sửa tự động</span>
-                      <span id="repair-confidence-badge" class="pill-badge success">95%</span>
-                    </div>
-                    <div class="repair-metrics-grid">
-                      <div class="repair-metric-item"><span class="repair-metric-label">Độ cao (Δz)</span><span id="repair-val-dz" class="repair-metric-value highlight">—</span></div>
-                      <div class="repair-metric-item"><span class="repair-metric-label">Góc xoay (Δyaw)</span><span id="repair-val-dyaw" class="repair-metric-value highlight">—</span></div>
-                      <div class="repair-metric-item"><span class="repair-metric-label">Kích thước (Δl, w, h)</span><span id="repair-val-ddims" class="repair-metric-value">—</span></div>
-                      <div class="repair-metric-item"><span class="repair-metric-label">Tâm phẳng (Δx, y)</span><span id="repair-val-dxy" class="repair-metric-value">—</span></div>
-                    </div>
-                    <p id="repair-reason-text" class="repair-reason-text">—</p>
-                    <div class="repair-actions-row">
-                      <button id="btn-open-apply-repair" class="btn btn-primary" style="flex: 1;">Áp dụng lên CVAT…</button>
-                      <button id="btn-rollback-repair" class="btn btn-secondary" style="display: none;">↩ Hoàn tác</button>
-                    </div>
-                    <div id="repair-apply-status" class="repair-apply-status" style="display: none;"></div>
+                  <div id="detail-repair-card" class="detail-repair-card" style="display:none;">
+                    <strong>Sửa tay trong CVAT</strong>
+                    <p id="repair-reason-text" class="repair-reason-text"></p>
+                    <span class="muted small">Kéo box · xem thước, đường gióng và số đo · Save/Undo trong CVAT</span>
                   </div>
 
                   <div class="drawer-foot">
@@ -705,34 +804,6 @@
     </div>
   </div>
 
-  <div id="modal-confirm-repair" class="modal-overlay modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-repair-title">
-    <div class="modal-dialog modal-wide">
-      <div class="modal-header">
-        <h3 id="modal-repair-title" class="modal-title">Áp dụng đề xuất sửa lên CVAT?</h3>
-        <button id="btn-modal-repair-close" class="modal-close-btn" aria-label="Đóng"><svg width="14" height="14" aria-hidden="true"><use href="#i-x"></use></svg></button>
-      </div>
-      <div class="modal-body">
-        <p id="modal-repair-summary" class="modal-text">
-          PointSnap ghi keyframe mới cho track trên CVAT rồi đọc lại để xác nhận. Snapshot được lưu tự động để hoàn tác.
-        </p>
-        <div class="repair-summary-table-wrap">
-          <table class="repair-summary-table">
-            <thead><tr><th>Tham số</th><th>Ban đầu</th><th>Thay đổi (Δ)</th><th>Đề xuất mới</th></tr></thead>
-            <tbody id="modal-repair-table-body"></tbody>
-          </table>
-        </div>
-        <div id="modal-repair-reason" class="modal-repair-reason"></div>
-        <div class="modal-warning-note">
-          Lưu các sửa đổi đang làm trên CVAT trước. Sau khi áp dụng: tải lại tab CVAT để thấy box mới, rồi quét lại để cập nhật cờ lỗi.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="btn-modal-repair-cancel" class="btn btn-ghost">Hủy</button>
-        <button id="btn-modal-repair-confirm" class="btn btn-primary">Xác nhận &amp; áp dụng</button>
-      </div>
-    </div>
-  </div>
-
   <div id="modal-help" class="modal-overlay">
     <div class="modal-dialog modal-wide" role="dialog" aria-modal="true" aria-labelledby="modal-help-title">
       <div class="modal-header">
@@ -745,7 +816,7 @@
           <ol class="help-flow">
             <li><b>Quét job</b> — bật <i>Gắn cờ</i> để ghi lỗi lên CVAT.</li>
             <li><b>Duyệt kết quả</b> — xem point cloud, ảnh camera; ghi Đúng / Báo nhầm.</li>
-            <li><b>Sửa trên CVAT</b> — extension lọc box có cờ, <kbd>.</kbd> / <kbd>,</kbd> nhảy lỗi; đề xuất sửa áp dụng 1 lần bấm.</li>
+            <li><b>Sửa trên CVAT</b> — extension lọc box có cờ, <kbd>.</kbd> / <kbd>,</kbd> nhảy lỗi; kéo sửa bằng tay với thước, đường gióng và tọa độ trực tiếp.</li>
             <li><b>Quét lại</b> — cổng ĐẠT thì nộp.</li>
           </ol>
         </div>

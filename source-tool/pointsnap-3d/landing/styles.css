@@ -260,6 +260,10 @@ p { margin: 0; }
 .tabs button { border: 0; background: none; padding: 10px 22px; border-radius: 999px; font: 600 15px 'IBM Plex Sans', sans-serif; color: var(--text-2); cursor: pointer; transition: background .25s, color .25s; }
 .tabs button[aria-selected="true"] { background: var(--primary); color: var(--on-primary); }
 .showcase { position: relative; height: 720px; perspective: 1600px; }
+.devices-mockup { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px -15px rgba(11, 99, 206, 0.35); border: 1px solid rgba(125, 180, 255, 0.3); background: #081324; transition: opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+.devices-img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; border-radius: 28px; }
+.devices-overlay { position: absolute; left: 24px; bottom: 24px; pointer-events: none; }
+.devices-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; background: rgba(10, 25, 48, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(125, 180, 255, 0.4); font: 500 13px 'IBM Plex Mono', monospace; color: #B7D4FF; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
 .laptop { position: absolute; left: 3%; top: 50px; width: 66%; transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .5s, filter .5s; transform: rotateY(8deg) rotateX(4deg); transform-style: preserve-3d; }
 .laptop__lid { border-radius: 22px; background: #1A1F27; padding: 16px; border: 1px solid #3A4552; box-shadow: 0 40px 70px -20px rgba(10,25,64,.35); }
 .laptop__lid img { border-radius: 8px; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
@@ -282,6 +286,9 @@ p { margin: 0; }
 .terminal .caret { display: inline-block; width: 8px; height: 16px; background: #7DB4FF; vertical-align: -3px; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 .showcase > * { filter: none; }
+.showcase[data-active="devices"] .devices-mockup { opacity: 1; transform: none; z-index: 5; pointer-events: auto; }
+.showcase[data-active="devices"] .laptop, .showcase[data-active="devices"] .browser, .showcase[data-active="devices"] .terminal { opacity: 0; transform: scale(.95); pointer-events: none; }
+.showcase:not([data-active="devices"]) .devices-mockup { opacity: 0; transform: scale(.95); pointer-events: none; z-index: 0; }
 .showcase[data-active="web"] .browser, .showcase[data-active="web"] .terminal { opacity: .8; filter: saturate(.75); }
 .showcase[data-active="ext"] .laptop, .showcase[data-active="ext"] .terminal { opacity: .5; filter: saturate(.6); }
 .showcase[data-active="ext"] .browser { transform: translate(-30%, 40px) scale(1.25); z-index: 3; }

@@ -601,3 +601,288 @@ textarea.form-input { height: auto; padding: 10px 12px; line-height: 1.6; }
   .add-class-row { width: 100%; }
   .drawer-actions .cvat-open-btn { margin-left: 0; width: 100%; }
 }
+
+/* ---------- Hub Trung tâm Kiểm tra & Điều hướng (Task 2) ---------- */
+.hub-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 36px 32px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 36px -8px rgba(11,99,206,.1);
+}
+.hub-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+.hub-logo-wrap {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+}
+.hub-radar-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(76,154,255,0.4);
+  animation: hubPulse 3s ease-out infinite;
+}
+.hub-radar-ring.outer {
+  animation: hubPulse 3s ease-out 1.2s infinite;
+}
+@keyframes hubPulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.hub-cube-3d {
+  position: relative;
+  z-index: 2;
+  animation: hubFloat 4s ease-in-out infinite alternate;
+}
+@keyframes hubFloat {
+  0% { transform: translateY(-4px) rotate(0deg); }
+  100% { transform: translateY(4px) rotate(2deg); }
+}
+.hub-scan-laser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38E1A0, transparent);
+  box-shadow: 0 0 10px #38E1A0;
+  animation: hubLaser 2.2s ease-in-out infinite;
+}
+@keyframes hubLaser {
+  0%, 100% { top: 10%; opacity: 0; }
+  50% { top: 85%; opacity: 1; }
+}
+.hub-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.hub-desc {
+  color: var(--text-2);
+  font-size: 15px;
+  max-width: 540px;
+  margin: 0;
+}
+
+/* System Health Grid */
+.hub-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.hub-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hub-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-2);
+}
+.sys-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1024px) {
+  .sys-health-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .sys-health-grid { grid-template-columns: 1fr; }
+}
+.health-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition: border-color .2s, box-shadow .2s;
+}
+.health-card:hover {
+  border-color: rgba(76,154,255,0.4);
+  box-shadow: 0 6px 18px -4px rgba(11,99,206,.1);
+}
+.health-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: rgba(76,154,255,0.12);
+  color: #4C9AFF;
+}
+.health-icon.ai-icon {
+  background: rgba(168,85,247,0.12);
+  color: #A855F7;
+}
+.health-icon.ext-icon {
+  background: rgba(14,165,233,0.12);
+  color: #0EA5E9;
+}
+.health-icon.rules-icon {
+  background: rgba(56,225,160,0.12);
+  color: #38E1A0;
+}
+.health-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.health-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.health-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.health-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-ok {
+  background: rgba(34,197,94,0.15);
+  color: #16A34A;
+  border: 1px solid rgba(34,197,94,0.3);
+}
+[data-theme="dark"] .badge-ok {
+  color: #4ADE80;
+}
+.badge-warn {
+  background: rgba(245,158,11,0.15);
+  color: #D97706;
+  border: 1px solid rgba(245,158,11,0.3);
+}
+[data-theme="dark"] .badge-warn {
+  color: #FBBF24;
+}
+.badge-err {
+  background: rgba(239,68,68,0.15);
+  color: #DC2626;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+[data-theme="dark"] .badge-err {
+  color: #F87171;
+}
+.badge-checking {
+  background: rgba(125,180,255,0.15);
+  color: #3B82F6;
+  border: 1px solid rgba(125,180,255,0.3);
+}
+.health-detail {
+  font-size: 12px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Recent Session Card */
+.recent-session-card {
+  border-radius: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(76,154,255,0.06), rgba(56,225,160,0.06));
+  border: 1px solid rgba(76,154,255,0.3);
+  box-shadow: 0 10px 30px -8px rgba(11,99,206,.15);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.recent-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.recent-pill {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #3B82F6;
+  background: rgba(76,154,255,0.15);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+[data-theme="dark"] .recent-pill {
+  color: #7DB4FF;
+}
+.recent-timestamp {
+  font-size: 12px;
+  color: var(--text-3);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.recent-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.recent-project-info h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.recent-meta {
+  font-size: 14px;
+  color: var(--text-2);
+}
+.recent-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Hub Actions Bar */
+.hub-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.hub-action-hint {
+  font-size: 14px;
+  color: var(--text-3);
+}
+.hub-buttons-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+

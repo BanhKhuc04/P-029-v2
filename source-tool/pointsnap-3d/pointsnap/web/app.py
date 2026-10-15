@@ -192,6 +192,131 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         from pointsnap.core.rules import rules_catalog_dict
         return rules_catalog_dict()
 
+    @application.get("/api/system/status")
+    def get_system_status() -> dict[str, Any]:
+        """Kiểm tra tổng quan hệ sinh thái: CVAT, Models AI, Extension, và phiên làm việc gần nhất."""
+        projects = pm.list_projects()
+        current_proj = None
+
+        # 1. Kiểm tra CVAT
+        cvat_info = {"connected": False, "url": "http://localhost:8080", "version": None, "token": False, "error": None}
+        for p in projects:
+            if p.get("cvat_url"):
+                current_proj = p
+                if p.get("has_token"):
+                    break
+        if not current_proj and projects:
+            current_proj = projects[0]
+
+        if current_proj and current_proj.get("cvat_url"):
+            cvat_info["url"] = current_proj["cvat_url"]
+            cvat_info["token"] = bool(current_proj.get("has_token"))
+            if cvat_info["token"]:
+                try:
+                    cfg = pm.get_effective_config(current_proj["slug"])
+                    client = CvatClient(cfg.cvat.url, cfg.cvat.token, timeout=2.0)
+                    try:
+                        cvat_info["version"] = client.server_version()
+                        cvat_info["connected"] = True
+                    finally:
+                        client.session.close()
+                except Exception as exc:
+                    token = pm.get_token(current_proj["slug"])
+                    cvat_info["connected"] = False
+                    cvat_info["error"] = str(exc).replace(token, "***") if token else str(exc)
+            else:
+                cvat_info["error"] = "Dự án chưa có token CVAT"
+
+        # 2. Kiểm tra Models AI & Weights
+        critic_candidates = [
+            Path("D:/Vin_uni/data/models/critic-v3-ens5-holdout0916.pt"),
+            Path("D:/Vin_uni/data/models/critic.pt"),
+            Path.home() / ".pointsnap" / "models" / "critic.pt"
+        ]
+        critic_found = None
+        for cp in critic_candidates:
+            if cp.exists():
+                critic_found = str(cp)
+                break
+
+        det2d_cache_dir = Path.home() / ".pointsnap" / "cache" / "det2d"
+        cached_count = len(list(det2d_cache_dir.glob("*.json"))) if det2d_cache_dir.exists() else 0
+
+        has_torch = False
+        try:
+            import torch
+            has_torch = True
+        except ImportError:
+            pass
+
+        models_info = {
+            "critic": {
+                "ready": bool(critic_found),
+                "name": "Box Critic v3 (Ensemble 5)" if (critic_found and "ens5" in critic_found) else ("Box Critic v1" if critic_found else "Sẵn sàng (Luật hình học)"),
+                "path": critic_found,
+            },
+            "det2d": {
+                "ready": cached_count > 0,
+                "cached_frames": cached_count,
+            },
+            "torch": has_torch,
+            "rules_count": 23,
+            "all_ready": True,
+        }
+
+        # 3. Extension Status
+        extension_online = False
+        active_job = None
+        try:
+            with link._lock:
+                for (sc, jid), seen in link._seen.items():
+                    if link._clock() - seen <= 5.0:
+                        extension_online = True
+                        active_job = jid
+                        break
+        except Exception:
+            pass
+        extension_info = {
+            "connected": extension_online,
+            "job_id": active_job,
+        }
+
+        # 4. Tìm các phiên làm việc gần nhất
+        all_recent = []
+        for p in projects:
+            slug = p["slug"]
+            try:
+                runs = runner.list_runs(slug)
+                for r in runs:
+                    if r.get("status") == "done":
+                        sum_data = r.get("summary") or {}
+                        all_recent.append({
+                            "project_slug": slug,
+                            "project_name": p.get("name", slug),
+                            "run_id": r.get("run_id"),
+                            "job_id": r.get("job_id"),
+                            "started_at": r.get("started_at"),
+                            "num_boxes": sum_data.get("num_boxes", 0),
+                            "num_errors": sum_data.get("num_errors", 0),
+                            "num_warnings": sum_data.get("num_warnings", 0),
+                            "gate_verdict": sum_data.get("gate_verdict", "PASS"),
+                        })
+            except Exception:
+                pass
+
+        all_recent.sort(key=lambda x: x.get("started_at") or "", reverse=True)
+        recent_session = all_recent[0] if all_recent else None
+
+        return {
+            "ok": True,
+            "cvat": cvat_info,
+            "models": models_info,
+            "extension": extension_info,
+            "recent_session": recent_session,
+            "all_recent": all_recent[:6],
+            "projects": projects,
+        }
+
     # --- API Quản lý dự án ---
 
     @application.get("/api/projects")

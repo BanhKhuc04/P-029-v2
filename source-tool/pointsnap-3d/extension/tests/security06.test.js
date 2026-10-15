@@ -71,7 +71,7 @@ test('rules catalog is readable from a job without widening project or query acc
 });
 
 test('camera image cannot be fetched from another job or absent finding',async()=>{
-  for(const data of [{job_id:99,findings:[{}]},{job_id:2,findings:[]}]) {
+  for(const data of [{job_id:99,findings:[{index:0}]},{job_id:2,findings:[]}]) {
     const calls=[];
     const b=background(async(u,opts)=>{calls.push(u);return{ok:true,status:200,json:async()=>u.endsWith('/api/projects/a')?{cvat_url:'http://localhost:8080'}:data};});
     const r=await b.callPointSnap({method:'GET',path:`/api/projects/a/scans/${run}/findings/0/camera`},sender);
@@ -84,7 +84,7 @@ test('camera returns bounded JPEG data, refuses executable content and redirects
     const calls=[];
     const b=background(async(u,opts)=>{
       calls.push(opts);
-      if(!u.endsWith('/camera'))return{ok:true,status:200,json:async()=>u.endsWith('/api/projects/a')?{cvat_url:'http://localhost:8080'}:{job_id:2,findings:[{}]}};
+      if(!u.endsWith('/camera'))return{ok:true,status:200,json:async()=>u.endsWith('/api/projects/a')?{cvat_url:'http://localhost:8080'}:{job_id:2,findings:[{index:0}]}};
       return{ok:true,status:200,headers:{get:k=>k==='Content-Type'?mime:k==='X-Camera-Channel'?'CAM_FRONT':null},
              arrayBuffer:async()=>new Uint8Array([255,216,255,217]).buffer};
     });
@@ -108,18 +108,18 @@ test('custom hosts do not reinject built-in content scripts',async()=>{
 test('F14: repair, apply-repair and rollback routes are whitelisted for sender job',()=>{
   const b=background();
   // Valid GET repair with and without query params
-  assert.ok(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=0&rule=floating',undefined,sender));
-  assert.ok(b.requestRoute('GET','/api/jobs/2/tracks/101/repair',undefined,sender));
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=0&rule=floating',undefined,sender),null);
+  assert.equal(b.requestRoute('GET','/api/jobs/2/tracks/101/repair',undefined,sender),null);
   assert.ok(b.requestRoute('GET','/api/jobs/2/tracks/101/repair?frame=5&rule=fit.outside&slug=demo_proj',undefined,sender));
 
   // Valid POST apply-repair
   const applyBody={frame:0,repair:{delta_center:[0,0,-0.2],confidence:0.95},client_track_etag:'etag123',slug:'demo_proj'};
   assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',applyBody,sender));
-  assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:0,repair:{}},sender));
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/apply-repair',{frame:0,repair:{}},sender),null);
 
   // Valid POST rollback
   assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'7f9b8c0a-1e2d-4b5c-8f9a-0e1d2c3b4a5f',slug:'demo_proj'},sender));
-  assert.ok(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'snap_101_0'},sender));
+  assert.equal(b.requestRoute('POST','/api/jobs/2/tracks/101/rollback',{history_id:'snap_101_0'},sender),null);
 });
 
 test('F14: cross-job repair, apply-repair, and rollback are rejected',()=>{
@@ -163,18 +163,18 @@ test('F14: callPointSnap executes repair routes successfully',async()=>{
   const calls=[];
   const b=background(async(u,opts)=>{
     calls.push({u,opts});
-    return {ok:true,status:200,json:async()=>({status:'ok'})};
+    return {ok:true,status:200,json:async()=>u.endsWith('/api/projects/p')?{cvat_url:'http://localhost:8080'}:{status:'ok'}};
   });
 
-  const r1=await b.callPointSnap({method:'GET',path:'/api/jobs/2/tracks/101/repair?frame=0&rule=floating'},sender);
+  const r1=await b.callPointSnap({method:'GET',path:'/api/jobs/2/tracks/101/repair?frame=0&rule=floating&slug=p'},sender);
   assert.equal(r1.ok,true);
 
-  const r2=await b.callPointSnap({method:'POST',path:'/api/jobs/2/tracks/101/apply-repair',body:{frame:0,repair:{}}},sender);
+  const r2=await b.callPointSnap({method:'POST',path:'/api/jobs/2/tracks/101/apply-repair',body:{frame:0,repair:{},slug:'p'}},sender);
   assert.equal(r2.ok,true);
 
-  const r3=await b.callPointSnap({method:'POST',path:'/api/jobs/2/tracks/101/rollback',body:{history_id:'snap-1'}},sender);
+  const r3=await b.callPointSnap({method:'POST',path:'/api/jobs/2/tracks/101/rollback',body:{history_id:'snap-1',slug:'p'}},sender);
   assert.equal(r3.ok,true);
 
-  assert.equal(calls.length,3);
+  assert.equal(calls.length,6);
 });
 

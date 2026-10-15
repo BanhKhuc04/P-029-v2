@@ -87,4 +87,24 @@ node --test tests/*.test.js
 
 ## Identity, quyền và dữ liệu
 
+API repair/apply/rollback luôn cần `slug` của dự án để chọn đúng server CVAT. Để
+chỉ cho phép một số extension ghi qua API local, đặt `POINTSNAP_EXTENSION_IDS` thành
+danh sách ID extension (32 ký tự, phân cách bằng dấu phẩy; xem tại `chrome://extensions`)
+trước khi chạy `pointsnap ui`; extension ngoài danh sách khi đó chỉ được đọc. Không đặt
+biến này thì mọi extension vẫn ghi được như trước.
+
+## Giới hạn kết nối canvas 3D
+
+CVAT hiện không công khai scene Three.js và cầu nối cập nhật box trên canvas.
+Panel/HUD hiển thị **Chưa kết nối được canvas 3D của CVAT**. Content script gửi
+hình học box đang chọn từ annotations API qua `POINTSNAP_SET_ACTIVE_BOX`; HUD có
+thể đo residual từ dữ liệu đã lưu thật. Box chưa lưu hoặc frame nội suy không có
+keyframe API thì chưa có hình học để đo; cần Save và chọn lại box.
+
+Vẽ Ghost Target, kéo thả Magnet Snap, phím L và chốt Green Lock trực tiếp trên
+canvas cần patch `cvat-canvas3d` để đọc trạng thái chọn/kéo và ghi box qua API
+canvas của CVAT. Phần tích hợp sâu này **chưa thực hiện**. Các thao tác trên canvas
+không được báo là đã cập nhật CVAT. Nút áp dụng sửa trong panel vẫn dùng endpoint
+ghi có OCC và đọc lại xác nhận.
+
 Focus/review được khóa theo origin CVAT, project/run và job. Sidebar DOM không luôn cung cấp serverID; nhiều box cùng nhãn/cờ thì extension từ chối đoán box. Quét lại sau Save/gắn cờ vì CVAT có thể cấp ID mới. Extension nhận origin HTTP(S), không hỗ trợ URL có đường dẫn proxy; không chứa user/password/query/fragment. Cấp host permission ở Tùy chọn và reload extension/trang sau cập nhật. Đổi server/đường dẫn trên Web xóa PAT cũ; nhập PAT của đúng server. Không lưu PAT vào extension. Các request scan/flag vẫn có tác động backend; dùng job thử và phối hợp Save theo [bảo mật local](../docs/local-security.md).

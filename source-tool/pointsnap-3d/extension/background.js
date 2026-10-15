@@ -86,7 +86,7 @@ function requestRoute(method, path, body, sender) {
     const rule = url.searchParams.get('rule');
     if (rule && !/^[a-zA-Z0-9_.-]+$/.test(rule)) return null;
     const slug = url.searchParams.get('slug') || undefined;
-    if (slug && !/^[a-zA-Z0-9_-]+$/.test(slug)) return null;
+    if (!slug || !/^[a-zA-Z0-9_-]+$/.test(slug)) return null;
     return { jobId, origin: page.origin, trackId: Number(jobRepair[2]), frame: frame !== null ? Number(frame) : undefined, rule: rule || undefined, slug };
   }
   const jobApply = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/apply-repair$/);
@@ -99,7 +99,7 @@ function requestRoute(method, path, body, sender) {
     if (!Number.isInteger(body.frame) || body.frame < 0) return null;
     if (typeof body.repair !== 'object' || body.repair === null || Array.isArray(body.repair)) return null;
     if (body.client_track_etag !== undefined && body.client_track_etag !== null && typeof body.client_track_etag !== 'string') return null;
-    if (body.slug !== undefined && body.slug !== null && (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug))) return null;
+    if (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug)) return null;
     return { jobId, origin: page.origin, trackId: Number(jobApply[2]), slug: body.slug || undefined };
   }
   const jobRollback = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/rollback$/);
@@ -110,7 +110,7 @@ function requestRoute(method, path, body, sender) {
     if (!keys.includes('history_id')) return null;
     if (keys.some(k => !['history_id', 'slug'].includes(k))) return null;
     if (typeof body.history_id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.history_id)) return null;
-    if (body.slug !== undefined && body.slug !== null && (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug))) return null;
+    if (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug)) return null;
     return { jobId, origin: page.origin, trackId: Number(jobRollback[2]), slug: body.slug || undefined };
   }
   if (url.search) return null;
@@ -142,7 +142,7 @@ async function callPointSnap({ method, path, body }, sender) {
         const run = await fetchPointSnap(base, `/api/projects/${route.slug}/scans/${route.runId}`);
         if (!run.ok || run.data.job_id !== route.jobId || (run.data.summary?.cvat_url && !sameCvatOrigin(run.data.summary.cvat_url, route.origin))) return { ok: false, error: 'Run không thuộc job đang mở' };
         if (route.cameraIndex !== undefined) {
-          if (!Array.isArray(run.data.findings) || route.cameraIndex >= run.data.findings.length) return { ok: false, error: 'Không có mục camera này' };
+          if (!Array.isArray(run.data.findings) || !run.data.findings.some(f => f.index === route.cameraIndex)) return { ok: false, error: 'Không có mục camera này' };
           return await fetchCamera(base, path);
         }
         if (method === 'GET' && !path.endsWith('/reviews')) return run;

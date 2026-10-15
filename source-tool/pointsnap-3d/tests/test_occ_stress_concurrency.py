@@ -146,6 +146,10 @@ def test_writer_patch_track_keyframe_occ_stale_rejection(complex_multiframe_trac
         "tracks": [copy.deepcopy(complex_multiframe_track)]
     }
 
+    def patch(job_id, data, action):
+        client_mock.get_job_annotations.return_value = copy.deepcopy(data)
+    client_mock.patch_job_annotations.side_effect = patch
+
     initial_etag = compute_track_etag(complex_multiframe_track)
     stale_etag = "stale_etag_deadbeef"
 

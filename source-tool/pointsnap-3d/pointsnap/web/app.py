@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import threading
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -38,6 +39,8 @@ from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner, ScanBusyError, RUN_ID_RE
 from pointsnap.web.security import LocalRequestBoundary
 from pointsnap.web.storage import StorageError
+
+_request_clients = ContextVar("pointsnap__request_clients", default=None)
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +141,17 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         # Pydantic có thể echo input là token object; chỉ trả vị trí và lý do.
         errors = [{k: e[k] for k in ('loc', 'msg', 'type') if k in e} for e in exc.errors()]
         return JSONResponse(status_code=422, content={'detail': errors})
+
+    @application.middleware("http")
+    async def close_cvat_clients(request, call_next):
+        clients = []
+        token = _request_clients.set(clients)
+        try:
+            return await call_next(request)
+        finally:
+            _request_clients.reset(token)
+            for client in clients:
+                client.session.close()
 
     @application.middleware("http")
     async def revalidate_ui_files(request, call_next):
@@ -397,7 +411,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             run = runner.get_run(slug, run_id, include_findings=True)
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        if not 0 <= index < len(run.get("findings") or []):
+        if not any(f["index"] == index for f in run.get("findings") or []):
             raise HTTPException(status_code=404, detail=f"Không có mục số {index}")
         reviews = save_review(runner.run_dir(slug, run_id), index, req.verdict)
         link.bump_reviews()
@@ -494,19 +508,17 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         res = link.poll(job_id, after, scope=_extension_scope(cvat_url))
         projects = pm.list_projects()
         latest_done = None
+        latest_started_at = ""
         active_scan = None
         for p in projects:
-            for r in runner.list_runs(p["slug"]):
-                if r.get("job_id") == job_id:
-                    if r.get("status") in ("queued", "running") and active_scan is None:
-                        active_scan = {
-                            "run_id": r.get("run_id"),
-                            "status": r.get("status"),
-                            "progress": r.get("progress", 0),
-                            "message": r.get("message", "Đang quét..."),
-                        }
-                    elif r.get("status") == "done" and latest_done is None:
-                        latest_done = r.get("run_id")
+            if cvat_url and _extension_scope(p["cvat_url"]) != _extension_scope(cvat_url):
+                continue
+            latest, active, started_at = runner.poll_state(p["slug"], job_id)
+            if latest and (latest_done is None or started_at > latest_started_at):
+                latest_done = latest
+                latest_started_at = started_at
+            if active and active_scan is None:
+                active_scan = {k: active.get(k) for k in ("run_id", "status", "progress", "message")}
         res["latest_run_id"] = latest_done
         res["active"] = active_scan
         return res
@@ -585,6 +597,16 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         return (job_id, track_id) in tracks or any(
             t.get("id") == track_id for t in tracks.get(job_id, {}).get("tracks", []))
 
+    def _require_project(job_id: int, track_id: int, slug: str | None) -> None:
+        if _is_test_track(job_id, track_id):
+            return
+        if not slug:
+            raise HTTPException(400, "Cần chọn dự án để sửa đúng nguồn CVAT")
+        try:
+            pm.get_project(slug)
+        except ProjectError as exc:
+            raise HTTPException(400, "Dự án không hợp lệ") from exc
+
     def _resolve_track(job_id: int, track_id: int, slug: str | None = None, *, allow_snapshot: bool = True) -> tuple[dict[str, Any] | None, CvatClient | None]:
         track_data = None
         cvat_client = getattr(application.state, "cvat_client", None)
@@ -611,17 +633,12 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
         if track_data is None:
             target_slug = slug
-            if not target_slug:
-                projects = pm.list_projects()
-                if len(projects) > 1 and not allow_snapshot:
-                    raise HTTPException(400, "Cần chọn dự án để sửa đúng nguồn CVAT")
-                if projects:
-                    target_slug = projects[0]["slug"]
             if target_slug:
                 try:
                     cfg = pm.get_effective_config(target_slug)
                     if cfg.cvat.token:
                         c = CvatClient(cfg.cvat.url, cfg.cvat.token, timeout=10.0)
+                        _request_clients.get().append(c)
                         raw_annos = c.get_job_annotations(job_id)
                         for t in raw_annos.get("tracks", []):
                             if t.get("id") == track_id:
@@ -635,7 +652,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
         # Phương án dự phòng ngoại tuyến: Nạp track từ file snapshot.json của scan runs
         if track_data is None and allow_snapshot:
-            candidate_slugs = [slug] if slug else [p["slug"] for p in pm.list_projects()]
+            candidate_slugs = [slug] if slug else []
             for s in candidate_slugs:
                 if not s:
                     continue
@@ -703,7 +720,10 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         return track_data, cvat_client
 
     @application.get("/api/jobs/{job_id}/tracks/{track_id}/repair")
-    def get_track_repair(
+    def get_track_repair(job_id: int, track_id: int, frame: int, rule: str = "floating", slug: str | None = None) -> Any:
+        return _compute_track_repair(job_id, track_id, frame, rule, slug)
+
+    def _compute_track_repair(
         job_id: int,
         track_id: int,
         frame: int,
@@ -794,10 +814,6 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 points = application.state.mock_points.get((job_id, frame))
             if points is None:
                 target_slug = slug
-                if not target_slug:
-                    projects = pm.list_projects()
-                    if projects:
-                        target_slug = projects[0]["slug"]
                 if target_slug:
                     try:
                         proj = pm.get_project(target_slug)
@@ -870,7 +886,10 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         }
 
     @application.get("/api/jobs/{job_id}/tracks/{track_id}/ghost-target")
-    def get_track_ghost_target(
+    def get_track_ghost_target(job_id: int, track_id: int, frame: int, rule: str | None = None, slug: str | None = None) -> Any:
+        return _compute_ghost_target(job_id, track_id, frame, rule, slug)
+
+    def _compute_ghost_target(
         job_id: int,
         track_id: int,
         frame: int,
@@ -946,10 +965,6 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 points = application.state.mock_points.get((job_id, frame))
             if points is None:
                 target_slug = slug
-                if not target_slug:
-                    projects = pm.list_projects()
-                    if projects:
-                        target_slug = projects[0]["slug"]
                 if target_slug:
                     try:
                         proj = pm.get_project(target_slug)
@@ -1013,6 +1028,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.post("/api/jobs/{job_id}/tracks/{track_id}/apply-repair")
     def apply_track_repair(job_id: int, track_id: int, req: ApplyRepairRequest) -> Any:
         """Áp dụng sửa hình học đề xuất lên CVAT với OCC và lưu vết snapshot (Features F8, F9, F10)."""
+        _require_project(job_id, track_id, req.slug)
         with _track_lock:
             track_data, cvat_client = _resolve_track(job_id, track_id, slug=req.slug, allow_snapshot=True)
             if track_data is None:
@@ -1152,15 +1168,6 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
             history_mgr = getattr(application.state, "history_manager", None) or HistoryManager(home_dir=pm.home_dir)
             effective_slug = req.slug or "default"
-            hid = history_mgr.save_snapshot(
-                job_id=job_id,
-                track_id=track_id,
-                frame=req.frame,
-                pre_repair_track=pre_repair_track,
-                post_repair_track=post_repair_track,
-                applied_repair=req.repair,
-                slug=effective_slug,
-            )
 
             if cvat_client is not None:
                 try:
@@ -1170,6 +1177,16 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 except Exception as exc:
                     logger.warning("Repair synchronization failed: %s", exc)
                     raise HTTPException(502, "Không xác nhận được sửa trên CVAT; chưa báo đồng bộ thành công") from exc
+
+            hid = history_mgr.save_snapshot(
+                job_id=job_id,
+                track_id=track_id,
+                frame=req.frame,
+                pre_repair_track=pre_repair_track,
+                post_repair_track=post_repair_track,
+                applied_repair=req.repair,
+                slug=effective_slug,
+            )
 
             if hasattr(application.state, "mock_tracks"):
                 if (job_id, track_id) in application.state.mock_tracks:
@@ -1202,6 +1219,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.post("/api/jobs/{job_id}/tracks/{track_id}/rollback")
     def rollback_track_repair(job_id: int, track_id: int, req: RollbackRepairRequest) -> Any:
         """Hoàn tác thay đổi nhãn từ snapshot bất biến (Features F8, F10)."""
+        _require_project(job_id, track_id, req.slug)
         with _track_lock:
             history_mgr = getattr(application.state, "history_manager", None) or HistoryManager(home_dir=pm.home_dir)
             effective_slug = req.slug or "default"
@@ -1290,11 +1308,13 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.get("/api/projects/{slug}/scans/{run_id}/findings/{index}/repair")
     def get_finding_repair(slug: str, run_id: str, index: int) -> Any:
         _validate_run_id(run_id)
-        run = runner.get_run(slug, run_id, include_findings=True)
-        findings = run.get("findings", [])
-        if index < 0 or index >= len(findings):
+        try:
+            run = runner.get_run(slug, run_id, include_findings=True)
+        except ProjectError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        f = next((f for f in run.get("findings", []) if f["index"] == index), None)
+        if f is None:
             raise HTTPException(status_code=404, detail=f"Finding index {index} out of range")
-        f = findings[index]
         job_id = int(run.get("job_id", 0))
         track_id = f.get("track_id")
         frame = int(f.get("frame", 0))
@@ -1319,7 +1339,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         except Exception:
             pass
 
-        return get_track_repair(
+        return _compute_track_repair(
             job_id=job_id,
             track_id=track_id,
             frame=frame,
@@ -1333,11 +1353,13 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.post("/api/projects/{slug}/scans/{run_id}/findings/{index}/apply-repair")
     def apply_finding_repair(slug: str, run_id: str, index: int, req: ApplyRepairRequest) -> Any:
         _validate_run_id(run_id)
-        run = runner.get_run(slug, run_id, include_findings=True)
-        findings = run.get("findings", [])
-        if index < 0 or index >= len(findings):
+        try:
+            run = runner.get_run(slug, run_id, include_findings=True)
+        except ProjectError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        f = next((f for f in run.get("findings", []) if f["index"] == index), None)
+        if f is None:
             raise HTTPException(status_code=404, detail=f"Finding index {index} out of range")
-        f = findings[index]
         job_id = int(run.get("job_id", 0))
         track_id = f.get("track_id")
         if track_id is None:

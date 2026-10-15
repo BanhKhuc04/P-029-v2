@@ -292,7 +292,8 @@ def test_rollback_cross_job_boundary_and_extension_isolation(stress_client: Test
     assert "Cross-job route rejected" in msg_apply
 
     # 3. Backend REST: Unknown snapshot across any job returns 404
-    nonexistent_res = stress_client.post("/api/jobs/8/tracks/202/rollback", json={"history_id": "nonexistent-job8-snap"})
+    stress_client.app.state.pm.create_project(name="p", slug="p")
+    nonexistent_res = stress_client.post("/api/jobs/8/tracks/202/rollback", json={"history_id": "nonexistent-job8-snap", "slug": "p"})
     assert nonexistent_res.status_code == 404
 
 
@@ -323,7 +324,7 @@ def test_extreme_geometry_deltas_clamping_and_validation(sample_cuboid: Cuboid):
     delta_sunk = compute_box_repair(sample_cuboid, [sample_cuboid], None, "floating", finding_sunk)
     assert delta_sunk.delta_center[2] > 0, "Sunk box must have positive delta_z"
     assert delta_sunk.delta_center[2] == pytest.approx(0.45, abs=1e-3)
-    assert delta_sunk.confidence >= 0.70
+    assert delta_sunk.confidence == pytest.approx(25 / 30 * 0.5 * 0.75)
 
 
 # =========================================================================

@@ -82,10 +82,10 @@ test('filterLogic dùng đúng tên trường của bộ lọc CVAT', () => {
 test('matchFindings ghép mục của lần quét với cờ trên CVAT', () => {
   const flag = { frame: 3, label: 'car', value: '[Lỗi] A; [Cảnh báo] B' };
   const findings = [
-    { frame: 3, label: 'car', message: 'B' },
-    { frame: 3, label: 'truck', message: 'A' },
-    { frame: 4, label: 'car', message: 'A' },
-    { frame: 3, label: 'car', message: 'A' },
+    { index: 0, frame: 3, label: 'car', message: 'B' },
+    { index: 1, frame: 3, label: 'truck', message: 'A' },
+    { index: 2, frame: 4, label: 'car', message: 'A' },
+    { index: 3, frame: 3, label: 'car', message: 'A' },
   ];
   assert.deepEqual(core.matchFindings(findings, flag), [0, 3]);
 });

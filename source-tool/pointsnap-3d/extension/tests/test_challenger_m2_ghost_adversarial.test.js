@@ -437,7 +437,7 @@ test('ADV 4.3 5,000 rapid yaw jitter oscillations inside [4.2°, 5.8°] remain s
   let curBox = makeBox(10, 10, 0, 4, 2, 1.5, (3.0 * Math.PI) / 180.0);
   let snapState = ghostEngine.evaluateMagnetSnap(curBox, tgt, false);
   assert.equal(snapState.rotationSnapped, true);
-  let isCurrentlySnapped = snapState.snapped;
+  let isCurrentlySnapped = snapState.rotationSnapped;
 
   let unsnapCount = 0;
   for (let i = 0; i < 5000; i++) {
@@ -445,11 +445,11 @@ test('ADV 4.3 5,000 rapid yaw jitter oscillations inside [4.2°, 5.8°] remain s
     const rad = (deg * Math.PI) / 180.0;
     curBox = makeBox(10, 10, 0, 4, 2, 1.5, rad);
 
-    snapState = ghostEngine.evaluateMagnetSnap(curBox, tgt, isCurrentlySnapped);
+    snapState = ghostEngine.evaluateMagnetSnap(curBox, tgt, false, isCurrentlySnapped);
     if (!snapState.rotationSnapped) {
       unsnapCount++;
     }
-    isCurrentlySnapped = snapState.snapped;
+    isCurrentlySnapped = snapState.rotationSnapped;
   }
 
   assert.equal(unsnapCount, 0, `Yaw hysteresis jittered ${unsnapCount} times inside [4.2°, 5.8°] buffer.`);

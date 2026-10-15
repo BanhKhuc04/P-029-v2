@@ -536,9 +536,10 @@ def test_rest_api_rollback_success(
 
 def test_rest_api_rollback_nonexistent_snapshot_404(client: TestClient):
     """F8 & F10: POST rollback với history_id không tồn tại trả HTTP 404."""
+    client.app.state.pm.create_project(name="p", slug="p")
     resp = client.post(
         "/api/jobs/4/tracks/101/rollback",
-        json={"history_id": str(uuid.uuid4())},
+        json={"history_id": str(uuid.uuid4()), "slug": "p"},
     )
     assert resp.status_code == 404
     data = resp.json()
@@ -703,8 +704,8 @@ def test_rest_api_get_repair_cvat_offline_sets_applicable_false(tmp_path: Path):
     assert data["repair"]["applicable"] is False
 
 
-def test_ground_repair_confidence_floor_at_least_80_percent():
-    """F4 & F6: Đảm bảo sàn độ tin cậy của thuật toán sửa ground luôn >= 80% khi có điểm."""
+def test_ground_repair_confidence_without_track_reference():
+    """F4 & F6: Thiếu tham chiếu track hoặc chỉ có finding cũ thì giảm độ tin cậy."""
     from pointsnap.core.model import Cuboid
     from pointsnap.core.repair import compute_box_repair
     from tests.test_repair import _scene_ground_points
@@ -726,9 +727,9 @@ def test_ground_repair_confidence_floor_at_least_80_percent():
         points=points,
         rule="floating",
     )
-    assert delta.confidence >= 0.80, f"Expected confidence >= 0.80, got {delta.confidence}"
+    assert 0 < delta.confidence <= 0.75
 
-    # 2. Kiểm tra khi số điểm ground thưa (15 điểm tối thiểu) sàn vẫn đạt đúng 0.80 thay vì 0.75
+    # 2. Finding cũ chỉ ghi nhận 15 điểm: giảm confidence theo mật độ và tuổi dữ liệu
     delta_sparse = compute_box_repair(
         cuboid=cuboid,
         track=[cuboid],
@@ -736,5 +737,5 @@ def test_ground_repair_confidence_floor_at_least_80_percent():
         rule="floating",
         finding_details={"distance": 0.30, "num_ground_points": 15},
     )
-    assert delta_sparse.confidence == 0.80, f"Expected floor confidence 0.80 for 15 pts, got {delta_sparse.confidence}"
+    assert delta_sparse.confidence == pytest.approx(15 / 30 * 0.5 * 0.75)
 

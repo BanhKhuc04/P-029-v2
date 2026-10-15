@@ -97,6 +97,8 @@ function setupMockDOM() {
   };
 
   const mockWindow = {
+    location: { pathname: '/tasks/1/jobs/2' },
+    setInterval(handler) { this.routeCheck = handler; },
     addEventListener: (type, handler) => {
       if (!listeners.has(type)) listeners.set(type, []);
       listeners.get(type).push(handler);
@@ -402,6 +404,9 @@ test('3.2 Event bridge listeners trigger HUD updates and hide on clear', () => {
   const container = mockDocument.createElement('div');
   hud.initTelemetryHUD({ container });
 
+  mockWindow.dispatchEvent({ type: 'message', source: mockWindow,
+    data: { type: 'POINTSNAP_3D_UNAVAILABLE' } });
+
   // Dispatch POINTSNAP_3D_TELEMETRY event
   mockWindow.dispatchEvent({
     type: 'POINTSNAP_3D_TELEMETRY',
@@ -418,7 +423,9 @@ test('3.2 Event bridge listeners trigger HUD updates and hide on clear', () => {
 
   assert.equal(hud.isVisible(), true);
   const hudEl = hud.getHUDElement();
-  assert.ok(hudEl.className.includes('snapped'));
+  assert.ok(hudEl.className.includes('off-target'));
+  assert.equal(hudEl.querySelector('#ps-hud-footer-hint').textContent, 'Chưa kết nối được canvas 3D của CVAT');
+  assert.equal(hudEl.querySelector('#ps-hud-val-dz').textContent, '+3.0 cm');
 
   // Dispatch POINTSNAP_CLEAR_GHOST_TARGET event
   mockWindow.dispatchEvent({
@@ -426,4 +433,52 @@ test('3.2 Event bridge listeners trigger HUD updates and hide on clear', () => {
   });
 
   assert.equal(hud.isVisible(), false);
+});
+
+function browserHUD(pathname) {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const path = require('node:path');
+  const { mockDocument, mockWindow } = setupMockDOM();
+  mockDocument.readyState = 'complete';
+  mockWindow.location.pathname = pathname;
+  const context = { window: mockWindow, document: mockDocument };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/telemetry-hud.js'), 'utf8'), context);
+  return { hud: context.PointSnapTelemetryHUD, window: mockWindow, document: mockDocument };
+}
+
+test('HUD stays hidden outside a job even when unavailable is received', () => {
+  const b = browserHUD('/tasks');
+  assert.equal(b.hud.isVisible(), false);
+  b.window.dispatchEvent({ type: 'message', source: b.window,
+    data: { type: 'POINTSNAP_3D_UNAVAILABLE' } });
+  assert.equal(b.hud.isVisible(), false);
+  assert.equal(b.document.body.children.length, 0);
+});
+
+test('HUD appears for unavailable on a job and hides on SPA departure', () => {
+  const b = browserHUD('/tasks/1/jobs/2');
+  assert.equal(b.hud.isVisible(), false);
+  b.window.dispatchEvent({ type: 'message', source: b.window,
+    data: { type: 'POINTSNAP_3D_UNAVAILABLE' } });
+  assert.equal(b.hud.isVisible(), true);
+  assert.equal(b.hud.getHUDElement().querySelector('#ps-hud-badge-status').textContent, 'CHƯA KẾT NỐI CANVAS');
+  b.window.location.pathname = '/tasks';
+  b.window.routeCheck();
+  assert.equal(b.hud.isVisible(), false);
+  b.window.dispatchEvent({ type: 'POINTSNAP_3D_TELEMETRY', detail: {
+    residuals: { deltaZ_cm: 1, deltaYaw_deg: 0, dist3D_cm: 1, statusText: 'GREEN_LOCK' } } });
+  assert.equal(b.hud.isVisible(), false);
+});
+
+test('HUD can appear for a ghost target on a job without initial unavailable', () => {
+  const b = browserHUD('/tasks/1/jobs/2');
+  assert.equal(b.hud.isVisible(), false);
+  b.window.dispatchEvent({ type: 'POINTSNAP_3D_TELEMETRY', detail: {
+    residuals: { deltaZ_cm: 1, deltaYaw_deg: 0, dist3D_cm: 1, statusText: 'GREEN_LOCK' } } });
+  assert.equal(b.hud.isVisible(), false);
+  b.window.dispatchEvent({ type: 'POINTSNAP_SET_GHOST_TARGET', detail: {
+    ghostTarget: { center: [0, 0, 1], dims: [4, 2, 2], yaw: 0 } } });
+  assert.equal(b.hud.isVisible(), true);
 });

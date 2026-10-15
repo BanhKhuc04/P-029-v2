@@ -211,7 +211,7 @@ test('3.2 evaluateMagnetSnap captures rotation when deltaYaw <= 4.0 deg', () => 
   };
 
   const snap = ghostEngine.evaluateMagnetSnap(currentBox, targetBox, false);
-  assert.equal(snap.snapped, true);
+  assert.equal(snap.snapped, false);
   assert.equal(snap.translationSnapped, false);
   assert.equal(snap.rotationSnapped, true);
 

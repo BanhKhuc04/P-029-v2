@@ -171,10 +171,8 @@
     const isFiniteYaw = Number.isFinite(deltaYaw_deg);
     const isWithinScene = isFiniteDist && dist3D_cm <= 50000.0; // 500m max scene interaction
 
-    const isSnapped = isWithinScene && (
-      (isFiniteDist && dist3D_cm <= SNAP_THRESHOLDS.DIST_CAPTURE_CM + 1e-4) ||
-      (isFiniteYaw && Math.abs(deltaYaw_deg) <= SNAP_THRESHOLDS.ANGLE_CAPTURE_DEG + 1e-4)
-    );
+    const isSnapped = isWithinScene && dist3D_cm <= SNAP_THRESHOLDS.DIST_CAPTURE_CM + 1e-4;
+    const rotationSnapped = isFiniteYaw && Math.abs(deltaYaw_deg) <= SNAP_THRESHOLDS.ANGLE_CAPTURE_DEG + 1e-4;
 
     const isGreenLocked = isWithinScene && isFiniteYaw &&
       dist3D_cm <= SNAP_THRESHOLDS.LOCK_DIST_CM + 1e-4 &&
@@ -197,6 +195,7 @@
       roll_deg,
       pitch_deg,
       isSnapped,
+      rotationSnapped,
       isGreenLocked,
       statusText,
     };
@@ -214,7 +213,7 @@
    * @param {boolean} [isCurrentlySnapped=false] - Trạng thái bắt dính trước đó
    * @returns {Object} { snapped, translationSnapped, rotationSnapped, box, residuals }
    */
-  function evaluateMagnetSnap(currentBox, targetBox, isCurrentlySnapped = false) {
+  function evaluateMagnetSnap(currentBox, targetBox, isCurrentlySnapped = false, isCurrentlyRotationSnapped = isCurrentlySnapped) {
     if (!currentBox || !targetBox) {
       return {
         snapped: false,
@@ -228,7 +227,7 @@
     const distThreshold_cm = isCurrentlySnapped
       ? SNAP_THRESHOLDS.DIST_RELEASE_CM
       : SNAP_THRESHOLDS.DIST_CAPTURE_CM;
-    const angleThreshold_deg = isCurrentlySnapped
+    const angleThreshold_deg = isCurrentlyRotationSnapped
       ? SNAP_THRESHOLDS.ANGLE_RELEASE_DEG
       : SNAP_THRESHOLDS.ANGLE_CAPTURE_DEG;
 
@@ -241,7 +240,7 @@
 
     const translationSnapped = isWithinScene && dist3D_cm <= distThreshold_cm + 1e-4;
     const rotationSnapped = isWithinScene && isFiniteYaw && deltaYaw_deg <= angleThreshold_deg + 1e-4;
-    const snapped = translationSnapped || rotationSnapped;
+    const snapped = translationSnapped;
 
     const newCenter = translationSnapped
       ? [...targetBox.center]
@@ -259,7 +258,7 @@
       ? 0.0
       : (currentBox.pitch || 0.0);
 
-    const newDims = targetBox.dims
+    const newDims = translationSnapped && targetBox.dims
       ? [...targetBox.dims]
       : [...currentBox.dims];
 

@@ -1001,7 +1001,7 @@
   const previewCache = new Map();
 
   function runFindingIndex(f) {
-    return state.currentRun && state.currentRun.findings ? state.currentRun.findings.indexOf(f) : -1;
+    return f && Number.isInteger(f.index) ? f.index : -1;
   }
 
   function setupQuickReview() {
@@ -1708,7 +1708,7 @@
       frame: Number(f.frame),
       repair: rep,
       client_track_etag: state.currentTrackEtag || undefined,
-      slug: appliedSlug || undefined,
+      slug: appliedSlug,
     };
 
     try {
@@ -1780,7 +1780,7 @@
       return;
     }
     const item = state.historyStack[state.historyStack.length - 1];
-    if (!item) return;
+    if (!item || !item.slug) return;
 
     const rollbackBtn = document.getElementById('btn-rollback-repair');
     state.isApplyingRepair = true;
@@ -1792,7 +1792,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           history_id: item.history_id,
-          slug: item.slug || undefined,
+          slug: item.slug,
         }),
       });
 

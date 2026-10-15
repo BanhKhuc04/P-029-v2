@@ -96,7 +96,7 @@ def _repair_ground(
         d = float(est.contact_distance if est.contact_distance is not None else est.distance)
     elif "distance" in details:
         d = float(details["distance"])
-        num_pts = int(details.get("num_ground_points", 20))
+        num_pts = int(details.get("num_ground_points", 0))
     elif est is not None and est.num_ground_points > 0:
         num_pts = est.num_ground_points
 
@@ -116,28 +116,18 @@ def _repair_ground(
     if "track_median_distance" in details:
         reference = float(details["track_median_distance"])
     else:
-        peers = [b for b in (track or [cuboid]) if b.frame != cuboid.frame and b.visible and b.keyframe]
-        peer_distances: list[float] = []
-        if points is not None and peers:
-            for p in peers:
-                try:
-                    p_est = ring_ground_for_box(points, p)
-                    if p_est.is_valid:
-                        p_dist = p_est.contact_distance if p_est.contact_distance is not None else p_est.distance
-                        peer_distances.append(float(p_dist))
-                except Exception:
-                    pass
-        if len(peer_distances) >= 2:
-            reference = float(np.median(peer_distances))
-        else:
-            reference = 0.0
+        reference = 0.0
 
     offset = d - reference
     delta_z = -offset
 
     new_center = (cuboid.center[0], cuboid.center[1], cuboid.center[2] + delta_z)
     repaired = cuboid.replace(center=new_center)
-    confidence = min(1.0, max(0.80, num_pts / 30.0))
+    confidence = min(1.0, max(0.0, num_pts / 30.0))
+    if est is None or not est.is_valid:
+        confidence *= 0.5
+    if "track_median_distance" not in details:
+        confidence *= 0.75
     direction = "hạ" if delta_z < 0 else "nâng"
     reason = (
         f"{direction.capitalize()} đáy box {abs(delta_z)*100:.1f} cm sát mặt đất "
@@ -177,44 +167,9 @@ def _repair_heading(
         delta_yaw = normalize_angle(float(details["target_yaw_sensor"]) - cuboid.yaw)
         reason = f"Hiệu chỉnh {math.degrees(delta_yaw):+.1f}° theo track đã bù chuyển động cảm biến"
         confidence = 0.92
-    elif rule == "heading.flip":
-        peers = [b for b in (track or [cuboid]) if b.frame != cuboid.frame and b.visible and b.keyframe]
-        if "track_heading_deg" in details:
-            ref_yaw = math.radians(float(details["track_heading_deg"]))
-            delta_yaw = normalize_angle(ref_yaw - cuboid.yaw)
-        elif peers:
-            sin_mean = float(np.mean([math.sin(b.yaw) for b in peers]))
-            cos_mean = float(np.mean([math.cos(b.yaw) for b in peers]))
-            ref_yaw = math.atan2(sin_mean, cos_mean)
-            delta_yaw = normalize_angle(ref_yaw - cuboid.yaw)
-        else:
-            confidence = 0.0
-            reason = "Không đủ keyframe để xác định hướng chuẩn"
-        reason = (f"Xoay {math.degrees(delta_yaw):+.1f}° về hướng chuẩn của keyframe tham chiếu" if peers or "track_heading_deg" in details
-                  else "Không đủ keyframe để xác định hướng chuẩn")
-        confidence = 0.98 if peers or "track_heading_deg" in details else 0.0
-
-    elif rule == "heading.motion":
-        peers = sorted([b for b in (track or [cuboid]) if b.visible and b.keyframe], key=lambda b: b.frame)
-        idx = next((i for i, b in enumerate(peers) if b.frame == cuboid.frame), -1)
-        motion_yaw = None
-        if idx >= 0 and len(peers) >= 2:
-            a = max(0, idx - 1)
-            b = min(len(peers) - 1, idx + 1)
-            dx = peers[b].center[0] - peers[a].center[0]
-            dy = peers[b].center[1] - peers[a].center[1]
-            if math.hypot(dx, dy) >= 0.5:
-                motion_yaw = math.atan2(dy, dx)
-        if motion_yaw is not None:
-            delta_yaw = normalize_angle(motion_yaw - cuboid.yaw)
-        else:
-            confidence = 0.0
-        reason = (f"Hiệu chỉnh hướng {math.degrees(delta_yaw):+.1f}° theo vector vận tốc" if motion_yaw is not None
-                  else "Chuyển động quá nhỏ để xác định hướng; cần kiểm tra thủ công")
-        confidence = 0.92 if motion_yaw is not None else 0.0
-        if details.get("maybe_reversing"):
-            delta_yaw, confidence = 0.0, 0.0
-            reason = "Có thể vật thể đang lùi; cần người xem xác nhận trước khi đổi hướng"
+    elif rule in ("heading.flip", "heading.motion", "heading.static"):
+        confidence = 0.0
+        reason = "Thiếu hướng chuẩn trong hệ cảm biến; cần pose hoặc kiểm tra thủ công"
 
     elif rule == "heading.points":
         local_pts = None
@@ -245,18 +200,9 @@ def _repair_heading(
             confidence = 0.75
             reason = f"Hiệu chỉnh {math.degrees(delta_yaw):+.1f}° theo độ lệch finding"
         else:
-            peers = [b for b in (track or [cuboid]) if b.frame != cuboid.frame and b.visible and b.keyframe]
-            if peers:
-                sin_mean = float(np.mean([math.sin(b.yaw) for b in peers]))
-                cos_mean = float(np.mean([math.cos(b.yaw) for b in peers]))
-                ref_yaw = math.atan2(sin_mean, cos_mean)
-                delta_yaw = normalize_angle(ref_yaw - cuboid.yaw)
-                confidence = 0.80
-                reason = f"Đồng bộ {math.degrees(delta_yaw):+.1f}° theo trung vị track"
-            else:
-                delta_yaw = 0.0
-                confidence = 0.0
-                reason = "Không đủ điểm LiDAR để khớp hướng L-shape"
+            delta_yaw = 0.0
+            confidence = 0.0
+            reason = "Không đủ điểm LiDAR để khớp hướng L-shape"
 
     else:
         raise ValueError(f"Unsupported repair rule: {rule}")

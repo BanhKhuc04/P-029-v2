@@ -24,6 +24,7 @@ from pointsnap.report.html import generate_html_report
 from pointsnap.learn import apply as apply_learned
 from pointsnap.learn import load_model
 from pointsnap.web.projects import ProjectError, ProjectManager
+from pointsnap.web.findings import is_actionable, present_run
 from pointsnap.web.storage import StorageError, read_json, write_json
 
 logger = logging.getLogger(__name__)
@@ -102,10 +103,6 @@ def _scalar_details(details: Any) -> dict[str, Any]:
     return out
 
 
-def visible_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [dict(f, index=i) for i, f in enumerate(findings) if not f.get("rule", "").startswith("track.")]
-
-
 class ScanRunner:
     def __init__(self, project_manager: ProjectManager, max_workers: int = 1, max_pending: int = 16) -> None:
         self.pm = project_manager
@@ -113,7 +110,6 @@ class ScanRunner:
         self._scans: dict[str, dict[str, Any]] = {}
         self._lock = threading.RLock()
         self.max_pending = max_pending
-        self._poll_cache = {}
 
     def run_dir(self, slug: str, run_id: str) -> Path:
         self.pm.get_project(slug)
@@ -233,21 +229,23 @@ class ScanRunner:
             findings = apply_learned(findings, learned, config.learning.adjust_severity,
                                      config.learning.downgrade_below, config.learning.min_rule_reviews)
 
+            visible = [f for f in findings if is_actionable(f)]
+
             # 4. Xuất báo cáo HTML / CSV
             info["progress"] = 80
             info["message"] = "Đang tạo báo cáo HTML và CSV..."
             coverage_gaps = scan_coverage_gaps(job, config, frames)
             passed, reasons = gate_verdict(findings, config.gate, coverage_gaps=coverage_gaps)
-            generate_html_report(job, findings, run_dir / "report.html", coverage_gaps=coverage_gaps,
+            generate_html_report(job, visible, run_dir / "report.html", coverage_gaps=coverage_gaps,
                                  gate_passed=passed, gate_reasons=reasons)
-            generate_csv_report(job, findings, run_dir / "report.csv")
+            generate_csv_report(job, visible, run_dir / "report.csv")
 
             # 6. Gắn cờ lỗi lên CVAT nếu được yêu cầu
             flag_summary: dict[str, int] | None = None
             if flag:
                 info["progress"] = 90
                 info["message"] = "Đang gắn cờ lỗi trực tiếp lên CVAT..."
-                act = actionable(findings)
+                act = visible
                 f_res = flag_job_errors(
                     client, job, act, flag_attribute=config.cvat.flag_attribute
                 )
@@ -271,7 +269,7 @@ class ScanRunner:
 
             # 8. Ghi summary.json
             counts = {
-                s.value: sum(1 for f in findings if f.severity is s) for s in Severity
+                s.value: sum(1 for f in (findings if s is Severity.INFO else visible) if f.severity is s) for s in Severity
             }
             summary = {
                 "run_id": run_id,
@@ -338,8 +336,8 @@ class ScanRunner:
                 f_path = run_dir / "findings.json"
                 if f_path.is_file():
                     raw_findings = read_json(f_path, list)
-                    run_data["findings"] = visible_findings(raw_findings)
-            return run_data
+                    run_data["findings"] = raw_findings
+            return present_run(run_data)
 
         # 2. Đọc từ ổ đĩa
         state_file = run_dir / "run.json"
@@ -357,8 +355,8 @@ class ScanRunner:
                 res["summary"] = read_json(run_dir / "summary.json")
                 if include_findings:
                     raw_findings = read_json(run_dir / "findings.json", list)
-                    res["findings"] = visible_findings(raw_findings)
-            return res
+                    res["findings"] = raw_findings
+            return present_run(res)
         sum_file = run_dir / "summary.json"
         if not sum_file.is_file():
             raise ProjectError(f"Không tìm thấy lần quét '{run_id}'")
@@ -378,25 +376,8 @@ class ScanRunner:
         }
         if include_findings:
             f_path = run_dir / "findings.json"
-            res["findings"] = visible_findings(read_json(f_path, list))
-        return res
-
-    def poll_state(self, slug: str, job_id: int) -> tuple[str | None, dict | None, str]:
-        with self._lock:
-            scans = [dict(r) for r in self._scans.values() if r.get("project_slug") == slug and r.get("job_id") == job_id]
-            active = next((r for r in scans if r.get("status") in ("queued", "running")), None)
-            done = [r for r in scans if r.get("status") == "done"]
-            runs_dir = self.pm._project_dir(slug) / "runs"
-            stamp = runs_dir.stat().st_mtime_ns if runs_dir.is_dir() else None
-            signature = (stamp, tuple((r["run_id"], r.get("finished_at")) for r in done))
-            key = (slug, job_id)
-            cached = self._poll_cache.get(key)
-            if cached is None or cached[0] != signature:
-                runs = [r for r in self.list_runs(slug) if r.get("job_id") == job_id and r.get("status") == "done"]
-                latest = runs[0].get("run_id") if runs else None
-                started_at = runs[0].get("started_at") or "" if runs else ""
-                self._poll_cache[key] = (signature, latest, started_at)
-            return self._poll_cache[key][1], active, self._poll_cache[key][2]
+            res["findings"] = read_json(f_path, list)
+        return present_run(res)
 
     @staticmethod
     def _check_outputs(run_dir: Path) -> None:
@@ -419,7 +400,9 @@ class ScanRunner:
         for r_id, r_info in active:
             if r_info.get("project_slug") == slug:
                 try:
-                    results.append(self.get_run(slug, r_id))
+                    item = self.get_run(slug, r_id, include_findings=True)
+                    item.pop("findings", None); item.pop("diagnostics", None)
+                    results.append(item)
                 except (ProjectError, StorageError) as exc:
                     results.append({"run_id": r_id, "project_slug": slug, "status": "failed",
                                     "error": str(exc), "progress": 100})
@@ -430,7 +413,9 @@ class ScanRunner:
             for d in runs_dir.iterdir():
                 if d.is_dir() and d.name not in seen_runs:
                     try:
-                        results.append(self.get_run(slug, d.name))
+                        item = self.get_run(slug, d.name, include_findings=True)
+                        item.pop("findings", None); item.pop("diagnostics", None)
+                        results.append(item)
                     except (ProjectError, StorageError) as exc:
                         results.append({"run_id": d.name, "project_slug": slug, "status": "failed",
                                         "error": str(exc), "progress": 100})

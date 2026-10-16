@@ -226,7 +226,7 @@
   function collectFlags(annotations, specs) {
     const flags = [];
     const push = (frame, labelId, value, kind, objectId) => {
-      const items = parseFlag(value);
+      const items = parseFlag(value).filter(it => ['error','warning'].includes(it.severity) && !it.rule?.startsWith('track.'));
       if (!items.length) return;
       flags.push({
         frame,
@@ -293,14 +293,15 @@
    * và câu thông báo của mục nằm trong nội dung cờ. Trả về chỉ số trong `findings`.
    */
   function matchFindings(findings, flag) {
+    if(Number.isInteger(flag.finding_index))return (findings || []).flatMap((f,i)=>f.finding_index===flag.finding_index?[i]:[]);
     const out = [];
-    (findings || []).forEach((f) => {
+    (findings || []).forEach((f, index) => {
       if (f.frame === flag.frame && f.label === flag.label && f.message && flag.value.includes(f.message)) {
         if (flag.objectId != null) {
           const id = flag.kind === 'track' ? f.track_id : f.source_id;
           if (id == null || String(id) !== String(flag.objectId)) return;
         }
-        if (Number.isInteger(f.index) && f.index >= 0) out.push(f.index);
+        out.push(index);
       }
     });
     return out;
@@ -312,7 +313,7 @@
    */
   function flagsFromFindings(findings) {
     const SEV_TEXT = { error: 'Lỗi', warning: 'Cảnh báo', info: 'Thông tin' };
-    return (findings || []).map((f) => {
+    return (findings || []).filter(f => ['error','warning'].includes(f.severity) && !f.rule?.startsWith('track.') && (!f.error_type || ['floating','size','heading','fit','attribute'].includes(f.error_type))).map((f) => {
       const sev = f.severity || 'warning';
       const msg = f.message || '';
       const rule = f.rule || null;
@@ -331,52 +332,9 @@
         items,
         severity: sev,
         fromScan: true,
+        finding_index: f.finding_index,
       };
     }).sort((a, b) => a.frame - b.frame || SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
-  }
-
-  // Ghost target & spatial residuals math (Milestone M2)
-  let ghostEngine = null;
-  if (typeof module !== 'undefined' && module.exports) {
-    try {
-      ghostEngine = require('./ghost-engine.js');
-    } catch (e) {
-      ghostEngine = null;
-    }
-  } else if (root.PointSnapGhostEngine) {
-    ghostEngine = root.PointSnapGhostEngine;
-  }
-
-  function getActiveGhostEngine() {
-    return ghostEngine || (typeof root !== 'undefined' ? root.PointSnapGhostEngine : null);
-  }
-
-  function normalizeAngleWrapper(angle) {
-    const ge = getActiveGhostEngine();
-    if (ge && ge.normalizeAngle) return ge.normalizeAngle(angle);
-    if (!Number.isFinite(angle)) return 0.0;
-    const twoPi = 2.0 * Math.PI;
-    let a = (angle + Math.PI) % twoPi;
-    if (a < 0.0) a += twoPi;
-    return a - Math.PI;
-  }
-
-  function computeSpatialResidualsWrapper(currentBox, targetBox, points) {
-    const ge = getActiveGhostEngine();
-    if (ge && ge.computeSpatialResiduals) return ge.computeSpatialResiduals(currentBox, targetBox, points);
-    return null;
-  }
-
-  function evaluateMagnetSnapWrapper(currentBox, targetBox, isCurrentlySnapped) {
-    const ge = getActiveGhostEngine();
-    if (ge && ge.evaluateMagnetSnap) return ge.evaluateMagnetSnap(currentBox, targetBox, isCurrentlySnapped);
-    return null;
-  }
-
-  function performQuickLevelingWrapper(currentBox, targetBox) {
-    const ge = getActiveGhostEngine();
-    if (ge && ge.performQuickLeveling) return ge.performQuickLeveling(currentBox, targetBox);
-    return null;
   }
 
   const api = {
@@ -399,21 +357,7 @@
     filterLogic,
     matchFindings,
     flagsFromFindings,
-    // Ghost Target & Magnet Snap exports
-    normalizeAngle: normalizeAngleWrapper,
-    computeSpatialResiduals: computeSpatialResidualsWrapper,
-    evaluateMagnetSnap: evaluateMagnetSnapWrapper,
-    performQuickLeveling: performQuickLevelingWrapper,
-    SNAP_THRESHOLDS: (ghostEngine && ghostEngine.SNAP_THRESHOLDS) || {
-      DIST_CAPTURE_CM: 8.0,
-      DIST_RELEASE_CM: 12.0,
-      ANGLE_CAPTURE_DEG: 4.0,
-      ANGLE_RELEASE_DEG: 6.0,
-      LOCK_DIST_CM: 2.0,
-      LOCK_ANGLE_DEG: 2.0,
-      LOCK_ROLL_DEG: 0.5,
-      LOCK_PITCH_DEG: 0.5,
-    },
+
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

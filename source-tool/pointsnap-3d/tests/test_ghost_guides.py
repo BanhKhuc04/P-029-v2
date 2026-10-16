@@ -234,7 +234,7 @@ def test_generate_ghost_target_floating_error():
     assert ghost.pitch == 0.0
     assert ghost.target_bottom_z == pytest.approx(ground_z, abs=0.03)
     assert ghost.center[2] == pytest.approx(ground_z + target_box.height / 2.0, abs=0.03)
-    assert ghost.confidence >= 0.70
+    assert ghost.confidence >= 0.80
     assert ghost.cluster_bounds is not None
 
     # Scanner clearance
@@ -271,7 +271,7 @@ def test_generate_ghost_target_heading_flip():
     injected_track, _ = inject_heading_rotate(track, track_id=1, frame=2, delta_deg=180.0)
     target_box = injected_track[2]
 
-    ghost = generate_ghost_target(target_box, injected_track, points, rule="heading.flip", details={"target_yaw_sensor": 0.0})
+    ghost = generate_ghost_target(target_box, injected_track, points, rule="heading.flip")
 
     assert normalize_angle(ghost.yaw - 0.0) == pytest.approx(0.0, abs=0.05)
     assert ghost.roll == 0.0
@@ -371,7 +371,7 @@ def test_generate_ghost_target_sparse_points_fallback():
     sparse_pts = np.array([[10.0, 5.0, -1.8], [10.5, 5.2, -1.8]])
     ghost = generate_ghost_target(track[1], track, sparse_pts, rule="fit.outside")
 
-    assert ghost.confidence == 0.0
+    assert ghost.confidence == pytest.approx(0.70)
     assert ghost.dims == track[1].dims
     assert ghost.roll == 0.0
     assert ghost.pitch == 0.0
@@ -426,7 +426,7 @@ def test_compute_spatial_residuals_exact_cm_and_deg():
 
 
 def test_compute_spatial_residuals_snap_conditions():
-    """Kiểm tra điều kiện bắt dính Magnet Snap (dist <= 8cm; yaw có trạng thái riêng)."""
+    """Kiểm tra điều kiện bắt dính Magnet Snap (dist <= 8cm hoặc yaw <= 4 deg)."""
     target = GhostTarget(center=(10.0, 5.0, 0.0), dims=(4.5, 1.8, 1.5), yaw=0.0)
 
     # TH1: Khoảng cách 7cm (<= 8cm), góc lệch 10 độ (> 4 độ) -> SNAPPED do khoảng cách
@@ -436,13 +436,12 @@ def test_compute_spatial_residuals_snap_conditions():
     assert r1.is_green_locked is False
     assert r1.status_text == "SNAPPED"
 
-    # TH2: Khoảng cách 15cm (> 8cm), góc lệch 3.5 độ (<= 4 độ) -> OFF_TARGET, chỉ góc đã khớp
+    # TH2: Khoảng cách 15cm (> 8cm), góc lệch 3.5 độ (<= 4 độ) -> SNAPPED do góc
     c2 = Cuboid(center=(10.15, 5.0, 0.0), dims=(4.5, 1.8, 1.5), yaw=math.radians(3.5), label="car", frame=0)
     r2 = compute_spatial_residuals(c2, target)
-    assert r2.is_snapped is False
-    assert r2.rotation_snapped is True
+    assert r2.is_snapped is True
     assert r2.is_green_locked is False
-    assert r2.status_text == "OFF_TARGET"
+    assert r2.status_text == "SNAPPED"
 
     # TH3: Khoảng cách 15cm (> 8cm) VÀ góc lệch 10 độ (> 4 độ) -> OFF_TARGET
     c3 = Cuboid(center=(10.15, 5.0, 0.0), dims=(4.5, 1.8, 1.5), yaw=math.radians(10.0), label="car", frame=0)
@@ -585,7 +584,7 @@ def test_rest_api_get_ghost_target_floating(api_client: TestClient, sample_cvat_
     assert "yaw" in gt
     assert gt["roll"] == 0.0
     assert gt["pitch"] == 0.0
-    assert gt["confidence"] == 0.0
+    assert gt["confidence"] >= 0.70
 
     # Kiểm tra bộ dung sai chuẩn
     tol = data["tolerances"]

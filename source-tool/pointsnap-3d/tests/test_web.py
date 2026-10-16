@@ -363,6 +363,7 @@ def test_thread_safe_concurrent_data_paths(tmp_path: Path, monkeypatch):
 def test_flag_scan_creates_rescan_run(mock_home: Path, client: TestClient):
     pm = ProjectManager(mock_home)
     pm.create_project(name="Scan Project", slug="scan-proj")
+    client.put("/api/projects/scan-proj/guideline", json={"config":{"rules":{"critic_box":False},"camera":{"enabled":False}}})
 
     # Giả lập một run cũ đã hoàn thành
     run_dir = mock_home / "projects" / "scan-proj" / "runs" / "20261007-000000-job5"
@@ -514,6 +515,7 @@ def test_end_to_end_mock_scan(mock_home: Path, client: TestClient, monkeypatch):
     )
     assert create_res.status_code == 201
 
+    client.put("/api/projects/e2e-proj/guideline", json={"config":{"rules":{"critic_box":False},"camera":{"enabled":False}}})
     # 2. Khởi động quét Job 1
     scan_res = client.post("/api/projects/e2e-proj/scans", json={"job_id": 1, "flag": True})
     assert scan_res.status_code == 202

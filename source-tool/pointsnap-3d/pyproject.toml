@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pointsnap"
-version = "0.1.0"
+version = "0.3.0"
 description = "Phát hiện và cảnh báo sớm lỗi nhãn 3D cuboid trên CVAT"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,6 +13,7 @@ dependencies = [
     "pyyaml>=6.0",
     "requests>=2.31",
     "fastapi>=0.100",
+    "pydantic>=2.0",
     "uvicorn>=0.20",
 ]
 

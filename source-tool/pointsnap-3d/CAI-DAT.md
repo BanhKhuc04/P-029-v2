@@ -160,7 +160,7 @@ mục `attr.missing` trên nhãn chuẩn.
 pointsnap ui
 ```
 
-Trình duyệt tự mở `http://127.0.0.1:8765` → bấm **Bắt đầu**.
+Trình duyệt tự mở `http://127.0.0.1:8765`: trang giới thiệu PointSnap. Bấm **Mở PointSnap** (hoặc Enter) để vào ứng dụng ở `http://127.0.0.1:8765/app`.
 
 1. **Tạo dự án** (lần đầu): tên dự án, URL CVAT `http://localhost:8080`, token CVAT.
 2. Tab **Kết nối CVAT**: điền **Thư mục nuScenes** (`D:/data/nuscenes`) và **Thư mục bản xuất to-cvat** (`D:/data/cvat`), bấm **Kiểm tra kết nối**.

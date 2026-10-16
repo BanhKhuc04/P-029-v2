@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import hashlib
 import json
 import logging
 from datetime import datetime, timezone
@@ -18,7 +19,6 @@ from typing import Any, Sequence
 import uuid
 
 from pointsnap.adapters.cvat.shapes import PITCH_ATTR, ROLL_ATTR, points_to_geometry
-from pointsnap.adapters.cvat.writer import compute_track_etag
 from pointsnap.core.model import Cuboid
 from pointsnap.core.serialize import cuboid_from_dict, cuboid_to_dict
 
@@ -29,6 +29,12 @@ class SnapshotIsolationError(ValueError):
     """Raised when a snapshot violates job or track boundary isolation (Defect 1)."""
     pass
 
+
+
+def compute_track_etag(track_dict: dict[str, Any]) -> str:
+    """Tính ETag SHA-256 từ dictionary track được chuẩn hóa phục vụ kiểm tra OCC."""
+    normalized_json = json.dumps(track_dict, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(normalized_json.encode("utf-8")).hexdigest()[:16]
 
 
 def sanitize_history_id(history_id: str) -> str:
@@ -268,6 +274,7 @@ class HistoryManager:
             candidate_paths.append(p / f"job_{job_id}" / f"{history_id}.json")
 
         candidate_paths.append(self.home_dir / "projects" / effective_slug / "history" / f"job_{job_id}" / f"{history_id}.json")
+        candidate_paths.append(Path.home() / ".pointsnap" / "projects" / effective_slug / "history" / f"job_{job_id}" / f"{history_id}.json")
 
         found_path: Path | None = None
         for cp in candidate_paths:
@@ -283,12 +290,13 @@ class HistoryManager:
                 bp = Path(base_dir)
                 search_roots.append(bp if not bp.name.startswith("job_") else bp.parent)
             search_roots.append(self.home_dir / "projects" / effective_slug / "history")
+            search_roots.append(Path.home() / ".pointsnap" / "projects" / effective_slug / "history")
 
             for root in search_roots:
                 if root.is_dir():
-                    matches = list(root.glob(f"job_*/{history_id}.json"))
+                    matches = list(root.glob(f"job_*/*{history_id}.json"))
                     if not matches:
-                        matches = list(root.glob(f"{history_id}.json"))
+                        matches = list(root.glob(f"*{history_id}.json"))
                     for m in matches:
                         if m.is_file():
                             found_path = m
@@ -337,7 +345,6 @@ class HistoryManager:
         job_id: int | None = None,
         slug: str | None = None,
         base_dir: Path | str | None = None,
-        track_id: int | None = None,
     ) -> list[dict[str, Any]]:
         """Liệt kê tất cả snapshot của job, sắp xếp theo thời gian giảm dần."""
         effective_slug = sanitize_slug(slug or self.slug)
@@ -366,7 +373,7 @@ class HistoryManager:
                 try:
                     data = json.loads(jf.read_text(encoding="utf-8"))
                     # Chỉ gom các bản ghi dạng dict (Defect 3)
-                    if isinstance(data, dict) and (track_id is None or data.get("track_id") == track_id):
+                    if isinstance(data, dict):
                         results.append(data)
                 except Exception:
                     continue
@@ -388,13 +395,7 @@ class HistoryManager:
         pre_repair_track = snapshot["pre_repair_track"]
 
         if cvat_client is not None and isinstance(pre_repair_track, dict) and "shapes" in pre_repair_track:
-            from pointsnap.adapters.cvat.repair_sync import same_track, write_verified_track
-            from pointsnap.adapters.cvat.writer import OCCConflictError
-            current = next((t for t in cvat_client.get_job_annotations(job_id).get("tracks", [])
-                            if t.get("id") == snapshot["track_id"]), None)
-            if current is None or not same_track(current, snapshot["post_repair_track"]):
-                raise OCCConflictError("Track đã thay đổi sau lần sửa; không thể hoàn tác")
-            pre_repair_track = write_verified_track(cvat_client, job_id, current, pre_repair_track)
+            cvat_client.patch_job_annotations(job_id, {"tracks": [pre_repair_track]}, action="update")
 
         return track_dict_to_cuboids(pre_repair_track)
 

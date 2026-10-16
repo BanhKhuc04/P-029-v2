@@ -409,8 +409,8 @@ def patch_track_keyframe(
                 a["value"] = ""
         target_shape["attributes"] = attrs
 
-    from pointsnap.adapters.cvat.repair_sync import write_verified_track
-    post_repair_track = write_verified_track(client, job_id, pre_repair_track, post_repair_track)
+    patch_payload = {"tracks": [post_repair_track]}
+    client.patch_job_annotations(job_id, patch_payload, action="update")
     return pre_repair_track, post_repair_track
 
 
@@ -418,9 +418,8 @@ def rollback_track_annotation(
     client: CvatClient,
     job_id: int,
     pre_repair_track: dict[str, Any],
-    post_repair_track: dict[str, Any],
 ) -> dict[str, Any]:
     """Khôi phục nguyên trạng track lên CVAT từ bản ghi pre_repair_track (Feature F10)."""
-    from pointsnap.adapters.cvat.repair_sync import write_verified_track
-    return write_verified_track(client, job_id, post_repair_track, pre_repair_track)
+    client.patch_job_annotations(job_id, {"tracks": [pre_repair_track]}, action="update")
+    return pre_repair_track
 

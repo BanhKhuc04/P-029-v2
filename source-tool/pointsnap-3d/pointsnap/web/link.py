@@ -22,7 +22,16 @@ class ExtensionLink:
         self._seq = 0
         self._commands: dict[tuple[str, int], dict[str, Any]] = {}
         self._seen: dict[tuple[str, int], float] = {}
+        self._versions = {}
+        self._events = {}
+        self._manual_runs = {}
+        self._event_sequences = {}
+        self._event_rev = 0
         self._reviews_rev = 0
+        # Sửa / hoàn tác box (1-Click Apply, Rollback) từ web hoặc extension: số phiên bản chung và sự kiện mới nhất
+        # của từng job, để phía bên kia cập nhật ngay (không F5) mà không cần đọc lại toàn bộ lịch sử.
+        self._history_rev = 0
+        self._history: dict[tuple[str, int], dict[str, Any]] = {}
 
     def _online(self, job_id: int, scope: str = "") -> bool:
         seen = self._seen.get((scope, job_id))
@@ -41,16 +50,48 @@ class ExtensionLink:
             self._seen[(scope, job_id)] = self._clock()
             command = self._commands.get((scope, job_id))
             fresh = after >= 0 and command is not None and command["seq"] > after
-            return {"seq": self._seq, "command": command if fresh else None, "reviews_rev": self._reviews_rev}
+            return {"seq": self._seq, "command": command if fresh else None, "reviews_rev": self._reviews_rev,
+                    "history_rev": self._history_rev, "history_event": self._history.get((scope, job_id))}
 
     def status(self, job_id: int, *, scope: str = "") -> dict[str, Any]:
         with self._lock:
-            return {"extension_online": self._online(job_id, scope), "reviews_rev": self._reviews_rev}
+            return {"extension_online": self._online(job_id, scope), "reviews_rev": self._reviews_rev,
+                    "manual_event": self._events.get((scope, job_id)),
+                    "manual_runs": {run: dict(value) for (sc, jid, run), value in self._manual_runs.items()
+                                    if sc == scope and jid == job_id},
+                    "history_rev": self._history_rev, "history_event": self._history.get((scope, job_id))}
+
+    def event(self, job_id, event, *, scope=""):
+        with self._lock:
+            key = (scope, job_id, event["session"])
+            if event["sequence"] <= self._event_sequences.get(key, -1):
+                return False
+            self._event_sequences[key] = event["sequence"]
+            if "run_id" in event:
+                run_key = (scope, job_id, event["run_id"])
+                state = self._manual_runs.setdefault(run_key, {"slug": event.get("slug"), "saved": False})
+                if event["kind"] == "saved":
+                    state["saved"] = True
+            self._event_rev += 1
+            self._events[(scope, job_id)] = {**event, "event_rev": self._event_rev}
+            return True
 
     @property
     def reviews_rev(self) -> int:
         with self._lock:
             return self._reviews_rev
+
+    @property
+    def history_rev(self) -> int:
+        with self._lock:
+            return self._history_rev
+
+    def bump_history(self, job_id: int, event: dict[str, Any], *, scope: str = "") -> int:
+        """Box của job vừa được sửa / hoàn tác: ghi sự kiện mới nhất của job và tăng số phiên bản lịch sử."""
+        with self._lock:
+            self._history_rev += 1
+            self._history[(scope, job_id)] = {**event, "job_id": job_id, "rev": self._history_rev}
+            return self._history_rev
 
     def bump_reviews(self) -> int:
         """Có kết luận xem tay mới (từ web hoặc extension): tăng số phiên bản để phía bên kia đọc lại."""

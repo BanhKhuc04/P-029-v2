@@ -5,6 +5,8 @@ __pycache__/
 .pytest_cache/
 
 # Dữ liệu và file sinh ra: không commit (giấy phép nuScenes, dung lượng, token)
+build/
+dist/
 data/
 out/
 *.pcd

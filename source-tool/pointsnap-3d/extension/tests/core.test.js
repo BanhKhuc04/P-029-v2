@@ -54,11 +54,9 @@ test('collectFlags đọc cờ từ shape lẻ và keyframe của track', () => 
   };
   const flags = core.collectFlags(annotations, specs);
   assert.deepEqual(flags.map((f) => [f.frame, f.kind, f.objectId, f.severity]), [
-    [3, 'track', 9, 'error'],
-    [4, 'track', 9, 'error'],
     [7, 'shape', 5, 'warning'],
   ]);
-  assert.deepEqual(core.flaggedFrames(flags), [3, 4, 7]);
+  assert.deepEqual(core.flaggedFrames(flags), [7]);
 });
 
 test('stepFrame đi tới / lui giữa các frame có cờ', () => {
@@ -82,10 +80,10 @@ test('filterLogic dùng đúng tên trường của bộ lọc CVAT', () => {
 test('matchFindings ghép mục của lần quét với cờ trên CVAT', () => {
   const flag = { frame: 3, label: 'car', value: '[Lỗi] A; [Cảnh báo] B' };
   const findings = [
-    { index: 0, frame: 3, label: 'car', message: 'B' },
-    { index: 1, frame: 3, label: 'truck', message: 'A' },
-    { index: 2, frame: 4, label: 'car', message: 'A' },
-    { index: 3, frame: 3, label: 'car', message: 'A' },
+    { frame: 3, label: 'car', message: 'B' },
+    { frame: 3, label: 'truck', message: 'A' },
+    { frame: 4, label: 'car', message: 'A' },
+    { frame: 3, label: 'car', message: 'A' },
   ];
   assert.deepEqual(core.matchFindings(findings, flag), [0, 3]);
 });
@@ -127,7 +125,7 @@ test('parseFlag nhận luật sai hướng box, box lệch (C1) và luật bám 
 
 test('flagsFromFindings chuyển findings từ scan thành danh sách cờ chuẩn', () => {
   const findings = [
-    { frame: 5, label: 'car', track_id: 10, severity: 'warning', message: 'Tâm box nhảy vị trí', rule: 'track.jump' },
+    { frame: 5, label: 'car', track_id: 10, severity: 'warning', message: 'Tâm box nhảy vị trí', rule: 'heading.flip' },
     { frame: 2, label: 'pedestrian', source_id: 20, severity: 'error', message: 'Kích thước lạ', rule: 'size.class_range' },
   ];
   const flags = core.flagsFromFindings(findings);

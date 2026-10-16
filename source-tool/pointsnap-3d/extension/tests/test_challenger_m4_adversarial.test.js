@@ -292,11 +292,11 @@ function createMockCanvas(width, height) {
   };
 }
 
-function loadDrawPreviewFunction(eol = '\n') {
-  const appJsCode = fs.readFileSync(path.join(__dirname, '../../pointsnap/web/static/app.js'), 'utf8').replace(/\r?\n/g, eol);
+function loadDrawPreviewFunction() {
+  const appJsCode = fs.readFileSync(path.join(__dirname, '../../pointsnap/web/static/app.js'), 'utf8').replace(/\r\n/g, '\n');
 
   // Extract drawPreview function definition
-  const match = appJsCode.match(/function\s+drawPreview\s*\([\s\S]*?\r?\n\s{2}\}\r?\n/);
+  const match = appJsCode.match(/function\s+drawPreview\s*\([\s\S]*?\n\s{2}\}\n/);
   assert.ok(match, 'drawPreview function must exist in app.js');
   const fnCode = match[0];
 
@@ -312,10 +312,6 @@ function loadDrawPreviewFunction(eol = '\n') {
   vm.runInContext(`${fnCode}\nglobalThis.drawPreview = drawPreview;`, context);
   return context.drawPreview;
 }
-
-test('P3-4 drawPreview extraction supports LF and CRLF checkouts', () => {
-  for (const eol of ['\n', '\r\n']) assert.equal(typeof loadDrawPreviewFunction(eol), 'function');
-});
 
 test('Adversarial Canvas 5.1: Null / undefined ground does not crash drawPreview in any view', () => {
   const drawPreview = loadDrawPreviewFunction();

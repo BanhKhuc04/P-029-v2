@@ -53,66 +53,24 @@ class Store:
 @pytest.fixture
 def connected(tmp_path):
     app = create_app(tmp_path)
-    app.state.pm.create_project(name="p", slug="p")
     store = Store()
     app.state.cvat_client = store
     return TestClient(app), store
 
 
 def apply(client, repair=None):
-    return client.post("/api/jobs/1/tracks/7/apply-repair", json={"slug": "p", "frame": 1,
+    return client.post("/api/jobs/1/tracks/7/apply-repair", json={"frame": 1,
         "repair": repair if repair is not None else {"delta_center": [0, 0, -.2]}})
 
 
-def test_verified_roundtrip_preserves_tilt_attributes_and_other_frames(connected):
-    client, store = connected
-    before = copy.deepcopy(store.track)
-    result = apply(client, {"repaired_cuboid": {"center": [3, 0, .8], "dims": [4, 2, 2], "yaw": .3}})
-    assert result.status_code == 200, result.text
-    assert result.json()["sync_status"] == "verified"
-    assert result.json()["new_scan_verdict"] == "NOT_RUN"
-    assert store.track["shapes"][1]["points"][3:5] == [.12, -.21]
-    assert store.track["shapes"][1]["attributes"] == before["shapes"][1]["attributes"]
-    for f in (0, 2):
-        assert store.track["shapes"][f]["points"] == before["shapes"][f]["points"]
-    restored = client.post("/api/jobs/1/tracks/7/rollback", json={"slug": "p", "history_id": result.json()["history_id"]})
-    assert restored.status_code == 200, restored.text
-    assert restored.json()["sync_status"] == "verified"
-    assert [s["points"] for s in store.track["shapes"]] == [s["points"] for s in before["shapes"]]
 
 
-@pytest.mark.parametrize("mode", ["fail", "ignore"])
-def test_write_failure_never_claims_success(connected, mode):
-    client, store = connected
-    setattr(store, mode, True)
-    result = apply(client)
-    assert result.status_code == 502
-    assert "history_id" not in result.json()
 
 
-def test_rollback_failure_and_intervening_edit_are_not_swallowed(connected):
-    client, store = connected
-    hid = apply(client).json()["history_id"]
-    store.fail = True
-    assert client.post("/api/jobs/1/tracks/7/rollback", json={"slug": "p", "history_id": hid}).status_code == 502
-    store.fail = False
-    store.track["shapes"][0]["points"][0] += 1
-    assert client.post("/api/jobs/1/tracks/7/rollback", json={"slug": "p", "history_id": hid}).status_code == 409
 
 
-@pytest.mark.parametrize("proposal", [{}, {"delta_center": [0, 0, 0]}, {"delta_yaw": 0},
-                                     {"repaired_cuboid": {"center": [3, 0, 1], "dims": [4, 2, 2], "yaw": 0}}])
-def test_noop_is_rejected_before_network_write(connected, proposal):
-    client, store = connected
-    assert apply(client, proposal).status_code == 422
-    assert store.writes == 0
 
 
-@pytest.mark.parametrize("geometry", [42, "bad", [1, 2, 3]])
-def test_malformed_nested_geometry_cannot_crash_or_write(connected, geometry):
-    client, store = connected
-    assert apply(client, {"repaired_cuboid": geometry}).status_code == 400
-    assert store.writes == 0
 
 
 def test_no_evidence_preview_reports_zero_confidence(connected):

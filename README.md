@@ -48,6 +48,8 @@ Một người có thể giữ nhiều vị trí, nhưng **không review job do 
 
 ## Review PointSnap
 
+[Rà soát landing ⟷ web ⟷ extension và giao diện mới 15/10](review/2026-10-15/landing-web-extension-review.md): `pointsnap ui` mở landing của đội, **Mở PointSnap** vào ứng dụng ở `/app`; đồng bộ sửa box 2 chiều không F5; E2E trình duyệt chạy lại bằng `auto-tests/browser/run_browser_e2e.py`.
+
 [Kết quả xử lý bàn giao tối 13/10, PR và model review](review/2026-10-13/handoff-final-report.md). Đây là kết quả trên nhánh hợp nhất để kiểm thử; xem trạng thái PR trước khi coi mã đã vào main. Precision tay/G7 và MV3 thật có trạng thái riêng.
 
 [Bàn giao review 01–08](review/2026-10-10/08-handoff.md), [kế hoạch và trạng thái](REVIEW-PLAN.md). Kết quả 01–08 đã vào main qua PR #54 (`d18b1a9`); các báo cáo cũ giữ mốc trước merge và phân biệt test đạt với quality/manual/MV3 và deployment chưa xác minh.

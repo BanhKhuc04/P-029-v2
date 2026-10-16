@@ -280,15 +280,12 @@ def test_f12_metrics_grid_formatting():
     assert formatted_ddims == "[+0.15, -0.05, +0.00] m"
 
 
-def test_f12_confirmation_modal_dom_structure():
-    """F12.2: Verifies index.html contains modal-confirm-repair with warning note and action buttons."""
-    index_html = (BASE_DIR / "pointsnap/web/static/index.html").read_text(encoding="utf-8")
-
-    assert 'id="modal-confirm-repair"' in index_html
-    assert 'id="btn-modal-repair-confirm"' in index_html
-    assert 'id="btn-modal-repair-cancel"' in index_html
-    assert 'id="modal-repair-table-body"' in index_html
-    assert "modal-warning-note" in index_html
+def test_v2_web_has_manual_help_and_no_automatic_write_controls():
+    html = (BASE_DIR / 'pointsnap/web/static/index.html').read_text(encoding='utf-8')
+    assert 'Sửa tay trong CVAT' in html
+    assert 'id="modal-confirm-repair"' not in html
+    assert 'id="btn-open-apply-repair"' not in html
+    assert 'id="btn-rollback-repair"' not in html
 
 
 def test_f12_debounce_and_concurrency_guard():
@@ -321,171 +318,25 @@ def test_f12_debounce_and_concurrency_guard():
     assert state["applyCount"] == 2
 
 
-def test_f12_apply_repair_success_and_badge_update(test_app_client: TestClient, sample_raw_cvat_track: dict[str, Any]):
-    """F12.4: Verifies POST apply-repair succeeds with client ETag and updates annotation points."""
-    etag = compute_track_etag(sample_raw_cvat_track)
-
-    payload = {
-        "frame": 2,
-        "repair": {
-            "rule": "floating",
-            "delta_center": [0.0, 0.0, -0.25],
-            "delta_dims": [0.0, 0.0, 0.0],
-            "delta_yaw": 0.0,
-            "repaired_cuboid": {
-                "center": [14.0, 5.0, -0.75],
-                "dims": [4.5, 2.0, 1.6],
-                "yaw": 0.15,
-                "roll": 0.0,
-                "pitch": 0.0,
-            },
-        },
-        "client_track_etag": etag,
-    }
-
-    res = test_app_client.post("/api/jobs/4/tracks/101/apply-repair", json=payload)
-    assert res.status_code == 200, res.text
-    data = res.json()
-
-    assert data["status"] == "ok"
-    assert "history_id" in data
-    assert data["new_scan_verdict"] == "NOT_RUN"
-
-    target_shape = next(s for s in data["updated_track"]["shapes"] if s["frame"] == 2)
-    # Verify new points reflect repaired center [-0.75 in Z]
-    assert target_shape["points"][2] == pytest.approx(-0.75, abs=1e-4)
 
 
-def test_f12_apply_repair_occ_conflict_409(test_app_client: TestClient):
-    """F12.5: Verifies POST apply-repair rejects stale ETag with HTTP 409 conflict."""
-    stale_etag = "stale_etag_deadbeef"
-    payload = {
-        "frame": 2,
-        "repair": {
-            "rule": "floating",
-            "delta_center": [0.0, 0.0, -0.25],
-        },
-        "client_track_etag": stale_etag,
-    }
-
-    res = test_app_client.post("/api/jobs/4/tracks/101/apply-repair", json=payload)
-    assert res.status_code == 409
-    data = res.json()
-    assert data["status"] == "conflict"
-    assert "OCC conflict" in data["detail"]
 
 
-def test_f12_lifo_rollback_stack(test_app_client: TestClient, sample_raw_cvat_track: dict[str, Any]):
-    """F12.6: Verifies LIFO rollback sequence correctly restores previous CVAT annotation keyframes."""
-    # Step 1: Apply repair on frame 2
-    etag1 = compute_track_etag(sample_raw_cvat_track)
-    payload1 = {
-        "frame": 2,
-        "repair": {
-            "rule": "floating",
-            "delta_center": [0.0, 0.0, -0.25],
-            "repaired_cuboid": {
-                "center": [14.0, 5.0, -0.75],
-                "dims": [4.5, 2.0, 1.6],
-                "yaw": 0.15,
-            },
-        },
-        "client_track_etag": etag1,
-    }
-    res1 = test_app_client.post("/api/jobs/4/tracks/101/apply-repair", json=payload1)
-    assert res1.status_code == 200
-    hid1 = res1.json()["history_id"]
-    updated_track1 = res1.json()["updated_track"]
-
-    # Step 2: Apply repair on frame 3 with fresh ETag
-    etag2 = compute_track_etag(updated_track1)
-    payload2 = {
-        "frame": 3,
-        "repair": {
-            "rule": "floating",
-            "delta_center": [0.0, 0.0, -0.15],
-            "repaired_cuboid": {
-                "center": [16.0, 5.0, -0.65],
-                "dims": [4.5, 2.0, 1.6],
-                "yaw": 0.15,
-            },
-        },
-        "client_track_etag": etag2,
-    }
-    res2 = test_app_client.post("/api/jobs/4/tracks/101/apply-repair", json=payload2)
-    assert res2.status_code == 200
-    hid2 = res2.json()["history_id"]
-
-    # History stack has [hid1, hid2]. LIFO pop gives hid2 first.
-    stack = [hid1, hid2]
-
-    # Rollback 1: hid2
-    pop2 = stack.pop()
-    assert pop2 == hid2
-    rb_res2 = test_app_client.post("/api/jobs/4/tracks/101/rollback", json={"history_id": pop2})
-    assert rb_res2.status_code == 200
-    assert rb_res2.json()["status"] == "ok"
-
-    # Rollback 2: hid1
-    pop1 = stack.pop()
-    assert pop1 == hid1
-    rb_res1 = test_app_client.post("/api/jobs/4/tracks/101/rollback", json={"history_id": pop1})
-    assert rb_res1.status_code == 200
-    assert rb_res1.json()["status"] == "ok"
-    assert len(stack) == 0
 
 
 # =========================================================================
 # Feature F13: Chrome Extension Shadow DOM Repair Card Tests
 # =========================================================================
 
-def test_f13_extension_shadow_dom_card_structure():
-    """F13.1: Verifies extension panel-css.js and content.js define repair-box and delta-grid styling."""
-    content_js = (BASE_DIR / "extension/src/content.js").read_text(encoding="utf-8")
-    panel_css = (BASE_DIR / "extension/src/panel-css.js").read_text(encoding="utf-8")
-
-    # Content script elements
-    assert "repair-box" in content_js
-    assert "delta-grid" in content_js
-    assert "delta-cell" in content_js
-    assert 'data-action="repair-apply-start"' in content_js
-    assert 'data-action="repair-apply-confirm"' in content_js
-    assert 'data-action="repair-apply-cancel"' in content_js
-    assert 'data-action="repair-rollback"' in content_js
-
-    # CSS rules in Shadow DOM
-    assert ".repair-box" in panel_css
-    assert ".delta-grid" in panel_css
-    assert ".delta-cell" in panel_css
-    assert ".repair-confirm-box" in panel_css
-    assert ".badge-pass" in panel_css
+def test_v2_panel_controls_manual_guides_instead_of_automatic_repair():
+    content = (BASE_DIR / 'extension/src/content.js').read_text(encoding='utf-8')
+    controller = (BASE_DIR / 'extension/src/manual-controller.js').read_text(encoding='utf-8')
+    for action in ('repair-apply-start','repair-apply-confirm','repair-rollback'):
+        assert f'data-action="{action}"' not in content
+    assert 'manual-toggle' in controller and 'manual-rule' in controller
+    assert 'manual-geometry.js' in (BASE_DIR / 'extension/manifest.json').read_text(encoding='utf-8')
 
 
-def test_f13_extension_2step_confirmation_state():
-    """F13.2: Verifies extension 2-step confirmation logic: prompt -> confirm."""
-    state = {"confirming": False, "applied": False}
-
-    def on_user_click(action: str):
-        if action == "apply-repair":
-            state["confirming"] = True
-            return "prompt_shown"
-        elif action == "cancel-apply-repair":
-            state["confirming"] = False
-            return "prompt_hidden"
-        elif action == "confirm-apply-repair":
-            if state["confirming"]:
-                state["confirming"] = False
-                state["applied"] = True
-                return "applied"
-        return "ignored"
-
-    assert on_user_click("apply-repair") == "prompt_shown"
-    assert state["confirming"] is True
-    assert on_user_click("cancel-apply-repair") == "prompt_hidden"
-    assert state["confirming"] is False
-    assert on_user_click("apply-repair") == "prompt_shown"
-    assert on_user_click("confirm-apply-repair") == "applied"
-    assert state["applied"] is True
 
 
 # =========================================================================
@@ -530,69 +381,12 @@ def evaluate_route_in_background(method: str, path: str, sender_job_id: int) -> 
     return False, f"Route not whitelisted: {path}"
 
 
-def test_f14_route_whitelisting_policy():
-    """F14.1: Verifies repair, apply-repair, and rollback routes are whitelisted for sender job."""
-    allowed, msg = evaluate_route_in_background("GET", "/api/jobs/4/tracks/101/repair?frame=2&rule=floating", 4)
-    assert allowed is True, msg
-
-    allowed, msg = evaluate_route_in_background("POST", "/api/jobs/4/tracks/101/apply-repair", 4)
-    assert allowed is True, msg
-
-    allowed, msg = evaluate_route_in_background("POST", "/api/jobs/4/tracks/101/rollback", 4)
-    assert allowed is True, msg
 
 
-def test_f14_cross_job_rejection():
-    """F14.2: Verifies cross-job access attempts are strictly rejected."""
-    allowed, msg = evaluate_route_in_background("GET", "/api/jobs/99/tracks/101/repair", 4)
-    assert allowed is False
-    assert "Cross-job route rejected" in msg
-
-    allowed, msg = evaluate_route_in_background("POST", "/api/jobs/99/tracks/101/apply-repair", 4)
-    assert allowed is False
-
-    allowed, msg = evaluate_route_in_background("POST", "/api/jobs/99/tracks/101/rollback", 4)
-    assert allowed is False
 
 
-def test_f14_path_traversal_and_tamper_defense():
-    """F14.3: Verifies path traversal, fragment smuggling, and forbidden methods are blocked."""
-    # Path traversal
-    allowed, _ = evaluate_route_in_background("GET", "/api/jobs/4/tracks/../../repair", 4)
-    assert allowed is False
-
-    allowed, _ = evaluate_route_in_background("GET", "/api/jobs/4/tracks/%2e%2e/repair", 4)
-    assert allowed is False
-
-    # Disallowed method on apply-repair (e.g. GET or DELETE)
-    allowed, _ = evaluate_route_in_background("GET", "/api/jobs/4/tracks/101/apply-repair", 4)
-    assert allowed is False
-
-    allowed, _ = evaluate_route_in_background("DELETE", "/api/jobs/4/tracks/101/rollback", 4)
-    assert allowed is False
 
 
 # =========================================================================
 # Backend Contract: GET /repair returns track_etag
 # =========================================================================
-
-def test_backend_repair_endpoint_etag_contract(test_app_client: TestClient, sample_raw_cvat_track: dict[str, Any]):
-    """Verifies GET /api/jobs/{job_id}/tracks/{track_id}/repair returns track_etag equal to compute_track_etag()."""
-    expected_etag = compute_track_etag(sample_raw_cvat_track)
-
-    res = test_app_client.get("/api/jobs/4/tracks/101/repair?frame=2&rule=floating")
-    assert res.status_code == 200, res.text
-    data = res.json()
-
-    assert data["status"] == "ok"
-    assert "track_etag" in data
-    assert data["track_etag"] == expected_etag
-
-    # Verify that passing this returned track_etag to apply-repair avoids OCC conflict
-    apply_payload = {
-        "frame": 2,
-        "repair": {"delta_center": [0, 0, -.2]},
-        "client_track_etag": data["track_etag"],
-    }
-    apply_res = test_app_client.post("/api/jobs/4/tracks/101/apply-repair", json=apply_payload)
-    assert apply_res.status_code == 200, apply_res.text

@@ -37,7 +37,6 @@ from pointsnap.history.manager import (
     HistoryManager,
     validate_history_snapshot_schema,
 )
-from pointsnap.web.projects import ProjectManager
 from pointsnap.web.app import create_app
 
 
@@ -198,111 +197,6 @@ def test_multistep_edit_chain_single_frame(tmp_path: Path):
     assert loaded_ids == {hid_a, hid_b, hid_c}
 
 
-def test_multistep_edit_chain_multi_frame_rest_api(tmp_path: Path):
-    """Stress 1.2: Multi-step edits on different frames via REST API with OCC checking."""
-    app = create_app(home_dir=tmp_path)
-    client = TestClient(app)
-
-    job_id = 20
-    track_id = 888
-    initial_track = create_complex_test_track(track_id=track_id, num_frames=5)
-
-    app.state.mock_tracks = {
-        (job_id, track_id): copy.deepcopy(initial_track)
-    }
-
-    # Initial ETag
-    etag_0 = compute_track_etag(initial_track)
-
-    # Step 1: Repair frame 0
-    resp_1 = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/apply-repair",
-        json={
-            "frame": 0,
-            "repair": {
-                "rule": "floating",
-                "delta_center": [0.0, 0.0, -0.30],
-                "delta_dims": [0.0, 0.0, 0.0],
-                "delta_yaw": 0.0,
-            },
-            "client_track_etag": etag_0,
-        },
-    )
-    assert resp_1.status_code == 200, resp_1.text
-    hid_1 = resp_1.json()["history_id"]
-    track_after_1 = resp_1.json()["updated_track"]
-    etag_1 = compute_track_etag(track_after_1)
-    assert etag_1 != etag_0
-
-    # Step 2: Attempt repair frame 2 with stale etag_0 -> must 409
-    resp_stale = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/apply-repair",
-        json={
-            "frame": 2,
-            "repair": {"rule": "heading.flip", "delta_yaw": math.pi},
-            "client_track_etag": etag_0,
-        },
-    )
-    assert resp_stale.status_code == 409
-
-    # Step 3: Repair frame 2 with fresh etag_1
-    resp_2 = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/apply-repair",
-        json={
-            "frame": 2,
-            "repair": {
-                "rule": "heading.flip",
-                "delta_yaw": math.pi,
-            },
-            "client_track_etag": etag_1,
-        },
-    )
-    assert resp_2.status_code == 200
-    hid_2 = resp_2.json()["history_id"]
-    track_after_2 = resp_2.json()["updated_track"]
-    etag_2 = compute_track_etag(track_after_2)
-
-    # Step 4: Repair frame 4 with fresh etag_2
-    resp_3 = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/apply-repair",
-        json={
-            "frame": 4,
-            "repair": {
-                "rule": "fit.outside",
-                "delta_dims": [0.5, 0.3, 0.2],
-            },
-            "client_track_etag": etag_2,
-        },
-    )
-    assert resp_3.status_code == 200
-    hid_3 = resp_3.json()["history_id"]
-
-    # Now Rollback 3 (frame 4) -> restores track_after_2
-    rb_3 = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/rollback",
-        json={"history_id": hid_3},
-    )
-    assert rb_3.status_code == 200
-    restored_3 = rb_3.json()["restored_track"]
-    assert compute_track_etag(restored_3) == etag_2
-
-    # Now Rollback 2 (frame 2) -> restores track_after_1
-    rb_2 = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/rollback",
-        json={"history_id": hid_2},
-    )
-    assert rb_2.status_code == 200
-    restored_2 = rb_2.json()["restored_track"]
-    assert compute_track_etag(restored_2) == etag_1
-
-    # Now Rollback 1 (frame 0) -> restores initial_track
-    rb_1 = client.post(
-        f"/api/jobs/{job_id}/tracks/{track_id}/rollback",
-        json={"history_id": hid_1},
-    )
-    assert rb_1.status_code == 200
-    restored_1 = rb_1.json()["restored_track"]
-    assert compute_track_etag(restored_1) == etag_0
 
 
 # =========================================================================
@@ -310,29 +204,6 @@ def test_multistep_edit_chain_multi_frame_rest_api(tmp_path: Path):
 # =========================================================================
 
 
-def test_corrupted_snapshot_truncated_json(tmp_path: Path):
-    """Stress 2.1: Truncated JSON on disk causes JSONDecodeError; API returns clean 404 without crashing."""
-    ProjectManager(home_dir=tmp_path).create_project(name="corrupt", slug="corrupt-test")
-    mgr = HistoryManager(home_dir=tmp_path, slug="corrupt-test")
-    job_id = 30
-    h_dir = mgr.history_dir(job_id=job_id)
-    corrupted_id = str(uuid.uuid4())
-    bad_file = h_dir / f"{corrupted_id}.json"
-    bad_file.write_text('{"history_id": "' + corrupted_id + '", "timestamp": "2026-10-14', encoding="utf-8")
-
-    # Manager get_snapshot raises JSONDecodeError
-    with pytest.raises(json.JSONDecodeError):
-        mgr.get_snapshot(job_id=job_id, history_id=corrupted_id)
-
-    # API handles gracefully without unhandled 500 error
-    app = create_app(home_dir=tmp_path)
-    client = TestClient(app)
-    resp = client.post(
-        f"/api/jobs/{job_id}/tracks/100/rollback",
-        json={"history_id": corrupted_id, "slug": "corrupt-test"},
-    )
-    assert resp.status_code == 404
-    assert "not found" in resp.json()["detail"].lower()
 
 
 def test_corrupted_snapshot_missing_fields_validation(tmp_path: Path):
@@ -571,58 +442,3 @@ def test_adversarial_bug_1_list_snapshots_crashes_on_non_dict_json(tmp_path: Pat
     snapshots = mgr.list_snapshots(job_id=job_id)
     assert len(snapshots) == 1
     assert snapshots[0]["job_id"] == job_id
-
-
-def test_adversarial_bug_2_rollback_api_crashes_500_on_missing_pre_repair_track(tmp_path: Path):
-    """Bug 2 Fix: POST rollback endpoint rejects missing pre_repair_track with 404/400 without crashing with HTTP 500."""
-    mgr = HistoryManager(home_dir=tmp_path, slug="bug2-test")
-    job_id = 35
-    h_dir = mgr.history_dir(job_id=job_id)
-    corrupt_schema_id = str(uuid.uuid4())
-    bad_file = h_dir / f"{corrupt_schema_id}.json"
-    # Valid JSON, but missing pre_repair_track
-    bad_file.write_text(json.dumps({
-        "history_id": corrupt_schema_id,
-        "job_id": job_id,
-        "track_id": 100,
-        "frame": 0,
-    }), encoding="utf-8")
-
-    app = create_app(home_dir=tmp_path)
-    # Using raise_server_exceptions=False to observe HTTP response code from server
-    client = TestClient(app, raise_server_exceptions=False)
-
-    resp = client.post(
-        f"/api/jobs/{job_id}/tracks/100/rollback",
-        json={"history_id": corrupt_schema_id, "slug": "bug2-test"},
-    )
-    assert resp.status_code in (400, 404)
-    assert resp.status_code != 500
-
-
-def test_adversarial_bug_3_project_rollback_fails_404_when_job_id_omitted(tmp_path: Path):
-    """Bug 3 Fix: POST /api/projects/{slug}/history/{history_id}/rollback succeeds via cross-job search when job_id omitted."""
-    app = create_app(home_dir=tmp_path)
-    client = TestClient(app)
-    mgr = app.state.history_manager
-
-    actual_job_id = 4
-    track_id = 101
-    app.state.mock_tracks = {(actual_job_id, track_id): {"id": track_id, "shapes": []}}
-
-    # Save snapshot under job 4
-    hid = mgr.save_snapshot(
-        job_id=actual_job_id,
-        track_id=track_id,
-        frame=0,
-        pre_repair_track={"id": track_id, "shapes": []},
-        post_repair_track={"id": track_id, "shapes": []},
-        applied_repair={},
-    )
-
-    # Calling project-level rollback without job_id query param:
-    # Cross-job fallback search finds the snapshot under job_4 and restores it successfully!
-    resp = client.post(f"/api/projects/default/history/{hid}/rollback")
-    assert resp.status_code == 200
-    assert resp.json()["status"] == "ok"
-    assert resp.json()["restored_track"]["id"] == track_id

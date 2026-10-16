@@ -30,7 +30,7 @@ function web(fetch, confirm = () => false) {
 }
 
 test('identity matching cannot review another same-label box',()=>{
-  const findings=[{index:0,frame:0,label:'car',message:'same',track_id:7},{index:1,frame:0,label:'car',message:'same',track_id:8}];
+  const findings=[{frame:0,label:'car',message:'same',track_id:7},{frame:0,label:'car',message:'same',track_id:8}];
   assert.deepEqual(core.matchFindings(findings,{frame:0,label:'car',value:'same',kind:'track',objectId:8}),[1]);
   assert.deepEqual(core.matchFindings(findings,{frame:0,label:'car',value:'same',kind:'track',objectId:99}),[]);
 });
@@ -69,7 +69,7 @@ test('zero threshold is preserved rather than replaced with default',async()=>{
 test('review completion cannot alter a newly selected run',async()=>{
   let resolve;
   const w=web(()=>new Promise(r=>{resolve=r;}));
-  const f={index:0};const a={run_id:'a',findings:[f],reviews:{}}; const b={run_id:'b',findings:[{}],reviews:{}};
+  const f={};const a={run_id:'a',findings:[f],reviews:{}}; const b={run_id:'b',findings:[{}],reviews:{}};
   w.state.currentSlug='a';w.state.currentRun=a;w.state.currentDetail=f;
   const pending=w.markReview('fp');w.state.currentSlug='b';w.state.currentRun=b;
   resolve({ok:true,json:async()=>({reviews:{'0':'fp'}})}); await pending;
@@ -122,12 +122,12 @@ test('focus distinguishes same-frame objects and refuses an ambiguous legacy com
   assert.equal(p.pickFor(0,{label:'car',message:'same',track_id:99}),-1);
 });
 test('an ambiguous DOM selection cannot submit reviews',()=>{
-  const p=panel();p.S.ps.run={findings:[{index:0,frame:0,label:'car',message:'same',track_id:7}]};
+  const p=panel();p.S.ps.run={findings:[{frame:0,label:'car',message:'same',track_id:7}]};
   assert.equal(p.reviewState({frame:0,label:'car',value:'same',ambiguous:true}),null);
 });
 test('extension review in flight cannot overwrite a new job run',async()=>{
   let resolve;const p=panel(()=>new Promise(r=>{resolve=r;}));
-  p.S.ps.project={slug:'a'};p.S.ps.run={run_id:'old',findings:[{index:0,frame:0,label:'car',message:'same',track_id:7}]};
+  p.S.ps.project={slug:'a'};p.S.ps.run={run_id:'old',findings:[{frame:0,label:'car',message:'same',track_id:7}]};
   const pending=p.review({frame:0,label:'car',value:'same',kind:'track',objectId:7},'fp');
   const next={run_id:'next',reviews:{}};p.S.sid++;p.S.ps.run=next;
   resolve({ok:true,data:{reviews:{'0':'fp'}}});await pending;
@@ -145,7 +145,7 @@ test('camera response cannot attach to a new run',async()=>{
   let resolve;const p=panel(()=>new Promise(r=>{resolve=r;}));
   const flag={frame:0,label:'car',value:'same',kind:'track',objectId:7};
   p.S.frame=0;p.S.flags=[flag];p.S.ps.project={slug:'a'};
-  p.S.ps.run={run_id:'old',findings:[{index:0,frame:0,label:'car',message:'same',track_id:7}]};
+  p.S.ps.run={run_id:'old',findings:[{frame:0,label:'car',message:'same',track_id:7}]};
   const pending=p.showCamera(flag);p.S.sid++;p.S.ps.run={run_id:'next'};
   resolve({ok:true,data:{image_url:'data:image/jpeg;base64,/9j/2Q==',channel:'CAM_FRONT'}});
   await pending;assert.equal(p.S.camera,null);

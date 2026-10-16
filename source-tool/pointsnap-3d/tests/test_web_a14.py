@@ -41,7 +41,7 @@ def client_with_run(tmp_path: Path):
     run_dir = tmp_path / "projects" / "a14" / "runs" / RUN_ID
     run_dir.mkdir(parents=True)
     (run_dir / "summary.json").write_text(json.dumps({"job_id": 2, "timestamp": "2026-10-08T12:00:00"}), encoding="utf-8")
-    findings = [{"rule": "floating", "frame": 1, "track_id": 5}, {"rule": "fit.loose", "frame": 2, "track_id": 6}]
+    findings = [{"rule": "floating", "frame": 1, "track_id": 5}, {"rule": "track.jump", "frame": 2, "track_id": 6}]
     (run_dir / "findings.json").write_text(json.dumps(findings), encoding="utf-8")
     return client
 
@@ -103,7 +103,7 @@ def test_learn_endpoint_uses_reviews(client_with_run: TestClient):
     assert res.status_code == 200
     model = res.json()["model"]
     assert model["version"] == 1 and model["n_samples"] == 2 and not model["use_model"]
-    assert model["rule_stats"]["floating"]["ok"] == 1 and model["rule_stats"]["fit.loose"]["fp"] == 1
+    assert model["rule_stats"]["floating"]["ok"] == 1 and model["rule_stats"]["track.jump"]["fp"] == 1
     assert "Học từ 2 kết luận" in res.json()["report"]
     assert client_with_run.get("/api/projects/a14/learn").json()["model"]["version"] == 1
     assert client_with_run.post("/api/projects/a14/learn").json()["model"]["version"] == 2

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 import math
+import mimetypes
 import os
-import threading
-from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -19,9 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from pointsnap.adapters.cvat.client import CvatClient, CvatError
-from pointsnap.adapters.cvat.repair_sync import same_track, write_verified_track
-from pointsnap.adapters.cvat.shapes import cuboid_to_points, points_to_geometry
-from pointsnap.adapters.cvat.writer import OCCConflictError, compute_track_etag
+from pointsnap.adapters.cvat.shapes import cuboid_to_points
+from pointsnap.adapters.cvat.writer import compute_track_etag
 from pointsnap.core.config import ConfigError
 from pointsnap.core.geometry import normalize_angle
 from pointsnap.core.heading_memory import HeadingMemory
@@ -32,35 +29,35 @@ from pointsnap.core.ghost import generate_ghost_target, GhostTarget
 from pointsnap.core.serialize import load_cuboids
 from pointsnap.detectors.heading import detect_heading_track, _world
 from pointsnap.detectors.static import detect_static_errors
-from pointsnap.history.manager import HistoryManager, SnapshotIsolationError, track_dict_to_cuboids
+from pointsnap.history.manager import HistoryManager, track_dict_to_cuboids
 from pointsnap.web.link import ExtensionLink
-from pointsnap.web.preview import PreviewError, _finding_box, finding_camera, finding_preview, load_reviews, save_review
+from pointsnap.web.preview import PreviewError, _finding_box, finding_camera, finding_preview, load_reviews, save_review, reviews_need_review
 from pointsnap.web.projects import ProjectError, ProjectManager
 from pointsnap.web.runner import ScanRunner, ScanBusyError, RUN_ID_RE
 from pointsnap.web.security import LocalRequestBoundary
 from pointsnap.web.storage import StorageError
-
-_request_clients = ContextVar("pointsnap__request_clients", default=None)
+from pointsnap.web.guides import GuideService, EvaluateRequest
+from pointsnap.web.environment import model_status, project_catalog
 
 logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
+# Landing page của đội (source-tool/pointsnap-3d/landing, cũng deploy lên Vercel). Cài bằng `pip install -e .` thì
+# có thư mục này; bản wheel không mang theo nên dùng trang giới thiệu dự phòng `static/landing.html`.
+LANDING_DIR = Path(__file__).resolve().parents[2] / "landing"
+_LANDING_FILES = ("styles.css", "main.js", "scenes.js")
+
+# Windows có thể khai .js là text/plain trong registry: trình duyệt từ chối chạy ES module (landing, three.js).
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("image/svg+xml", ".svg")
 
 # run_id hợp lệ: YYYYMMDD-HHMMSS[-<ms>]-job<id>  (điểm nhỏ 3 — chặn path traversal)
 _RUN_ID_RE = RUN_ID_RE
-_track_lock = threading.RLock()
 
 
-class ApplyRepairRequest(BaseModel):
-    frame: int
-    repair: dict[str, Any]
-    client_track_etag: str | None = None
-    slug: str | None = None
 
 
-class RollbackRepairRequest(BaseModel):
-    history_id: str
-    slug: str | None = None
 
 
 
@@ -108,6 +105,19 @@ class FocusRequest(BaseModel):
     bring: bool = False  # True: đưa tab CVAT lên trước (bấm "Mở trong CVAT"); False: chỉ đồng bộ theo lựa chọn
 
 
+class ManualEventRequest(BaseModel):
+    slug: str
+    run_id: str
+    job_id: int = Field(gt=0)
+    cvat_url: str
+    finding_index: int = Field(ge=0)
+    kind: Literal["selected", "evaluated", "saved"]
+    state: Literal["remaining", "cleared", "insufficient", "stale"] | None = None
+    revision: int = Field(ge=0)
+    sequence: int = Field(ge=0)
+    session: str = Field(min_length=1, max_length=80)
+
+
 class StartScanRequest(BaseModel):
     job_id: int = Field(gt=0)
     flag: bool = False
@@ -132,7 +142,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     application = FastAPI(
         title="PointSnap 3D",
         description="Giao diện Web kiểm tra và giám sát chất lượng nhãn 3D trên CVAT",
-        version="0.1.0",
+        version="0.3.0",
     )
     application.add_middleware(LocalRequestBoundary)
 
@@ -143,21 +153,12 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         return JSONResponse(status_code=422, content={'detail': errors})
 
     @application.middleware("http")
-    async def close_cvat_clients(request, call_next):
-        clients = []
-        token = _request_clients.set(clients)
-        try:
-            return await call_next(request)
-        finally:
-            _request_clients.reset(token)
-            for client in clients:
-                client.session.close()
-
-    @application.middleware("http")
     async def revalidate_ui_files(request, call_next):
         """Trang giao diện luôn được trình duyệt kiểm lại, để bản cập nhật hiện ngay mà không cần xóa cache."""
         response = await call_next(request)
-        if request.url.path == "/" or request.url.path.startswith("/static/"):
+        path = request.url.path
+        if (path in ("/", "/app") or path.startswith(("/static/", "/vendor/"))
+                or path.lstrip("/") in _LANDING_FILES):
             response.headers["Cache-Control"] = "no-cache"
         return response
 
@@ -169,6 +170,10 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     application.state.mock_tracks = {}
     application.state.mock_points = {}
     application.state.cvat_client = None
+
+    @application.exception_handler(ProjectError)
+    async def missing_project(request, exc):
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
 
     @application.exception_handler(StorageError)
     async def invalid_storage(request, exc):
@@ -189,10 +194,59 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     # --- API Danh mục quy tắc kiểm tra (Rule Catalog - Single Source of Truth) ---
 
     @application.get("/api/rules")
-    def get_rules_catalog() -> dict[str, Any]:
+    def get_rules_catalog(project_slug: str | None = None) -> dict[str, Any]:
         """Danh mục toàn bộ quy tắc kiểm tra nhãn 3D, nhãn hiển thị và gợi ý sửa lỗi."""
         from pointsnap.core.rules import rules_catalog_dict
-        return rules_catalog_dict()
+        return project_catalog(pm.get_effective_config(project_slug) if project_slug else None)
+
+    guides = GuideService(pm, runner, application.state)
+
+    @application.get("/api/projects/{slug}/scans/{run_id}/findings/{index}/guide")
+    def get_finding_guide(slug: str, run_id: str, index: int) -> Any:
+        _validate_run_id(run_id)
+        return guides.guide(slug, run_id, index)
+
+    @application.post("/api/projects/{slug}/scans/{run_id}/findings/{index}/evaluate")
+    def evaluate_finding_draft(slug: str, run_id: str, index: int, req: EvaluateRequest) -> Any:
+        _validate_run_id(run_id)
+        return guides.evaluate(slug, run_id, index, req)
+
+    @application.get("/api/system/status")
+    def get_system_status(project_slug: str | None = None) -> dict[str, Any]:
+        projects = pm.list_projects()
+        project = pm.get_project(project_slug) if project_slug else (projects[0] if projects else None)
+        cvat = {"connected": False, "token": False, "url": "", "version": None, "error": "Chưa chọn dự án"}
+        models = {"items": [], "all_ready": False}
+        rules = []
+        if project:
+            cfg = pm.get_effective_config(project["slug"])
+            catalog = project_catalog(cfg)
+            models, rules = catalog["models"], catalog["rules"]
+            cvat.update(url=cfg.cvat.url, token=bool(cfg.cvat.token), error="Chưa có token CVAT")
+            if cfg.cvat.token:
+                client = CvatClient(cfg.cvat.url, cfg.cvat.token, timeout=2.0)
+                try:
+                    cvat["version"] = client.server_version()
+                    client._request("GET", "users/self")
+                    cvat.update(connected=True, error=None)
+                except Exception as exc:
+                    cvat["error"] = str(exc).replace(cfg.cvat.token, "***")
+                finally:
+                    client.session.close()
+        online = []
+        if project:
+            with link._lock:
+                online = [jid for (scope, jid), seen in link._seen.items()
+                          if scope == _extension_scope(project["cvat_url"]) and link._clock() - seen <= 4]
+        blockers = [m["reason"] for m in models["items"] if m["required"] and not m["ready"]]
+        if not cvat["connected"]:
+            blockers.append(cvat["error"])
+        return {"ok": True, "project_slug": project["slug"] if project else None,
+                "cvat": cvat, "models": models, "rules": rules,
+                "rules_count": sum(r["runnable"] for r in rules),
+                "extension": {"connected": bool(online), "job_id": online[0] if online else None,
+                              "required_version": "0.3.0", "directory": str(LANDING_DIR.parent / "extension") if (LANDING_DIR.parent / "extension").is_dir() else None, "compatible": any(link._versions.get((_extension_scope(project["cvat_url"]), j)) == "0.3.0" for j in online)},
+                "scan_ready": not blockers, "blockers": blockers}
 
     # --- API Quản lý dự án ---
 
@@ -351,11 +405,14 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
     @application.post("/api/projects/{slug}/scans", status_code=202)
     def start_scan(slug: str, req: StartScanRequest) -> dict[str, Any]:
         try:
+            readiness = model_status(pm.get_effective_config(slug))
+            if not readiness["all_ready"]:
+                raise HTTPException(409, "Cần cài/cấu hình model trong Hệ thống: " + "; ".join(m["reason"] for m in readiness["items"] if not m["ready"]))
             run_id = runner.start_scan(slug, req.job_id, flag=req.flag)
             return {"run_id": run_id}
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except (StorageError, OSError, ScanBusyError):
+        except (StorageError, OSError, ScanBusyError, HTTPException):
             raise
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -373,6 +430,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         try:
             data = runner.get_run(slug, run_id, include_findings=True)
             data["reviews"] = load_reviews(pm._project_dir(slug) / "runs" / run_id)
+            data["reviews_need_review"] = reviews_need_review(pm._project_dir(slug) / "runs" / run_id)
             return data
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -411,7 +469,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             run = runner.get_run(slug, run_id, include_findings=True)
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        if not any(f["index"] == index for f in run.get("findings") or []):
+        if not 0 <= index < len(run.get("findings") or []):
             raise HTTPException(status_code=404, detail=f"Không có mục số {index}")
         reviews = save_review(runner.run_dir(slug, run_id), index, req.verdict)
         link.bump_reviews()
@@ -472,6 +530,9 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             job_id = prev_run.get("job_id")
             if not job_id:
                 raise HTTPException(status_code=400, detail="Lần quét cũ thiếu job_id")
+            readiness = model_status(pm.get_effective_config(slug))
+            if not readiness["all_ready"]:
+                raise HTTPException(409, "Cần cài/cấu hình model trong Hệ thống trước khi quét")
             new_run_id = runner.start_scan(slug, int(job_id), flag=True)
             return {
                 "run_id": new_run_id,
@@ -479,6 +540,18 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
             }
         except ProjectError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @application.post("/api/extension/events")
+    def manual_event(req: ManualEventRequest):
+        _validate_run_id(req.run_id)
+        project = pm.get_project(req.slug)
+        run = runner.get_run(req.slug, req.run_id, include_findings=True)
+        source = (run.get("summary") or {}).get("cvat_url")
+        if run.get("job_id") != req.job_id or not _same_cvat(project["cvat_url"], req.cvat_url) or (source and not _same_cvat(source, req.cvat_url)):
+            raise HTTPException(409, "Sự kiện không thuộc job/CVAT này")
+        if not 0 <= req.finding_index < len(run.get("findings", [])):
+            raise HTTPException(404, "Không có mục lỗi này")
+        return {"accepted": link.event(req.job_id, req.model_dump(), scope=_extension_scope(req.cvat_url))}
 
     @application.post("/api/extension/focus")
     def extension_focus(req: FocusRequest) -> dict[str, Any]:
@@ -502,23 +575,36 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="cvat_url không hợp lệ") from exc
 
+    def _history_scope(slug: str | None) -> str:
+        """Phạm vi CVAT của sự kiện sửa box: theo dự án nếu biết, không thì theo server CVAT duy nhất (nếu có)."""
+        try:
+            if slug:
+                return _extension_scope(pm.get_project(slug)["cvat_url"])
+            return _extension_scope("")
+        except (ProjectError, HTTPException):
+            return ""
+
+
     @application.get("/api/extension/poll")
-    def extension_poll(job_id: int, after: int = -1, cvat_url: str = "") -> dict[str, Any]:
+    def extension_poll(job_id: int, after: int = -1, cvat_url: str = "", version: str = "") -> dict[str, Any]:
         """Extension trên tab CVAT hỏi lệnh mới (mỗi giây); cũng là tín hiệu tab đó đang mở job."""
         res = link.poll(job_id, after, scope=_extension_scope(cvat_url))
+        link._versions[(_extension_scope(cvat_url), job_id)] = version
         projects = pm.list_projects()
         latest_done = None
-        latest_started_at = ""
         active_scan = None
         for p in projects:
-            if cvat_url and _extension_scope(p["cvat_url"]) != _extension_scope(cvat_url):
-                continue
-            latest, active, started_at = runner.poll_state(p["slug"], job_id)
-            if latest and (latest_done is None or started_at > latest_started_at):
-                latest_done = latest
-                latest_started_at = started_at
-            if active and active_scan is None:
-                active_scan = {k: active.get(k) for k in ("run_id", "status", "progress", "message")}
+            for r in runner.list_runs(p["slug"]):
+                if r.get("job_id") == job_id:
+                    if r.get("status") in ("queued", "running") and active_scan is None:
+                        active_scan = {
+                            "run_id": r.get("run_id"),
+                            "status": r.get("status"),
+                            "progress": r.get("progress", 0),
+                            "message": r.get("message", "Đang quét..."),
+                        }
+                    elif r.get("status") == "done" and latest_done is None:
+                        latest_done = r.get("run_id")
         res["latest_run_id"] = latest_done
         res["active"] = active_scan
         return res
@@ -597,16 +683,6 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         return (job_id, track_id) in tracks or any(
             t.get("id") == track_id for t in tracks.get(job_id, {}).get("tracks", []))
 
-    def _require_project(job_id: int, track_id: int, slug: str | None) -> None:
-        if _is_test_track(job_id, track_id):
-            return
-        if not slug:
-            raise HTTPException(400, "Cần chọn dự án để sửa đúng nguồn CVAT")
-        try:
-            pm.get_project(slug)
-        except ProjectError as exc:
-            raise HTTPException(400, "Dự án không hợp lệ") from exc
-
     def _resolve_track(job_id: int, track_id: int, slug: str | None = None, *, allow_snapshot: bool = True) -> tuple[dict[str, Any] | None, CvatClient | None]:
         track_data = None
         cvat_client = getattr(application.state, "cvat_client", None)
@@ -633,12 +709,17 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
         if track_data is None:
             target_slug = slug
+            if not target_slug:
+                projects = pm.list_projects()
+                if len(projects) > 1 and not allow_snapshot:
+                    raise HTTPException(400, "Cần chọn dự án để sửa đúng nguồn CVAT")
+                if projects:
+                    target_slug = projects[0]["slug"]
             if target_slug:
                 try:
                     cfg = pm.get_effective_config(target_slug)
                     if cfg.cvat.token:
                         c = CvatClient(cfg.cvat.url, cfg.cvat.token, timeout=10.0)
-                        _request_clients.get().append(c)
                         raw_annos = c.get_job_annotations(job_id)
                         for t in raw_annos.get("tracks", []):
                             if t.get("id") == track_id:
@@ -652,7 +733,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
 
         # Phương án dự phòng ngoại tuyến: Nạp track từ file snapshot.json của scan runs
         if track_data is None and allow_snapshot:
-            candidate_slugs = [slug] if slug else []
+            candidate_slugs = [slug] if slug else [p["slug"] for p in pm.list_projects()]
             for s in candidate_slugs:
                 if not s:
                     continue
@@ -720,10 +801,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         return track_data, cvat_client
 
     @application.get("/api/jobs/{job_id}/tracks/{track_id}/repair")
-    def get_track_repair(job_id: int, track_id: int, frame: int, rule: str = "floating", slug: str | None = None) -> Any:
-        return _compute_track_repair(job_id, track_id, frame, rule, slug)
-
-    def _compute_track_repair(
+    def get_track_repair(
         job_id: int,
         track_id: int,
         frame: int,
@@ -814,6 +892,10 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 points = application.state.mock_points.get((job_id, frame))
             if points is None:
                 target_slug = slug
+                if not target_slug:
+                    projects = pm.list_projects()
+                    if projects:
+                        target_slug = projects[0]["slug"]
                 if target_slug:
                     try:
                         proj = pm.get_project(target_slug)
@@ -873,6 +955,8 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 "applicable": False,
             }
 
+        repair_dict["applicable"] = False
+        repair_dict["disabled_reason"] = "Sửa tay trong CVAT; API ghi hình học v1 đã ngừng."
         server_etag = compute_track_etag(track_data)
         return {
             "status": "ok",
@@ -886,10 +970,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         }
 
     @application.get("/api/jobs/{job_id}/tracks/{track_id}/ghost-target")
-    def get_track_ghost_target(job_id: int, track_id: int, frame: int, rule: str | None = None, slug: str | None = None) -> Any:
-        return _compute_ghost_target(job_id, track_id, frame, rule, slug)
-
-    def _compute_ghost_target(
+    def get_track_ghost_target(
         job_id: int,
         track_id: int,
         frame: int,
@@ -965,6 +1046,10 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
                 points = application.state.mock_points.get((job_id, frame))
             if points is None:
                 target_slug = slug
+                if not target_slug:
+                    projects = pm.list_projects()
+                    if projects:
+                        target_slug = projects[0]["slug"]
                 if target_slug:
                     try:
                         proj = pm.get_project(target_slug)
@@ -1026,295 +1111,22 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         }
 
     @application.post("/api/jobs/{job_id}/tracks/{track_id}/apply-repair")
-    def apply_track_repair(job_id: int, track_id: int, req: ApplyRepairRequest) -> Any:
-        """Áp dụng sửa hình học đề xuất lên CVAT với OCC và lưu vết snapshot (Features F8, F9, F10)."""
-        _require_project(job_id, track_id, req.slug)
-        with _track_lock:
-            track_data, cvat_client = _resolve_track(job_id, track_id, slug=req.slug, allow_snapshot=True)
-            if track_data is None:
-                return JSONResponse(
-                    status_code=404,
-                    content={"status": "error", "code": 404, "detail": f"Track {track_id} not found in job {job_id}"},
-                )
-
-            server_etag = compute_track_etag(track_data)
-            if req.client_track_etag is not None and req.client_track_etag != server_etag:
-                return JSONResponse(
-                    status_code=409,
-                    content={
-                        "status": "conflict",
-                        "code": 409,
-                        "detail": f"OCC conflict: Client ETag '{req.client_track_etag}' != server ETag '{server_etag}'",
-                    },
-                )
-
-            target_shape = next((s for s in track_data.get("shapes", []) if s.get("frame") == req.frame), None)
-            if target_shape is None:
-                return JSONResponse(
-                    status_code=404,
-                    content={"status": "error", "code": 404, "detail": f"Frame {req.frame} not found in track {track_id}"},
-                )
-
-            pre_repair_track = copy.deepcopy(track_data)
-            post_repair_track = copy.deepcopy(track_data)
-            pshape = next(s for s in post_repair_track.get("shapes", []) if s.get("frame") == req.frame)
-
-            rep = req.repair
-            repaired_info = rep.get("repaired_cuboid") or rep.get("repaired_box") or rep
-            if not isinstance(repaired_info, dict):
-                raise HTTPException(400, "Dữ liệu hình học sửa phải là một đối tượng JSON")
-
-            def _to_float_or_nan(val: Any) -> float:
-                if val is None:
-                    return float("nan")
-                try:
-                    return float(val)
-                except (TypeError, ValueError):
-                    return float("nan")
-
-            if "points" in repaired_info:
-                pts_raw = repaired_info.get("points")
-                if not isinstance(pts_raw, (list, tuple)):
-                    return JSONResponse(
-                        status_code=400,
-                        content={"status": "error", "code": 400, "detail": "Points array must be a list or tuple"},
-                    )
-                new_pts = [_to_float_or_nan(v) for v in pts_raw]
-            elif "center" in repaired_info and "dims" in repaired_info:
-                c = repaired_info.get("center")
-                d = repaired_info.get("dims")
-                if not isinstance(c, (list, tuple)) or len(c) != 3 or not isinstance(d, (list, tuple)) or len(d) != 3:
-                    return JSONResponse(
-                        status_code=400,
-                        content={"status": "error", "code": 400, "detail": "Center and dims must each contain 3 elements"},
-                    )
-                c_floats = [_to_float_or_nan(v) for v in c]
-                d_floats = [_to_float_or_nan(v) for v in d]
-                y = _to_float_or_nan(repaired_info.get("yaw", 0.0))
-                r = _to_float_or_nan(repaired_info.get("roll", pshape["points"][3]))
-                p = _to_float_or_nan(repaired_info.get("pitch", pshape["points"][4]))
-                new_pts = [*c_floats, r, p, y, *d_floats, *pshape["points"][9:]]
-            elif "delta_center" in rep or "delta_dims" in rep or "delta_yaw" in rep:
-                try:
-                    geo = points_to_geometry(pshape["points"])
-                except Exception as exc:
-                    return JSONResponse(
-                        status_code=400,
-                        content={"status": "error", "code": 400, "detail": f"Existing shape geometry is invalid: {exc}"},
-                    )
-                dc = rep.get("delta_center", [0, 0, 0])
-                dd = rep.get("delta_dims", [0, 0, 0])
-                dy = rep.get("delta_yaw", 0.0)
-                if not isinstance(dc, (list, tuple)) or len(dc) != 3:
-                    return JSONResponse(
-                        status_code=400,
-                        content={"status": "error", "code": 400, "detail": "delta_center must contain 3 elements"},
-                    )
-                if not isinstance(dd, (list, tuple)) or len(dd) != 3:
-                    return JSONResponse(
-                        status_code=400,
-                        content={"status": "error", "code": 400, "detail": "delta_dims must contain 3 elements"},
-                    )
-                dc_floats = [_to_float_or_nan(v) for v in dc]
-                dd_floats = [_to_float_or_nan(v) for v in dd]
-                dy_float = _to_float_or_nan(dy)
-                new_c = [geo["center"][i] + dc_floats[i] for i in range(3)]
-                new_d = [geo["dims"][i] + dd_floats[i] for i in range(3)]
-                new_y = normalize_angle(geo["yaw"] + dy_float)
-                new_pts = [*new_c, geo["roll"], geo["pitch"], new_y, *new_d, *pshape["points"][9:]]
-            else:
-                new_pts = list(pshape["points"])
-
-            # 1. Kiểm tra độ dài mảng points phải có đúng 16 số thực
-            if len(new_pts) != 16:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "status": "error",
-                        "code": 400,
-                        "detail": f"Points array must have exactly 16 floats, got {len(new_pts)}",
-                    },
-                )
-
-            # 2. Kiểm tra tất cả các giá trị phải là số hữu hạn (Defect 3)
-            if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in new_pts):
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "status": "error",
-                        "code": 400,
-                        "detail": "All coordinates, orientation, and dimensions must be finite numbers",
-                    },
-                )
-
-            # 3. Kiểm tra kích thước hộp phải hoàn toàn dương (> 0) (Defect 2)
-            if not (new_pts[6] > 0.0 and new_pts[7] > 0.0 and new_pts[8] > 0.0):
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "status": "error",
-                        "code": 400,
-                        "detail": "Dimensions must be strictly positive",
-                    },
-                )
-
-            if all(math.isclose(a, b, rel_tol=0, abs_tol=1e-6) for a, b in zip(new_pts, pshape["points"])):
-                if req.client_track_etag is not None:
-                    raise HTTPException(400, "Đề xuất không thay đổi hình học; chưa áp dụng sửa")
-                raise HTTPException(422, "Đề xuất không thay đổi hình học; chưa áp dụng sửa")
-            if cvat_client is None and not _is_test_track(job_id, track_id):
-                raise HTTPException(503, "Chỉ có bản xem ngoại tuyến; chưa kết nối CVAT để đồng bộ")
-            pshape["points"] = new_pts
-
-            history_mgr = getattr(application.state, "history_manager", None) or HistoryManager(home_dir=pm.home_dir)
-            effective_slug = req.slug or "default"
-
-            if cvat_client is not None:
-                try:
-                    post_repair_track = write_verified_track(cvat_client, job_id, pre_repair_track, post_repair_track)
-                except OCCConflictError as exc:
-                    raise HTTPException(409, str(exc)) from exc
-                except Exception as exc:
-                    logger.warning("Repair synchronization failed: %s", exc)
-                    raise HTTPException(502, "Không xác nhận được sửa trên CVAT; chưa báo đồng bộ thành công") from exc
-
-            hid = history_mgr.save_snapshot(
-                job_id=job_id,
-                track_id=track_id,
-                frame=req.frame,
-                pre_repair_track=pre_repair_track,
-                post_repair_track=post_repair_track,
-                applied_repair=req.repair,
-                slug=effective_slug,
-            )
-
-            if hasattr(application.state, "mock_tracks"):
-                if (job_id, track_id) in application.state.mock_tracks:
-                    application.state.mock_tracks[(job_id, track_id)] = post_repair_track
-                if job_id in application.state.mock_tracks and isinstance(application.state.mock_tracks[job_id], dict):
-                    tracks = application.state.mock_tracks[job_id].get("tracks", [])
-                    for i, t in enumerate(tracks):
-                        if t.get("id") == track_id:
-                            tracks[i] = post_repair_track
-                            break
-
-            if cvat_client is not None and req.slug:
-                link.focus(job_id, {"action": "annotations_changed", "frame": req.frame, "track_id": track_id},
-                           scope=_extension_scope(pm.get_project(req.slug)["cvat_url"]))
-
-            return {
-                "status": "ok",
-                "message": "Đã áp dụng sửa đổi hình học thành công lên CVAT",
-                "history_id": hid,
-                "job_id": job_id,
-                "track_id": track_id,
-                "frame": req.frame,
-                "new_scan_verdict": "NOT_RUN",
-                "sync_status": "verified" if cvat_client is not None else "test",
-                "updated_track": post_repair_track,
-                "track_etag": compute_track_etag(post_repair_track),
-                "reload_required": cvat_client is not None,
-            }
+    def apply_track_repair(job_id: int, track_id: int) -> Any:
+        raise HTTPException(410, "PointSnap v2 chỉ hỗ trợ sửa tay. Kéo box và Save/Undo trong CVAT.")
 
     @application.post("/api/jobs/{job_id}/tracks/{track_id}/rollback")
-    def rollback_track_repair(job_id: int, track_id: int, req: RollbackRepairRequest) -> Any:
-        """Hoàn tác thay đổi nhãn từ snapshot bất biến (Features F8, F10)."""
-        _require_project(job_id, track_id, req.slug)
-        with _track_lock:
-            history_mgr = getattr(application.state, "history_manager", None) or HistoryManager(home_dir=pm.home_dir)
-            effective_slug = req.slug or "default"
-            try:
-                snapshot = history_mgr.get_snapshot(job_id, req.history_id, slug=effective_slug, track_id=track_id)
-            except SnapshotIsolationError as exc:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "status": "error",
-                        "code": 400,
-                        "detail": f"Snapshot '{req.history_id}' does not belong to job {job_id} track {track_id}",
-                    },
-                )
-            except (FileNotFoundError, ValueError, KeyError) as exc:
-                return JSONResponse(
-                    status_code=404,
-                    content={"status": "error", "code": 404, "detail": f"Snapshot '{req.history_id}' not found or invalid for job {job_id}"},
-                )
-
-            # Kiểm tra cách ly đối tượng (Cross-Job and Cross-Track Isolation Enforcement)
-            try:
-                snap_job_id = int(snapshot.get("job_id", -1))
-                snap_track_id = int(snapshot.get("track_id", -1))
-            except (ValueError, TypeError):
-                snap_job_id, snap_track_id = -1, -1
-
-            if snap_job_id != job_id or snap_track_id != track_id:
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "status": "error",
-                        "code": 400,
-                        "detail": f"Snapshot '{req.history_id}' does not belong to job {job_id} track {track_id}",
-                    },
-                )
-
-            pre_repair_track = snapshot.get("pre_repair_track")
-            if not isinstance(pre_repair_track, dict):
-                return JSONResponse(
-                    status_code=400,
-                    content={"status": "error", "code": 400, "detail": f"Snapshot '{req.history_id}' does not contain valid pre_repair_track"},
-                )
-
-            current, cvat_client = _resolve_track(job_id, track_id, slug=req.slug, allow_snapshot=True)
-            if current is None:
-                raise HTTPException(404, "Track không còn tồn tại trên CVAT")
-            if cvat_client is None and not _is_test_track(job_id, track_id):
-                raise HTTPException(503, "Chưa kết nối CVAT để hoàn tác")
-            if same_track(current, pre_repair_track):
-                return {"status": "ok", "restored_track": current, "already_rolled_back": True,
-                        "sync_status": "verified" if cvat_client is not None else "test",
-                        "track_etag": compute_track_etag(current), "reload_required": cvat_client is not None}
-            if not same_track(current, snapshot["post_repair_track"]):
-                raise HTTPException(409, "Track đã thay đổi sau lần sửa; không thể hoàn tác đè lên thay đổi mới")
-            if cvat_client is not None and isinstance(pre_repair_track, dict) and "shapes" in pre_repair_track:
-                try:
-                    pre_repair_track = write_verified_track(cvat_client, job_id, current, pre_repair_track)
-                except OCCConflictError as exc:
-                    raise HTTPException(409, str(exc)) from exc
-                except Exception as exc:
-                    raise HTTPException(502, "Không xác nhận được hoàn tác trên CVAT") from exc
-
-            if hasattr(application.state, "mock_tracks"):
-                if (job_id, track_id) in application.state.mock_tracks:
-                    application.state.mock_tracks[(job_id, track_id)] = pre_repair_track
-                if job_id in application.state.mock_tracks and isinstance(application.state.mock_tracks[job_id], dict):
-                    tracks = application.state.mock_tracks[job_id].get("tracks", [])
-                    for i, t in enumerate(tracks):
-                        if t.get("id") == track_id:
-                            tracks[i] = pre_repair_track
-                            break
-
-            if cvat_client is not None and req.slug:
-                link.focus(job_id, {"action": "annotations_changed", "frame": snapshot["frame"], "track_id": track_id},
-                           scope=_extension_scope(pm.get_project(req.slug)["cvat_url"]))
-            return {
-                "status": "ok",
-                "restored_track": pre_repair_track,
-                "sync_status": "verified" if cvat_client is not None else "test",
-                "track_etag": compute_track_etag(pre_repair_track),
-                "reload_required": cvat_client is not None,
-            }
+    def rollback_track_repair(job_id: int, track_id: int) -> Any:
+        raise HTTPException(410, "PointSnap v2 chỉ hỗ trợ sửa tay. Kéo box và Save/Undo trong CVAT.")
 
     # Finding-based repair endpoints
     @application.get("/api/projects/{slug}/scans/{run_id}/findings/{index}/repair")
     def get_finding_repair(slug: str, run_id: str, index: int) -> Any:
         _validate_run_id(run_id)
-        try:
-            run = runner.get_run(slug, run_id, include_findings=True)
-        except ProjectError as exc:
-            raise HTTPException(404, str(exc)) from exc
-        f = next((f for f in run.get("findings", []) if f["index"] == index), None)
-        if f is None:
+        run = runner.get_run(slug, run_id, include_findings=True)
+        findings = run.get("findings", [])
+        if index < 0 or index >= len(findings):
             raise HTTPException(status_code=404, detail=f"Finding index {index} out of range")
+        f = findings[index]
         job_id = int(run.get("job_id", 0))
         track_id = f.get("track_id")
         frame = int(f.get("frame", 0))
@@ -1339,7 +1151,7 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         except Exception:
             pass
 
-        return _compute_track_repair(
+        return get_track_repair(
             job_id=job_id,
             track_id=track_id,
             frame=frame,
@@ -1351,40 +1163,39 @@ def create_app(home_dir: Path | str | None = None) -> FastAPI:
         )
 
     @application.post("/api/projects/{slug}/scans/{run_id}/findings/{index}/apply-repair")
-    def apply_finding_repair(slug: str, run_id: str, index: int, req: ApplyRepairRequest) -> Any:
-        _validate_run_id(run_id)
-        try:
-            run = runner.get_run(slug, run_id, include_findings=True)
-        except ProjectError as exc:
-            raise HTTPException(404, str(exc)) from exc
-        f = next((f for f in run.get("findings", []) if f["index"] == index), None)
-        if f is None:
-            raise HTTPException(status_code=404, detail=f"Finding index {index} out of range")
-        job_id = int(run.get("job_id", 0))
-        track_id = f.get("track_id")
-        if track_id is None:
-            raise HTTPException(status_code=400, detail="Finding does not belong to a track")
-        req.slug = slug
-        return apply_track_repair(job_id=job_id, track_id=track_id, req=req)
+    def apply_finding_repair(slug: str, run_id: str, index: int) -> Any:
+        raise HTTPException(410, "PointSnap v2 chỉ hỗ trợ sửa tay. Kéo box và Save/Undo trong CVAT.")
 
     @application.post("/api/projects/{slug}/history/{history_id}/rollback")
     def rollback_project_repair(slug: str, history_id: str, job_id: int = 0) -> Any:
-        req = RollbackRepairRequest(history_id=history_id, slug=slug)
-        history_mgr = getattr(application.state, "history_manager", None) or HistoryManager(home_dir=pm.home_dir)
-        try:
-            snapshot = history_mgr.get_snapshot(job_id, history_id, slug=slug)
-            resolved_job_id = snapshot.get("job_id", job_id)
-            track_id = snapshot.get("track_id", 0)
-        except Exception:
-            raise HTTPException(status_code=404, detail=f"Snapshot {history_id} not found")
-        return rollback_track_repair(job_id=resolved_job_id, track_id=track_id, req=req)
+        raise HTTPException(410, "PointSnap v2 chỉ hỗ trợ sửa tay. Kéo box và Save/Undo trong CVAT.")
 
     # --- Phục vụ Static Files & Single Page App ---
 
     if STATIC_DIR.is_dir():
         application.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+        # Mở PointSnap local: trang giới thiệu (landing) trước, bấm "Mở PointSnap" mới vào ứng dụng ở /app.
+        team_landing = (LANDING_DIR / "index.html").is_file()
+        if team_landing:
+            for sub in ("assets", "vendor"):
+                if (LANDING_DIR / sub).is_dir():
+                    application.mount(f"/{sub}", StaticFiles(directory=str(LANDING_DIR / sub)), name=f"landing-{sub}")
+
+            def _landing_file(name: str):
+                def serve() -> FileResponse:
+                    return FileResponse(LANDING_DIR / name)
+                return serve
+
+            for name in _LANDING_FILES:
+                if (LANDING_DIR / name).is_file():
+                    application.add_api_route(f"/{name}", _landing_file(name), methods=["GET"], include_in_schema=False)
+
         @application.get("/")
+        def serve_landing() -> FileResponse:
+            return FileResponse(LANDING_DIR / "index.html" if team_landing else STATIC_DIR / "landing.html")
+
+        @application.get("/app")
         def serve_index() -> FileResponse:
             return FileResponse(STATIC_DIR / "index.html")
 

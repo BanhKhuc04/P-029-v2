@@ -1,4 +1,11 @@
-# Project: PointSnap 3D Quality Acceptance, Track Removal, Bidirectional Sync & Visual Analytics
+# Project: PointSnap 3D — Manual Repair v2
+
+Current implementation: detector/model findings remain enabled; geometry repair is exclusively manual in CVAT.
+Extension 0.2.0 reads live cuboids/cameras and overlays measurements on all four views. PointSnap geometry-writing
+APIs return HTTP 410; no snapping, quick leveling or automatic apply remains in the extension.
+See [v2 usage and contracts](source-tool/pointsnap-3d/docs/manual-repair.md).
+
+The sections below record the **historical v1** architecture and milestones, not the active v2 repair workflow.
 
 ## Architecture
 The PointSnap 3D platform is an annotation QA, assisted repair, and bidirectional synchronization system for autonomous vehicle LiDAR 3D bounding boxes.

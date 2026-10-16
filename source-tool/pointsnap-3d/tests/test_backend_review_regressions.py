@@ -251,6 +251,7 @@ def test_local_api_rule_checks_do_not_claim_disabled_rules():
 
 
 def test_queue_limit_returns_429_without_creating_extra_run(client):
+    client.put("/api/projects/a/guideline", json={"config":{"rules":{"critic_box":False},"camera":{"enabled":False}}})
     runner = client.app.state.runner
     runner.max_pending = 2
     runner._executor.submit = Mock()

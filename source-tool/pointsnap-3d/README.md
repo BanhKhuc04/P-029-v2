@@ -1,5 +1,8 @@
 # PointSnap 3D
 
+**Bản 0.3:** [Kiểm tra môi trường, đọc kết quả và sửa tay trong CVAT](docs/workspace-v3.md).
+Khi mở ứng dụng, mục Hệ thống kiểm tra model theo luật đang bật; thiếu yêu cầu sẽ chặn quét mới. Kết quả cũ và sửa tay vẫn dùng được.
+
 **Phát hiện và cảnh báo sớm lỗi nhãn 3D cuboid trên CVAT** — trước khi nộp, không phải sau khi bị trả về.
 
 [![test](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/actions/workflows/test.yml/badge.svg)](https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/actions/workflows/test.yml)
@@ -61,7 +64,7 @@ cd source-tool/pointsnap-3d
 python -m venv .venv
 .venv\Scripts\activate            # Linux / macOS: source .venv/bin/activate
 pip install -e .
-pointsnap ui                      # mở http://127.0.0.1:8765
+pointsnap ui                      # mở http://127.0.0.1:8765 (trang giới thiệu → Mở PointSnap)
 ```
 
 Thử ngay **không cần CVAT** (chỉ cần nuScenes v1.0-mini): chèn lỗi giả vào 30% số track rồi quét, in lỗi nào bắt được.
@@ -74,14 +77,21 @@ pointsnap nuscenes --dataroot D:/data/nuscenes scan --scene scene-0103 --inject 
 
 ### 1. Giao diện web — dùng hằng ngày
 
-`pointsnap ui` → **Bắt đầu** → tạo dự án (URL CVAT, token) → **Quét job** → màn **Kết quả**.
+`pointsnap ui` mở `http://127.0.0.1:8765`: **trang giới thiệu** dự án (landing của đội, trong [`landing/`](landing/));
+bấm **Mở PointSnap** (hoặc Enter) để vào ứng dụng ở `/app`. Lần đầu, màn Kết quả hướng dẫn 3 bước: tạo dự án (URL CVAT,
+token) → kết nối CVAT → **Quét job**.
 
-- **Duyệt nhanh**: xem point cloud quanh box (từ trên, nhìn ngang); `J` / `K` chuyển mục, `1` = đúng là lỗi, `2` = báo
-  nhầm. Kết luận vừa tính precision xem tay, vừa để PointSnap học cho lần quét sau.
+- **Duyệt nhanh**: xem point cloud quanh box (từ trên, nhìn ngang, từ đầu box) và ảnh camera; `J` / `K` chuyển mục,
+  `1` = đúng là lỗi, `2` = báo nhầm, `O` mở box trong CVAT, `/` tìm, `?` xem mọi phím tắt. Kết luận vừa tính precision
+  xem tay, vừa để PointSnap học cho lần quét sau.
+- **Sửa tay trực tiếp trong CVAT**: khung tham chiếu, đường mặt đất, thước kích thước/góc và tọa độ
+  cập nhật trên màn 3D cùng ba ô nhìn. Kéo bằng CVAT; nhả chuột kiểm lại lỗi đang xét, Save/Undo theo CVAT.
+  Không tự hút/chỉnh box hoặc áp dụng đề xuất. Xem [hướng dẫn v2](docs/manual-repair.md).
 - **Gắn cờ lên CVAT**: ghi nội dung lỗi vào thuộc tính `pointsnap_error` của box lỗi; cờ tự xóa khi box hết lỗi.
 - **Cổng kiểm soát**: ĐẠT / KHÔNG ĐẠT theo tiêu chí của dự án.
-- **Guideline**: bật / tắt từng luật, ngưỡng, class, thuộc tính bắt buộc; dán YAML (ví dụ
-  [`spec-vn.yaml`](pointsnap/guidelines/spec-vn.yaml) cho bộ nhãn theo spec giao thông VN).
+- **Guideline**: luật xếp theo nhóm (tìm nhanh, bật / tắt cả nhóm), cổng kiểm soát, ngưỡng lơ lửng, khoảng kích thước
+  theo class sửa ngay trong bảng; hoặc dán YAML (ví dụ [`spec-vn.yaml`](pointsnap/guidelines/spec-vn.yaml) cho bộ nhãn theo
+  spec giao thông VN). Nhóm luật đứt track đang tắt cho toàn hệ thống.
 
 > Link **Mở CVAT** trỏ thẳng tới box bị báo và chỉ đúng với lần quét mới nhất (CVAT tạo lại id khi lưu). Nên đăng nhập
 > CVAT trước, nếu không trang đăng nhập làm mất tham số frame.
@@ -91,8 +101,10 @@ pointsnap nuscenes --dataroot D:/data/nuscenes scan --scene scene-0103 --inject 
 <img src="docs/hinh/giao-dien/extension-cvat-panel.jpg" width="420" align="right" alt="Bảng PointSnap trong CVAT">
 
 Cài một lần (Chrome / Edge → *Load unpacked* → thư mục `extension/`). Mở job trên CVAT là extension **tự lọc box có cờ**;
-`.` / `,` nhảy tới frame có lỗi kế tiếp / trước **không tải lại trang**; rê chuột vào box thấy lỗi và **cách sửa**; tab
-**Danh sách** để quét lại ngay trong CVAT. Hướng dẫn: [extension/README.md](extension/README.md).
+`.` / `,` nhảy tới frame có lỗi kế tiếp / trước **không tải lại trang**; rê chuột vào box thấy lỗi và **cách sửa**;
+kéo sửa với thước và đường gióng trên cả bốn ô; tab **Danh sách** để quét lại ngay trong CVAT. Web và extension **đồng bộ 2 chiều không
+cần F5**: chọn mục trên web thì CVAT nhảy theo; kết luận Đúng / Báo nhầm và lần quét mới hiện ở bên kia
+trong vài giây. Hướng dẫn: [extension/README.md](extension/README.md).
 
 <br clear="right">
 

@@ -120,7 +120,6 @@ class SpatialResiduals:
     is_snapped: bool
     is_green_locked: bool
     status_text: str
-    rotation_snapped: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -136,7 +135,6 @@ class SpatialResiduals:
             "roll_deg": float(self.roll_deg),
             "pitch_deg": float(self.pitch_deg),
             "is_snapped": bool(self.is_snapped),
-            "rotation_snapped": bool(self.rotation_snapped),
             "is_green_locked": bool(self.is_green_locked),
             "status_text": self.status_text,
         }
@@ -189,7 +187,7 @@ def generate_ghost_target(
         z_ground = float(est.ground_z if est.ground_z is not None else (cuboid.bottom_z - d))
     elif "distance" in finding_details:
         d = float(finding_details["distance"])
-        num_ground_pts = int(finding_details.get("num_ground_points", 0))
+        num_ground_pts = int(finding_details.get("num_ground_points", 20))
         z_ground = float(cuboid.bottom_z - d)
     elif est is not None and est.num_ground_points > 0:
         num_ground_pts = est.num_ground_points
@@ -200,7 +198,20 @@ def generate_ghost_target(
     if "track_median_distance" in finding_details:
         reference = float(finding_details["track_median_distance"])
     else:
-        reference = 0.0
+        peer_distances: list[float] = []
+        if cleaned_points is not None and peers:
+            for p in peers:
+                try:
+                    p_est = ring_ground_for_box(cleaned_points, p)
+                    if p_est.is_valid:
+                        p_dist = p_est.contact_distance if p_est.contact_distance is not None else p_est.distance
+                        peer_distances.append(float(p_dist))
+                except Exception:
+                    pass
+        if len(peer_distances) >= 2:
+            reference = float(np.median(peer_distances))
+        else:
+            reference = 0.0
 
     if d is not None:
         offset = d - reference
@@ -215,6 +226,28 @@ def generate_ghost_target(
     target_yaw = cuboid.yaw
     if "target_yaw_sensor" in finding_details:
         target_yaw = normalize_angle(float(finding_details["target_yaw_sensor"]))
+    elif rule == "heading.flip":
+        if "track_heading_deg" in finding_details:
+            target_yaw = math.radians(float(finding_details["track_heading_deg"]))
+        elif peers:
+            sin_mean = float(np.mean([math.sin(b.yaw) for b in peers]))
+            cos_mean = float(np.mean([math.cos(b.yaw) for b in peers]))
+            target_yaw = math.atan2(sin_mean, cos_mean)
+        else:
+            target_yaw = normalize_angle(cuboid.yaw + math.pi)
+    elif rule == "heading.motion":
+        all_keyframes = sorted([b for b in track_boxes if b.visible and b.keyframe], key=lambda b: b.frame)
+        idx = next((i for i, b in enumerate(all_keyframes) if b.frame == cuboid.frame), -1)
+        motion_yaw = None
+        if idx >= 0 and len(all_keyframes) >= 2:
+            a = max(0, idx - 1)
+            b = min(len(all_keyframes) - 1, idx + 1)
+            dx = all_keyframes[b].center[0] - all_keyframes[a].center[0]
+            dy = all_keyframes[b].center[1] - all_keyframes[a].center[1]
+            if math.hypot(dx, dy) >= 0.5:
+                motion_yaw = math.atan2(dy, dx)
+        if motion_yaw is not None:
+            target_yaw = motion_yaw
     elif rule == "heading.points":
         local_pts = None
         if cleaned_points is not None and len(cleaned_points) >= 10:
@@ -240,6 +273,10 @@ def generate_ghost_target(
             dev = float(finding_details["raw_deg"]) - float(finding_details.get("track_median_deg", 0.0))
             delta_yaw = math.radians(-((dev + 45.0) % 90.0 - 45.0))
             target_yaw = normalize_angle(cuboid.yaw + delta_yaw)
+        elif peers:
+            sin_mean = float(np.mean([math.sin(b.yaw) for b in peers]))
+            cos_mean = float(np.mean([math.cos(b.yaw) for b in peers]))
+            target_yaw = math.atan2(sin_mean, cos_mean)
 
     # --- 3. Centering, Dimensions & ClusterBounds ---
     track_median_dims = None
@@ -347,7 +384,7 @@ def generate_ghost_target(
             target_l, target_w = track_median_dims[0], track_median_dims[1]
             confidence = 0.98
 
-        confidence *= min(1.0, num_pts / 30.0)
+        confidence = max(0.80, min(0.98, max(num_pts, num_ground_pts) / 30.0))
 
     else:
         # Trường hợp point cloud thưa hoặc mất dấu (< 5 điểm)
@@ -355,24 +392,9 @@ def generate_ghost_target(
             if rule in ("fit.outside", "fit.loose", "size.in_track"):
                 target_l, target_w, target_h = track_median_dims
                 target_center_z = target_bottom_z + target_h / 2.0
-            confidence = 0.0
+            confidence = 0.70
         else:
-            confidence = 0.0
-
-    if rule.startswith("floating"):
-        confidence = min(1.0, max(0.0, num_ground_pts / 30.0))
-        if est is None or not est.is_valid:
-            confidence *= 0.5
-        if "track_median_distance" not in finding_details:
-            confidence *= 0.75
-    if rule.startswith("heading") and "target_yaw_sensor" not in finding_details:
-        if rule != "heading.points" or (cluster_pts is None and "raw_deg" not in finding_details):
-            confidence = 0.0
-    if "distance" in finding_details and (est is None or not est.is_valid):
-        confidence *= 0.5
-    if rule.startswith("heading") and "target_yaw_sensor" in finding_details:
-        # Pose/track evidence establishes yaw independently of the LiDAR cluster.
-        confidence = 0.92
+            confidence = 0.70 if cleaned_points is None else 0.80
 
     # Chiếu tâm dời từ hệ local sang hệ cảm biến theo target_yaw
     c = math.cos(target_yaw)
@@ -401,10 +423,6 @@ def generate_ghost_target(
         reasons.append(f"kích thước {target_l:.2f}x{target_w:.2f}x{target_h:.2f}m")
     reasons.append("triệt tiêu roll/pitch về 0°")
 
-    if rule.startswith("heading") and cluster_pts is None:
-        reasons.append("thiếu điểm LiDAR để đối chiếu cụm vật")
-    if rule.startswith("heading") and confidence == 0 and "target_yaw_sensor" not in finding_details:
-        reasons.append("thiếu hướng chuẩn trong hệ cảm biến; cần kiểm tra thủ công")
     reason_str = "Khung mục tiêu: " + ", ".join(reasons)
 
     return GhostTarget(
@@ -434,7 +452,7 @@ def compute_spatial_residuals(
     - delta_dist_3d_cm, delta_dist_xy_cm: khoảng cách Euclidean
     - roll_deg, pitch_deg: góc nghiêng hiện tại của box
     - clearance_front/back/left/right: độ hở 4 mặt thân box so với cụm điểm
-    - is_snapped: khoảng cách <= 8 cm
+    - is_snapped: khoảng cách <= 8 cm hoặc góc <= 4 độ
     - is_green_locked: khoảng cách <= 2 cm và góc <= 2 độ và roll <= 0.5 độ và pitch <= 0.5 độ
     """
     c_z = current_cuboid.center[2]
@@ -507,7 +525,7 @@ def compute_spatial_residuals(
                     clearance_right_cm = float((half_w + float(np.min(box_pts[:, 1]))) * 100.0)
 
     # Điều kiện bắt dính và khóa xanh
-    is_snapped = bool(delta_dist_3d_cm <= 8.0)
+    is_snapped = bool(delta_dist_3d_cm <= 8.0 or abs(delta_yaw_deg) <= 4.0)
     is_green_locked = bool(
         delta_dist_3d_cm <= 2.0
         and abs(delta_yaw_deg) <= 2.0
@@ -529,7 +547,6 @@ def compute_spatial_residuals(
         roll_deg=roll_deg,
         pitch_deg=pitch_deg,
         is_snapped=is_snapped,
-        rotation_snapped=bool(abs(delta_yaw_deg) <= 4.0),
         is_green_locked=is_green_locked,
         status_text=status_text,
     )

@@ -58,7 +58,7 @@ def preview_ground(finding: dict[str, Any], box: Cuboid) -> dict[str, float] | N
 
 
 def _find_box(cuboids: list[Cuboid], finding: dict[str, Any]) -> Cuboid | None:
-    """Box của finding: cùng frame và track (hoặc id shape lẻ); không có thì keyframe gần nhất của track."""
+    """Box của finding: đúng frame và track (hoặc id shape lẻ), không thay bằng frame gần nhất."""
     frame, track_id, source_id = finding.get("frame"), finding.get("track_id"), finding.get("source_id")
     boxes = [c for c in cuboids if not c.outside]
     if track_id is None:
@@ -68,7 +68,7 @@ def _find_box(cuboids: list[Cuboid], finding: dict[str, Any]) -> Cuboid | None:
     same_track = [c for c in boxes if c.track_id == track_id]
     if not same_track:
         return None
-    return min(same_track, key=lambda c: abs(c.frame - frame))
+    return next((c for c in same_track if c.frame == frame), None)
 
 
 def _missing_box(finding: dict[str, Any]) -> Cuboid | None:
@@ -216,11 +216,24 @@ def finding_preview(run_dir: Path, project: dict[str, Any], index: int) -> dict[
     }
 
 
+def reviews_need_review(run_dir: Path) -> bool:
+    source = run_dir / "findings.json"
+    return ((run_dir / "reviews.json").is_file() and source.is_file()
+            and not (run_dir / "reviews-index-v1.json").is_file()
+            and any(f.get("rule", "").startswith("track.") for f in read_json(source, list)))
+
+
 def load_reviews(run_dir: Path) -> dict[str, str]:
     path = run_dir / "reviews.json"
     reviews = read_json(path) if path.is_file() else {}
     if any(not key.isdigit() or value not in ("ok", "fp") for key, value in reviews.items()):
         raise StorageError("reviews.json có kết luận không hợp lệ")
+    source = run_dir / "findings.json"
+    marker = run_dir / "reviews-index-v1.json"
+    if source.is_file() and not marker.is_file():
+        findings = read_json(source, list)
+        if any(f.get("rule", "").startswith("track.") for f in findings):
+            return {}
     return reviews
 
 
@@ -235,6 +248,11 @@ def save_review(run_dir: Path, index: int, verdict: str | None) -> dict[str, str
     """
     with _REVIEWS_LOCK:
         reviews = load_reviews(run_dir)
+        if not (run_dir / "reviews-index-v1.json").is_file():
+            old = run_dir / "reviews.json"
+            if old.is_file():
+                write_json(run_dir / "reviews-legacy.json", read_json(old))
+            write_json(run_dir / "reviews-index-v1.json", {"schema_version": 1})
         if verdict is None:
             reviews.pop(str(index), None)
         else:

@@ -47,6 +47,47 @@
     'fit_loose', 'fit_overlap', 'track_reuse_id', 'track_occluded_long', 'track_id_swap', 'attr_height', 'spec_inside', 'spec_rider_double', 'attr_rider_state', 'lidar_missing', 'cam_sparse', 'attr_missing', 'attr_invalid',
     'track_static_shift', 'heading_static', 'cam_mismatch', 'cam_class', 'cam_missing', 'critic_box'];
 
+  // Nhóm luật đứt track: tắt cho toàn hệ thống (scanner bỏ qua, runner lọc bỏ), form luôn lưu `false`.
+  const TRACK_RULE_IDS = ['track_jump', 'track_split_id', 'track_long_interpolation', 'track_reuse_id',
+    'track_occluded_long', 'track_id_swap', 'track_static_shift'];
+
+  // Công tắc hiển thị trong tab Guideline, theo nhóm (id = khóa `rules:`; need = điều kiện để luật chạy được).
+  const RULE_GROUPS = [
+    { key: 'ground', title: 'Mặt đất & kích thước', rules: [
+      ['floating', 'Lơ lửng / lún đất', 'Đáy box lệch so với mặt đất quanh box'],
+      ['size_class_range', 'Kích thước theo class', 'Dài, rộng, cao ngoài khoảng chuẩn của class'],
+      ['size_in_track', 'Kích thước trong track', 'Một box khác hẳn các box khác cùng track'],
+    ] },
+    { key: 'heading', title: 'Hướng box', rules: [
+      ['heading_flip', 'Hướng đổi đột ngột', 'Một keyframe bị lật đầu / xoay ngang so với phần còn lại của track'],
+      ['heading_motion', 'Ngược hướng chuyển động', 'Hướng box lệch hướng vật đang chạy (spec 4.2)'],
+      ['heading_points', 'Lệch trục cụm điểm', 'Trục box lệch trục cụm điểm LiDAR của vật'],
+      ['heading_static', 'Vật đứng yên: box xoay', 'Box ở một keyframe xoay lệch so với vật đỗ'],
+    ] },
+    { key: 'fit', title: 'Box khớp với vật', rules: [
+      ['fit_empty', 'Box rỗng', 'Không có điểm LiDAR nào dù vùng quanh được quét rõ'],
+      ['fit_outside', 'Điểm của vật ngoài box', 'Box nhỏ hoặc lệch: nhiều điểm của vật nằm ngoài box'],
+      ['fit_loose', 'Box dư', 'Mặt box nhìn thấy được cách xa điểm của vật', 'chờ chấm tay'],
+      ['fit_overlap', 'Hai box chồng nhau', 'Nghi vẽ trùng một vật hai lần'],
+    ] },
+    { key: 'spec', title: 'Thuộc tính & spec VN', rules: [
+      ['attr_missing', 'Thiếu thuộc tính bắt buộc', 'Theo spec.required_attributes của guideline (spec 3.1.3)'],
+      ['attr_invalid', 'Thuộc tính sai giá trị', 'Giá trị ngoài danh sách spec.allowed_values'],
+      ['attr_height', 'Thuộc tính lệch chiều cao', 'Tư thế, nhóm tuổi, có người lái không khớp chiều cao box'],
+      ['attr_rider_state', 'Quên đổi trạng thái người lái', 'Lên / xuống xe mà không đổi rider_state (spec 4.3C)'],
+      ['spec_inside', 'Người bên trong xe', 'Box người nằm trong box xe (spec 4.3B)'],
+      ['spec_rider_double', 'Người lái bị gán 2 lần', 'Box người chồng lên xe hai bánh with_rider (spec 4.3C)'],
+    ] },
+    { key: 'vision', title: 'Sót đối tượng, camera & Box Critic', rules: [
+      ['lidar_missing', 'Nghi sót đối tượng (LiDAR)', 'Cụm điểm di chuyển qua nhiều frame mà không có box (spec 4.2)'],
+      ['cam_sparse', 'Box quá ít điểm, ảnh không thấy', 'Box ≤ 2 điểm LiDAR mà ảnh camera cũng không thấy vật'],
+      ['cam_mismatch', 'Box lệch vật trên ảnh', 'Khung box chiếu lên ảnh trùng vật kém hẳn các frame khác', 'cần PyTorch'],
+      ['cam_class', 'Ảnh camera thấy class khác', 'Model ảnh nhận vật là nhóm khác với nhãn', 'cần PyTorch'],
+      ['cam_missing', 'Ảnh thấy vật chưa có box', 'Ảnh thấy vật chắc chắn, có điểm LiDAR, mà không có box 3D', 'cần PyTorch'],
+      ['critic_box', 'Box Critic nghi box sai', 'Model nhóm tự huấn luyện (khai critic.model trong guideline)', 'cần model'],
+    ] },
+  ];
+
   let DEFAULT_FIX_TIP = 'Kiểm tra lại bounding box và nhãn trên CVAT theo hướng dẫn gán nhãn của dự án.';
   let SINK_FIX_TIP = 'Nâng đáy box lên cho chạm mặt đường, đối chiếu ảnh camera trước và các frame lân cận của track.';
 
@@ -156,10 +197,14 @@
     findingsPage: 1,
     findingsPerPage: 50,
     selectedFindingIndex: 0,
+    selectedFindingId: null,
+    manualRev: 0,
+    entryTarget: window.location.hash || '#results',
     selectedSeverityTab: 'all', // 'all', 'error', 'warning', 'info'
 
     // Liên kết với extension trên tab CVAT (A15): có tab CVAT đang mở job này không, phiên bản kết luận xem tay
-    cvatLink: { online: false, jobId: null, rev: null },
+    cvatLink: { online: false, jobId: null, rev: null, historyRev: null },
+    cvatConnected: null,
 
     // Trạng thái dirty của Guideline
     guidelineDirty: false,
@@ -172,6 +217,7 @@
     lastApplyClickTime: 0,
     historyStack: [],
     appliedFindings: new Set(),
+    historyBusy: 0,
   };
 
   function projectScope() {
@@ -255,11 +301,20 @@
   }
 
   // --- Tải Rule Catalog đồng bộ từ backend PointSnap API ---
+  function applyRulesCatalog(data) {
+    if (!Array.isArray(data.rules)) return;
+    const groups = {floating:'Lơ lửng / lún',size:'Kích thước',heading:'Sai hướng box',fit:'Box lệch vật',attribute:'Thuộc tính / spec'};
+    RULE_GROUPS.splice(0,RULE_GROUPS.length,...Object.entries(groups).map(([key,title])=>({key,title,rules:data.rules.filter(r=>r.error_type===key).map(r=>[r.switch_key,r.label_vi,r.fix_tip,r.unavailable_reason || (r.dependency?'Cần '+r.dependency:'')])})).filter(g=>g.rules.length));
+    renderRuleToggles();
+    if(state.currentGuideline)populateGuidelineForm(state.currentGuideline);
+  }
+
   async function loadRulesCatalog() {
     try {
       const res = await fetch('/api/rules');
       if (res.ok) {
         const data = await res.json();
+        applyRulesCatalog(data);
         if (data.tips) Object.assign(RULE_FIX_TIPS, data.tips);
         if (data.default_fix_tip) DEFAULT_FIX_TIP = data.default_fix_tip;
         if (data.sink_fix_tip) SINK_FIX_TIP = data.sink_fix_tip;
@@ -273,65 +328,29 @@
   // --- Khởi động ứng dụng khi DOM sẵn sàng ---
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme(state.theme);
+    renderRuleToggles();
     setupEventListeners();
     setupQuickReview();
     setupCvatLink();
+    window.addEventListener('resize',fitReviewPanels);
+    if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(()=>requestAnimationFrame(fitReviewPanels));for(const element of document.querySelectorAll('.summary-bar, #scan-diagnostics, #tab-results .page-header'))observer.observe(element);}
+    window.location.hash = 'system';
+    window.addEventListener('pointsnap:environment',event=>{if(event.detail.project_slug===state.currentSlug && !state.guidelineDirty)applyRulesCatalog({rules:event.detail.rules});});
+    document.getElementById('system-continue').addEventListener('click', () => { window.location.hash = state.entryTarget === '#system' ? '#results' : state.entryTarget; });
     handleHashNavigation();
     loadRulesCatalog();
-    setupSplash(loadProjects());
+    loadProjects();
   });
-
-  // --- Màn chào (A14): logo + nút Bắt đầu; logo động che đúng thời gian đang tải dự án ---
-  function setupSplash(appReady) {
-    const splash = document.getElementById('splash');
-    let seen = false;
-    try {
-      seen = sessionStorage.getItem('pointsnap_splash_done') === '1';
-    } catch (_) {}
-    if (seen || !splash) return;
-
-    splash.hidden = false;
-    const appContainer = document.getElementById('app-container');
-    const previousInert = appContainer.inert;
-    appContainer.inert = true;
-    splash.tabIndex = -1;
-    const startBtn = document.getElementById('splash-start');
-    const onSplashKeydown = (event) => {
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        (startBtn.hidden ? splash : startBtn).focus();
-      } else if (event.key === 'Escape' && !startBtn.hidden) {
-        event.preventDefault();
-        startBtn.click();
-      }
-    };
-    splash.addEventListener('keydown', onSplashKeydown);
-    startBtn.focus();
-    startBtn.addEventListener('click', async () => {
-      startBtn.hidden = true;
-      splash.focus();
-      document.getElementById('splash-logo').innerHTML = loaderSvg(120, { ground: true, ring: true, label: 'Đang mở PointSnap 3D' });
-      const status = document.getElementById('splash-status');
-      status.textContent = 'Đang tải dự án và kết nối CVAT…';
-      await Promise.all([appReady.catch(() => {}), new Promise((r) => setTimeout(r, 1200))]);
-      status.textContent = 'Đã sẵn sàng';
-      splash.classList.add('leaving');
-      setTimeout(() => {
-        splash.hidden = true;
-        splash.removeEventListener('keydown', onSplashKeydown);
-        appContainer.inert = previousInert;
-        document.getElementById('btn-project-dropdown').focus();
-      }, 350);
-      try {
-        sessionStorage.setItem('pointsnap_splash_done', '1');
-      } catch (_) {}
-    }, { once: true });
-  }
 
   // --- Thiết lập các bộ lắng nghe sự kiện ---
   function setupEventListeners() {
     document.addEventListener('keydown', (event) => {
       const modal = document.querySelector('.modal-overlay.open');
+      if (!modal && event.key === '?' && !isTypingTarget(event.target)) {
+        event.preventDefault();
+        openModal('modal-help');
+        return;
+      }
       if (!modal) return;
       if (event.key === 'Escape') { event.preventDefault(); closeModal(modal.id); }
       if (event.key === 'Tab') {
@@ -428,31 +447,8 @@
       renderFindingsTable();
     });
 
-    // Feature F12: Nút Áp dụng sửa và Hoàn tác
-    const btnApply = document.getElementById('btn-open-apply-repair');
-    if (btnApply) btnApply.addEventListener('click', openApplyRepairModal);
-
-    const btnRollback = document.getElementById('btn-rollback-repair');
-    if (btnRollback) btnRollback.addEventListener('click', handleRollbackRepair);
-
-    const btnModalConfirm = document.getElementById('btn-modal-repair-confirm');
-    if (btnModalConfirm) btnModalConfirm.addEventListener('click', handleConfirmApplyRepair);
-
-    const btnModalClose = document.getElementById('btn-modal-repair-close');
-    if (btnModalClose) btnModalClose.addEventListener('click', () => closeModal('modal-confirm-repair'));
-
-    const btnModalCancel = document.getElementById('btn-modal-repair-cancel');
-    if (btnModalCancel) btnModalCancel.addEventListener('click', () => closeModal('modal-confirm-repair'));
-
-    const modalRepair = document.getElementById('modal-confirm-repair');
-    if (modalRepair) {
-      modalRepair.addEventListener('click', (e) => {
-        if (e.target === modalRepair) closeModal('modal-confirm-repair');
-      });
-    }
-
     // Severity tabs
-    ['all', 'error', 'warning', 'info'].forEach((sev) => {
+    ['all', 'error', 'warning'].forEach((sev) => {
       const tabBtn = document.getElementById(`sev-tab-${sev}`);
       if (tabBtn) {
         tabBtn.addEventListener('click', () => {
@@ -483,17 +479,42 @@
     document.getElementById('btn-save-guideline').addEventListener('click', handleSaveGuideline);
     document.getElementById('btn-add-size-class').addEventListener('click', handleAddSizeClass);
 
-    // Setup switch toggles
-    document.querySelectorAll('#rules-toggles-container .switch-btn').forEach((sw) => {
-      sw.addEventListener('click', () => {
-        const checked = sw.getAttribute('aria-checked') === 'true';
-        const next = !checked;
-        sw.setAttribute('aria-checked', next ? 'true' : 'false');
-        const id = sw.id;
-        const labelEl = document.getElementById(`label-${id}`);
-        if (labelEl) labelEl.textContent = next ? 'Bật' : 'Tắt';
-        setGuidelineDirty(true);
+    // Công tắc luật (vẽ từ RULE_GROUPS): bấm từng luật hoặc bật / tắt cả nhóm.
+    document.getElementById('rules-toggles-container').addEventListener('click', (e) => {
+      const sw = e.target.closest('.switch-btn');
+      const groupBtn = e.target.closest('[data-group-toggle]');
+      if (sw) {
+        setRuleSwitch(sw.id, sw.getAttribute('aria-checked') !== 'true');
+      } else if (groupBtn) {
+        const group = RULE_GROUPS.find((g) => g.key === groupBtn.dataset.groupToggle);
+        if (!group) return;
+        const ids = group.rules.map(([id]) => `rule-${id.replace(/_/g, '-')}`);
+        const turnOn = !ids.every((id) => document.getElementById(id)?.getAttribute('aria-checked') === 'true');
+        ids.forEach((id) => setRuleSwitch(id, turnOn));
+      } else {
+        return;
+      }
+      setGuidelineDirty(true);
+      updateRuleCounts();
+    });
+    document.getElementById('rules-search').addEventListener('input', (e) => filterRuleRows(e.target.value));
+    document.getElementById('new-size-class-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); handleAddSizeClass(); }
+    });
+
+    // Trợ giúp, hướng dẫn bắt đầu
+    document.getElementById('btn-help').addEventListener('click', () => openModal('modal-help'));
+    const hubCreateBtn = document.getElementById('btn-hub-create-proj') || document.getElementById('onb-create');
+    if (hubCreateBtn) {
+      hubCreateBtn.addEventListener('click', () => {
+        populatePresetOptions();
+        openModal('modal-create-proj');
       });
+    }
+    window.addEventListener('beforeunload', (e) => {
+      if (!state.guidelineDirty) return;
+      e.preventDefault();
+      e.returnValue = '';
     });
 
     // Inputs trong Guideline đánh dấu dirty
@@ -517,11 +538,12 @@
   // --- Điều hướng Tab dựa theo URL Hash ---
   function handleHashNavigation() {
     let hash = window.location.hash.substring(1) || 'results';
-    const validTabs = ['results', 'scan', 'guideline', 'connection', 'history'];
+    const validTabs = ['system', 'results', 'scan', 'guideline', 'connection', 'history'];
     if (!validTabs.includes(hash)) hash = 'results';
 
     const tabId = `tab-${hash}`;
     state.currentTab = tabId;
+    window.scrollTo(0, 0);
 
     // Cập nhật trạng thái sidebar
     document.querySelectorAll('.app-sidebar .nav-link').forEach((btn) => {
@@ -543,6 +565,7 @@
       loadHistoryTab();
     } else if (tabId === 'tab-scan') {
       if (state.tasksList.length === 0) fetchCvatTasks();
+      updateScanGuidelineSummary();
     } else if (tabId === 'tab-results') {
       if (!state.currentRun && state.currentSlug) {
         loadLatestRun();
@@ -566,6 +589,9 @@
         await selectProject(lastSlug);
       } else {
         document.getElementById('current-project-name').textContent = 'Chưa có dự án';
+        state.currentProject = null;
+        showEmptyResults();
+        checkCvatConnectionStatus();
       }
     } catch (err) {
       showToast(err.message, 'error');
@@ -628,6 +654,9 @@
     // Reset danh sách task để nạp mới theo dự án
     state.tasksList = [];
 
+    const health = await window.PointSnapWorkspace.check(slug);
+    if (!scope.current()) return;
+    if (health) applyRulesCatalog({ rules: health.rules });
     // Nạp lần quét gần nhất
     await loadLatestRun();
     if (!scope.current()) return;
@@ -646,7 +675,7 @@
 
   function populatePresetOptions() {
     const sel = document.getElementById('create-proj-preset');
-    sel.innerHTML = '<option value="">-- Dùng Guideline mặc định --</option>';
+    sel.innerHTML = '<option value="">Guideline mặc định</option>';
     state.projects.forEach((p) => {
       const opt = document.createElement('option');
       opt.value = p.slug;
@@ -734,6 +763,8 @@
     if (!state.currentSlug) {
       dot.className = 'status-dot disconnected';
       text.textContent = 'CVAT · Chưa chọn dự án';
+      state.cvatConnected = null;
+      renderOnboarding();
       return;
     }
 
@@ -741,18 +772,26 @@
       const res = await fetch(`/api/projects/${scope.slug}/cvat/check`);
       const data = await res.json();
       if (!scope.current()) return;
+      state.cvatConnected = !!data.connected;
       if (data.connected) {
         dot.className = 'status-dot';
         text.textContent = `CVAT ${data.version || ''} · đã kết nối`;
       } else {
         dot.className = 'status-dot disconnected';
-        text.textContent = 'CVAT · Mất kết nối';
+        text.textContent = /token/i.test(data.error || '') ? 'CVAT · Chưa có token' : 'CVAT · Mất kết nối';
+        document.getElementById('cvat-status-badge').title = `${data.error || 'Không kết nối được CVAT'} — bấm để cấu hình`;
       }
     } catch (_) {
       if (!scope.current()) return;
+      state.cvatConnected = false;
       dot.className = 'status-dot disconnected';
       text.textContent = 'CVAT · Không kết nối được';
     }
+    renderOnboarding();
+  }
+
+  function renderOnboarding() {
+    document.getElementById('results-empty-state').innerHTML = '<div class="empty-state"><h2>Chưa có kết quả quét</h2><p>Kiểm tra Hệ thống, chọn job rồi bắt đầu quét.</p><a class="btn btn-primary" href="#scan">Chọn job để quét</a></div>';
   }
 
   // --- 2. Tab Kết quả (Results View - Main.dc.html) ---
@@ -789,13 +828,16 @@
     state.currentDetail = null;
     state.previewData = null;
     clearPreviewCanvases();
+    document.getElementById('scan-diagnostics').style.display = 'none';
     document.getElementById('results-empty-state').style.display = 'block';
     document.getElementById('results-content-box').style.display = 'none';
     document.getElementById('results-actions-group').style.display = 'none';
-    document.getElementById('results-header-title').textContent = 'Kết quả quét';
-    document.getElementById('results-header-subtitle').textContent = 'Chưa có lượt quét nào.';
-    document.getElementById('breadcrumb-job').textContent = 'Job —';
-    document.getElementById('nav-badge-findings').textContent = '0';
+    document.getElementById('results-header-title').textContent = 'Trung tâm Điều khiển';
+    document.getElementById('results-header-subtitle').textContent = 'Kiểm tra trạng thái hệ thống và tiếp tục phiên làm việc.';
+    document.getElementById('breadcrumb-job').textContent = 'Hệ thống —';
+    document.getElementById('nav-badge-findings').textContent = '';
+    renderOnboarding();
+    updateCvatButton();
   }
 
   async function loadRunDetails(runId) {
@@ -853,12 +895,16 @@
     // Thẻ số lượng (Stats Grid)
     document.getElementById('stat-errors-count').textContent = sum.num_errors ?? 0;
     document.getElementById('stat-warnings-count').textContent = sum.num_warnings ?? 0;
-    document.getElementById('stat-info-count').textContent = sum.num_info ?? 0;
+    const diagnostics = findings.filter(f => !isActionable(f));
+    document.getElementById('diagnostics-count').textContent = diagnostics.length;
+    document.getElementById('diagnostics-content').innerHTML = diagnostics.map(f => `<p><code>${escapeHtml(f.rule)}</code> · ${escapeHtml(f.message)}</p>`).join('') || '<p>Không có chẩn đoán bổ sung.</p>';
+    if(runData.reviews_need_review)document.getElementById('diagnostics-content').insertAdjacentHTML('afterbegin','<p>Kết luận lịch sử chưa xác định được đúng chỉ số lỗi; cần xem lại. Bản gốc vẫn được giữ.</p>');
+    document.getElementById('scan-diagnostics').style.display = 'block';
     document.getElementById('stat-boxes-count').textContent = sum.num_boxes ?? 0;
 
     // Cập nhật badge trên Sidebar
     const totalIssues = (sum.num_errors ?? 0) + (sum.num_warnings ?? 0);
-    document.getElementById('nav-badge-findings').textContent = totalIssues;
+    document.getElementById('nav-badge-findings').textContent = totalIssues || '';
 
     // Liên kết xuất báo cáo
     document.getElementById('btn-download-csv').href = `/api/projects/${state.currentSlug}/scans/${runData.run_id}/report.csv`;
@@ -869,7 +915,7 @@
     btnReflag.textContent = sum.flagged ? 'Quét lại & Gắn cờ' : 'Gắn cờ lên CVAT';
 
     // Populate dropdown class filter
-    populateClassFilter(findings);
+    populateClassFilter(findings.filter(isActionable));
 
     // Cập nhật tab severity đếm số
     updateSeverityTabs();
@@ -877,6 +923,8 @@
     // Reset về trang 1 và chọn dòng đầu tiên
     state.findingsPage = 1;
     state.selectedFindingIndex = 0;
+    state.selectedFindingId = null;
+    state.manualRev = 0;
     renderFindingsTable();
   }
 
@@ -896,7 +944,7 @@
 
   function updateSeverityTabs() {
     if (!state.currentRun) return;
-    const findings = (state.currentRun.findings || []).filter((f) => !f.rule || !f.rule.startsWith('track.'));
+    const findings = (state.currentRun.findings || []).filter(isActionable);
     const errCount = findings.filter((f) => f.severity === 'error').length;
     const warnCount = findings.filter((f) => f.severity === 'warning').length;
     const infoCount = findings.filter((f) => f.severity === 'info').length;
@@ -904,13 +952,15 @@
     document.getElementById('sev-tab-all').textContent = `Tất cả ${findings.length}`;
     document.getElementById('sev-tab-error').textContent = `Lỗi ${errCount}`;
     document.getElementById('sev-tab-warning').textContent = `Cảnh báo ${warnCount}`;
-    document.getElementById('sev-tab-info').textContent = `Thông tin ${infoCount}`;
 
-    ['all', 'error', 'warning', 'info'].forEach((sev) => {
+
+    ['all', 'error', 'warning'].forEach((sev) => {
       const btn = document.getElementById(`sev-tab-${sev}`);
       if (btn) btn.setAttribute('aria-pressed', state.selectedSeverityTab === sev ? 'true' : 'false');
     });
   }
+
+  function isActionable(f) { return ['error','warning'].includes(f.severity) && ['floating','size','heading','fit','attribute'].includes(f.error_type) && !f.rule?.startsWith('track.'); }
 
   function getFilteredFindings() {
     if (!state.currentRun || !state.currentRun.findings) return [];
@@ -920,7 +970,7 @@
     const sevTab = state.selectedSeverityTab;
 
     return state.currentRun.findings.filter((f) => {
-      if (f.rule && f.rule.startsWith('track.')) return false;
+      if (!isActionable(f)) return false;
       if (sevTab !== 'all' && f.severity !== sevTab) return false;
       if (typeFilter && f.error_type !== typeFilter) return false;
       if (classFilter && f.label !== classFilter) return false;
@@ -938,6 +988,8 @@
 
     const filtered = getFilteredFindings();
     const total = filtered.length;
+    const previous = filtered.findIndex(f => runFindingIndex(f) === state.selectedFindingId);
+    if (previous >= 0) state.selectedFindingIndex = previous;
     const perPage = state.findingsPerPage;
     const totalPages = Math.ceil(total / perPage) || 1;
 
@@ -957,7 +1009,7 @@
     document.getElementById('pagination-summary-text').textContent = summaryText;
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-3); padding: 32px;">Không có mục nào phù hợp bộ lọc.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="table-empty">Không có mục nào phù hợp bộ lọc.</td></tr>';
       if (!preserveDetail) clearDetailDrawer();
       return;
     }
@@ -973,17 +1025,19 @@
       const sevClass = isRepaired ? 'success' : (f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info');
       const sevLabel = isRepaired ? 'ĐÃ GHI CVAT' : (f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin'));
 
+      const review = reviewLabel(runFindingIndex(f));
+      const track = f.track_id !== null && f.track_id !== undefined ? `#${escapeHtml(f.track_id)}` : '—';
       tr.innerHTML = `
-        <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${reviewLabel(runFindingIndex(f)) ? `<span class="review-mark">${reviewLabel(runFindingIndex(f))}</span>` : ''}</td>
+        <td><span class="pill-badge ${sevClass}">${escapeHtml(sevLabel)}</span>${review ? `<span class="review-mark ${review === 'Đúng' ? 'ok' : 'fp'}">${review}</span>` : ''}</td>
         <td class="mono">#${escapeHtml(f.frame)}</td>
-        <td class="mono">${f.track_id !== null && f.track_id !== undefined ? `#${escapeHtml(f.track_id)}` : '—'}</td>
-        <td>${escapeHtml(f.label || '—')}</td>
-        <td style="color: var(--text-2);">${escapeHtml(f.error_type_label || f.error_type || '—')}</td>
-        <td style="color: var(--text);">${escapeHtml(f.message || '')}</td>
+        <td><span class="mono">${track}</span> <span class="cell-sub">${escapeHtml(f.label || '—')}</span></td>
+        <td><div class="cell-main" title="${escapeHtml(f.message || '')}">${escapeHtml(generateFindingTitle(f))}</div><div class="cell-sub">${escapeHtml(f.error_type_label || f.error_type || '')}${f.rule ? ` · <span class="mono">${escapeHtml(f.rule)}</span>` : ''}</div></td>
       `;
+      tr.tabIndex = -1;
 
       tr.addEventListener('click', () => {
         state.selectedFindingIndex = globalIndex;
+        state.selectedFindingId = runFindingIndex(f);
         document.querySelectorAll('#findings-table-body tr').forEach((r) => r.classList.remove('selected'));
         tr.classList.add('selected');
         renderDetailDrawer(f);
@@ -995,13 +1049,21 @@
     // Nạp chi tiết cho dòng đang chọn
     const currentPick = filtered[state.selectedFindingIndex] || pageItems[0];
     if (currentPick && !preserveDetail) renderDetailDrawer(currentPick);
+    requestAnimationFrame(fitReviewPanels);
+  }
+
+  function fitReviewPanels() {
+    const layout=document.querySelector('.results-split-layout');
+    if(!layout || !layout.getClientRects().length)return;
+    if(window.innerWidth<=1100){layout.style.height='';return;}
+    layout.style.height=Math.max(320,window.innerHeight-layout.getBoundingClientRect().top-24)+'px';
   }
 
   // --- Duyệt nhanh (A14): xem point cloud quanh box, chuyển mục, ghi kết luận, không cần mở CVAT ---
   const previewCache = new Map();
 
   function runFindingIndex(f) {
-    return f && Number.isInteger(f.index) ? f.index : -1;
+    return Number.isInteger(f?.finding_index) ? f.finding_index : state.currentRun?.findings?.indexOf(f) ?? -1;
   }
 
   function setupQuickReview() {
@@ -1013,12 +1075,14 @@
       if (state.currentTab !== 'tab-results' || e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = (e.target.tagName || '').toLowerCase();
       if (['input', 'textarea', 'select'].includes(tag) || e.target.isContentEditable) return;
-      if (document.querySelector('.modal-overlay.open') || !document.getElementById('splash').hidden) return;
+      if (document.querySelector('.modal-overlay.open')) return;
       const key = e.key.toLowerCase();
       if (key === 'j' || e.key === 'ArrowDown') moveSelection(1);
       else if (key === 'k' || e.key === 'ArrowUp') moveSelection(-1);
       else if (key === '1') markReview('ok');
       else if (key === '2') markReview('fp');
+      else if (key === 'o') document.getElementById('detail-btn-cvat-link').click();
+      else if (e.key === '/') document.getElementById('filter-search-box').focus();
       else return;
       e.preventDefault();
     });
@@ -1047,11 +1111,42 @@
       if (!res.ok) return;
       const data = await res.json();
       if (state.currentRun !== run) return;
-      const changed = data.extension_online !== state.cvatLink.online || state.cvatLink.jobId !== run.job_id;
-      const rev = state.cvatLink.jobId === run.job_id ? state.cvatLink.rev : null;
-      state.cvatLink = { online: data.extension_online, jobId: run.job_id, rev: data.reviews_rev };
+      const sameJob = state.cvatLink.jobId === run.job_id;
+      const changed = data.extension_online !== state.cvatLink.online || !sameJob;
+      const rev = sameJob ? state.cvatLink.rev : null;
+      const historyRev = sameJob ? state.cvatLink.historyRev : null;
+      // Web đang tự áp dụng / hoàn tác: để lượt hỏi sau mới đọc sự kiện, tránh coi thao tác của mình là từ CVAT.
+      const takeHistory = state.historyBusy === 0;
+      state.cvatLink = {
+        online: data.extension_online, jobId: run.job_id, rev: data.reviews_rev,
+        historyRev: takeHistory ? (data.history_rev ?? null) : historyRev,
+      };
       if (changed) updateCvatButton();
       if (rev !== null && rev !== data.reviews_rev) await refreshReviewsFromServer(run);
+      const savedRun=data.manual_runs?.[run.run_id];
+      if(savedRun?.saved && savedRun.slug===state.currentSlug){run.findings.forEach(f=>{f.manualState='stale';});document.getElementById('detail-manual-status').textContent='Cần quét lại sau Save';}
+      const manual = data.manual_event;
+      if (manual && manual.slug === state.currentSlug && manual.run_id === run.run_id && manual.event_rev > state.manualRev) {
+        state.manualRev = manual.event_rev;
+        const target = run.findings.find(f => runFindingIndex(f) === manual.finding_index && isActionable(f));
+        if (target && manual.kind !== 'saved' && getFilteredFindings().includes(target)) {
+          state.currentDetail = target;
+          state.selectedFindingId = runFindingIndex(target);
+          state.selectedFindingIndex = getFilteredFindings().indexOf(target);
+          state.findingsPage = Math.floor(state.selectedFindingIndex / state.findingsPerPage) + 1;
+          renderFindingsTable(true); renderDetailDrawer(target); loadPreview(target); fetchFindingRepair(target,runFindingIndex(target));
+        }
+        if (manual.kind === 'saved' || target === state.currentDetail) {
+          const states={remaining:'Còn lỗi đang xét',cleared:'Hết lỗi đang xét — chưa Save',insufficient:'Thiếu bằng chứng',stale:'Cần quét lại sau Save'};
+          if(manual.kind==='saved')run.findings.forEach(f=>{f.manualState='stale';});
+          else if(target && !savedRun?.saved)target.manualState=manual.state;
+          document.getElementById('detail-manual-status').textContent=savedRun?.saved?'Cần quét lại sau Save':states[manual.state] || 'Đang sửa tay trong CVAT';
+        }
+      }
+      const ev = data.history_event;
+      if (takeHistory && historyRev !== null && data.history_rev !== historyRev && ev && ev.rev > historyRev) {
+        applyHistoryEvent(run, ev);
+      }
     } catch (_) {
       // PointSnap tạm không trả lời: giữ trạng thái cũ, lần sau hỏi lại.
     }
@@ -1071,12 +1166,64 @@
   function updateCvatButton() {
     const btn = document.getElementById('detail-btn-cvat-link');
     const status = document.getElementById('cvat-link-status');
-    if (state.cvatLink.online) {
-      btn.textContent = 'Chuyển CVAT tới box này';
+    const run = state.currentRun;
+    const online = !!(state.cvatLink.online && run && state.cvatLink.jobId === run.job_id);
+    if (online) {
+      btn.textContent = 'Chuyển CVAT tới box';
       status.innerHTML = '<span class="link-dot on"></span>CVAT đang mở job này: chọn mục ở đây thì CVAT tự chuyển theo, không tải lại trang.';
     } else {
-      btn.textContent = 'Mở trong CVAT để sửa';
-      status.innerHTML = '<span class="link-dot"></span>Cài extension PointSnap cho CVAT để chuyển box mà không tải lại job.';
+      btn.textContent = 'Mở trong CVAT';
+      status.innerHTML = '<span class="link-dot"></span>Mở job này trên CVAT (đã cài extension) để chuyển box mà không tải lại trang.';
+    }
+    const dot = document.getElementById('ext-status-dot');
+    const text = document.getElementById('ext-status-text');
+    const conn = document.getElementById('ext-conn-status');
+    if (dot) dot.className = online ? 'status-dot' : 'status-dot disconnected';
+    if (text) text.textContent = online ? `Extension · đang mở job #${run.job_id}` : 'Extension · chưa mở job';
+    if (conn) {
+      conn.innerHTML = online
+        ? `<span class="status-dot"></span>Extension đang mở job #${escapeHtml(run.job_id)} trên CVAT — đồng bộ 2 chiều đang chạy.`
+        : '<span class="status-dot disconnected"></span>Chưa thấy tab CVAT nào mở job của lần quét đang xem.';
+    }
+  }
+
+  /**
+   * Box vừa được sửa / hoàn tác ở phía khác (extension trong CVAT): cập nhật bảng, thẻ đề xuất sửa và nút Hoàn tác
+   * ngay, không cần F5. Sự kiện do chính web tạo ra (đã có trong historyStack) thì bỏ qua.
+   */
+  function applyHistoryEvent(run, ev) {
+    if (!ev || state.currentRun !== run || Number(ev.job_id) !== Number(run.job_id)) return;
+    const trackId = Number(ev.track_id);
+    const matches = (run.findings || []).filter((f) => Number(f.track_id) === trackId && Number(f.frame) === Number(ev.frame));
+    const idx = state.historyStack.findIndex((h) => h.history_id === ev.history_id);
+    if (ev.action === 'apply') {
+      if (idx >= 0) return;
+      if (matches.length) {
+        state.historyStack.push({
+          history_id: ev.history_id, job_id: run.job_id, track_id: trackId, frame: Number(ev.frame),
+          finding: matches[0], slug: ev.slug || state.currentSlug,
+        });
+        matches.forEach((f) => { state.appliedFindings.add(f); f.repaired = true; });
+      }
+      showToast(`Box track #${trackId} (frame ${ev.frame}) vừa được sửa từ CVAT — đã cập nhật tại đây.`, 'info', 5000);
+    } else if (ev.action === 'rollback') {
+      if (idx < 0 && !matches.some((f) => state.appliedFindings.has(f))) return;
+      if (idx >= 0) state.historyStack.splice(idx, 1);
+      matches.forEach((f) => { state.appliedFindings.delete(f); f.repaired = false; });
+      showToast(`Box track #${trackId} (frame ${ev.frame}) vừa được hoàn tác từ CVAT.`, 'info', 5000);
+    } else {
+      return;
+    }
+    renderFindingsTable(true);
+    const cur = state.currentDetail;
+    if (cur && Number(cur.track_id) === trackId) {
+      if (state.previewData) {
+        state.previewData.repairApplied = state.appliedFindings.has(cur);
+        drawPreviewViews(state.previewData);
+      }
+      renderDetailDrawer(cur);
+      if (state.currentRepair) updateRepairCard(cur, state.currentRepair);
+      fetchFindingRepair(cur, runFindingIndex(cur));
     }
   }
 
@@ -1131,6 +1278,7 @@
     const next = Math.min(Math.max(state.selectedFindingIndex + step, 0), filtered.length - 1);
     if (next === state.selectedFindingIndex) return;
     state.selectedFindingIndex = next;
+    state.selectedFindingId = runFindingIndex(filtered[next]);
     state.findingsPage = Math.floor(next / state.findingsPerPage) + 1;
     renderFindingsTable();
     const row = document.querySelector('#findings-table-body tr.selected');
@@ -1217,6 +1365,7 @@
     try {
       const data = await fetchPreview(index);
       if (state.currentDetail !== f) return;
+      if(data.frame!==f.frame || data.exact_frame===false)throw Error('Bản xem nhanh không đúng frame; mở CVAT để kiểm tra.');
       data.color = f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warn' : 'primary';
       state.previewData = data;
       drawPreviewViews(data);
@@ -1238,7 +1387,14 @@
       const nextF = getFilteredFindings()[state.selectedFindingIndex + 1];
       if (nextF) fetchPreview(runFindingIndex(nextF)).catch(() => {});
     } catch (err) {
-      if (state.currentDetail === f) status.textContent = err.message;
+      if (state.currentDetail === f) { status.textContent = 'Chưa có bản xem nhanh · '+err.message; drawPreviewUnavailable(err.message); }
+    }
+  }
+
+  function drawPreviewUnavailable(message) {
+    for(const id of ['preview-canvas-top','preview-canvas-side','preview-canvas-front']) {
+      const canvas=document.getElementById(id),ctx=canvas.getContext('2d');
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text-3');ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillText('Chưa có dữ liệu đúng frame',canvas.width/2,canvas.height/2);
     }
   }
 
@@ -1514,336 +1670,40 @@
 
   async function fetchFindingRepair(f, index) {
     state.currentRepair = null;
-    state.currentTrackEtag = null;
     const card = document.getElementById('detail-repair-card');
-    if (!card) return;
+    if (!card || !state.currentRun) return;
     card.style.display = 'flex';
-    document.getElementById('repair-apply-status').style.display = 'none';
-    document.getElementById('repair-reason-text').textContent = 'Đang tính toán đề xuất sửa tự động…';
+    const path = `/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/findings/${index}/guide`;
+    document.getElementById('repair-reason-text').textContent = 'Đang đọc hướng dẫn sửa tay…';
     try {
-      const res = await fetch(`/api/projects/${state.currentSlug}/scans/${state.currentRun.run_id}/findings/${index}/repair`);
+      const res = await fetch(path);
+      const guide = await res.json();
       if (state.currentDetail !== f) return;
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        updateRepairCard(f, null, err.detail || 'Không có đề xuất sửa cho box này');
-        return;
-      }
-      const data = await res.json();
-      if (state.currentDetail !== f) return;
-      state.currentRepair = data.repair;
-      state.currentTrackEtag = data.track_etag || null;
-      if (state.previewData) {
-        state.previewData.repair = data.repair;
-        state.previewData.repairApplied = state.appliedFindings.has(f);
-        drawPreviewViews(state.previewData);
-      }
-      updateRepairCard(f, data.repair);
-    } catch (err) {
-      if (state.currentDetail === f) {
-        updateRepairCard(f, null, err.message);
-      }
+      document.getElementById('repair-reason-text').textContent = res.ok
+        ? `${guide.instruction} Mở CVAT để thấy thước và tọa độ trực tiếp trên bốn góc nhìn.`
+        : 'Mở CVAT và sửa tay; chưa có đủ dữ liệu hướng dẫn cho mục này.';
+    } catch (_) {
+      if (state.currentDetail === f) document.getElementById('repair-reason-text').textContent = 'Chưa đọc được hướng dẫn; vẫn có thể sửa tay trong CVAT.';
     }
   }
 
-  function updateRepairCard(f, rep, errorMsg) {
+  function updateRepairCard() {
     const card = document.getElementById('detail-repair-card');
-    if (!card) return;
-    if (!rep) {
-      if (errorMsg) {
-        card.style.display = 'flex';
-        document.getElementById('repair-reason-text').textContent = errorMsg;
-        document.getElementById('btn-open-apply-repair').style.display = 'none';
-      } else {
-        card.style.display = 'none';
-      }
-      return;
-    }
-    card.style.display = 'flex';
-    const isApplied = state.appliedFindings.has(f);
-    const badge = document.getElementById('repair-confidence-badge');
-    const confPct = Math.round((rep.confidence ?? 0) * 100);
-    badge.textContent = `${confPct}% tin cậy`;
-    badge.className = `pill-badge ${confPct >= 80 ? 'success' : 'warning'}`;
-
-    const dz = rep.delta_center ? rep.delta_center[2] : 0;
-    const dyaw = rep.delta_yaw || 0;
-    const dd = rep.delta_dims || [0, 0, 0];
-    const dc = rep.delta_center || [0, 0, 0];
-
-    // Format metrics (F11.5)
-    const elDz = document.getElementById('repair-val-dz');
-    if (Math.abs(dz) > 0.001) {
-      const sign = dz > 0 ? '+' : '';
-      elDz.textContent = `${sign}${Math.round(dz * 100)} cm`;
-    } else {
-      elDz.textContent = '0 cm';
-    }
-
-    const elDyaw = document.getElementById('repair-val-dyaw');
-    if (Math.abs(dyaw) > 0.001) {
-      const deg = Math.round(dyaw * 180 / Math.PI);
-      const sign = deg > 0 ? '+' : '';
-      elDyaw.textContent = `${sign}${deg}°`;
-    } else {
-      elDyaw.textContent = '0°';
-    }
-
-    const elDims = document.getElementById('repair-val-ddims');
-    if (Math.abs(dd[0]) > 0.001 || Math.abs(dd[1]) > 0.001 || Math.abs(dd[2]) > 0.001) {
-      const fmt = (x) => (x > 0 ? `+${x.toFixed(2)}` : x.toFixed(2));
-      elDims.textContent = `[${fmt(dd[0])}, ${fmt(dd[1])}, ${fmt(dd[2])}]`;
-    } else {
-      elDims.textContent = '0 m';
-    }
-
-    const elDxy = document.getElementById('repair-val-dxy');
-    if (Math.abs(dc[0]) > 0.001 || Math.abs(dc[1]) > 0.001) {
-      elDxy.textContent = `[${dc[0].toFixed(2)}, ${dc[1].toFixed(2)}]`;
-    } else {
-      elDxy.textContent = '0 m';
-    }
-
-    let reason = rep.reason || 'Đề xuất hiệu chỉnh hình học từ PointSnap 3D.';
-    const prediction = rep.heading_prediction;
-    if (prediction?.moving && prediction.frames_used?.length >= 2) {
-      const heading = Math.round(prediction.heading_world_rad * 180 / Math.PI);
-      reason += ` Hướng chuyển động ước lượng: ${heading}° trong hệ toàn cục, từ ${prediction.frames_used.length} frame gần nhất.`;
-    }
-    document.getElementById('repair-reason-text').textContent = reason;
-
-    const applyBtn = document.getElementById('btn-open-apply-repair');
-    const rollbackBtn = document.getElementById('btn-rollback-repair');
-    const statusEl = document.getElementById('repair-apply-status');
-
-    if (isApplied) {
-      applyBtn.style.display = 'none';
-      rollbackBtn.style.display = 'inline-flex';
-      statusEl.style.display = 'block';
-      statusEl.className = 'repair-apply-status success';
-      statusEl.textContent = 'Đã ghi và đọc lại xác nhận trên CVAT. Tải lại tab CVAT để thấy box mới; quét lại để kiểm tra lỗi.';
-    } else {
-      applyBtn.style.display = 'inline-flex';
-      const hasChange = [...dc, ...dd, dyaw].some(v => Number.isFinite(v) && Math.abs(v) > 0.000001);
-      applyBtn.disabled = rep.applicable === false || !hasChange || !(rep.confidence > 0);
-      rollbackBtn.style.display = state.historyStack.length > 0 ? 'inline-flex' : 'none';
-      statusEl.style.display = 'none';
-    }
-  }
-
-  function openApplyRepairModal() {
-    const now = Date.now();
-    if (now - state.lastApplyClickTime < 500) return; // Debounce 500ms (test_f12_05)
-    state.lastApplyClickTime = now;
-
-    if (state.isApplyingRepair) return; // Concurrency lock (test_f12_b01)
-    const f = state.currentDetail;
-    const rep = state.currentRepair;
-    if (!f || !rep || rep.applicable === false || !(rep.confidence > 0)) return;
-
-    const tbody = document.getElementById('modal-repair-table-body');
-    tbody.innerHTML = '';
-
-    const dz = rep.delta_center ? rep.delta_center[2] : 0;
-    const dyaw = rep.delta_yaw || 0;
-    const dd = rep.delta_dims || [0, 0, 0];
-
-    const box = state.previewData?.box || { length: 0, width: 0, height: 0 };
-    const original = rep.original_cuboid;
-    const L = original?.dims?.[0] ?? box.length ?? 0;
-    const W = original?.dims?.[1] ?? box.width ?? 0;
-    const H = original?.dims?.[2] ?? box.height ?? 0;
-    const z = original?.center?.[2];
-    const yaw = original?.yaw;
-
-    const rows = [
-      {
-        param: 'Tâm box (z)',
-        orig: z === undefined ? '—' : `${z.toFixed(2)} m`,
-        delta: Math.abs(dz) > 0.001 ? `${dz > 0 ? '+' : ''}${(dz * 100).toFixed(1)} cm` : '0 cm',
-        proposed: z === undefined ? '—' : `${(z + dz).toFixed(2)} m`,
-      },
-      {
-        param: 'Góc xoay (yaw)',
-        orig: yaw === undefined ? '—' : `${(yaw * 180 / Math.PI).toFixed(1)}°`,
-        delta: Math.abs(dyaw) > 0.001 ? `${dyaw > 0 ? '+' : ''}${(dyaw * 180 / Math.PI).toFixed(0)}°` : '0°',
-        proposed: yaw === undefined ? '—' : `${(rep.repaired_cuboid.yaw * 180 / Math.PI).toFixed(1)}°`,
-      },
-      {
-        param: 'Kích thước (l, w, h)',
-        orig: `[${L.toFixed(2)}, ${W.toFixed(2)}, ${H.toFixed(2)}] m`,
-        delta: `[${dd[0] > 0 ? '+' : ''}${dd[0].toFixed(2)}, ${dd[1] > 0 ? '+' : ''}${dd[1].toFixed(2)}, ${dd[2] > 0 ? '+' : ''}${dd[2].toFixed(2)}] m`,
-        proposed: `[${(L + dd[0]).toFixed(2)}, ${(W + dd[1]).toFixed(2)}, ${(H + dd[2]).toFixed(2)}] m`,
-      },
-    ];
-
-    rows.forEach((r) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="font-weight: 500;">${escapeHtml(r.param)}</td>
-        <td>${escapeHtml(r.orig)}</td>
-        <td style="color: var(--primary); font-weight: 600;">${escapeHtml(r.delta)}</td>
-        <td style="color: var(--success); font-weight: 600;">${escapeHtml(r.proposed)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById('modal-repair-reason').textContent = rep.reason || 'Đề xuất hiệu chỉnh hình học từ PointSnap 3D.';
-    openModal('modal-confirm-repair');
-  }
-
-  async function handleConfirmApplyRepair() {
-    if (state.isApplyingRepair) return;
-    const f = state.currentDetail;
-    const rep = state.currentRepair;
-    if (!f || !rep || !state.currentRun) return;
-
-    const confirmBtn = document.getElementById('btn-modal-repair-confirm');
-    setButtonBusy(confirmBtn, 'Đang áp dụng…');
-    state.isApplyingRepair = true;
-
-    const jobId = Number(state.currentRun.job_id);
-    const trackId = Number(f.track_id);
-    const appliedSlug = state.currentSlug;
-    const payload = {
-      frame: Number(f.frame),
-      repair: rep,
-      client_track_etag: state.currentTrackEtag || undefined,
-      slug: appliedSlug,
-    };
-
-    try {
-      const res = await fetch(`/api/jobs/${jobId}/tracks/${trackId}/apply-repair`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      setButtonIdle(confirmBtn);
-      state.isApplyingRepair = false;
-
-      if (res.status === 409) {
-        closeModal('modal-confirm-repair');
-        showToast('Xung đột phiên bản (OCC Conflict): Dữ liệu nhãn trên CVAT đã bị thay đổi bởi người khác. Vui lòng quét lại job!', 'error', 5000);
-        return;
-      }
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        closeModal('modal-confirm-repair');
-        showToast(err.detail || 'Lỗi khi áp dụng sửa box lên CVAT.', 'error');
-        return;
-      }
-
-      const result = await res.json();
-      if (result.sync_status !== 'verified') throw new Error('Máy chủ chưa xác nhận đồng bộ CVAT');
-      closeModal('modal-confirm-repair');
-
-      state.historyStack.push({
-        history_id: result.history_id,
-        job_id: jobId,
-        track_id: trackId,
-        frame: Number(f.frame),
-        finding: f,
-        slug: appliedSlug,
-      });
-      state.appliedFindings.add(f);
-
-      // Cập nhật trạng thái badge của finding sang PASS (ĐÃ SỬA) (test_f12_04)
-      const badge = document.getElementById('detail-sev-badge');
-      if (badge && state.currentDetail === f) {
-        badge.className = 'pill-badge success';
-        badge.textContent = 'ĐÃ GHI CVAT';
-      }
-      f.repaired = true;
-      if (state.currentDetail === f) state.currentTrackEtag = result.track_etag;
-      renderFindingsTable(true);
-
-      if (state.previewData && state.currentDetail === f) {
-        state.previewData.repairApplied = true;
-        drawPreviewViews(state.previewData);
-      }
-      if (state.currentDetail === f) updateRepairCard(f, rep);
-
-      showToast('Đã xác nhận box mới trên CVAT. Tải lại tab CVAT và quét lại để kiểm tra.', 'success', 6000);
-    } catch (err) {
-      setButtonIdle(confirmBtn);
-      state.isApplyingRepair = false;
-      closeModal('modal-confirm-repair');
-      showToast(`Lỗi kết nối máy chủ: ${err.message}`, 'error');
-    }
-  }
-
-  async function handleRollbackRepair() {
-    if (state.isApplyingRepair) return;
-    if (state.historyStack.length === 0) {
-      showToast('Không có lịch sử sửa để hoàn tác.', 'info');
-      return;
-    }
-    const item = state.historyStack[state.historyStack.length - 1];
-    if (!item || !item.slug) return;
-
-    const rollbackBtn = document.getElementById('btn-rollback-repair');
-    state.isApplyingRepair = true;
-    setButtonBusy(rollbackBtn, 'Đang hoàn tác…');
-
-    try {
-      const res = await fetch(`/api/jobs/${item.job_id}/tracks/${item.track_id}/rollback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          history_id: item.history_id,
-          slug: item.slug,
-        }),
-      });
-
-      setButtonIdle(rollbackBtn);
-      state.isApplyingRepair = false;
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.detail || 'Lỗi khi hoàn tác box trên CVAT.', 'error');
-        return;
-      }
-
-      const result = await res.json();
-      if (result.sync_status !== 'verified') throw new Error('Máy chủ chưa xác nhận hoàn tác trên CVAT');
-      state.historyStack.pop();
-      state.currentTrackEtag = result.track_etag;
-      state.appliedFindings.delete(item.finding);
-      if (item.finding) item.finding.repaired = false;
-
-      if (state.currentDetail === item.finding) {
-        const sevClass = item.finding.severity === 'error' ? 'error' : item.finding.severity === 'warning' ? 'warning' : 'info';
-        const sevLabel = item.finding.severity_label || (item.finding.severity === 'error' ? 'Lỗi' : item.finding.severity === 'warning' ? 'Cảnh báo' : 'Thông tin');
-        const badge = document.getElementById('detail-sev-badge');
-        if (badge) {
-          badge.className = `pill-badge ${sevClass}`;
-          badge.textContent = sevLabel;
-        }
-        if (state.previewData) {
-          state.previewData.repairApplied = false;
-          drawPreviewViews(state.previewData);
-        }
-        updateRepairCard(item.finding, state.currentRepair);
-      }
-
-      renderFindingsTable();
-      showToast('Đã xác nhận hoàn tác trên CVAT. Tải lại tab CVAT để thấy box cũ.', 'success', 6000);
-    } catch (err) {
-      setButtonIdle(rollbackBtn);
-      state.isApplyingRepair = false;
-      showToast(`Lỗi kết nối máy chủ: ${err.message}`, 'error');
-    }
+    if (card) card.style.display = 'flex';
   }
 
   function renderDetailDrawer(f) {
     if (!f) return;
+    state.selectedFindingId = runFindingIndex(f);
     if (state.currentDetail !== f) {
       state.currentDetail = f;
       loadPreview(f);
+      fetchFindingRepair(f, runFindingIndex(f));
       syncCvatSelection(f);
     }
     updateReviewPanel(f);
+    const states={remaining:'Còn lỗi đang xét',cleared:'Hết lỗi đang xét — chưa Save',insufficient:'Thiếu bằng chứng',stale:'Cần quét lại sau Save'};
+    document.getElementById('detail-manual-status').textContent=states[f.manualState] || '';
     const isRepaired = state.appliedFindings.has(f);
     const sevClass = isRepaired ? 'success' : (f.severity === 'error' ? 'error' : f.severity === 'warning' ? 'warning' : 'info');
     const sevLabel = isRepaired ? 'ĐÃ GHI CVAT' : (f.severity_label || (f.severity === 'error' ? 'Lỗi' : f.severity === 'warning' ? 'Cảnh báo' : 'Thông tin'));
@@ -1990,7 +1850,10 @@
     try {
       const res = await fetch(`/api/projects/${scope.slug}/cvat/tasks`);
       if (!scope.current()) return;
-      if (!res.ok) throw new Error('Không thể lấy danh sách Task');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Không tải được task từ CVAT: ${errorDetail(err.detail, `lỗi ${res.status}`)}. Kiểm tra mục Kết nối CVAT.`);
+      }
       const data = await res.json();
       if (!scope.current()) return;
       state.tasksList = data.tasks || [];
@@ -2010,7 +1873,7 @@
       }
     } catch (err) {
       if (!scope.current()) return;
-      taskSelect.innerHTML = '<option value="">Không tải được Task (kiểm tra kết nối)</option>';
+      taskSelect.innerHTML = '<option value="">Không tải được task — nhập id job bên dưới</option>';
       showToast(err.message, 'error');
     } finally {
       setButtonIdle(refreshBtn);
@@ -2216,12 +2079,12 @@
     if (dirty) {
       bar.classList.add('dirty');
       note.textContent = 'Có thay đổi chưa lưu';
-      note.style.color = 'var(--primary-text)';
     } else {
       bar.classList.remove('dirty');
       note.textContent = 'Guideline hợp lệ · đã lưu';
-      note.style.color = 'var(--text-2)';
     }
+    const save = document.getElementById('btn-save-guideline');
+    if (save) save.disabled = !dirty;
   }
 
   function setGuidelineMode(mode) {
@@ -2236,18 +2099,101 @@
     const btnForm = document.getElementById('btn-mode-form');
     const btnYaml = document.getElementById('btn-mode-yaml');
 
-    if (mode === 'form') {
-      formView.style.display = 'flex';
-      yamlView.style.display = 'none';
-      btnForm.className = 'btn btn-sm btn-primary';
-      btnYaml.className = 'btn btn-sm btn-outline';
-      btnYaml.style.border = '0';
-    } else {
-      formView.style.display = 'none';
-      yamlView.style.display = 'block';
-      btnForm.className = 'btn btn-sm btn-outline';
-      btnForm.style.border = '0';
-      btnYaml.className = 'btn btn-sm btn-primary';
+    formView.style.display = mode === 'form' ? 'flex' : 'none';
+    yamlView.style.display = mode === 'form' ? 'none' : 'block';
+    btnForm.setAttribute('aria-pressed', mode === 'form' ? 'true' : 'false');
+    btnYaml.setAttribute('aria-pressed', mode === 'form' ? 'false' : 'true');
+  }
+
+  // --- Công tắc luật theo nhóm ---
+  function renderRuleToggles() {
+    const container = document.getElementById('rules-toggles-container');
+    if (!container) return;
+    container.innerHTML = RULE_GROUPS.map((g) => `
+      <div class="rule-group" data-group="${g.key}">
+        <div class="rule-group-head">
+          <span class="rule-group-title">${escapeHtml(g.title)}</span>
+          <span class="rule-group-count" id="rule-group-count-${g.key}"></span>
+          <button type="button" class="btn btn-ghost btn-xs" data-group-toggle="${g.key}">Bật / tắt cả nhóm</button>
+        </div>
+        ${g.rules.map(([id, name, desc, need]) => {
+          const dom = id.replace(/_/g, '-');
+          return `<div class="rule-row" data-search="${escapeHtml(`${name} ${desc} ${id}`.toLowerCase())}">
+            <div class="rule-text">
+              <div class="rule-name" title="Mã luật: ${id}">${escapeHtml(name)}${need ? ` <span class="rule-need">${escapeHtml(need)}</span>` : ''}</div>
+              <div class="rule-desc">${escapeHtml(desc)}</div>
+            </div>
+            <span id="label-rule-${dom}" class="rule-state">Bật</span>
+            <button type="button" role="switch" aria-checked="true" aria-label="${escapeHtml(name)}" id="rule-${dom}" class="switch-btn"><span class="switch-thumb"></span></button>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+  }
+
+  function setRuleSwitch(domId, on) {
+    const sw = document.getElementById(domId);
+    if (!sw) return;
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    const label = document.getElementById(`label-${domId}`);
+    if (label) label.textContent = on ? 'Bật' : 'Tắt';
+  }
+
+  function updateRuleCounts() {
+    let total = 0, on = 0;
+    RULE_GROUPS.forEach((g) => {
+      const n = g.rules.filter(([id]) => document.getElementById(`rule-${id.replace(/_/g, '-')}`)?.getAttribute('aria-checked') === 'true').length;
+      total += g.rules.length;
+      on += n;
+      const el = document.getElementById(`rule-group-count-${g.key}`);
+      if (el) el.textContent = `${n}/${g.rules.length} bật`;
+    });
+    const all = document.getElementById('rules-enabled-count');
+    if (all) all.textContent = `${on}/${total} đang bật`;
+    return on;
+  }
+
+  function filterRuleRows(query) {
+    const q = String(query || '').toLowerCase().trim();
+    document.querySelectorAll('#rules-toggles-container .rule-group').forEach((group) => {
+      let visible = 0;
+      group.querySelectorAll('.rule-row').forEach((row) => {
+        const show = !q || (row.dataset.search || '').includes(q);
+        row.hidden = !show;
+        if (show) visible += 1;
+      });
+      group.hidden = visible === 0;
+    });
+  }
+
+  function isTypingTarget(target) {
+    if (!target) return false;
+    const tag = (target.tagName || '').toLowerCase();
+    return ['input', 'textarea', 'select'].includes(tag) || !!target.isContentEditable;
+  }
+
+  /** Tab Quét: số luật đang bật theo guideline của dự án (đọc riêng, không đụng bản đang sửa ở tab Guideline). */
+  async function updateScanGuidelineSummary() {
+    const scope = projectScope();
+    const el = document.getElementById('scan-guideline-summary');
+    if (!el || !scope.slug) return;
+    try {
+      let cfg = state.currentGuideline;
+      if (!cfg) {
+        const res = await fetch(`/api/projects/${scope.slug}/guideline`);
+        if (!res.ok) return;
+        cfg = (await res.json()).config || {};
+      }
+      if (!scope.current()) return;
+      const rules = cfg.rules || {};
+      const ids = RULE_GROUPS.flatMap((g) => g.rules.map(([id]) => id));
+      const health = await window.PointSnapWorkspace.check(scope.slug);
+      if (!scope.current()) return;
+      const on = health?.rules_count ?? ids.filter((id) => rules[id] !== false).length;
+      el.textContent = `Guideline của dự án · ${on}/${ids.length} luật đang bật`;
+      const step = document.getElementById('step-label-3');
+      if (step) step.textContent = `Chạy ${on} luật đang bật`;
+    } catch (_) {
+      // Không đọc được guideline: giữ chữ mặc định.
     }
   }
 
@@ -2300,6 +2246,7 @@
     // 4. Size classes table
     const ranges = cfg.size?.manual_ranges || {};
     renderSizeClassesTable(ranges);
+    updateRuleCounts();
   }
 
   function renderSizeClassesTable(ranges) {
@@ -2312,19 +2259,20 @@
       return;
     }
 
+    const pair = (dim, bounds) => {
+      const [lo, hi] = Array.isArray(bounds) ? bounds : ['', ''];
+      const input = (i, v, label) => `<input type="number" step="0.1" min="0" class="form-input mono size-input" data-dim="${dim}" data-i="${i}" value="${escapeHtml(v)}" aria-label="${label}">`;
+      return `<div class="range-pair">${input(0, lo, `${dim} min`)}<span>–</span>${input(1, hi, `${dim} max`)}</div>`;
+    };
     entries.forEach(([cls, bounds]) => {
       const tr = document.createElement('tr');
-      const lStr = bounds.length ? `${bounds.length[0]} – ${bounds.length[1]}` : '—';
-      const wStr = bounds.width ? `${bounds.width[0]} – ${bounds.width[1]}` : '—';
-      const hStr = bounds.height ? `${bounds.height[0]} – ${bounds.height[1]}` : '—';
-
       tr.innerHTML = `
-        <td class="mono" style="padding-left: 20px;">${escapeHtml(cls)}</td>
-        <td class="mono">${escapeHtml(lStr)}</td>
-        <td class="mono">${escapeHtml(wStr)}</td>
-        <td class="mono">${escapeHtml(hStr)}</td>
-        <td style="text-align: right; padding-right: 20px;">
-          <button class="btn btn-outline btn-sm btn-delete-class" data-cls="${escapeHtml(cls)}" style="color: var(--error);">Xóa</button>
+        <td class="mono cls-name">${escapeHtml(cls)}</td>
+        <td>${pair('length', bounds.length)}</td>
+        <td>${pair('width', bounds.width)}</td>
+        <td>${pair('height', bounds.height)}</td>
+        <td class="col-actions">
+          <button class="btn btn-ghost btn-sm btn-delete-class danger-text" data-cls="${escapeHtml(cls)}" aria-label="Xóa class ${escapeHtml(cls)}">Xóa</button>
         </td>
       `;
 
@@ -2333,15 +2281,56 @@
         renderSizeClassesTable(ranges);
         setGuidelineDirty(true);
       });
+      tr.querySelectorAll('.size-input').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          const dim = inp.dataset.dim;
+          const current = Array.isArray(ranges[cls][dim]) ? ranges[cls][dim] : [0, 0];
+          const next = [...current];
+          next[Number(inp.dataset.i)] = inp.value === '' ? '' : Number(inp.value);
+          ranges[cls][dim] = next;
+          setGuidelineDirty(true);
+        });
+      });
 
       tbody.appendChild(tr);
     });
   }
 
+  /** Kiểm tra form trước khi lưu: trả về câu báo lỗi đầu tiên, hoặc '' nếu hợp lệ. */
+  function validateGuidelineForm(fl, ranges) {
+    const nums = Object.values(fl);
+    if (nums.some((v) => !Number.isFinite(v) || v < 0)) return 'Ngưỡng lơ lửng / lún phải là số không âm.';
+    if (fl.error_m <= fl.warning_m) return 'Ngưỡng Lỗi lơ lửng / lún phải lớn hơn ngưỡng Cảnh báo.';
+    if (fl.single_error_m <= fl.single_warning_m) return 'Ngưỡng Lỗi box lẻ phải lớn hơn ngưỡng Cảnh báo box lẻ.';
+    for (const [cls, bounds] of Object.entries(ranges || {})) {
+      for (const dim of ['length', 'width', 'height']) {
+        const b = bounds[dim];
+        if (!b) continue;
+        const [lo, hi] = b.map(Number);
+        if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo <= 0 || hi <= 0) return `Kích thước của class ${cls} phải là số dương.`;
+        if (lo > hi) return `Class ${cls}: giá trị min lớn hơn max.`;
+      }
+    }
+    return '';
+  }
+
   function handleAddSizeClass() {
-    const clsName = prompt('Nhập tên class mới (ví dụ: bus, trailer, van):');
-    if (!clsName || !clsName.trim()) return;
-    const clean = clsName.trim().toLowerCase();
+    const input = document.getElementById('new-size-class-name');
+    const clean = String(input.value || '').trim().toLowerCase();
+    if (!clean) {
+      showToast('Nhập tên class trước khi thêm (ví dụ: trailer).', 'info');
+      input.focus();
+      return;
+    }
+    if (!/^[a-z0-9_.\-]+$/.test(clean)) {
+      showToast('Tên class chỉ gồm chữ thường không dấu, số, dấu _ . -', 'error');
+      return;
+    }
+    if (state.currentGuideline?.size?.manual_ranges?.[clean]) {
+      showToast(`Class ${clean} đã có trong bảng.`, 'info');
+      return;
+    }
+    input.value = '';
 
     if (!state.currentGuideline) state.currentGuideline = {};
     if (!state.currentGuideline.size) state.currentGuideline.size = {};
@@ -2386,9 +2375,12 @@
         payload = { yaml: document.getElementById('guideline-yaml-textarea').value };
       } else {
         // Thu thập dữ liệu từ Form
-        const rules = Object.fromEntries(RULE_IDS.map((id) => [
-          id, document.getElementById(`rule-${id.replace(/_/g, '-')}`).getAttribute('aria-checked') === 'true',
-        ]));
+        const rules = { ...state.currentGuideline.rules };
+        RULE_GROUPS.flatMap(g=>g.rules).forEach(([id])=>{
+          const control=document.getElementById(`rule-${id.replace(/_/g,'-')}`);
+          if(control)rules[id]=control.getAttribute('aria-checked')==='true';
+        });
+        TRACK_RULE_IDS.forEach(id=>{rules[id]=false;});
 
         const gate = {
           max_errors: parseInt(document.getElementById('gate-max-errors').value, 10) || 0,
@@ -2403,6 +2395,11 @@
         };
 
         const currentManual = state.currentGuideline?.size?.manual_ranges || {};
+        const invalid = validateGuidelineForm(fl, currentManual);
+        if (invalid) {
+          showToast(invalid, 'error', 5000);
+          return;
+        }
         const configObj = {
           ...(state.currentGuideline || {}),
           rules,
@@ -2430,13 +2427,15 @@
 
       if (!scope.current()) return;
       setGuidelineDirty(false);
-      showToast('Đã lưu cấu hình Guideline thành công', 'success');
+      await window.PointSnapWorkspace.check(scope.slug);
+      showToast('Đã lưu Guideline — áp dụng từ lần quét sau.', 'success');
       await loadGuideline();
+      updateScanGuidelineSummary();
     } catch (err) {
       if (!scope.current()) return;
       showToast(err.message, 'error');
     } finally {
-      btn.disabled = false;
+      btn.disabled = !state.guidelineDirty;
     }
   }
 
@@ -2703,7 +2702,7 @@
       timeText.setAttribute('font-size', '11');
       timeText.setAttribute('font-family', 'IBM Plex Mono, monospace');
       const dStr = sum.timestamp || r.started_at;
-      timeText.textContent = dStr ? formatShortDate(dStr) : `#${idx + 1}`;
+      timeText.textContent = dStr ? formatDateTime(dStr) : `#${idx + 1}`;
       svg.appendChild(timeText);
     });
   }
@@ -2719,19 +2718,6 @@
       const DD = String(d.getDate()).padStart(2, '0');
       const MM = String(d.getMonth() + 1).padStart(2, '0');
       return `${hh}:${mm}, ${DD}/${MM}`;
-    } catch (_) {
-      return iso;
-    }
-  }
-
-  function formatShortDate(iso) {
-    if (!iso) return '—';
-    try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return iso;
-      const DD = String(d.getDate()).padStart(2, '0');
-      const MM = String(d.getMonth() + 1).padStart(2, '0');
-      return `${DD}/${MM}`;
     } catch (_) {
       return iso;
     }

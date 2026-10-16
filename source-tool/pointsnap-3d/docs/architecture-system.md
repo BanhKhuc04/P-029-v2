@@ -49,6 +49,17 @@ CVAT giữ annotation; PointSnap giữ cấu hình, snapshot và báo cáo trên
 
 `ScanRunner` dùng `ThreadPoolExecutor`, mặc định một worker và tối đa 16 tác vụ đang chạy/chờ. Đây là hàng đợi trong tiến trình; trạng thái được ghi vào file, chưa phải hệ thống worker phân tán. Core vẫn nhập `JobData` từ adapter CVAT nên chưa độc lập hoàn toàn với adapter.
 
+### Cập nhật 15/10/2026: landing, `/app` và đồng bộ sửa box
+
+- `GET /` phục vụ landing page của đội (`landing/`, offline: font ở `/static/fonts/`, Three.js trong `landing/vendor/`);
+  ứng dụng web chuyển sang `GET /app`. Bản cài từ wheel không có `landing/` thì dùng trang dự phòng `static/landing.html`.
+- Đồng bộ web ⟷ extension qua `ExtensionLink` trong bộ nhớ: `focus` (web chọn mục → CVAT chuyển frame),
+  `reviews_rev` (kết luận Đúng / Báo nhầm), và mới: `history_rev` + `history_event` (lần áp dụng / hoàn tác sửa box mới
+  nhất của job, kèm `history_id`). `apply-repair` và `rollback` tăng `history_rev`; `/api/extension/status` (web) và
+  `/api/extension/poll` (extension) trả về để bên kia cập nhật nút Hoàn tác và trạng thái box không cần F5.
+- Extension lấy đề xuất sửa qua `/api/projects/{slug}/scans/{run}/findings/{i}/repair` (cùng bằng chứng với web) khi cờ
+  khớp một mục của lần quét; service worker chỉ cho đọc mục thuộc đúng job và CVAT đang mở.
+
 ## Luồng quét và duyệt
 
 ```mermaid

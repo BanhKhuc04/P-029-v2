@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PointSnap 3D</title>
+  <meta name="description" content="PointSnap đối chiếu từng box với point cloud LiDAR, track, ảnh camera và spec gán nhãn — rồi gắn cờ thẳng lên box lỗi trong CVAT.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <!-- Font và Three.js nằm sẵn trên máy (IBM Plex của giao diện PointSnap, three r160 trong vendor/): trang chạy cả khi không có mạng. -->
+  <link rel="stylesheet" href="/static/fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Chọn theme trước khi vẽ trang để không bị nháy màu.
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('pointsnap_theme') || localStorage.getItem('pointsnap-theme'); } catch (e) {}
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <script type="importmap">
+    { "imports": {
+        "three": "/vendor/three/three.module.min.js",
+        "three/addons/": "/vendor/three/addons/"
+    } }
+  </script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="logo" viewBox="0 0 48 48" fill="none">
+      <path class="logo-ground" d="M3 38 H16 M32 38 H45" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+      <path class="logo-cube" d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle class="logo-dot" cx="24" cy="38" r="4.5" fill="#4C9AFF"/>
+    </symbol>
+    <symbol id="cube" viewBox="0 0 48 48" fill="none">
+      <path d="M24 6 L38 14 L24 22 L10 14 Z M10 14 V30 L24 38 L38 30 V14 M24 22 V38" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="24" cy="38" r="5" fill="#4C9AFF"/>
+    </symbol>
+  </svg>
+
+  <div class="cursor-glow" aria-hidden="true"></div>
+
+  <!-- ========== NAVBAR ========== -->
+  <header class="nav" id="top">
+    <div class="nav__inner container">
+      <a class="brand" href="#top" aria-label="PointSnap 3D">
+        <svg class="brand__mark draw-logo" width="32" height="32"><use href="#logo"/></svg>
+        <span class="brand__word">PointSnap <b>3D</b></span>
+      </a>
+      <nav class="nav__links" aria-label="Điều hướng chính">
+        <a href="#tinh-nang">Tính năng</a>
+        <a href="#cach-hoat-dong">Cách hoạt động</a>
+        <a href="#ket-qua">Kết quả</a>
+        <a href="#doi-ngu">Đội ngũ</a>
+        <a href="#bat-dau">Bắt đầu</a>
+      </nav>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" type="button" role="switch" aria-label="Chuyển giao diện sáng / tối">
+          <span class="theme-toggle__stars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="theme-toggle__clouds" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="theme-toggle__knob" aria-hidden="true"><i></i><i></i><i></i></span>
+        </button>
+        <a class="btn btn--primary btn--sm magnetic" href="/app" data-app-link>Mở PointSnap <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+      <div class="hero__grid" aria-hidden="true"></div>
+      <div class="container hero__inner">
+        <div class="hero__copy reveal">
+          <span class="pill" id="serverPill"><i class="dot dot--ok"></i><span>MỚI · Box Verifier — AI tự huấn luyện</span></span>
+          <h1>Bắt lỗi nhãn 3D<br><span class="grad">trước khi bị trả về.</span></h1>
+          <p class="lead">PointSnap đối chiếu từng box với point cloud LiDAR, track, ảnh camera và spec gán nhãn — rồi gắn cờ thẳng lên box lỗi trong CVAT.</p>
+          <div class="cta-row">
+            <a class="btn btn--primary magnetic" href="/app" data-app-link>Mở PointSnap <span aria-hidden="true">→</span></a>
+            <a class="btn btn--ghost magnetic" href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/tree/main/source-tool/pointsnap-3d" target="_blank" rel="noopener"><span aria-hidden="true">★</span> Xem trên GitHub</a>
+          </div>
+          <p class="enter-hint" id="enterHint" hidden>Nhấn <kbd>Enter</kbd> để vào ứng dụng.</p>
+          <div class="badges">
+            <span class="badge">Python 3.11</span><span class="badge">CVAT 2.77</span><span class="badge">nuScenes</span><span class="badge">Chrome / Edge</span>
+          </div>
+          <div class="proof">
+            <div><b data-count="100" data-suffix="%">100%</b><span>bắt sai class</span></div>
+            <div><b data-count="30" data-suffix="/30">30/30</b><span>lỗi lớn đúng mức</span></div>
+            <div><b>7–20s</b><span>quét một cảnh</span></div>
+          </div>
+        </div>
+
+        <div class="scene reveal" id="lidarScene">
+          <canvas aria-label="Point cloud LiDAR 3D, kéo để xoay"></canvas>
+          <div class="scene__hud">
+            <span><i class="dot dot--ok"></i>LIDAR_TOP · scene-0103 · frame 23 / 40</span>
+            <span class="scene__time">scan 7.4 s</span>
+          </div>
+          <div class="scene__tag" id="errTag">
+            <i class="dot dot--err"></i>
+            <div><small>LỖI · floating</small><strong>Lơ lửng 26 cm</strong></div>
+          </div>
+          <div class="scene__legend">
+            <span class="lg lg--err"><i></i>Lỗi <b id="lgErr">1</b></span>
+            <span class="lg lg--warn"><i></i>Cảnh báo <b>0</b></span>
+            <span class="lg lg--ok"><i></i>Đạt <b id="lgOk">4</b></span>
+          </div>
+          <a class="scene__fix" id="fixBtn" href="#cach-dung">Xem cách sửa tay →</a>
+          <span class="scene__hint">⟲ Kéo để xoay 360°</span>
+          <i class="scene__bracket" aria-hidden="true"></i>
+        </div>
+
+        <div class="float-card float-card--flag" aria-hidden="true">
+          <code>pointsnap_error</code>
+          <strong>Đáy box cách mặt đất 26 cm</strong>
+          <span>→ Hạ box xuống điểm tiếp đất</span>
+        </div>
+        <div class="float-card float-card--gate" id="gateCard" aria-hidden="true">
+          <span class="gate-icon">!</span>
+          <div><small>Cổng kiểm tra</small><strong id="gateText">KHÔNG ĐẠT · còn 1 lỗi</strong></div>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#marquee">Cuộn để khám phá ↓</a>
+    </section>
+
+    <!-- ========== MARQUEE ========== -->
+    <section class="marquee" id="marquee" aria-label="Các luật kiểm tra và công nghệ">
+      <div class="marquee__row marquee__row--rules"><div class="marquee__track" id="rulesTrack"></div></div>
+      <div class="marquee__row marquee__row--logos"><div class="marquee__track marquee__track--reverse" id="logosTrack"></div></div>
+    </section>
+
+    <!-- ========== AUTOMOTIVE ========== -->
+    <section class="auto" aria-labelledby="autoTitle">
+      <div class="container auto__inner">
+        <div class="vf8 reveal" id="vf8Scene">
+          <canvas aria-label="Mô hình point cloud VF8 xoay 360°, kéo để xoay"></canvas>
+          <span class="vf8__label"><i class="dot dot--ok"></i>VF8 · 4.75 × 1.93 × 1.67 m · car · OK</span>
+          <span class="vf8__hint">⟲ 360° · kéo để xoay</span>
+        </div>
+        <div class="auto__copy reveal">
+          <p class="eyebrow eyebrow--light">SINH RA CHO XE TỰ LÁI</p>
+          <h2 id="autoTitle">Dữ liệu sạch là nền móng của mọi chiếc xe tự lái.</h2>
+          <p class="lead lead--light">Mỗi box sai trong tập huấn luyện là một lần mô hình nhìn nhầm ngoài đường. PointSnap giúp đội gán nhãn bắt lỗi ngay khi còn trên CVAT — trước khi dữ liệu vào huấn luyện.</p>
+          <ul class="spec-list">
+            <li><b>~40</b>keyframe mỗi cảnh LiDAR</li>
+            <li><b>7–20 s</b>cho một lần quét toàn cảnh</li>
+            <li><b>5 440</b>box trên 5 cảnh kiểm tra</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURES ========== -->
+    <section class="section" id="tinh-nang">
+      <div class="container">
+        <header class="sec-head reveal">
+          <p class="eyebrow">TÍNH NĂNG</p>
+          <h2>Tìm đúng lỗi. Sửa trực tiếp trong CVAT.</h2>
+          <p class="lead">Mỗi luật đo bằng hình học trên point cloud, track và ảnh camera — có ngưỡng, có bằng chứng, chỉnh được theo guideline của từng dự án.</p>
+        </header>
+        <div class="bento" id="bento"></div>
+      </div>
+    </section>
+
+    <!-- ========== HOW IT WORKS ========== -->
+    <section class="section section--alt" id="cach-hoat-dong">
+      <div class="container">
+        <header class="sec-head sec-head--center reveal">
+          <p class="eyebrow">CÁCH HOẠT ĐỘNG</p>
+          <h2>Từ gán nhãn đến nộp — không rời CVAT.</h2>
+          <p class="lead">Một vòng lặp ngắn: quét, gắn cờ, sửa ngay trong CVAT, qua cổng kiểm tra rồi mới nộp.</p>
+        </header>
+        <ol class="timeline" id="timeline">
+          <li class="timeline__beam" aria-hidden="true"><i id="beamFill"></i></li>
+          <li class="step reveal"><span class="step__node">✎</span><small>BƯỚC 01</small><h3>Gán nhãn trên CVAT</h3><p>Annotator vẽ cuboid 3D như mọi ngày — không đổi quy trình.</p></li>
+          <li class="step reveal"><span class="step__node">⌕</span><small>BƯỚC 02</small><h3>Quét &amp; gắn cờ</h3><p>Bấm <b>Quét job</b> trên web (hoặc <code>pointsnap scan --flag</code>) — lỗi được ghi vào thuộc tính <code>pointsnap_error</code> của đúng box.</p></li>
+          <li class="step reveal"><span class="step__node">⚑</span><small>BƯỚC 03</small><h3>Sửa ngay trong CVAT</h3><p>Chọn lỗi để mở đúng box; phím <kbd>.</kbd> / <kbd>,</kbd> nhảy tới frame lỗi; kéo sửa tay với thước 3D, đường gióng và tọa độ trực tiếp.</p></li>
+          <li class="step reveal"><span class="step__node">✓</span><small>BƯỚC 04</small><h3>Qua cổng rồi nộp</h3><p>Quét lại: cổng kiểm soát trả ĐẠT / KHÔNG ĐẠT theo tiêu chí của dự án (<code>pointsnap gate</code> cho CI).</p></li>
+        </ol>
+        <p class="principle reveal">🛡 <b>Tool đề xuất, con người quyết định</b> — PointSnap hiển thị thước và bằng chứng. Bạn kéo bằng CVAT, kiểm lại rồi Save; Undo/Redo dùng trực tiếp trong CVAT.</p>
+      </div>
+    </section>
+
+    <!-- ========== RESULTS ========== -->
+    <section class="section" id="ket-qua">
+      <div class="container">
+        <header class="sec-head sec-head--split reveal">
+          <div><p class="eyebrow">KẾT QUẢ</p><h2>Con số, không phải lời hứa.</h2></div>
+          <p class="muted">Đo bằng lỗi chèn giả trên 5 cảnh nuScenes để kiểm tra — 5 440 box, chưa từng dùng để chỉnh ngưỡng, 10 vòng.</p>
+        </header>
+        <div class="stats">
+          <article class="stat reveal"><b data-count="100">100</b><em>%</em><span class="meter" style="--v:1"></span><p>Bắt sai class, sai kích thước ≥ 15%, nhảy ≥ 2 m</p></article>
+          <article class="stat reveal"><b data-count="30">30</b><em>/30</em><span class="meter" style="--v:1"></span><p>Lỗi lớn được báo đúng mức Lỗi</p></article>
+          <article class="stat reveal"><b>7–20</b><em>s</em><span class="meter" style="--v:.6"></span><p>Quét một cảnh ~40 keyframe</p></article>
+          <article class="stat reveal"><b data-count="93">93</b><em>%</em><span class="meter" style="--v:.93"></span><p>Bắt lật / xoay box 60 – 180°</p></article>
+        </div>
+        <p class="honest reveal"><b>Chưa tốt:</b> lỗi nhỏ (xoay 15 – 30°, dời &lt; 1 m) và báo nhầm lơ lửng ở bờ vỉa, LiDAR thưa — đang cải thiện.</p>
+      </div>
+    </section>
+
+    <!-- ========== USAGE ========== -->
+    <section class="section section--alt" id="cach-dung">
+      <div class="container">
+        <header class="sec-head sec-head--center reveal">
+          <p class="eyebrow">MỘT QUY TRÌNH ĐỒNG NHẤT</p>
+          <h2>Dùng theo cách bạn làm việc.</h2>
+        </header>
+        <div class="tabs reveal" role="tablist">
+          <button role="tab" aria-selected="true" data-tab="web">Giao diện web (Máy tính)</button>
+          <button role="tab" aria-selected="false" data-tab="ext">Extension trong CVAT</button>
+          <button role="tab" aria-selected="false" data-tab="cli">Dòng lệnh (CLI)</button>
+        </div>
+        <div class="showcase reveal" data-active="web">
+          <!-- Khung máy tính (Laptop Mockup) -->
+          <div class="laptop">
+            <div class="laptop__lid">
+              <div class="laptop__screen">
+                <img class="shot shot--dark" src="assets/workspace-dark.png" alt="PointSnap 3D trên máy tính (Giao diện tối)">
+                <img class="shot shot--light" src="assets/workspace-light.png" alt="PointSnap 3D trên máy tính">
+              </div>
+            </div>
+            <div class="laptop__base"></div>
+          </div>
+
+          <figure class="extension-frame">
+            <div class="extension-frame__bar"><span class="dot dot--ok"></span> CVAT · PointSnap extension</div>
+            <img src="assets/manual-cvat.png" alt="Ảnh thật: thước và tọa độ PointSnap trên bốn góc nhìn CVAT" loading="lazy">
+            <figcaption>Chọn lỗi · kéo trong CVAT · xem số đo · kiểm lại · Save</figcaption>
+          </figure>
+
+          <!-- Dòng lệnh Terminal -->
+          <div class="terminal" id="terminal">
+            <div class="terminal__dots"><i></i><i></i><i></i></div>
+            <pre id="termText"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TEAM ========== -->
+    <section class="section" id="doi-ngu">
+      <div class="container">
+        <header class="sec-head sec-head--center reveal">
+          <p class="eyebrow">ĐỘI NGŨ</p>
+          <h2>Đội ngũ đứng sau PointSnap.</h2>
+          <p class="lead">Năm người, một người bí ẩn — và một mục tiêu: không để box sai nào lọt vào tập huấn luyện.</p>
+        </header>
+        <div class="ring" id="teamRing" aria-roledescription="carousel">
+          <div class="ring__floor" aria-hidden="true"><i></i><i></i></div>
+        </div>
+        <div class="ring__ctrl">
+          <button type="button" id="ringPrev" aria-label="Thành viên trước">‹</button>
+          <div class="ring__dots" id="ringDots"></div>
+          <button type="button" id="ringNext" aria-label="Thành viên tiếp">›</button>
+        </div>
+        <p class="team-cap">Team P-029 · AI20K Build Phase · Cohort 4A</p>
+      </div>
+    </section>
+
+    <!-- ========== BẮT ĐẦU ========== -->
+    <section class="section section--tight" id="bat-dau">
+      <div class="container">
+        <div class="dl reveal">
+          <svg class="dl__cube" viewBox="0 0 48 48" aria-hidden="true"><use href="#logo"/></svg>
+          <div class="dl__copy">
+            <p class="eyebrow eyebrow--light">BẮT ĐẦU</p>
+            <h2 id="startTitle">Vào việc trong 1 phút.</h2>
+            <p class="lead lead--light" id="startLead">Chạy trên máy bạn, đọc CVAT qua REST API — dữ liệu không rời khỏi máy.</p>
+            <div class="cta-row">
+              <a class="btn btn--white magnetic" href="/app" data-app-link>Mở PointSnap <span aria-hidden="true">→</span></a>
+              <a class="btn btn--glass magnetic" href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/CAI-DAT.md" target="_blank" rel="noopener">Hướng dẫn cài</a>
+            </div>
+            <p class="dl__note" id="startNote">Lần đầu: tạo dự án (URL CVAT + token) → quét một job → mở job trên CVAT để sửa bằng extension.</p>
+          </div>
+          <div class="dl__cards">
+            <div class="glass">
+              <h3><svg width="26" height="26"><use href="#logo"/></svg>Extension Chrome / Edge</h3>
+              <ol>
+                <li>Mở <code>chrome://extensions</code> (Edge: <code>edge://extensions</code>)</li>
+                <li>Bật <b>Developer mode</b></li>
+                <li><b>Load unpacked</b> → chọn thư mục <code>extension/</code></li>
+              </ol>
+            </div>
+            <div class="glass">
+              <h3><span class="mono">&gt;_</span>PointSnap · Python 3.11</h3>
+              <div class="code">
+                <button class="copy" type="button" data-copy="pip install -e .&#10;pointsnap ui">Sao chép</button>
+                <pre><span>$</span> pip install -e .
+<span>$</span> pointsnap ui   <em># mở 127.0.0.1:8765</em></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section class="section section--tight" id="faq">
+      <div class="container faq">
+        <header class="sec-head reveal">
+          <p class="eyebrow">HỎI ĐÁP</p>
+          <h2>Câu hỏi thường gặp.</h2>
+          <p class="muted">Không thấy câu trả lời? Mở issue trên GitHub của dự án.</p>
+        </header>
+        <div class="faq__list">
+          <details class="reveal" open><summary>PointSnap có tự sửa box không?</summary><p>Không tự sửa. Khi quét, PointSnap chỉ ghi thuộc tính <code>pointsnap_error</code> lên box lỗi; cờ tự xóa khi box hết lỗi. Extension v2 chỉ hiện thước, tọa độ và đường gióng. Bạn kéo sửa bằng công cụ CVAT, nhả chuột để kiểm lại rồi Save; Undo/Redo theo CVAT.</p></details>
+          <details class="reveal"><summary>Cần những gì để chạy?</summary><p>Python 3.11 và một CVAT có token API. Muốn thử ngay không cần CVAT: dùng nuScenes v1.0-mini với <code>pointsnap nuscenes … scan --inject</code> để chèn lỗi giả rồi quét.</p></details>
+          <details class="reveal"><summary>Có chỉnh theo guideline riêng của dự án được không?</summary><p>Có. Bật / tắt từng luật, đổi ngưỡng, class và thuộc tính bắt buộc ngay trên giao diện, hoặc dán file YAML (ví dụ <code>spec-vn.yaml</code> cho bộ nhãn giao thông VN).</p></details>
+          <details class="reveal"><summary>Tích hợp vào CI thế nào?</summary><p><code>pointsnap gate --job 12</code> trả mã thoát 0 = ĐẠT, 1 = KHÔNG ĐẠT — đặt vào pipeline để chặn nộp khi còn lỗi.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div>
+          <a class="brand brand--light" href="#top"><svg width="34" height="34"><use href="#logo"/></svg><span class="brand__word">PointSnap <b>3D</b></span></a>
+          <p>Phát hiện và cảnh báo sớm lỗi nhãn 3D cuboid trên CVAT —<br>trước khi nộp, không phải sau khi bị trả về.</p>
+        </div>
+        <div class="footer__cols">
+          <div><h4>SẢN PHẨM</h4><a href="#tinh-nang">Tính năng</a><a href="#ket-qua">Kết quả</a><a href="#bat-dau">Bắt đầu</a></div>
+          <div><h4>TÀI LIỆU</h4><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/README.md" target="_blank" rel="noopener">README</a><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/CAI-DAT.md" target="_blank" rel="noopener">Cài từ máy trắng</a><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029/blob/main/source-tool/pointsnap-3d/docs/bao-cao-du-an.md" target="_blank" rel="noopener">Báo cáo dự án</a></div>
+          <div><h4>ĐỘI NGŨ</h4><a href="#doi-ngu">Team P-029</a><a href="https://github.com/AI20K-Build-Phase-Cohort-4A/P-029" target="_blank" rel="noopener">GitHub</a></div>
+        </div>
+      </div>
+      <div class="footer__bot"><span>© 2026 PointSnap 3D · Team P-029</span><span class="mono">Tool đề xuất, con người quyết định.</span></div>
+    </div>
+  </footer>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

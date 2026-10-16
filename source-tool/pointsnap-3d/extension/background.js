@@ -8,7 +8,8 @@
 const DEFAULTS = { pointsnapUrl: 'http://127.0.0.1:8765', cvatUrls: [] };
 const METHODS = new Set(['GET', 'POST', 'PUT']);
 const EARLY_JS = ['src/core.js', 'src/cvat-dom.js', 'src/cvat-api.js', 'src/seed.js'];
-const PANEL_JS = ['src/panel-css.js', 'src/content.js'];
+const MAIN_JS = ['src/manual-geometry.js','src/cvat-compat.js','src/manual-overlay.js','src/cvat-3d-hook.js'];
+const PANEL_JS = ['src/panel-css.js','src/manual-controller.js','src/content.js'];
 
 function originPattern(url) {
   return `${httpOrigin(url)}/*`;
@@ -71,7 +72,7 @@ function requestRoute(method, path, body, sender) {
   if (method === 'GET' && url.pathname === '/api/rules' && !url.search) return { jobId, origin: page.origin };
   if (method === 'GET' && (url.pathname === `/api/extension/jobs/${jobId}` || url.pathname === '/api/extension/poll')) {
     const keys = [...url.searchParams.keys()];
-    if (keys.some(k => !['cvat_url','job_id','after'].includes(k)) || keys.length !== new Set(keys).size) return null;
+    if (keys.some(k => !['cvat_url','job_id','after','version'].includes(k)) || keys.length !== new Set(keys).size) return null;
     if (httpOrigin(url.searchParams.get('cvat_url')) !== page.origin) return null;
     if (url.pathname.endsWith('/poll') && Number(url.searchParams.get('job_id')) !== jobId) return null;
     return { jobId, origin: page.origin };
@@ -86,37 +87,36 @@ function requestRoute(method, path, body, sender) {
     const rule = url.searchParams.get('rule');
     if (rule && !/^[a-zA-Z0-9_.-]+$/.test(rule)) return null;
     const slug = url.searchParams.get('slug') || undefined;
-    if (!slug || !/^[a-zA-Z0-9_-]+$/.test(slug)) return null;
+    if (slug && !/^[a-zA-Z0-9_-]+$/.test(slug)) return null;
     return { jobId, origin: page.origin, trackId: Number(jobRepair[2]), frame: frame !== null ? Number(frame) : undefined, rule: rule || undefined, slug };
   }
-  const jobApply = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/apply-repair$/);
-  if (jobApply && method === 'POST' && !url.search) {
-    if (Number(jobApply[1]) !== jobId) return null;
-    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-    const keys = Object.keys(body);
-    if (!keys.includes('frame') || !keys.includes('repair')) return null;
-    if (keys.some(k => !['frame', 'repair', 'client_track_etag', 'slug'].includes(k))) return null;
-    if (!Number.isInteger(body.frame) || body.frame < 0) return null;
-    if (typeof body.repair !== 'object' || body.repair === null || Array.isArray(body.repair)) return null;
-    if (body.client_track_etag !== undefined && body.client_track_etag !== null && typeof body.client_track_etag !== 'string') return null;
-    if (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug)) return null;
-    return { jobId, origin: page.origin, trackId: Number(jobApply[2]), slug: body.slug || undefined };
-  }
-  const jobRollback = url.pathname.match(/^\/api\/jobs\/(\d+)\/tracks\/(\d+)\/rollback$/);
-  if (jobRollback && method === 'POST' && !url.search) {
-    if (Number(jobRollback[1]) !== jobId) return null;
-    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-    const keys = Object.keys(body);
-    if (!keys.includes('history_id')) return null;
-    if (keys.some(k => !['history_id', 'slug'].includes(k))) return null;
-    if (typeof body.history_id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.history_id)) return null;
-    if (typeof body.slug !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(body.slug)) return null;
-    return { jobId, origin: page.origin, trackId: Number(jobRollback[2]), slug: body.slug || undefined };
-  }
+  if (method === 'POST' && url.pathname === '/api/extension/events' && !url.search && body && body.job_id === jobId && sameCvatOrigin(body.cvat_url, page.origin)
+      && /^[a-zA-Z0-9_-]+$/.test(body.slug) && /^\d{8}-\d{6}(?:-\d+)?-job\d+$/.test(body.run_id)
+      && Number.isInteger(body.finding_index) && body.finding_index >= 0 && ['selected','evaluated','saved'].includes(body.kind)
+      && [null,'remaining','cleared','insufficient','stale'].includes(body.state) && typeof body.session === 'string' && body.session.length <= 80
+      && Number.isInteger(body.sequence) && body.sequence >= 0 && Number.isInteger(body.revision) && body.revision >= 0
+      && Object.keys(body).every(k=>['slug','run_id','job_id','cvat_url','finding_index','kind','state','revision','sequence','session'].includes(k)))
+    return {slug:body.slug,runId:body.run_id,jobId,origin:page.origin};
   if (url.search) return null;
+  const manual = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans\/(\d{8}-\d{6}(?:-\d+)?-job\d+)\/findings\/(\d+)\/(guide|evaluate)$/);
+  if (manual && Number.isSafeInteger(Number(manual[3]))) {
+    if (manual[4] === 'guide' && method === 'GET' && body === undefined ||
+        manual[4] === 'evaluate' && method === 'POST' && body && typeof body === 'object' &&
+        body.box && Number.isInteger(body.box.frame) && Array.isArray(body.context) && body.context.length <= 10000 &&
+        typeof body.context_complete === 'boolean' && Number.isInteger(body.revision) && body.revision >= 0 &&
+        Object.keys(body).every(k => ['box','context','context_complete','revision'].includes(k))) {
+      return {slug:manual[1],runId:manual[2],guideIndex:Number(manual[3]),jobId,origin:page.origin};
+    }
+    return null;
+  }
   const camera = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans\/(\d{8}-\d{6}(?:-\d+)?-job\d+)\/findings\/(\d+)\/camera$/);
   if (camera && method === 'GET' && body === undefined && Number.isSafeInteger(Number(camera[3]))) {
     return { slug: camera[1], runId: camera[2], cameraIndex: Number(camera[3]), jobId, origin: page.origin };
+  }
+  // Đề xuất sửa theo mục của lần quét (kèm bằng chứng mặt đất / hướng của lần quét), giống web; chỉ đọc.
+  const findingRepair = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans\/(\d{8}-\d{6}(?:-\d+)?-job\d+)\/findings\/(\d+)\/repair$/);
+  if (findingRepair && method === 'GET' && body === undefined && Number.isSafeInteger(Number(findingRepair[3]))) {
+    return { slug: findingRepair[1], runId: findingRepair[2], repairIndex: Number(findingRepair[3]), jobId, origin: page.origin };
   }
   const match = url.pathname.match(/^\/api\/projects\/([a-zA-Z0-9_-]+)\/scans(?:\/(\d{8}-\d{6}(?:-\d+)?-job\d+)(?:\/(reviews)(?:\/(\d+))?)?)?$/);
   if (!match) return null;
@@ -141,9 +141,23 @@ async function callPointSnap({ method, path, body }, sender) {
       if (route.runId) {
         const run = await fetchPointSnap(base, `/api/projects/${route.slug}/scans/${route.runId}`);
         if (!run.ok || run.data.job_id !== route.jobId || (run.data.summary?.cvat_url && !sameCvatOrigin(run.data.summary.cvat_url, route.origin))) return { ok: false, error: 'Run không thuộc job đang mở' };
+        if (route.guideIndex !== undefined) {
+          if (!Array.isArray(run.data.findings) || !run.data.findings[route.guideIndex]) return {ok:false,error:'Không có mục lỗi này'};
+          const res = await fetchPointSnap(base,path,method,body);
+          return res.ok ? res : {ok:false,status:res.status,error:res.data?.detail || 'Không kiểm tra được box'};
+        }
         if (route.cameraIndex !== undefined) {
-          if (!Array.isArray(run.data.findings) || !run.data.findings.some(f => f.index === route.cameraIndex)) return { ok: false, error: 'Không có mục camera này' };
+          if (!Array.isArray(run.data.findings) || route.cameraIndex >= run.data.findings.length) return { ok: false, error: 'Không có mục camera này' };
           return await fetchCamera(base, path);
+        }
+        if (route.repairIndex !== undefined) {
+          if (!Array.isArray(run.data.findings) || route.repairIndex >= run.data.findings.length) return { ok: false, error: 'Không có mục này trong lần quét' };
+          const res = await fetchPointSnap(base, path);
+          if (!res.ok) {
+            const detail = res.data && res.data.detail;
+            return { ok: false, status: res.status, error: typeof detail === 'string' ? detail : `PointSnap trả ${res.status}` };
+          }
+          return { ok: true, status: res.status, data: res.data };
         }
         if (method === 'GET' && !path.endsWith('/reviews')) return run;
       }
@@ -222,6 +236,7 @@ async function syncContentScripts() {
   if (!matches.length) return;
   await chrome.scripting.registerContentScripts([
     { id: 'pointsnap-early', matches, js: EARLY_JS, runAt: 'document_start', persistAcrossSessions: true },
+    { id:'pointsnap-main',matches,js:MAIN_JS,world:'MAIN',runAt:'document_idle',persistAcrossSessions:true },
     { id: 'pointsnap-panel', matches, js: PANEL_JS, runAt: 'document_idle', persistAcrossSessions: true },
   ]);
 }
@@ -232,4 +247,4 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 chrome.permissions.onAdded.addListener(() => { syncContentScripts(); });
 chrome.permissions.onRemoved.addListener(() => { syncContentScripts(); });
-chrome.action.onClicked.addListener(() => { chrome.runtime.openOptionsPage(); });
+// Bấm biểu tượng extension mở popup.html (trạng thái PointSnap, mở nhanh web / CVAT / Tùy chọn).

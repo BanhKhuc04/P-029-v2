@@ -94,7 +94,9 @@ def test_api_rules_endpoint(tmp_path):
     assert "labels" in data
     assert "tips" in data
     assert "sink_fix_tip" in data
-    assert len(data["rules"]) >= 30
+    assert len(data["rules"]) >= 20
+    assert all(r["error_type"] in data["groups"] for r in data["rules"])
+    assert not any(r["id"].startswith("track.") for r in data["rules"])
     assert data["labels"]["floating"] == "Lơ lửng / lún"
     assert data["labels"]["track.jump"] == "Nhảy vị trí"
     assert data["sink_fix_tip"] == SINK_FIX_TIP

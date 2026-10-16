@@ -160,7 +160,7 @@ def fit_plane_ransac(
     inlier_pts = pts[best_inlier_mask]
     centroid = np.mean(inlier_pts, axis=0)
     centered = inlier_pts - centroid
-    _, _, vt = np.linalg.svd(centered, full_matrices=False)
+    _, _, vt = np.linalg.svd(centered)
     refined_normal = vt[2]
     refined_normal /= np.linalg.norm(refined_normal)
     if refined_normal[2] < 0:
